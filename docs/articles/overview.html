@@ -1,0 +1,333 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Durable Functions Overview </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Durable Functions Overview ">
+    <meta name="generator" content="docfx 2.19.1.0">
+    
+    <link rel="shortcut icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="durable-functions-overview">Durable Functions Overview</h1>
+
+<h2 id="what-are-durable-functions">What are Durable Functions?</h2>
+<p>&quot;Durable Functions&quot; is an extension of Azure Functions and Azure WebJobs that allows writing <em>long-running</em>, <em>stateful</em> function orchestrations in code in a serverless environment.</p>
+<p>A new type of function called the <em>orchestrator function</em> allows you to do several new things that differentiates it from an ordinary, stateless function:</p>
+<ul>
+<li>They are stateful workflows <strong>authored in code</strong>. No JSON schemas or designers.</li>
+<li>They can <em>synchronously</em> and <em>asynchronously</em> <strong>call other functions</strong> and <strong>save output to local variables</strong>.</li>
+<li>They <strong>automatically checkpoint</strong> their progress whenever the function awaits so that local state is never lost if the process recycles or the VM reboots.</li>
+</ul>
+<div class="NOTE"><h5>Note</h5><p>This is an advanced feature of Azure Functions and may not be useful for all applications. The rest of this article assumes the reader has a strong familiarity with existing Azure Functions concepts and the challenges involved in serverless application development.</p>
+</div>
+<h2 id="use-cases">Use Cases</h2>
+<p>The primary use case for Durable Functions is <em>simplifying complex, stateful coordination problems</em> in serverless applications. To understand whether your application can benefit from Durable Functions, it&#39;s useful to look at a few example coordination patterns, which we&#39;ll walk through below.</p>
+<h3 id="pattern-1-function-chaining">Pattern #1: Function Chaining</h3>
+<p>Function chaining refers to the common pattern executing a sequence of discrete functions in a particular order. Often the output of one function needs to be applied to the input of another function.</p>
+<p><img src="../images/function-chaining.png"></p>
+<p>Durable Functions allows implementing this pattern as a simple, easy to understand C# function snippet.</p>
+<pre><code class="lang-cs">public static async Task&lt;object&gt; Run(DurableOrchestrationContext ctx)
+{
+    try
+    {
+        var x = await ctx.CallFunctionAsync&lt;object&gt;(&quot;F1&quot;);
+        var y = await ctx.CallFunctionAsync&lt;object&gt;(&quot;F2&quot;, x);
+        var z = await ctx.CallFunctionAsync&lt;object&gt;(&quot;F3&quot;, y);
+        return  await ctx.CallFunctionAsync&lt;object&gt;(&quot;F4&quot;, z);
+    }
+    catch (Exception)
+    {
+        // error handling/compensation goes here
+    }
+}
+</code></pre><p>This code above is concise and easily understand by any developer. Control flow is implemented using normal imperitive coding constructs - i.e. code executes top-down and can involve existing language control flow semantics, like conditionals, loops, try/catch/finally, etc., and local variables are used to capture and flow state. If more detailed compensation logic is required, it can be done so naturally with additional try/catch logic.</p>
+<p>The built-in <code>ctx</code> parameter provides methods for invoking other functions by name, passing parameters, and returning function output. Each time the code calls <code>await</code>, the orchestrator function <em>checkpoints</em> the progress of the current function instance. If the process or VM recycles midway through the execution, the function instance will resume from the previous <code>await</code> call, much like it would if we were using queues in between each function invocation. More on this later.</p>
+<h3 id="pattern-2-fan-out-fan-in">Pattern #2: Fan-out, Fan-in</h3>
+<p>A more interesting pattern enabled by the Durable Functions extension is fan-out, fan-in.</p>
+<p><img src="../images/fan-out-fan-in.png"></p>
+<p>With normal functions, fanning out can be done very easily by having the function output multiple messages to a queue using an output binding. However, fanning back in is much more challenging because work needs to be done to coordinate and orchestrate the data processing.</p>
+<p>The Durable Functions extension is optimized to handle this kind of pattern with a relatively simple code snippet.</p>
+<pre><code class="lang-cs">public static async Task Run(DurableOrchestrationContext ctx)
+{
+    var parallelTasks = new List&lt;Task&lt;int&gt;&gt;();
+
+    // get a list of N work items to process in parallel
+    object[] workBatch = await ctx.CallFunctionAsync&lt;object[]&gt;(&quot;F1&quot;);
+    for (int i = 0; i &lt; workBatch.Length; i++)
+    {
+        Task&lt;int&gt; task = ctx.CallFunctionAsync&lt;int&gt;(&quot;F2&quot;, workBatch[i]);
+        parallelTasks.Add(task);
+    }
+
+    await Task.WhenAll(parallelTasks);
+
+    // aggregate all N outputs and send result to F3
+    int sum = parallelTasks.Sum(t =&gt; t.Result);
+    await ctx.CallFunctionAsync(&quot;F3&quot;, sum);
+}
+</code></pre><p>As demonstrated by the code, the fan-out work is tracked using a dynamic list of tasks. Then using the existing .NET <code>Task.WhenAll</code> API, a continuation can be scheduled which aggregates the outputs from the dynamic task list and passes it onto a third function. The automatic checkpointing that happens at the <code>await</code> call on <code>Task.WhenAll</code> ensures that any crash or reboot midway through does not require a restart of any already completed tasks.</p>
+<h3 id="pattern-3-async-http-apis">Pattern #3: Async HTTP APIs</h3>
+<p>The third pattern is all about the problem of coordinating the state of long-running operations with external clients. A common way to implement this pattern is by having the long-running action triggered by an HTTP call, and then redirecting the client to a status endpoint that they can poll to learn when the operation completes.</p>
+<p><img src="../images/async-http-api.png"></p>
+<p>Durable functions makes implementing these kinds of Async HTTP APIs very simple by providing a set of built-in HTTP APIs for interacting with long-running function executions. Specifically, simple REST commands can be used to start new orchestrator function instances and query their status.</p>
+<pre>
+> curl -X POST https://myfunc.azurewebsites.net/orchestrators/DoWork -H "Content-Length: 0" -i
+HTTP/1.1 202 Accepted
+Location: https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec
+Server: Microsoft-IIS/8.0
+
+> curl https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec -i
+HTTP/1.1 202 Accepted
+Content-Length: 173
+Content-Type: application/json
+Location: https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec
+Server: Microsoft-IIS/8.0
+
+{"runtimeStatus":"Running","lastUpdatedTime":"2017-03-16T21:20:47Z"}
+
+> curl https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec -i
+HTTP/1.1 200 OK
+Content-Length: 175
+Content-Type: application/json
+Server: Microsoft-IIS/8.0
+
+{"runtimeStatus":"Completed","lastUpdatedTime":"2017-03-16T21:20:57Z"}
+</pre>
+
+<p>Because all the state is managed by the Durable Functions runtime, it&#39;s not necessary for you to implement your own status tracking mechanism.</p>
+<p>It&#39;s important to point out that even though the Durable Functions extension has built-in support for starting and monitoring long-running operations, it&#39;s entirely possible for you to implement this pattern yourself using a couple HTTP triggers.</p>
+<pre><code class="lang-cs">// HTTP-triggered function to start a new orchestrator function instance.
+public static async Task&lt;HttpResponseMessage&gt; Run(
+    HttpRequestMessage req,
+    DurableOrchestrationClient starter,
+    string functionName)
+{
+    string instanceId = await starter.StartNewAsync(functionName, 0);
+
+    HttpResponseMessage res = req.CreateResponse(HttpStatusCode.Accepted);
+    res.Headers.Location = new Uri(req.RequestUri, $&quot;/orchestrations/{instanceId}&quot;);
+    return res;
+}
+</code></pre><p>The <code>DurableOrchestrationClient starter</code> parameter is a value from the <code>orchestrationClient</code> output binding, which is part of the Durable Functions extension. It provides methods for starting, sending events to, terminating, and querying for new or existing orchestrator function instances. In the above example, an HTTP triggered-function takes in a <code>functionName</code> value from the incoming URL and passes that value to <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a>. This binding API then returns an instance ID which can later be used to look up the status of or terminate the started instance. In this case, a status check HTTP API is implemented using another function, and the URL of that function with <code>instanceId</code> included is returned in the <code>Location</code> header of the above function.</p>
+<pre><code class="lang-cs">// Status check API
+public static async Task&lt;HttpResponseMessage&gt; Run(
+    HttpRequestMessage req,
+    string instanceId,
+    DurableOrchestrationClient checker,
+    TraceWriter log)
+{
+    var status = await checker.GetStatusAsync(instanceId);
+
+    // ...
+
+    return req.CreateResponse(
+        HttpStatusCode.OK,
+        new
+        {
+            runtimeStatus = status.RuntimeStatus,
+            createdTime = status.CreatedTime.ToString(&quot;o&quot;),
+            lastUpdatedTime = status.LastUpdatedTime.ToString(&quot;o&quot;),
+        });
+}
+</code></pre><h3 id="pattern-4-lightweight-actors">Pattern #4: Lightweight Actors</h3>
+<p>The <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> is a pattern that is becoming more common in distributed computing, particularly in the cloud.</p>
+<p><img src="../images/actor.png"></p>
+<p>Because ordinary functions in Azure Functions are stateless, they are not well suited to implement this kind of stateful pattern. With the Durable Functions extension it is relatively trivial to implement stateful actors. Below is an example orchestrator function which implements a counter.</p>
+<pre><code class="lang-cs">public static async Task Run(DurableOrchestrationContext ctx)
+{
+    int counterState = ctx.GetInput&lt;int&gt;();
+
+    string operation = await ctx.WaitForExternalEvent&lt;string&gt;(&quot;operation&quot;);
+    if (operation == &quot;incr&quot;)
+    {
+        counterState++;
+    }
+    else if (operation == &quot;decr&quot;)
+    {
+        counterState--;
+    }
+
+    ctx.ContinueAsNew(counterState);
+}
+</code></pre><p>The above function is what you might describe as an &quot;eternal orchestration&quot; - i.e. one that starts and never ends. It starts with some input value <code>counterState</code>, waits indefinitely for a message called <code>operation</code>, performs some logic to update its local state, &quot;restarts&quot; itself by calling <code>ctx.ContinueAsNew</code>, and then awaits indefinitely for the next operation.</p>
+<h3 id="pattern-5-human-interaction-and-timeouts">Pattern #5: Human Interaction and Timeouts</h3>
+<p>Many types of process automation often need to involve some kind of human interaction. The tricky thing about involving humans in an automated process is that people are not always as highly available and responsive as cloud services. These automated processes must account for this, and often do so using timeouts and compensation.</p>
+<p>One example of a business process which involves human interaction is an approval process. One could imagine a system where a manager must approve an expense report that exceeds a certain amount. If the manager does not approve within 72 hours (maybe they went on vacation), then an escalation processes kicks in to get the approval from someone else (perhaps the manager&#39;s manager).</p>
+<p><img src="../images/approval.png"></p>
+<p>This kind of pattern can be implemented using an orchestrator function to coordinate a &quot;durable timeout&quot; with an &quot;external event&quot; notification generated by some human interaction.</p>
+<pre><code class="lang-cs">public static async Task Run(DurableOrchestrationContext ctx)
+{
+    await ctx.CallFunctionAsync(&quot;RequestApproval&quot;);
+    using (var timeoutCts = new CancellationTokenSource())
+    {
+        DateTime dueTime = ctx.CurrentUtcDateTime.AddHours(72);
+        Task durableTimeout = ctx.CreateTimer(dueTime, timeoutCts.Token);
+
+        Task&lt;bool&gt; approvalEvent = ctx.WaitForExternalEvent&lt;bool&gt;(&quot;ApprovalEvent&quot;);
+        if (approvalEvent == await Task.WhenAny(approvalEvent, durableTimeout))
+        {
+            timeoutCts.Cancel();
+            await ctx.CallFunctionAsync(&quot;HandleApproval&quot;, approvalEvent.Result);
+        }
+        else
+        {
+            await ctx.CallFunctionAsync(&quot;Escalate&quot;);
+        }
+    }
+}
+</code></pre><p>The important thing to notice here is that the timeout was implemented using <code>ctx.CreateTimer</code>, <code>ctx.WaitForExternalEvent</code>, and <code>Task.WaitAny</code> to synchronize the notification and the timer expiration. Depending on which event occurs first, the orchestrator function takes the appropriate action (escalation or completing the approval process).</p>
+<h2 id="the-technology">The Technology</h2>
+<p>Behind the scenes the Durable Functions extension is built on top of the <a href="https://github.com/Azure/durabletask">Durable Task Framework</a>, an open source library on GitHub. Much like how Azure Functions is the serverless evolution of Azure WebJobs, Durable Functions is the serverless evolution of the Durable Task Framework. It is used heavily within Microsoft and outside as well to automate mission-critical processes and is a natural fit to leverage within the serverless Azure Functions environment.</p>
+<h3 id="checkpointing-and-orchestrator-replay">Checkpointing and Orchestrator Replay</h3>
+<p>Orchestrator functions have the ability to checkpoint their state whenever an <code>await</code> keyword is encountered. Under the covers <code>await</code> is simply yielding control of the thread back to the Durable Task Framework dispatcher which then commits any actions that the orchestrator function queued up, such as calling one or more child functions or scheduling a durable timer. It also saves a record of which actions have been taken so far (the <em>execution history</em>) by the orchestrator function. Once all this data is persisted to storage, the orchestrator can go to sleep and billing can be stopped.</p>
+<p>Once a response message is received or the durable timer expires, the orchestrator will wake up again and <strong>re-execute the entire function from the start</strong> in order to rebuild the local state. If during this replay the code tries to call a function (or do any other async work), the Durable Task Framework will consult with the <em>execution history</em> of the current orchestration. If it finds that the activity function has already executed and yielded some result, it will replay that function&#39;s result immediately and the orchestrator code will continue running. This will continue happening until the function code to a point where either it is finished or it has scheduled new async work.</p>
+<h3 id="orchestrator-code-constraints">Orchestrator Code Constraints</h3>
+<p>With this replay behavior in mind, there are a very important set of constraints on the type of code that can be written in an orchestrator function:</p>
+<ul>
+<li>Orchestrator code <strong>must be deterministic</strong> since it is going to be replayed multiple times. This means there cannot be any direct calls to get the current date/time, get random numbers, generate random GUIDs, or call into remote endpoints.</li>
+<li>If orchestrator code needs to get the current date/time, it should use the <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> API, which is safe for replay.</li>
+<li>Non-deterministic operations need to be done in activity functions. This includes any interaction with other input or output bindings. This ensures any non-deterministic values will be generated once on the first execution and saved into the execution history. Subsequent executions will then use the saved value automatically.</li>
+<li>Orchestrator code should be <strong>non-blocking</strong> - i.e. no <code>Thread.Sleep</code> or equivalent APIs. If an orchestrator needs to delay for a period of time, it should use the <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a> API.</li>
+<li>Orchestrator code must never initiate any async operation outside of the operations exposed by <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html">DurableOrchestrationContext</a> - e.g. no <code>Task.Delay</code> or <code>HttpClient.SendAsync</code>. The Durable Task Framework executes orchestrator code on a single thread and cannot interact with any other threads which could be scheduled by other async APIs.</li>
+<li>Because the Durable Task Framework saves execution history as the orchestration function progresses, <strong>infinite loops should be avoided</strong> to ensure orchestrator instances do not run out of memory. Instead, APIs such as <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> should be used to restart the function execution and discard previous execution history.</li>
+</ul>
+<p>While these constraints may seem daunting at first, in practice they are quite easy to follow. Where possible, the Durable Task Framework will attempt to detect violations of the above rules and throw a <code>NonDeterministicOrchestrationException</code>. However, this detection behavior is best-effort and orchestrator code should never depend on it.</p>
+<div class="NOTE"><h5>Note</h5><p>Note that all the rules mentioned above only apply to functions triggered by the <code>orchestrationTrigger</code> binding. Activity functions triggered by the <code>activityTrigger</code> binding and functions which use the <code>orchestrationClient</code> binding have no such limitations.</p>
+</div>
+<h2 id="language-support">Language Support</h2>
+<p>Currently C# is the only supported language for Durable Functions. This includes authoring orchestrator functions and activity functions. In the future, we will add support for all languages supported by Azure Functions.</p>
+<div class="NOTE"><h5>Note</h5><p>It&#39;s actually possible to write <em>activity functions</em> in any supported languages, including JavaScript (node.js). However, return values in these languages are currently not working, which limits the usefulness of using non-C# languages. If you are not using return values, then using languages other than C# are expected to work without issue.</p>
+</div>
+<h2 id="monitoring-and-diagnostics">Monitoring and Diagnostics</h2>
+<p>The Durable Functions host extension automatically emits semi-structured logs as it executes orchestrator and activity functions. These logs live alongside the application logs and can be used to monitor the behavior of your orchestrations.</p>
+<p>Because of the replay behavior of the Durable Task Framework dispatcher, you can expect to see redundant log entries for replayed actions. This can be useful to understand the replay behavior of the core engine. If you would like to see just the &quot;real-time&quot; logs, you can use <code>grep</code> or <code>findstr</code> to filter log entries based on the <code>IsReplay</code> text.</p>
+<p>Example logs (no filtering):</p>
+<pre>
+2017-05-01T22:47:49.048 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'ProcessWorkBatch', version ''. reason: NewInstance. IsReplay: False.
+2017-05-01T22:47:49.481 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'ProcessWorkBatch', version ''. IsReplay: False. Input: (1 bytes)
+2017-05-01T22:47:49.505 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'HelloWorld', version ''. reason: ProcessWorkBatch. IsReplay: False.
+2017-05-01T22:47:49.509 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' awaited. IsReplay: False.
+2017-05-01T22:47:49.789 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'HelloWorld', version ''. IsReplay: False. Input: (9 bytes)
+2017-05-01T22:47:51.361 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'HelloWorld', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
+2017-05-01T22:47:51.451 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'ProcessWorkBatch', version ''. IsReplay: True. Input: (1 bytes)
+2017-05-01T22:47:51.452 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'HelloWorld', version ''. reason: ProcessWorkBatch. IsReplay: True.
+2017-05-01T22:47:51.454 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' awaited. IsReplay: True.
+2017-05-01T22:47:51.462 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
+</pre>
+
+<p>...and with replay logs filtered out (e.g. <code>findstr /C:&quot;IsReplay: False&quot;</code>)...</p>
+<pre>
+2017-05-01T22:47:49.048 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'ProcessWorkBatch', version ''. reason: NewInstance. IsReplay: False.
+2017-05-01T22:47:49.481 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'ProcessWorkBatch', version ''. IsReplay: False. Input: (1 bytes)
+2017-05-01T22:47:49.505 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'HelloWorld', version ''. reason: ProcessWorkBatch. IsReplay: False.
+2017-05-01T22:47:49.509 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' awaited. IsReplay: False.
+2017-05-01T22:47:49.789 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'HelloWorld', version ''. IsReplay: False. Input: (9 bytes)
+2017-05-01T22:47:51.361 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'HelloWorld', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
+2017-05-01T22:47:51.462 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
+</pre>
+
+<p>For the best monitoring and diagnostics experience, it is recommended that you enable <a href="https://blogs.msdn.microsoft.com/appserviceteam/2017/04/06/azure-functions-application-insights/">Application Insights integration</a>. This will allow you to store execution logs for longer periods of time and do more efficient query and analysis.</p>
+<h2 id="storage-and-scalability">Storage and Scalability</h2>
+<p>The Durable Functions extension uses Azure Storage queues, tables, and blobs to persist execution history state and messages that are used to trigger function execution. The default storage account for the function app can be used, or you can configure a separate storage account to create greater isolation in terms of storage throughput limits. The orchestrator code you write does not need to (and should not) interact with the entities in these storage accounts - the entities are managed directly by the Durable Task Framework as an implementation detail.</p>
+<p>Orchestrator functions schedule activity functions and receive their responses via internal queue messages. When running in the Azure Functions Consumption plan, these queues are monitored by the Azure Functions Scale Controller and new compute instances are added as needed. When scaled out to multiple VMs, an orchestrator function may run on one VM while activity functions it calls run on several different VMs. You can find more details on the scale behavior of Durable Functions can be found in the <a href="topics/perf-and-scale.html">Performance and Scale</a> topic.</p>
+<p>Lastly, table storage is used to store the execution history for orchestrator accounts. Whenever an instance rehydrates on a particular VM, it fetches its execution history from table storage so that it can rebuild its local state. One of the convenient things about having the history available in Table storage is that you can take a look and see the history of your orchestrations using tools such as <a href="https://docs.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer">Microsoft Azure Storage Explorer</a>.</p>
+<p><img src="../images/storage-explorer.png"></p>
+<div class="WARNING"><h5>Warning</h5><p>While it&#39;s easy and convenient to see execution history in table storage, you should not take any dependency on this table as the specifics of its usage may change as the Durable Functions extension evolves.</p>
+</div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/overview.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © Microsoft Corporation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

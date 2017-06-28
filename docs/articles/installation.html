@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Installing Durable Functions </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Installing Durable Functions ">
+    <meta name="generator" content="docfx 2.19.1.0">
+    
+    <link rel="shortcut icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="installing-durable-functions">Installing Durable Functions</h1>
+
+<p>Durable Functions is an extension of Azure Functions which uses the new binding extensibility model. The setup involves deploying a set of files to the function application and adding a <code>AzureWebJobs_ExtensionsPath</code> app setting which points to the directory containing these files.</p>
+<div class="NOTE"><h5>Note</h5><p>We&#39;re currently using an alpha release of the Azure Functions extensibility model, so the installation steps are a bit manual. In the future, installing a binding extension should be as simple as referencing a NuGet package. See <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/1419">this</a> GitHub issue for updates.</p>
+</div>
+<p>The below steps assume you have a function app up and running. If you do not, go ahead and create one by navigating to <a href="https://functions.azure.com/signin">https://functions.azure.com/signin</a> and create a new function app there. It only requires a few clicks.</p>
+<h2 id="deploying-the-durable-task-binding-extension">Deploying the Durable Task Binding Extension</h2>
+<p>Deploying the extension is a matter of uploading a zip file and creating an app setting.</p>
+<ol>
+<li>Open your function app in the <a href="https://functions.azure.com/signin">Azure Functions portal</a>.</li>
+<li>Navigate to the Kudu console (Platform Features --&gt; Advanced Tools (Kudu))</li>
+<li>Click <strong>Debug Console</strong> and select <strong>CMD</strong></li>
+<li>Drag/drop the <a href="../files/DurableFunctionsBinding.zip">BindingExtensions.zip</a> file onto the right-side of the directory list in the browser window to unzip the contents into your function app.</li>
+</ol>
+<div class="NOTE"><h5>Note</h5><p>Chrome is the recommended browser for drag-dropping zip files. If you can&#39;t or don&#39;t want to use Chrome or drag/drop isn&#39;t working, you can alternatively upload the zip file using FTP and use the <code>unzip</code> command in the Kudu console window to unzip the contents in the remote file system.</p>
+</div>
+<p>At this point you should have a <code>D:\home\BindingExtensions</code> directory which contains a single folder named <code>DurableTask</code>. The <code>DurableTask</code> directory will contain a bunch of DLLs.</p>
+<ol>
+<li>Back in the Functions portal, click <strong>Application settings</strong> (under <em>General Settings</em>)</li>
+<li>Add a new app setting named <code>AzureWebJobs_ExtensionsPath</code> and set the value to <code>D:\home\BindingExtensions</code>.</li>
+</ol>
+<div class="NOTE"><h5>Note</h5><p>If for whatever reason you deployed your extension directory somewhere else, feel free to reference that other location in your app setting value. Just make sure that your app setting references the <strong>BindingExtensions</strong> parent directory. Do NOT point your app setting to the <strong>DurableTask</strong> directory or else the runtime will not find your extension.</p>
+</div>
+<p>At this point, your binding extension should be installed and you can start using it in your function code!</p>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/installation.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © Microsoft Corporation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

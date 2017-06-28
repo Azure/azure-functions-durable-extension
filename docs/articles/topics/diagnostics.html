@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Diagnostics </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Diagnostics ">
+    <meta name="generator" content="docfx 2.19.1.0">
+    
+    <link rel="shortcut icon" href="../../images/favicon.ico">
+    <link rel="stylesheet" href="../../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../../styles/docfx.css">
+    <link rel="stylesheet" href="../../styles/main.css">
+    <meta property="docfx:navrel" content="../../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../../index.html">
+                <img id="logo" class="svg" src="../../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="diagnostics">Diagnostics</h1>
+
+<p>There are several options for diagnosing issues with Durable Functions. Some of these options are the same for regular functions and some of them are unique to Durable Functions. This article goes into detail about what options are available.</p>
+<h2 id="logging">Logging</h2>
+<p>The Durable Functions host extension automatically emits semi-structured logs as it executes orchestrator and activity functions. These logs live alongside the application logs and can be used to monitor the behavior of your orchestrations. To give an example, consider the following orchestrator function:</p>
+<pre><code class="lang-cs">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
+
+public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationContext context)
+{
+    var outputs = new List&lt;string&gt;();
+
+    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
+    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
+
+    // returns [&quot;Hello Tokyo!&quot;, &quot;Hello Seattle!&quot;]
+    return outputs;
+}
+</code></pre><p>Below are the log statements that a single execution emits into the host logs. It includes both logging from the host and from Durable Function triggers. Because of the replay behavior of the Durable Task Framework dispatcher, you will see several redundant log entries for replayed actions. One one hand this can be useful to understand the replay behavior of the core engine. On the other hand, this can be noisy and make it hard to understand the logical flow of the orchestration.</p>
+<pre>
+17:41:04.555 [DF] 4f48: Starting function 'E1_HelloSequence', version ''. IsReplay: False. Input: (4 bytes)
+17:41:04.571 Executing 'Functions.E1_HelloSequence' (Reason='', Id=968286d0-d695-425f-af9e-8e5d6992340a)
+17:41:04.571 Function started (Id=968286d0-d695-425f-af9e-8e5d6992340a)
+17:41:04.711 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: False.
+17:41:04.899 [DF] 4f48: Starting function 'E1_SayHello', version ''. IsReplay: False. Input: (9 bytes)
+17:41:04.899 Executing 'Functions.E1_SayHello' (Reason='', Id=b35b27b9-a710-487e-abbc-34ebc60ca6e0)
+17:41:04.915 Function started (Id=b35b27b9-a710-487e-abbc-34ebc60ca6e0)
+17:41:04.915 Function completed (Success, Id=b35b27b9-a710-487e-abbc-34ebc60ca6e0, Duration=7ms)
+17:41:04.915 Executed 'Functions.E1_SayHello' (Succeeded, Id=b35b27b9-a710-487e-abbc-34ebc60ca6e0)
+17:41:04.915 [DF] 4f48: Function 'E1_SayHello', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (14 bytes)
+17:41:05.008 [DF] 4f48: Starting function 'E1_HelloSequence', version ''. IsReplay: True. Input: (4 bytes)
+17:41:05.008 Executing 'Functions.E1_HelloSequence' (Reason='', Id=dd5f2f4a-48f0-4f45-aad8-2416a9c44b12)
+17:41:05.008 Function started (Id=dd5f2f4a-48f0-4f45-aad8-2416a9c44b12)
+17:41:05.008 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: True.
+17:41:05.008 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: False.
+17:41:05.024 [DF] 4f48: Starting function 'E1_SayHello', version ''. IsReplay: False. Input: (11 bytes)
+17:41:05.024 Executing 'Functions.E1_SayHello' (Reason='', Id=17b1dd65-07e7-46db-8133-6c93a05962ed)
+17:41:05.024 Function started (Id=17b1dd65-07e7-46db-8133-6c93a05962ed)
+17:41:05.024 Function completed (Success, Id=17b1dd65-07e7-46db-8133-6c93a05962ed, Duration=0ms)
+17:41:05.024 Executed 'Functions.E1_SayHello' (Succeeded, Id=17b1dd65-07e7-46db-8133-6c93a05962ed)
+17:41:05.024 [DF] 4f48: Function 'E1_SayHello', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (16 bytes)
+17:41:05.055 [DF] 4f48: Starting function 'E1_HelloSequence', version ''. IsReplay: True. Input: (4 bytes)
+17:41:05.055 Executing 'Functions.E1_HelloSequence' (Reason='', Id=4c5aa70a-e1e7-4ccc-9b35-4ea778aa1e61)
+17:41:05.055 Function started (Id=4c5aa70a-e1e7-4ccc-9b35-4ea778aa1e61)
+17:41:05.055 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: True.
+17:41:05.055 [DF] 4f48: Function 'E1_SayHello', version '' completed. ContinuedAsNew: False. IsReplay: True. Output: (replayed)
+17:41:05.055 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: True.
+17:41:05.055 Function completed (Success, Id=4c5aa70a-e1e7-4ccc-9b35-4ea778aa1e61, Duration=1ms)
+17:41:05.055 Executed 'Functions.E1_HelloSequence' (Succeeded, Id=4c5aa70a-e1e7-4ccc-9b35-4ea778aa1e61)
+17:41:05.055 [DF] 4f48: Function 'E1_HelloSequence', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (33 bytes)
+</pre>
+
+<p>There is a lot here, but there are a few important things to notice:</p>
+<ul>
+<li>Per the host logs, <strong>E1_HelloSequence</strong> is started <em>three</em> times and completed <em>once</em>. This is an artifact of the replay behavior.</li>
+<li>Per the host logs, <strong>E1_SayHello</strong> is executed exactly two times. This is expected because it is called twice in the source code and activity functions are never replayed.</li>
+<li>Each of the Durable Functions trigger logs are prefixed with <code>[DF]</code> to distinguish it from host logs.</li>
+<li>There is an <code>IsReplay</code> flag in each of the traces with a value of <code>True</code> or <code>False</code> indicating whether a trace was generated as part of replay execution.</li>
+</ul>
+<p>To filter out the replay actions to get the <em>logical</em> flow of execution, you can use a simple <code>grep</code> or <code>findstr</code> expression to filter out all the replay traces (e.g. <code>findstr /C:&quot;IsReplay: False&quot;</code>):</p>
+<pre>
+17:41:04.555 [DF] 4f48: Starting function 'E1_HelloSequence', version ''. IsReplay: False. Input: (4 bytes)
+17:41:04.711 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: False.
+17:41:04.899 [DF] 4f48: Starting function 'E1_SayHello', version ''. IsReplay: False. Input: (9 bytes)
+17:41:04.915 [DF] 4f48: Function 'E1_SayHello', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (14 bytes)
+17:41:05.008 [DF] 4f48: Scheduling function 'E1_SayHello', version ''. reason: E1_HelloSequence. IsReplay: False.
+17:41:05.024 [DF] 4f48: Starting function 'E1_SayHello', version ''. IsReplay: False. Input: (11 bytes)
+17:41:05.024 [DF] 4f48: Function 'E1_SayHello', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (16 bytes)
+17:41:05.055 [DF] 4f48: Function 'E1_HelloSequence', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (33 bytes)
+</pre>
+
+<p>This reduced view more closely resembles what you would expect when looking at the source code.</p>
+<p>Note that for the best monitoring and diagnostics experience, it is recommended that you enable <a href="https://blogs.msdn.microsoft.com/appserviceteam/2017/04/06/azure-functions-application-insights/">Application Insights integration</a>. This will allow you to store execution logs for longer periods of time and do more efficient query and analysis.</p>
+<div class="TIP"><h5>Tip</h5><p>When emitting log statements in the orchestrator function, if you want to only log on non-replay execution, you can write a conditional expression to log only if <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_IsReplaying">IsReplaying</a> is equal to <code>false</code>.</p>
+</div>
+<div class="WARNING"><h5>Warning</h5><p>The monitoring tab in the Functions portal and the WebJobs dashboard of the Kudu website show all durable function executions, including replays. However, these components were not designed to understand the replay behavior of orchestrator functions. For example, you can expect to see many orchestrator function executions with a warning status because they never complete (as we observed earlier when looking at the host logs). <a href="https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/33">https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/33</a>.</p>
+</div>
+<h2 id="debugging">Debugging</h2>
+<p>Azure Functions supports debugging function code directly and that same support carries forward to Durable Functions, whether running in Azure or locally. However, there are a few behaviors to be aware of when debugging:</p>
+<ul>
+<li><strong>Replay</strong>: Orchestrator functions regularly replay when new inputs are received. This means a single <em>logical</em> execution of an orchestrator function can result in hitting the same breakpoint multiple times, especially if it is set early in the function code.</li>
+<li><strong>Await</strong>: Whenever an <code>await</code> is encountered, it yields control back to the Durable Task Framework dispatcher. If this is the first time a particular <code>await</code> has been encountered, the associated task is <em>never</em> resumed. Because the task never resumes, stepping <em>over</em> the await (e.g. F10 in Visual Studio) is not actually possible.</li>
+<li><strong>Messaging Timeouts</strong>: Durable Functions internally uses queue messages to drive execution of both orchestrator functions and activity functions. In a multi-VM environment, breaking into the debugging for extended periods of time could cause a another VM to pick up the message, resulting in duplicate execution. This behavior exists for regular queue-trigger functions as well, but is important to point out in this context since the queues are an implementation detail.</li>
+</ul>
+<div class="TIP"><h5>Tip</h5><p>When setting breakpoints, if you want to only break on non-replay execution, you can set a conditional breakpoint which breaks only if <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_IsReplaying">IsReplaying</a> is equal to <code>false</code>.</p>
+</div>
+<h2 id="storage">Storage</h2>
+<p>By default Durable Functions stores state in Azure Storage. This means you can inspect the state of your orchestrations using tools such as <a href="https://docs.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer">Microsoft Azure Storage Explorer</a>.</p>
+<p><img src="../../images/storage-explorer.png"></p>
+<p>This is useful for debugging because you see exactly what state an orchestration may be in. Messages in the queues can also be examined to learn what work is pending (or stuck in some cases).</p>
+<div class="WARNING"><h5>Warning</h5><p>While it&#39;s easy and convenient to see orchestration state in Azure Storage, you should not take any dependency on the storage entities or schemas as the specifics of their usage may change as the Durable Functions extension evolves.</p>
+</div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/diagnostics.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © Microsoft Corporation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../../styles/docfx.js"></script>
+    <script type="text/javascript" src="../../styles/main.js"></script>
+  </body>
+</html>

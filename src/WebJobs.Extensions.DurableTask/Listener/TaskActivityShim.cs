@@ -76,18 +76,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            string output = ((IActivityReturnValue)inputContext).ReturnValue;
+            string serializedOutput = inputContext.GetSerializedOutput();
             this.config.TraceHelper.FunctionCompleted(
                 config.HubName,
                 this.activityName,
                 this.activityVersion,
                 instanceId,
-                this.config.GetIntputOutputTrace(output),
+                this.config.GetIntputOutputTrace(serializedOutput),
                 continuedAsNew: false,
                 isOrchestrator: false,
                 isReplay: false);
 
-            return output;
+            return serializedOutput;
         }
 
         public override string Run(TaskContext context, string input)

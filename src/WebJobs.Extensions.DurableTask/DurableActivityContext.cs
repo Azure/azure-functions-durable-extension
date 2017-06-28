@@ -12,19 +12,19 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Parameter data for activity bindings that are scheduled by their parent orchestrations.
     /// </summary>
-    public class DurableActivityContext : IActivityReturnValue
+    public class DurableActivityContext
     {
         private static readonly JsonDataConverter SharedJsonConverter = DurableOrchestrationContext.SharedJsonConverter;
 
         private readonly string instanceId;
-        private readonly string rawInput;
+        private readonly string serializedInput;
 
-        private string returnValue;
+        private string serializedOutput;
 
-        internal DurableActivityContext(string instanceId, string rawInput)
+        internal DurableActivityContext(string instanceId, string serializedInput)
         {
             this.instanceId = instanceId;
-            this.rawInput = rawInput;
+            this.serializedInput = serializedInput;
         }
 
         /// <summary>
@@ -39,15 +39,6 @@ namespace Microsoft.Azure.WebJobs
         /// </value>
         public string InstanceId => this.instanceId;
 
-        // Intended for use by internal callers.
-        string IActivityReturnValue.ReturnValue => this.returnValue;
-
-        // Intended for use by internal callers.
-        void IActivityReturnValue.SetReturnValue(object responseValue)
-        {
-            this.SetOutput(responseValue);
-        }
-
         /// <summary>
         /// Returns the input of the task activity in its raw JSON string value.
         /// </summary>
@@ -56,7 +47,7 @@ namespace Microsoft.Azure.WebJobs
         /// </returns>
         public string GetRawInput()
         {
-            return this.rawInput;
+            return this.serializedInput;
         }
 
         /// <summary>
@@ -67,7 +58,7 @@ namespace Microsoft.Azure.WebJobs
         /// </returns>
         public JToken GetInputAsJson()
         {
-            return this.rawInput != null ? JToken.Parse(this.rawInput) : null;
+            return this.serializedInput != null ? JToken.Parse(this.serializedInput) : null;
         }
 
         /// <summary>
@@ -77,7 +68,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>The deserialized input value.</returns>
         public T GetInput<T>()
         {
-            return ParseActivityInput<T>(this.rawInput);
+            return ParseActivityInput<T>(this.serializedInput);
         }
 
         internal static T ParseActivityInput<T>(string rawInput)
@@ -113,6 +104,11 @@ namespace Microsoft.Azure.WebJobs
             return parameter;
         }
 
+        internal string GetSerializedOutput()
+        {
+            return this.serializedOutput;
+        }
+
         /// <summary>
         /// Sets the JSON-serializeable output of the activity function.
         /// </summary>
@@ -129,16 +125,16 @@ namespace Microsoft.Azure.WebJobs
                 JToken json = output as JToken;
                 if (json != null)
                 {
-                    this.returnValue = json.ToString(Formatting.None);
+                    this.serializedOutput = json.ToString(Formatting.None);
                 }
                 else
                 {
-                    this.returnValue = SharedJsonConverter.Serialize(output);
+                    this.serializedOutput = SharedJsonConverter.Serialize(output);
                 }
             }
             else
             {
-                this.returnValue = null;
+                this.serializedOutput = null;
             }
         }
     }

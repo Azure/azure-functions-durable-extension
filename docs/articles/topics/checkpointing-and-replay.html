@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Orchestrator Checkpointing and Replay </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Orchestrator Checkpointing and Replay ">
+    <meta name="generator" content="docfx 2.19.1.0">
+    
+    <link rel="shortcut icon" href="../../images/favicon.ico">
+    <link rel="stylesheet" href="../../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../../styles/docfx.css">
+    <link rel="stylesheet" href="../../styles/main.css">
+    <meta property="docfx:navrel" content="../../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../../index.html">
+                <img id="logo" class="svg" src="../../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="orchestrator-checkpointing-and-replay">Orchestrator Checkpointing and Replay</h1>
+
+<p>One of the key attributes of Durable Functions is <strong>reliable execution</strong>. Orchestrator functions and activity functions may be running on different VMs within a particular data center, and those VMs or the underlying networking infrastructure is not guaranteed to be 100% reliable.</p>
+<p>In spite of this, Durable Functions ensures reliable execution of orchestrations. It does so by using storage queues to drive function invocation and by periodically checkpointing execution history into storage tables. Replaying that history can then be used to automatically rebuild the in-memory state of an orchestrator function. The rest of this article will go into the details.</p>
+<h2 id="orchestration-history">Orchestration History</h2>
+<p>Suppose you have the following orchestrator function.</p>
+<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
+
+public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationContext context)
+{
+    var outputs = new List&lt;string&gt;();
+
+    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
+    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
+    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
+
+    // returns [&quot;Hello Tokyo!&quot;, &quot;Hello Seattle!&quot;, &quot;Hello London!&quot;]
+    return outputs;
+}
+</code></pre><p>At each <code>await</code> statement, the orchestrator function dispatcher checkpoints the execution state of the function into table storage. This state is what is referred to as the <em>orchestration history</em>.</p>
+<h2 id="history-table">History Table</h2>
+<p>Generally speaking, each checkpoint will include the following:.</p>
+<ol>
+<li>Saving execution history into Azure Storage tables.</li>
+<li>Enqueuing messages for the functions we want to invoke.</li>
+<li>Enqueuing messages for the orchestrator itself - e.g. durable timer messages.</li>
+</ol>
+<p>Once the checkpoint is complete, the orchestrator function is free to be removed from memory until there is more work for it to do.</p>
+<div class="NOTE"><h5>Note</h5><p>Azure Storage does not provide any transactional guarantees between saving data into table storage and queues. To account for this, the Durable Functions storage provider uses <em>eventual consistency</em> patterns to ensure that no data is lost if there is a crash or loss of connectivity in the middle of a checkpoint.</p>
+</div>
+<p>Upon completion, the history of the above function will look something like the following in Azure Table Storage (abbreviated for illustration purposes):</p>
+<table>
+<thead>
+<tr>
+<th>PartitionKey (InstanceId)</th>
+<th>EventType</th>
+<th>Timestamp</th>
+<th>Input</th>
+<th>Name</th>
+<th>Result</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorStarted</td>
+<td>2017-05-05T18:45:32.362Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>ExecutionStarted</td>
+<td>2017-05-05T18:45:28.852Z</td>
+<td>null</td>
+<td>E1_HelloSequence</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>TaskScheduled</td>
+<td>2017-05-05T18:45:32.670Z</td>
+<td></td>
+<td>E1_SayHello</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorCompleted</td>
+<td>2017-05-05T18:45:32.670Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorStarted</td>
+<td>2017-05-05T18:45:34.232Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>TaskCompleted</td>
+<td>2017-05-05T18:45:34.201Z</td>
+<td></td>
+<td></td>
+<td>&quot;&quot;&quot;Hello Tokyo!&quot;&quot;&quot;</td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>TaskScheduled</td>
+<td>2017-05-05T18:45:34.435Z</td>
+<td></td>
+<td>E1_SayHello</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorCompleted</td>
+<td>2017-05-05T18:45:34.435Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorStarted</td>
+<td>2017-05-05T18:45:34.857Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>TaskCompleted</td>
+<td>2017-05-05T18:45:34.763Z</td>
+<td></td>
+<td></td>
+<td>&quot;&quot;&quot;Hello Seattle!&quot;&quot;&quot;</td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>TaskScheduled</td>
+<td>2017-05-05T18:45:34.857Z</td>
+<td></td>
+<td>E1_SayHello</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorCompleted</td>
+<td>2017-05-05T18:45:34.857Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorStarted</td>
+<td>2017-05-05T18:45:35.032Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>TaskCompleted</td>
+<td>2017-05-05T18:45:34.919Z</td>
+<td></td>
+<td></td>
+<td>&quot;&quot;&quot;Hello London!&quot;&quot;&quot;</td>
+<td></td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>ExecutionCompleted</td>
+<td>2017-05-05T18:45:35.044Z</td>
+<td></td>
+<td></td>
+<td>&quot;[&quot;&quot;Hello Tokyo!&quot;&quot;,&quot;&quot;Hello Seattle!&quot;&quot;,&quot;&quot;Hello London!&quot;&quot;]&quot;</td>
+<td>Completed</td>
+</tr>
+<tr>
+<td>eaee885b</td>
+<td>OrchestratorCompleted</td>
+<td>2017-05-05T18:45:35.044Z</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>A few notes on the column values:</p>
+<ul>
+<li><strong>PartitionKey</strong>: Contains the instance ID of the orchestration.</li>
+<li><strong>EventType</strong>: Represents the type of the event.<ul>
+<li><strong>OrchestrationStarted</strong>: The orchestrator function resumed from an await (or is running for the first time). The <code>Timestamp</code> column is used to populate the deterministic value for the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> API.</li>
+<li><strong>ExecutionStarted</strong>: The orchestrator function started executing for the first time. This event also contains the function input in the <code>Input</code> column.</li>
+<li><strong>TaskScheduled</strong>: An activity function was scheduled. The name of the activity function is captured in the <code>Name</code> column.</li>
+<li><strong>TaskCompleted</strong>: An activity function completed. The result of the function is in the <code>Result</code> column.</li>
+<li><strong>TimerCreated</strong>: A durable timer was created. The <code>FireAt</code> column contains the scheduled UTC time at which the timer will expire.</li>
+<li><strong>TimerFired</strong>: A durable timer expired.</li>
+<li><strong>EventRaised</strong>: An external event was sent to the orchestration instance. The <code>Name</code> column captures the name of the event and the <code>Input</code> column captures the payload of the event.</li>
+<li><strong>OrchestratorCompleted</strong>: The orchestrator function awaited.</li>
+<li><strong>ContinueAsNew</strong>: The orchestrator function completed and restarted itself with new state. The <code>Result</code> column contains the value which will be used as the input in the restarted instance.</li>
+<li><strong>ExecutionCompleted</strong>: The orchestrator function ran to completion (or failed). The output of the function (or the error details) are stored in the <code>Result</code> column.</li>
+</ul>
+</li>
+<li><strong>Timestamp</strong>: The UTC timestamp of the history event.</li>
+<li><strong>Name</strong>: The name of the function which was invoked.</li>
+<li><strong>Input</strong>: The JSON-formatted input of the function.</li>
+<li><strong>Output</strong>: The output of the function, which either comes from the return value or a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_SetOutput_">SetOutput</a> in the context object.</li>
+</ul>
+<div class="WARNING"><h5>Warning</h5><p>While it&#39;s useful as a debugging tool, you should not take any dependency on the existence or the format of this table as the specifics of its usage may change as the Durable Functions extension evolves.</p>
+</div>
+<p>Every time the function resumes from an <code>await</code>, the Durable Task Framework re-runs the orchestrator function from scratch. On each re-run it consults the execution history to determine whether a async operation has taken place and, if so, replays the output of that operation immediately. This continues until the entire history has been replayed, at which point all the local variables in the orchestrator function should be restored to their previous values.</p>
+<h2 id="code-constraints">Code Constraints</h2>
+<p>With this replay behavior in mind, there are a very important set of constraints on the type of code that can be written in an orchestrator function:</p>
+<ul>
+<li>Orchestrator code <strong>must be deterministic</strong> since it is going to be replayed multiple times. This means there cannot be any direct calls to get the current date/time, get random numbers, generate random GUIDs, or call into remote endpoints.</li>
+<li>If orchestrator code needs to get the current date/time, it should use the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> API, which is safe for replay.</li>
+<li>Non-deterministic operations need to be done in activity functions. This includes any interaction with other input or output bindings. This ensures any non-deterministic values will be generated once on the first execution and saved into the execution history. Subsequent executions will then use the saved value automatically.</li>
+<li>Orchestrator code should be <strong>non-blocking</strong> - i.e. no <code>Thread.Sleep</code> or equivalent APIs. If an orchestrator needs to delay for a period of time, it should use the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a> API.</li>
+<li>Orchestrator code must never initiate any async operation outside of the operations exposed by <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html">DurableOrchestrationContext</a> - e.g. no <code>Task.Delay</code> or <code>HttpClient.SendAsync</code>. The Durable Task Framework executes orchestrator code on a single thread and cannot interact with any other threads which could be scheduled by other async APIs.</li>
+<li>Because the Durable Task Framework saves execution history as the orchestration function progresses, <strong>infinite loops should be avoided</strong> to ensure orchestrator instances do not run out of memory. Instead, APIs such as <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> should be used to restart the function execution and discard previous execution history.</li>
+</ul>
+<p>If the runtime is replaying the orchestrator code and detects that the replay is taking a different path than the original execution, it will throw a <code>NonDeterministicOrchestration</code> exception and terminate the instance.</p>
+<div class="NOTE"><h5>Note</h5><p>Note that all the rules mentioned above only apply to functions triggered by the <code>orchestrationTrigger</code> binding. Activity functions triggered by the <code>activityTrigger</code> binding and functions which use the <code>orchestrationClient</code> binding have no such limitations.</p>
+</div>
+<h2 id="durable-tasks">Durable Tasks</h2>
+<div class="NOTE"><h5>Note</h5><p>This section describes internal implementation details of the Durable Task Framework. It is intended to be informative and help make sense of the replay behavior. However, it is not necessary to fully understand this information.</p>
+</div>
+<p>Tasks that can be safely awaited in orchestrator functions are occasionally referred to as <em>durable tasks</em>. These are tasks that are created and managed by the Durable Task Framework, such as the tasks returned by <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_">CallFunctionAsync</a>, <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>&gt;, and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a>.</p>
+<p>These <em>durable tasks</em> are internally managed using a table of parent <code>TaskCompletionSource</code> objects. During replay, these tasks get created as part of orchestrator code execution and are completed as the dispatcher enumerates the corresponding history events. This is all done synchronously using a single thread until all the history has been replayed. Any durable tasks which are not completed by the end of history replay will have appropriate actions carried out (enqueuing a message to call an activity function, etc.).</p>
+<p>The execution behavior described here should help you understand why orchestrator function code must never <code>await</code> on a non-durable task: the dispatcher thread cannot wait for it to complete and any callback by that task could potentially corrupt the tracking state of the orchestrator function (though some runtime checks are in place to try and detect and prevent this).</p>
+<p>If you&#39;d like more information about how the Durable Task Framework executes orchestrator functions, the best thing to do is to consult the source code on <a href="https://github.com/Azure/durabletask">GitHub</a>. In particular, the following two files will be the most informative, and contain relatively simple logic:</p>
+<ul>
+<li><a href="https://github.com/Azure/durabletask/blob/master/Framework/TaskOrchestrationExecutor.cs">TaskOrchestrationDispatcher</a></li>
+<li><a href="https://github.com/Azure/durabletask/blob/master/Framework/TaskOrchestrationContext.cs">TaskOrchestrationContext</a></li>
+</ul>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/checkpointing-and-replay.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © Microsoft Corporation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../../styles/docfx.js"></script>
+    <script type="text/javascript" src="../../styles/main.js"></script>
+  </body>
+</html>

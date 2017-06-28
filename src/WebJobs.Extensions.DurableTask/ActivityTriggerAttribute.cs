@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs
         // Remove this with https://github.com/Azure/azure-webjobs-sdk/issues/1104 
         internal static void ApplyReturn(object context, object returnValue)
         {
-            ((IActivityReturnValue)context).SetReturnValue(returnValue);
+            ((DurableActivityContext)context).SetOutput(returnValue);
         }
     }
 }

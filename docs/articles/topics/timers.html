@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Durable Timers </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Durable Timers ">
+    <meta name="generator" content="docfx 2.19.1.0">
+    
+    <link rel="shortcut icon" href="../../images/favicon.ico">
+    <link rel="stylesheet" href="../../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../../styles/docfx.css">
+    <link rel="stylesheet" href="../../styles/main.css">
+    <meta property="docfx:navrel" content="../../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../../index.html">
+                <img id="logo" class="svg" src="../../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="durable-timers">Durable Timers</h1>
+
+<p>Durable timers can be used in orchestrator functions to delay for specific durations of time or to implement timeouts on other supported async actions. Durable timers should be used in orchestrator functions instead of <code>Thread.Sleep</code> or <code>Task.Delay</code>.</p>
+<h2 id="remarks">Remarks</h2>
+<p>A durable timer can be created using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a> API. The API returns a task which will be resumed on the specified deadline (i.e. a <code>DateTime</code>).</p>
+<p>These timers are &quot;durable&quot; because they are internally backed by scheduled messages in Azure Storage. For example, if you create a timer that will expire at 4:30pm, the underlying Durable Task Framework will enqueue a message which becomes visible only at 4:30pm. When running in the Azure Functions consumption plan, the newly visible timer message will ensure that the function app gets activated on an appropriate VM.</p>
+<div class="WARNING"><h5>Warning</h5><p>Durable timers cannot last longer than 7 days due to limitations in Azure Storage.
+This will be fixed in a future update.</p>
+</div>
+<div class="WARNING"><h5>Warning</h5><p>Always make sure to use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> instead of <code>DateTime.UtcNow</code> as shown in the examples below when computing a relative deadline of a durable timer.</p>
+</div>
+<h2 id="delay-usage">Delay Usage</h2>
+<p>The following example illustrates how to use durable timers for delaying execution. The specific example is issuing a billing notification every day for ten days.</p>
+<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
+
+using System.Threading;
+
+public static async Task Run(DurableOrchestrationContext context)
+{
+    for (int i = 0; i &lt; 10; i++)
+    {
+        DateTime deadline = context.CurrentUtcDateTime.Add(TimeSpan.FromDays(1));
+        await context.CreateTimer(deadline, CancellationToken.None);
+        await context.CallFunctionAsync(&quot;SendBillingEvent&quot;);
+    }
+}
+</code></pre><div class="WARNING"><h5>Warning</h5><p>Infinite loops have the potential to create significant performance problems for orchestrator functions and should be avoided. See the <a href="eternal-orchestrations.html">Eternal Orchestrations</a> topic for details on how to safely and efficiently implement infinite loops.</p>
+</div>
+<h2 id="timeout-usage">Timeout Usage</h2>
+<p>This next example illustrates how to use durable timers to implement timeouts.</p>
+<pre><code class="lang-csharp">public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
+{
+    TimeSpan timeout = TimeSpan.FromSeconds(30);
+    DateTime deadline = context.CurrentUtcDateTime.Add(timeout);
+
+    using (var cts = new CancellationTokenSource())
+    {
+        Task activityTask = context.CallFunctionAsync(&quot;GetQuote&quot;);
+        Task timeoutTask = context.CreateTimer(deadline, cts.Token);
+
+        Task winner = await Task.WhenAny(activityTask, timeoutTask);
+        if (winner == activityTask)
+        {
+            // success case
+            cts.Cancel();
+            return true;
+        }
+        else
+        {
+            // timeout case
+            return false;
+        }
+    }
+}
+</code></pre><div class="WARNING"><h5>Warning</h5><p>Make sure to use a <code>CancellationTokenSource</code> to cancel a durable timer if your code will not wait for it to complete. The Durable Task Framework will not change an orchestration&#39;s status to &quot;completed&quot; until all outstanding tasks are completed or cancelled.</p>
+</div>
+<p>Note that this mechanism does not actually terminate in-progress activity function execution. Rather, it simply allows the orchestrator function to ignore the result and move on. If running in the Consumption plan, you will still be billed for any time and memory consumed by the abandoned activity function. By default functions running in the Consumption plan have a configurable timeout of 5 minutes. If this is exceeded, the Azure Functions host will be recycled to forcefully stop all execution and prevent a runaway billing situation.</p>
+<p>For a more in-depth example of how to implement timeouts in orchestrator functions, see the <a href="../samples/phone-verification.html">Human Interaction &amp; Timeouts - Phone Verification</a> walk-through.</p>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/timers.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © Microsoft Corporation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../../styles/docfx.js"></script>
+    <script type="text/javascript" src="../../styles/main.js"></script>
+  </body>
+</html>

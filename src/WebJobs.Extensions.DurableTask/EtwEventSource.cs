@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
     /// </summary>
     [EventSource(Name = "WebJobs-Extensions-DurableTask")]
-    public sealed class EtwEventSource : EventSource
+    internal sealed class EtwEventSource : EventSource
     {
         public static EtwEventSource Instance = new EtwEventSource();
 

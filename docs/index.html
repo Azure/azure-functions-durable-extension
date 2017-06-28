@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Durable Functions </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Durable Functions ">
+    <meta name="generator" content="docfx 2.19.1.0">
+    
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="stylesheet" href="styles/docfx.vendor.css">
+    <link rel="stylesheet" href="styles/docfx.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <meta property="docfx:navrel" content="toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="durable-functions">Durable Functions</h1>
+
+<p>Durable Functions is an Azure Functions extension for building long-running, stateful function orchestrations in code using C# in a serverless environment.</p>
+<div class="NOTE"><h5>Note</h5><p>Durable Functions is currently in preview and is intended for evaluation purposes only. If you run into issues or have ideas for improvements, now is a great time to provide feedback in our <a href="https://github.com/Azure/azure-functions-durable-extension/">GitHub repo</a>.</p>
+</div>
+<h2 id="getting-started">Getting Started</h2>
+<p>Are you new to Durable Functions? If so, this is the place to start.</p>
+<ul>
+<li><a href="articles/overview.html">Overview</a></li>
+<li><a href="articles/installation.html">Installation</a></li>
+<li><a href="articles/known-issues.html">Known Issues / FAQ</a></li>
+</ul>
+<h2 id="samples--walkthroughs">Samples / Walkthroughs</h2>
+<p>Here are some samples you can study and/or reference. These will help you 1) learn how to write Durable Functions by example and 2) learn the various capabilities of Durable Functions.</p>
+<ul>
+<li><a href="articles/samples/sequence.html">Function Chaining - Hello Sequence</a></li>
+<li><a href="articles/samples/cloud-backup.html">Fan-out/Fan-in - Cloud Backup</a></li>
+<li><a href="articles/samples/counter.html">Stateful Actor - Counter</a></li>
+<li><a href="articles/samples/phone-verification.html">Human Interaction &amp; Timeouts - Phone Verification</a></li>
+</ul>
+<p>Also, you can download all the samples as a single function app, which you can download here:</p>
+<ul>
+<li><a href="files/DFSampleApp.zip">DFSampleApp.zip</a></li>
+</ul>
+<p>Using the sample project is a great way to get up and running quickly and can be deployed by simply drag-dropping the zip file into the <code>wwwroot</code> directory of your function app via the Kudu portal.</p>
+<h2 id="topical-guides">Topical Guides</h2>
+<p>Here you will find comprehensive documentation with examples on all of the feature areas. It&#39;s <em>highly</em> recommended that you read through all of these topics before coding.</p>
+<ul>
+<li><a href="articles/topics/bindings.html">Bindings</a></li>
+<li><a href="articles/topics/checkpointing-and-replay.html">Checkpointing &amp; Replay</a></li>
+<li><a href="articles/topics/instance-management.html">Instance Management</a></li>
+<li><a href="articles/topics/error-handling.html">Error Handling &amp; Compensation</a></li>
+<li><a href="articles/topics/diagnostics.html">Diagnostics</a></li>
+<li><a href="articles/topics/timers.html">Durable Timers</a></li>
+<li><a href="articles/topics/external-events.html">External Events</a></li>
+<li><a href="articles/topics/eternal-orchestrations.html">Eternal Orchestrations</a></li>
+<li><a href="articles/topics/versioning.html">Versioning</a></li>
+<li><a href="articles/topics/perf-and-scale.html">Performance &amp; Scale</a></li>
+</ul>
+<h2 id="api-reference">API Reference</h2>
+<p>API reference for the attributes and bindings provided by Durable Functions.</p>
+<h3 id="attributes">Attributes</h3>
+<ul>
+<li><a class="xref" href="api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html">OrchestrationTriggerAttribute</a></li>
+<li><a class="xref" href="api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html">ActivityTriggerAttribute</a></li>
+<li><a class="xref" href="api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html">OrchestrationClientAttribute</a></li>
+</ul>
+<h3 id="bindings">Bindings</h3>
+<ul>
+<li><a class="xref" href="api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html">DurableOrchestrationContext</a></li>
+<li><a class="xref" href="api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a></li>
+<li><a class="xref" href="api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a></li>
+</ul>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/index.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © Microsoft Corporation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>
