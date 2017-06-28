@@ -1,0 +1,10 @@
+{
+  "bindings": [
+    {
+      "name": "getFileListContext",
+      "type": "activityTrigger",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}

@@ -1,0 +1,10 @@
+{
+  "bindings": [
+    {
+      "name": "counterContext",
+      "type": "orchestrationTrigger",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}

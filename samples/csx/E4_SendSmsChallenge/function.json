@@ -1,0 +1,18 @@
+{
+  "bindings": [
+    {
+      "name": "sendChallengeContext",
+      "type": "activityTrigger",
+      "direction": "in"
+    },
+    {
+      "type": "twilioSms",
+      "name": "message",
+      "from": "%TwilioPhoneNumber%",
+      "accountSid": "TwilioAccountSid",
+      "authToken": "TwilioAuthToken",
+      "direction": "out"
+    }
+  ],
+  "disabled": false
+}
