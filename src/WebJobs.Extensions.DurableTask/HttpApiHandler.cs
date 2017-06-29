@@ -40,8 +40,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            // e.g. https://{app}.azurewebsites.net/admin/extensions/DurableTaskConfiguration
-            string baseUrl = this.config.NotificationUrl.AbsoluteUri.TrimEnd('/');
+            // e.g. http://{host}/admin/extensions/DurableTaskConfiguration
+            string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
+            string baseUrl = hostUrl + this.config.NotificationUrl.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
             string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);

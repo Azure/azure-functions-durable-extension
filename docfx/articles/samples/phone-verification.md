@@ -40,7 +40,7 @@ The first thing you you will need is a Twilio account. You can create one free a
 | **TwilioAuthToken**   | The Auth token for your Twilio account |
 | **TwilioPhoneNumber** | The phone number associated with your Twilio account. This is used to send SMS messages. |
 
-## The counter orchestration
+## The SMS verification orchestration
 The **E4_SmsPhoneVerification** function uses the standard function.json for orchestrator functions.
 
 [!code-json[Main](~/../samples/csx/E4_SmsPhoneVerification/function.json)]
