@@ -146,19 +146,19 @@ public static string Run(DurableActivityContext helloContext)
 <pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrators/E1_HelloSequence
 </code></pre><p>The result will be an HTTP 202 response, like this (trimmed for brevity):</p>
 <pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&amp;connection=Storage
 
-{&quot;id&quot;:&quot;8e34b91c753d438898d7dcd8bfbbd7e4&quot;,&quot;pollUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4&quot;,&quot;sendEventUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4/SendEvent/{eventName}&quot;}
+(...trimmed...)
 </code></pre><p>At this point, the orchestration is queued up and should begin running immediately. The URL in the <code>Location</code> header above can be used to check the status of the execution.</p>
-<pre><code class="lang-plaintext">GET http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&amp;connection=Storage
 </code></pre><p>The result is the status of the orchestration. It should run and complete quickly, so you should expect to see it in the <em>Completed</em> state with a response that looks like this (trimmed for brevity):</p>
 <pre><code class="lang-plaintext">HTTP/1.1 200 OK
 Content-Length: 179
 Content-Type: application/json; charset=utf-8
 
-{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:null,&quot;output&quot;:[&quot;Hello Tokyo!&quot;,&quot;Hello Seattle!&quot;,&quot;Hello London!&quot;],&quot;createdTime&quot;:&quot;2017-05-05T18:56:23Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-05-05T18:56:31Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:null,&quot;output&quot;:[&quot;Hello Tokyo!&quot;,&quot;Hello Seattle!&quot;,&quot;Hello London!&quot;],&quot;createdTime&quot;:&quot;2017-06-29T05:24:57Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T05:24:59Z&quot;}
 </code></pre><p>As you can see, the <code>runtimeStatus</code> of the instance is <em>Completed</em> and the <code>output</code> contains the JSON-serialized result of the orchestrator function execution.</p>
 <div class="NOTE"><h5>Note</h5><p>The HTTP POST endpoint which started the orchestrator function is implemented in the sample app as an HTTP trigger function. You may find that you want to implement similar starter logic for other trigger types, like <code>queueTrigger</code>, <code>eventHubTrigger</code>, or <code>timerTrigger</code>.</p>
 </div>

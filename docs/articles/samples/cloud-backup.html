@@ -216,7 +216,7 @@ public static async Task&lt;long&gt; Run(
 </div>
 <h2 id="running-the-sample">Running the sample</h2>
 <p>Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request.</p>
-<pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrators/E2_BackupSiteContent HTTP/1.1
+<pre><code class="lang-plaintext">POST http://{host}/orchestrators/E2_BackupSiteContent HTTP/1.1
 Content-Type: application/json
 Content-Length: 20
 
@@ -225,26 +225,26 @@ Content-Length: 20
 </div>
 <p>This will trigger the <strong>E2_BackupSiteContent</strong> orchestrator and pass the string <code>D:\home\LogFiles</code> as a parameter. The response will provide a link to get the status of this backup operation:</p>
 <pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage
 
-{&quot;id&quot;:&quot;07d10b75f87342da853ab69d01075d1a&quot;,&quot;pollUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a&quot;,&quot;sendEventUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a/SendEvent/{eventName}&quot;}
+(...trimmed...)
 </code></pre><p>Depending on how many log files you have in your function app, this operation could take several minutes to complete. You can get the latest status by querying the URL in the <code>Location</code> header of the previous HTTP 202 response.</p>
-<pre><code class="lang-plaintext">GET http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 148
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage
 
-{&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:&quot;D:\\home\\LogFiles&quot;,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-05-05T22:27:41Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-05-05T22:28:12Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:&quot;D:\\home\\LogFiles&quot;,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-06-29T18:50:55Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:51:16Z&quot;}
 </code></pre><p>In this case, the function is still running. We are also able to see the input that was saved into the orchestrator state and the last updated time. We can continue to use the <code>Location</code> header values to poll for completion. Once complete, we can expect to see an HTTP response value similar to the following:</p>
 <pre><code class="lang-plaintext">HTTP/1.1 200 OK
 Content-Length: 152
 Content-Type: application/json; charset=utf-8
 
-{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;D:\\home\\LogFiles&quot;,&quot;output&quot;:497244,&quot;createdTime&quot;:&quot;2017-05-05T22:27:41Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-05-05T22:30:07Z&quot;}
-</code></pre><p>Now we can see that the orchestration is complete and approximately how much time it took to complete. We now also see a value for the <code>output</code> field, which indicates that around 486 KB of logs were uploaded.</p>
+{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;D:\\home\\LogFiles&quot;,&quot;output&quot;:452071,&quot;createdTime&quot;:&quot;2017-06-29T18:50:55Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:51:26Z&quot;}
+</code></pre><p>Now we can see that the orchestration is complete and approximately how much time it took to complete. We now also see a value for the <code>output</code> field, which indicates that around 450 KB of logs were uploaded.</p>
 <h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a greater understanding of the core capabilities of Durable Functions. Subsequent samples will go into more advanced features and scenarios.</p>
 </article>

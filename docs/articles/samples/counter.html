@@ -145,39 +145,39 @@ public static async Task&lt;int&gt; Run(
 </div>
 <h2 id="running-the-sample">Running the sample</h2>
 <p>Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request. We don&#39;t include any content in this request, which allows <code>counterState</code> to start at zero (the default value for <code>int</code>).</p>
-<pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrators/E3_Counter HTTP/1.1
+<pre><code class="lang-plaintext">POST http://{host}/orchestrators/E3_Counter HTTP/1.1
 Content-Length: 0
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage
 
-{&quot;id&quot;:&quot;a6cc0f94907f40d6ba09b2b14460a51d&quot;,&quot;pollUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d&quot;,&quot;sendEventUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d/SendEvent/{eventName}&quot;}
+{&quot;id&quot;:&quot;bcf6fb5067b046fbb021b52ba7deae5a&quot;,&quot;statusQueryGetUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&quot;,&quot;sendEventPostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&amp;connection=Storage&quot;,&quot;terminatePostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&amp;taskHub=DurableFunctionsHub&amp;connection=Storage&quot;}
 </code></pre><p>The <strong>E3_Counter</strong> instance starts and then immediately waits for an event to be sent to it using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> or using the <strong>sendEventUrl</strong> HTTP POST webhook referenced in the 202 response above. Valid <code>eventName</code> values include <em>incr</em>, <em>decr</em>, and <em>end</em>.</p>
 <div class="NOTE"><h5>Note</h5><p>Feel free to take a look at the source code for HttpSendEvent to get an idea of how <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> is used by client functions.</p>
 </div>
-<pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d/SendEvent/operation HTTP/1.1
+<pre><code class="lang-plaintext">POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&amp;connection=Storage HTTP/1.1
 Content-Type: application/json
 Content-Length: 6
 
 &quot;incr&quot;
 </code></pre><p>You can see the results of the &quot;incr&quot; operation by looking at the function logs in the Azure Functions portal.</p>
-<pre><code class="lang-plaintext">2017-05-08T17:33:23.438 Function started (Id=43d0b498-22d6-4cd8-a1c1-afdda6b9964a)
-2017-05-08T17:33:23.438 Current counter state is 0. Waiting for next operation.
-2017-05-08T17:36:51.555 Function started (Id=3c093c86-e6fe-4370-9d62-e4e33f44f53d)
-2017-05-08T17:36:51.555 Current counter state is 0. Waiting for next operation.
-2017-05-08T17:36:51.586 Received &#39;incr&#39; operation.
-2017-05-08T17:36:51.685 Function completed (Success, Id=3c093c86-e6fe-4370-9d62-e4e33f44f53d, Duration=138ms)
-2017-05-08T17:36:51.856 Function started (Id=f7a58ad9-ff20-41eb-a3d9-4ed89788545d)
-2017-05-08T17:36:51.856 Current counter state is 1. Waiting for next operation.
+<pre><code class="lang-plaintext">2017-06-29T18:54:53.998 Function started (Id=34e34a61-38b3-4eac-b6e2-98b85e32eec8)
+2017-06-29T18:54:53.998 Current counter state is 0. Waiting for next operation.
+2017-06-29T18:58:01.458 Function started (Id=b45d6c2f-39f3-42a2-b904-7761b2614232)
+2017-06-29T18:58:01.458 Current counter state is 0. Waiting for next operation.
+2017-06-29T18:58:01.458 Received &#39;incr&#39; operation.
+2017-06-29T18:58:01.458 Function completed (Success, Id=b45d6c2f-39f3-42a2-b904-7761b2614232, Duration=8ms)
+2017-06-29T18:58:11.518 Function started (Id=e1f38cb2-546a-404d-ab22-1ac8f81a93d9)
+2017-06-29T18:58:11.518 Current counter state is 1. Waiting for next operation.
 </code></pre><p>Similarly, if you check the orchestrator status, you should see the <code>input</code> field has been set to the updated value (1).</p>
-<pre><code class="lang-plaintext">GET http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d HTTP/1.1
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage HTTP/1.1
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 129
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage
 
-{&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:1,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-05-08T17:36:51Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-05-08T17:37:01Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:1,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-06-29T18:58:01Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:58:11Z&quot;}
 </code></pre><p>You can continue sending new operations to this instance and observe its state gets updated accordingly. If you wish to kill the instance, you can do so by sending an <em>end</em> operation.</p>
 <div class="WARNING"><h5>Warning</h5><p>There are currently race conditions in both the handling of <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> and the use of <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. Until these are addressed, it is highly recommended to not send more than one external event to an instance every few seconds.</p>
 </div>

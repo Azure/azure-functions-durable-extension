@@ -52,17 +52,17 @@ One unique characteristic of this orchestrator function is that it effectively h
 Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request. We don't include any content in this request, which allows `counterState` to start at zero (the default value for `int`).
 
 ```plaintext
-POST http://{app-name}.azurewebsites.net/orchestrators/E3_Counter HTTP/1.1
+POST http://{host}/orchestrators/E3_Counter HTTP/1.1
 Content-Length: 0
 ```
 
 ```plaintext
 HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage
 
-{"id":"a6cc0f94907f40d6ba09b2b14460a51d","pollUrl":"http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d","sendEventUrl":"http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d/SendEvent/{eventName}"}
+{"id":"bcf6fb5067b046fbb021b52ba7deae5a","statusQueryGetUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage","sendEventPostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage","terminatePostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage"}
 ```
 
 The **E3_Counter** instance starts and then immediately waits for an event to be sent to it using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> or using the **sendEventUrl** HTTP POST webhook referenced in the 202 response above. Valid `eventName` values include *incr*, *decr*, and *end*.
@@ -71,7 +71,7 @@ The **E3_Counter** instance starts and then immediately waits for an event to be
 > Feel free to take a look at the source code for HttpSendEvent to get an idea of how <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> is used by client functions.
 
 ```plaintext
-POST http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d/SendEvent/operation HTTP/1.1
+POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&connection=Storage HTTP/1.1
 Content-Type: application/json
 Content-Length: 6
 
@@ -81,29 +81,29 @@ Content-Length: 6
 You can see the results of the "incr" operation by looking at the function logs in the Azure Functions portal.
 
 ```plaintext
-2017-05-08T17:33:23.438 Function started (Id=43d0b498-22d6-4cd8-a1c1-afdda6b9964a)
-2017-05-08T17:33:23.438 Current counter state is 0. Waiting for next operation.
-2017-05-08T17:36:51.555 Function started (Id=3c093c86-e6fe-4370-9d62-e4e33f44f53d)
-2017-05-08T17:36:51.555 Current counter state is 0. Waiting for next operation.
-2017-05-08T17:36:51.586 Received 'incr' operation.
-2017-05-08T17:36:51.685 Function completed (Success, Id=3c093c86-e6fe-4370-9d62-e4e33f44f53d, Duration=138ms)
-2017-05-08T17:36:51.856 Function started (Id=f7a58ad9-ff20-41eb-a3d9-4ed89788545d)
-2017-05-08T17:36:51.856 Current counter state is 1. Waiting for next operation.
+2017-06-29T18:54:53.998 Function started (Id=34e34a61-38b3-4eac-b6e2-98b85e32eec8)
+2017-06-29T18:54:53.998 Current counter state is 0. Waiting for next operation.
+2017-06-29T18:58:01.458 Function started (Id=b45d6c2f-39f3-42a2-b904-7761b2614232)
+2017-06-29T18:58:01.458 Current counter state is 0. Waiting for next operation.
+2017-06-29T18:58:01.458 Received 'incr' operation.
+2017-06-29T18:58:01.458 Function completed (Success, Id=b45d6c2f-39f3-42a2-b904-7761b2614232, Duration=8ms)
+2017-06-29T18:58:11.518 Function started (Id=e1f38cb2-546a-404d-ab22-1ac8f81a93d9)
+2017-06-29T18:58:11.518 Current counter state is 1. Waiting for next operation.
 ```
 
 Similarly, if you check the orchestrator status, you should see the `input` field has been set to the updated value (1).
 
 ```plaintext
-GET http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d HTTP/1.1
+GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage HTTP/1.1
 ```
 
 ```plaintext
 HTTP/1.1 202 Accepted
 Content-Length: 129
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/a6cc0f94907f40d6ba09b2b14460a51d
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage
 
-{"runtimeStatus":"Running","input":1,"output":null,"createdTime":"2017-05-08T17:36:51Z","lastUpdatedTime":"2017-05-08T17:37:01Z"}
+{"runtimeStatus":"Running","input":1,"output":null,"createdTime":"2017-06-29T18:58:01Z","lastUpdatedTime":"2017-06-29T18:58:11Z"}
 ```
 
 You can continue sending new operations to this instance and observe its state gets updated accordingly. If you wish to kill the instance, you can do so by sending an *end* operation.

@@ -249,37 +249,37 @@ public static int Run(
 </code></pre><p>One important behavior detail here is that this <strong>E4_SendSmsChallenge</strong> function only gets called once, even if the process crashes or gets replayed. This is good because you don&#39;t want the end user getting multiple SMS messages. The <code>challengeCode</code> return value is automatically persisted, so the orchestrator function always knows what the correct code is.</p>
 <h2 id="running-the-sample">Running the sample</h2>
 <p>Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request.</p>
-<pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrators/E4_SmsPhoneVerification
+<pre><code class="lang-plaintext">POST http://{host}/orchestrators/E4_SmsPhoneVerification
 Content-Length: 14
 Content-Type: application/json
 
 &quot;+1425466XXXX&quot;
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 695
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&amp;connection=Storage
 
-{&quot;id&quot;:&quot;71cd5995eee5414fb42b58ee38351892&quot;,&quot;pollUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892&quot;,&quot;sendEventUrl&quot;:&quot;http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892/SendEvent/{eventName}&quot;}
+{&quot;id&quot;:&quot;741c65651d4c40cea29acdd5bb47baf1&quot;,&quot;statusQueryGetUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&amp;connection=Storage&quot;,&quot;sendEventPostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&amp;connection=Storage&quot;,&quot;terminatePostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/terminate?reason={text}&amp;taskHub=DurableFunctionsHub&amp;connection=Storage&quot;}
 </code></pre><p>The orchestrator function will receive the supplied phone number and immediately send it an SMS message with a randomly generated 4-digit verification code - e.g. <em>2168</em>. The function will then wait 90 seconds for a response.</p>
 <p>To reply with the code, you can use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> inside another function or invoke the <strong>sendEventUrl</strong> HTTP POST webhook referenced in the 202 response above, replacing <code>{eventName}</code> with the name of the event, <code>SmsChallengeResponse</code>:</p>
-<pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892/SendEvent/SmsChallengeResponse
+<pre><code class="lang-plaintext">POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/SmsChallengeResponse?taskHub=DurableFunctionsHub&amp;connection=Storage
 Content-Length: 4
 Content-Type: application/json
 
 2168
 </code></pre><p>If sent before the timer expires, you should see that the orchestration has completed and that the <code>output</code> field is set to <code>true</code>, indicating a successful verification.</p>
-<pre><code class="lang-plaintext">GET http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&amp;connection=Storage
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 200 OK
 Content-Length: 144
 Content-Type: application/json; charset=utf-8
 
-{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425466XXXX&quot;,&quot;output&quot;:true,&quot;createdTime&quot;:&quot;2017-05-08T20:10:44Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-05-08T20:12:07Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425466XXXX&quot;,&quot;output&quot;:true,&quot;createdTime&quot;:&quot;2017-06-29T19:10:49Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T19:12:23Z&quot;}
 </code></pre><p>Alternately, if you let the timer expire (willingly or unwillingly), or if you entered the wrong code four times, you should be able to query for the status and see a <code>false</code> orchestration function output, indicating that phone verification failed.</p>
 <pre><code class="lang-plaintext">HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
 Content-Length: 145
 
-{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425466XXXX&quot;,&quot;output&quot;:false,&quot;createdTime&quot;:&quot;2017-05-03T21:28:42Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-05-03T21:30:29Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425466XXXX&quot;,&quot;output&quot;:false,&quot;createdTime&quot;:&quot;2017-06-29T19:20:49Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T19:22:23Z&quot;}
 </code></pre><h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a>, and how these can be combined with <code>Task.WaitAny</code> to implement a reliable timeout system (which is often useful when doing any interaction with real people).</p>
 </article>

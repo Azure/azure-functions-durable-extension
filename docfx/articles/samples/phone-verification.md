@@ -81,7 +81,7 @@ One important behavior detail here is that this **E4_SendSmsChallenge** function
 Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request.
 
 ```plaintext
-POST http://{app-name}.azurewebsites.net/orchestrators/E4_SmsPhoneVerification
+POST http://{host}/orchestrators/E4_SmsPhoneVerification
 Content-Length: 14
 Content-Type: application/json
 
@@ -89,11 +89,11 @@ Content-Type: application/json
 ```
 ```plaintext
 HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 695
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage
 
-{"id":"71cd5995eee5414fb42b58ee38351892","pollUrl":"http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892","sendEventUrl":"http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892/SendEvent/{eventName}"}
+{"id":"741c65651d4c40cea29acdd5bb47baf1","statusQueryGetUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage","sendEventPostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage","terminatePostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage"}
 ```
 
 The orchestrator function will receive the supplied phone number and immediately send it an SMS message with a randomly generated 4-digit verification code - e.g. *2168*. The function will then wait 90 seconds for a response.
@@ -101,7 +101,7 @@ The orchestrator function will receive the supplied phone number and immediately
 To reply with the code, you can use <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> inside another function or invoke the **sendEventUrl** HTTP POST webhook referenced in the 202 response above, replacing `{eventName}` with the name of the event, `SmsChallengeResponse`:
 
 ```plaintext
-POST http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892/SendEvent/SmsChallengeResponse
+POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/SmsChallengeResponse?taskHub=DurableFunctionsHub&connection=Storage
 Content-Length: 4
 Content-Type: application/json
 
@@ -111,14 +111,14 @@ Content-Type: application/json
 If sent before the timer expires, you should see that the orchestration has completed and that the `output` field is set to `true`, indicating a successful verification.
 
 ```plaintext
-GET http://{app-name}.azurewebsites.net/orchestrations/71cd5995eee5414fb42b58ee38351892
+GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage
 ```
 ```plaintext
 HTTP/1.1 200 OK
 Content-Length: 144
 Content-Type: application/json; charset=utf-8
 
-{"runtimeStatus":"Completed","input":"+1425466XXXX","output":true,"createdTime":"2017-05-08T20:10:44Z","lastUpdatedTime":"2017-05-08T20:12:07Z"}
+{"runtimeStatus":"Completed","input":"+1425466XXXX","output":true,"createdTime":"2017-06-29T19:10:49Z","lastUpdatedTime":"2017-06-29T19:12:23Z"}
 ```
 
 Alternately, if you let the timer expire (willingly or unwillingly), or if you entered the wrong code four times, you should be able to query for the status and see a `false` orchestration function output, indicating that phone verification failed.
@@ -128,7 +128,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
 Content-Length: 145
 
-{"runtimeStatus":"Completed","input":"+1425466XXXX","output":false,"createdTime":"2017-05-03T21:28:42Z","lastUpdatedTime":"2017-05-03T21:30:29Z"}
+{"runtimeStatus":"Completed","input":"+1425466XXXX","output":false,"createdTime":"2017-06-29T19:20:49Z","lastUpdatedTime":"2017-06-29T19:22:23Z"}
 ```
 
 ## Wrapping up

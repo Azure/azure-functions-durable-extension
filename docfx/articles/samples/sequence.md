@@ -62,17 +62,17 @@ The result will be an HTTP 202 response, like this (trimmed for brevity):
 
 ```plaintext
 HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&connection=Storage
 
-{"id":"8e34b91c753d438898d7dcd8bfbbd7e4","pollUrl":"http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4","sendEventUrl":"http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4/SendEvent/{eventName}"}
+(...trimmed...)
 ```
 
 At this point, the orchestration is queued up and should begin running immediately. The URL in the `Location` header above can be used to check the status of the execution.
 
 ```plaintext
-GET http://{app-name}.azurewebsites.net/orchestrations/8e34b91c753d438898d7dcd8bfbbd7e4
+GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&connection=Storage
 ```
 
 The result is the status of the orchestration. It should run and complete quickly, so you should expect to see it in the *Completed* state with a response that looks like this (trimmed for brevity):
@@ -82,7 +82,7 @@ HTTP/1.1 200 OK
 Content-Length: 179
 Content-Type: application/json; charset=utf-8
 
-{"runtimeStatus":"Completed","input":null,"output":["Hello Tokyo!","Hello Seattle!","Hello London!"],"createdTime":"2017-05-05T18:56:23Z","lastUpdatedTime":"2017-05-05T18:56:31Z"}
+{"runtimeStatus":"Completed","input":null,"output":["Hello Tokyo!","Hello Seattle!","Hello London!"],"createdTime":"2017-06-29T05:24:57Z","lastUpdatedTime":"2017-06-29T05:24:59Z"}
 ```
 
 As you can see, the `runtimeStatus` of the instance is *Completed* and the `output` contains the JSON-serialized result of the orchestrator function execution.

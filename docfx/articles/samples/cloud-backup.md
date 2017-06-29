@@ -79,7 +79,7 @@ The implementation loads the file from disk and asynchronously streams the conte
 Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request.
 
 ```plaintext
-POST http://{app-name}.azurewebsites.net/orchestrators/E2_BackupSiteContent HTTP/1.1
+POST http://{host}/orchestrators/E2_BackupSiteContent HTTP/1.1
 Content-Type: application/json
 Content-Length: 20
 
@@ -93,26 +93,26 @@ This will trigger the **E2_BackupSiteContent** orchestrator and pass the string 
 
 ```plaintext
 HTTP/1.1 202 Accepted
-Content-Length: 260
+Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage
 
-{"id":"07d10b75f87342da853ab69d01075d1a","pollUrl":"http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a","sendEventUrl":"http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a/SendEvent/{eventName}"}
+(...trimmed...)
 ```
 
 Depending on how many log files you have in your function app, this operation could take several minutes to complete. You can get the latest status by querying the URL in the `Location` header of the previous HTTP 202 response.
 
 ```plaintext
-GET http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a
+GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage
 ```
 
 ```plaintext
 HTTP/1.1 202 Accepted
 Content-Length: 148
 Content-Type: application/json; charset=utf-8
-Location: http://{app-name}.azurewebsites.net/orchestrations/07d10b75f87342da853ab69d01075d1a
+Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage
 
-{"runtimeStatus":"Running","input":"D:\\home\\LogFiles","output":null,"createdTime":"2017-05-05T22:27:41Z","lastUpdatedTime":"2017-05-05T22:28:12Z"}
+{"runtimeStatus":"Running","input":"D:\\home\\LogFiles","output":null,"createdTime":"2017-06-29T18:50:55Z","lastUpdatedTime":"2017-06-29T18:51:16Z"}
 ```
 
 In this case, the function is still running. We are also able to see the input that was saved into the orchestrator state and the last updated time. We can continue to use the `Location` header values to poll for completion. Once complete, we can expect to see an HTTP response value similar to the following:
@@ -122,10 +122,10 @@ HTTP/1.1 200 OK
 Content-Length: 152
 Content-Type: application/json; charset=utf-8
 
-{"runtimeStatus":"Completed","input":"D:\\home\\LogFiles","output":497244,"createdTime":"2017-05-05T22:27:41Z","lastUpdatedTime":"2017-05-05T22:30:07Z"}
+{"runtimeStatus":"Completed","input":"D:\\home\\LogFiles","output":452071,"createdTime":"2017-06-29T18:50:55Z","lastUpdatedTime":"2017-06-29T18:51:26Z"}
 ```
 
-Now we can see that the orchestration is complete and approximately how much time it took to complete. We now also see a value for the `output` field, which indicates that around 486 KB of logs were uploaded.
+Now we can see that the orchestration is complete and approximately how much time it took to complete. We now also see a value for the `output` field, which indicates that around 450 KB of logs were uploaded.
 
 ## Wrapping up
 At this point, you should have a greater understanding of the core capabilities of Durable Functions. Subsequent samples will go into more advanced features and scenarios.
