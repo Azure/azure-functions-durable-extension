@@ -5,8 +5,8 @@
 
 :: This command builds all the documentation based on the checked-in source code
 :: and the files under /docfx. The output is saved to /docs.
-docfx -f
+docfx docfx.json -f -t _exported_templates\default
 
-:: If you want to build and host the site locally to examine the changes, use
-:: the --serve argument, and DocFX will host the page on localhost:8080.
-:: > docfx -f --serve
+:: If you want to build and host the site locally to examine the changes, append
+:: the --serve argument to the arg list above. DocFX will host the page on localhost:8080.
+:: > docfx docfx.json -f -t _exported_templates\default --serve
