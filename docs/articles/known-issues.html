@@ -75,6 +75,13 @@
 <blockquote><p>error CS0006: Metadata file &#39;Microsoft.Azure.WebJobs.Extensions.DurableTask&#39; could not be found</p>
 </blockquote>
 <p>This means the <strong>Durable Task</strong> extension has not been properly installed. See the <a href="installation.html">installation guide</a> for instructions on how to do the extension setup.</p>
+<h2 id="http-500-responses-from-the-httpstart-sample-trigger">HTTP 500 responses from the &quot;HttpStart&quot; sample trigger</h2>
+<p>This likely means that the <code>HttpStart</code> sample function failed to deserialize the payload of the request. It can be caused by one of two problems:</p>
+<ol>
+<li>There is content in the POST body but the request does not have a <code>Content-Type: application/json</code> header.</li>
+<li>The POST body is not properly formatted/encoded JSON.</li>
+</ol>
+<p>This sample HTTP triggers is very sensitive to request content that is not clearly JSON content. A future version may improve on this.</p>
 </article>
           </div>
           

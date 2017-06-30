@@ -2,7 +2,7 @@
 Durable Functions is an Azure Functions extension for building long-running, stateful function orchestrations in code using C# in a serverless environment.
 
 > [!NOTE]
-> Durable Functions is currently in preview and is intended for evaluation purposes only. If you run into issues or have ideas for improvements, now is a great time to provide feedback in our [GitHub repo](https://github.com/Azure/azure-functions-durable-extension/).
+> Durable Functions is currently in preview (more like alpha) and is intended for evaluation purposes only. If you run into issues or have ideas for improvements, now is a great time to provide feedback in our [GitHub repo](https://github.com/Azure/azure-functions-durable-extension/).
 
 ## Getting Started
 Are you new to Durable Functions? If so, this is the place to start.
@@ -47,3 +47,5 @@ API reference for the attributes and bindings provided by Durable Functions.
 * <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext>
 * <xref:Microsoft.Azure.WebJobs.DurableActivityContext>
 * <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient>
+
+You can browse all of our public APIs [here](<xref:Microsoft.Azure.WebJobs>).

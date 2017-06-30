@@ -80,7 +80,7 @@
 </ul>
 <div class="NOTE"><h5>Note</h5><p>This is an advanced feature of Azure Functions and may not be useful for all applications. The rest of this article assumes the reader has a strong familiarity with existing Azure Functions concepts and the challenges involved in serverless application development.</p>
 </div>
-<h2 id="use-cases">Use Cases</h2>
+<h2 id="patterns">Patterns</h2>
 <p>The primary use case for Durable Functions is <em>simplifying complex, stateful coordination problems</em> in serverless applications. To understand whether your application can benefit from Durable Functions, it&#39;s useful to look at a few example coordination patterns, which we&#39;ll walk through below.</p>
 <h3 id="pattern-1-function-chaining">Pattern #1: Function Chaining</h3>
 <p>Function chaining refers to the common pattern executing a sequence of discrete functions in a particular order. Often the output of one function needs to be applied to the input of another function.</p>
@@ -129,67 +129,50 @@
 <h3 id="pattern-3-async-http-apis">Pattern #3: Async HTTP APIs</h3>
 <p>The third pattern is all about the problem of coordinating the state of long-running operations with external clients. A common way to implement this pattern is by having the long-running action triggered by an HTTP call, and then redirecting the client to a status endpoint that they can poll to learn when the operation completes.</p>
 <p><img src="../images/async-http-api.png"></p>
-<p>Durable functions makes implementing these kinds of Async HTTP APIs very simple by providing a set of built-in HTTP APIs for interacting with long-running function executions. Specifically, simple REST commands can be used to start new orchestrator function instances and query their status.</p>
+<p>Durable functions makes implementing these kinds of Async HTTP APIs very simple by providing a set of built-in HTTP APIs for interacting with long-running function executions. We show in the samples a simple REST commands can be used to start new orchestrator function instances. Once an instance is started, the durable extension exposes web hook HTTP APIs that can be used to query their status.</p>
 <pre>
 > curl -X POST https://myfunc.azurewebsites.net/orchestrators/DoWork -H "Content-Length: 0" -i
 HTTP/1.1 202 Accepted
-Location: https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec
-Server: Microsoft-IIS/8.0
-
-> curl https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec -i
-HTTP/1.1 202 Accepted
-Content-Length: 173
 Content-Type: application/json
-Location: https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec
-Server: Microsoft-IIS/8.0
+Location: https://myfunc.azurewebsites.net/admin/extensions/DurableTaskConfiguration/b79baf67f717453ca9e86c5da21e03ec
 
-{"runtimeStatus":"Running","lastUpdatedTime":"2017-03-16T21:20:47Z"}
+{"id":"b79baf67f717453ca9e86c5da21e03ec", ...}
 
-> curl https://myfunc.azurewebsites.net/orchestrations/b79baf67f717453ca9e86c5da21e03ec -i
+> curl https://myfunc.azurewebsites.net/admin/extensions/DurableTaskConfiguration/b79baf67f717453ca9e86c5da21e03ec -i
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+Location: https://myfunc.azurewebsites.net/admin/extensions/DurableTaskConfiguration/b79baf67f717453ca9e86c5da21e03ec
+
+{"runtimeStatus":"Running","lastUpdatedTime":"2017-03-16T21:20:47Z", ...}
+
+> curl https://myfunc.azurewebsites.net/admin/extensions/DurableTaskConfiguration/b79baf67f717453ca9e86c5da21e03ec -i
 HTTP/1.1 200 OK
 Content-Length: 175
 Content-Type: application/json
-Server: Microsoft-IIS/8.0
 
-{"runtimeStatus":"Completed","lastUpdatedTime":"2017-03-16T21:20:57Z"}
+{"runtimeStatus":"Completed","lastUpdatedTime":"2017-03-16T21:20:57Z", ...}
 </pre>
 
 <p>Because all the state is managed by the Durable Functions runtime, it&#39;s not necessary for you to implement your own status tracking mechanism.</p>
-<p>It&#39;s important to point out that even though the Durable Functions extension has built-in support for starting and monitoring long-running operations, it&#39;s entirely possible for you to implement this pattern yourself using a couple HTTP triggers.</p>
+<p>It&#39;s important to point out that even though the Durable Functions extension has built-in web hooks for managing long-running orchestrations, it&#39;s entirely possible for you to implement this pattern yourself using your own function triggers (e.g. HTTP, queue, Event Hub, etc.) and the <code>orchestrationClient</code> binding.</p>
 <pre><code class="lang-cs">// HTTP-triggered function to start a new orchestrator function instance.
 public static async Task&lt;HttpResponseMessage&gt; Run(
     HttpRequestMessage req,
     DurableOrchestrationClient starter,
-    string functionName)
-{
-    string instanceId = await starter.StartNewAsync(functionName, 0);
-
-    HttpResponseMessage res = req.CreateResponse(HttpStatusCode.Accepted);
-    res.Headers.Location = new Uri(req.RequestUri, $&quot;/orchestrations/{instanceId}&quot;);
-    return res;
-}
-</code></pre><p>The <code>DurableOrchestrationClient starter</code> parameter is a value from the <code>orchestrationClient</code> output binding, which is part of the Durable Functions extension. It provides methods for starting, sending events to, terminating, and querying for new or existing orchestrator function instances. In the above example, an HTTP triggered-function takes in a <code>functionName</code> value from the incoming URL and passes that value to <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a>. This binding API then returns an instance ID which can later be used to look up the status of or terminate the started instance. In this case, a status check HTTP API is implemented using another function, and the URL of that function with <code>instanceId</code> included is returned in the <code>Location</code> header of the above function.</p>
-<pre><code class="lang-cs">// Status check API
-public static async Task&lt;HttpResponseMessage&gt; Run(
-    HttpRequestMessage req,
-    string instanceId,
-    DurableOrchestrationClient checker,
+    string functionName,
     TraceWriter log)
 {
-    var status = await checker.GetStatusAsync(instanceId);
+    // Function name comes from the request URL.
+    // Function input comes from the request content.
+    dynamic eventData = await req.Content.ReadAsAsync&lt;object&gt;();
+    string instanceId = await starter.StartNewAsync(functionName, eventData);
 
-    // ...
+    log.Info($&quot;Started orchestration with ID = &#39;{instanceId}&#39;.&quot;);
 
-    return req.CreateResponse(
-        HttpStatusCode.OK,
-        new
-        {
-            runtimeStatus = status.RuntimeStatus,
-            createdTime = status.CreatedTime.ToString(&quot;o&quot;),
-            lastUpdatedTime = status.LastUpdatedTime.ToString(&quot;o&quot;),
-        });
+    return starter.CreateCheckStatusResponse(req, instanceId);
 }
-</code></pre><h3 id="pattern-4-lightweight-actors">Pattern #4: Lightweight Actors</h3>
+</code></pre><p>The <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> <code>starter</code> parameter is a value from the <code>orchestrationClient</code> output binding, which is part of the Durable Functions extension. It provides methods for starting, sending events to, terminating, and querying for new or existing orchestrator function instances. In the above example, an HTTP triggered-function takes in a <code>functionName</code> value from the incoming URL and passes that value to <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a>. This binding API then returns response that contains a <code>Location</code> header and additional information about the instance that can later be used to look up the status of or terminate the started instance.</p>
+<h3 id="pattern-4-lightweight-actors">Pattern #4: Lightweight Actors</h3>
 <p>The <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> is a pattern that is becoming more common in distributed computing, particularly in the cloud.</p>
 <p><img src="../images/actor.png"></p>
 <p>Because ordinary functions in Azure Functions are stateless, they are not well suited to implement this kind of stateful pattern. With the Durable Functions extension it is relatively trivial to implement stateful actors. Below is an example orchestrator function which implements a counter.</p>
@@ -238,9 +221,10 @@ public static async Task&lt;HttpResponseMessage&gt; Run(
 </code></pre><p>The important thing to notice here is that the timeout was implemented using <code>ctx.CreateTimer</code>, <code>ctx.WaitForExternalEvent</code>, and <code>Task.WaitAny</code> to synchronize the notification and the timer expiration. Depending on which event occurs first, the orchestrator function takes the appropriate action (escalation or completing the approval process).</p>
 <h2 id="the-technology">The Technology</h2>
 <p>Behind the scenes the Durable Functions extension is built on top of the <a href="https://github.com/Azure/durabletask">Durable Task Framework</a>, an open source library on GitHub. Much like how Azure Functions is the serverless evolution of Azure WebJobs, Durable Functions is the serverless evolution of the Durable Task Framework. It is used heavily within Microsoft and outside as well to automate mission-critical processes and is a natural fit to leverage within the serverless Azure Functions environment.</p>
-<h3 id="checkpointing-and-orchestrator-replay">Checkpointing and Orchestrator Replay</h3>
-<p>Orchestrator functions have the ability to checkpoint their state whenever an <code>await</code> keyword is encountered. Under the covers <code>await</code> is simply yielding control of the thread back to the Durable Task Framework dispatcher which then commits any actions that the orchestrator function queued up, such as calling one or more child functions or scheduling a durable timer. It also saves a record of which actions have been taken so far (the <em>execution history</em>) by the orchestrator function. Once all this data is persisted to storage, the orchestrator can go to sleep and billing can be stopped.</p>
-<p>Once a response message is received or the durable timer expires, the orchestrator will wake up again and <strong>re-execute the entire function from the start</strong> in order to rebuild the local state. If during this replay the code tries to call a function (or do any other async work), the Durable Task Framework will consult with the <em>execution history</em> of the current orchestration. If it finds that the activity function has already executed and yielded some result, it will replay that function&#39;s result immediately and the orchestrator code will continue running. This will continue happening until the function code to a point where either it is finished or it has scheduled new async work.</p>
+<h3 id="event-sourcing-checkpointing-and-orchestrator-replay">Event Sourcing, Checkpointing, and Orchestrator Replay</h3>
+<p>Orchestrator functions reliably maintain their execution state using a cloud design pattern known as <a href="https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing">Event Sourcing</a>. Instead of directly storing the <em>current</em> state of an orchestration, the durable extension uses an append-only store to record the <em>full series of actions</em> taken by the function. This has many benefits, including improving performance, scalability, and responsiveness compared to &quot;dumping&quot; full runtime state. Other benefits include providing eventual consistency for transactional data and maintaining full audit trails/history, which itself can enable reliable compensating actions.</p>
+<p>The use of Event Sourcing by this extension is completely transparent. Under the covers, the <code>await</code> operator in an orchestrator function yields control of the thread back to the Durable Task Framework dispatcher. The dispatcher then commits any new actions that the orchestrator function scheduled (such as calling one or more child functions or scheduling a durable timer) to storage. This transparent commit action appends to the <em>execution history</em> of the orchestration instance to durable storage and subsequently add messages to a queue to schedule the actual work. At this point, the orchestrator function can be unloaded from memory and billing can be stopped (if using the Azure Functions Consumption Plan) until there is more work to do, at which point its state can be reconstructed.</p>
+<p>Once an orchestration function is given more work to do (e.g. a response message is received or a durable timer expires), the orchestrator will wake up again and <strong>re-execute the entire function from the start</strong> in order to rebuild the local state. If during this replay the code tries to call a function (or do any other async work), the Durable Task Framework will consult with the <em>execution history</em> of the current orchestration. If it finds that the activity function has already executed and yielded some result, it will replay that function&#39;s result immediately and the orchestrator code will continue running. This will continue happening until the function code gets to a point where either it is finished or it has scheduled new async work.</p>
 <h3 id="orchestrator-code-constraints">Orchestrator Code Constraints</h3>
 <p>With this replay behavior in mind, there are a very important set of constraints on the type of code that can be written in an orchestrator function:</p>
 <ul>
