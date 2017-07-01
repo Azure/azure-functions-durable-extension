@@ -1,7 +1,7 @@
 # Orchestrator Checkpointing and Replay
 One of the key attributes of Durable Functions is **reliable execution**. Orchestrator functions and activity functions may be running on different VMs within a particular data center, and those VMs or the underlying networking infrastructure is not guaranteed to be 100% reliable.
 
-In spite of this, Durable Functions ensures reliable execution of orchestrations. It does so by using storage queues to drive function invocation and by periodically checkpointing execution history into storage tables. Replaying that history can then be used to automatically rebuild the in-memory state of an orchestrator function. The rest of this article will go into the details.
+In spite of this, Durable Functions ensures reliable execution of orchestrations. It does so by using storage queues to drive function invocation and by periodically checkpointing execution history into storage tables (using a cloud design pattern known as [Event Sourcing](https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing)). Replaying that history can then be used to automatically rebuild the in-memory state of an orchestrator function. The rest of this article will go into the details.
 
 ## Orchestration History
 Suppose you have the following orchestrator function.

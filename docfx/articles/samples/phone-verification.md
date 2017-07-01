@@ -7,12 +7,22 @@ This sample in particular implements an SMS-based phone verification system. The
 ## Before you begin
 If you haven't done so already, make sure to read the [overview](~/articles/overview.md) before jumping into samples. It will really help ensure everything you read below makes sense.
 
-All samples are combined into a single function app package. To get started with the samples, do the following:
+All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:
 
+### For Visual Studio Development (Windows Only)
+1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
+2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package.
+3. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
+4. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+5. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
+
+### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
 2. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions.
 3. Download the [DFSampleApp.zip](~/files/DFSampleApp.zip) package.
 4. Unzip the sample package file into `D:\home\site\wwwroot` using Kudu or FTP.
+
+The code snippets and binding references below are specific to the portal experience, but have a direct mapping to the equivalent Visual Studio development experience.
 
 This article will specifically walk through the following function in the sample app:
 

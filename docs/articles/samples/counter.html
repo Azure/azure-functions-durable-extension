@@ -73,13 +73,22 @@
 <p>The <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> is an advanced stateful programming pattern that is becoming more common in distributed computing, particularly in the cloud. It is assumed that the reader is already familiar with the actor model and how actors are used, so we won&#39;t be going into those details here. The code in this sample demonstrates how Durable Functions can be used to implement the actor model. The specific example is a simple <em>counter</em> singleton object which supports <em>increment</em> and <em>decrement</em> operations.</p>
 <h2 id="before-you-begin">Before you begin</h2>
 <p>If you haven&#39;t done so already, make sure to read the <a href="../overview.html">overview</a> before jumping into samples. It will really help ensure everything you read below makes sense.</p>
-<p>All samples are combined into a single function app package. To get started with the samples, do the following:</p>
+<p>All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:</p>
+<h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
+<ol>
+<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
+<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package.</li>
+<li>Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).</li>
+<li>The sample can be run locally via F5. If you want to publish the solution to Azure, follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions in Azure.</li>
+</ol>
+<h3 id="for-azure-portal-development">For Azure Portal Development</h3>
 <ol>
 <li>Create a new function app at <a href="https://functions.azure.com/signin">https://functions.azure.com/signin</a>.</li>
 <li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions.</li>
 <li>Download the <a href="../../files/DFSampleApp.zip">DFSampleApp.zip</a> package.</li>
 <li>Unzip the sample package file into <code>D:\home\site\wwwroot</code> using Kudu or FTP.</li>
 </ol>
+<p>The code snippets and binding references below are specific to the portal experience, but have a direct mapping to the equivalent Visual Studio development experience.</p>
 <p>This article will specifically walk through the following function in the sample app:</p>
 <ul>
 <li><strong>E3_Counter</strong></li>

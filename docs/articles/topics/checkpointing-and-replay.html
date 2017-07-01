@@ -71,7 +71,7 @@
 <h1 id="orchestrator-checkpointing-and-replay">Orchestrator Checkpointing and Replay</h1>
 
 <p>One of the key attributes of Durable Functions is <strong>reliable execution</strong>. Orchestrator functions and activity functions may be running on different VMs within a particular data center, and those VMs or the underlying networking infrastructure is not guaranteed to be 100% reliable.</p>
-<p>In spite of this, Durable Functions ensures reliable execution of orchestrations. It does so by using storage queues to drive function invocation and by periodically checkpointing execution history into storage tables. Replaying that history can then be used to automatically rebuild the in-memory state of an orchestrator function. The rest of this article will go into the details.</p>
+<p>In spite of this, Durable Functions ensures reliable execution of orchestrations. It does so by using storage queues to drive function invocation and by periodically checkpointing execution history into storage tables (using a cloud design pattern known as <a href="https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing">Event Sourcing</a>). Replaying that history can then be used to automatically rebuild the in-memory state of an orchestrator function. The rest of this article will go into the details.</p>
 <h2 id="orchestration-history">Orchestration History</h2>
 <p>Suppose you have the following orchestrator function.</p>
 <pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
