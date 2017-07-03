@@ -38,7 +38,7 @@ public static async Task<object> Run(DurableOrchestrationContext ctx)
 }
 ```
 
-This code above is concise and easily understand by any developer. Control flow is implemented using normal imperitive coding constructs - i.e. code executes top-down and can involve existing language control flow semantics, like conditionals, loops, try/catch/finally, etc., and local variables are used to capture and flow state. If more detailed compensation logic is required, it can be done so naturally with additional try/catch logic.
+This code above is concise and easily understood by any developer. Control flow is implemented using normal imperitive coding constructs - i.e. code executes top-down and can involve existing language control flow semantics, like conditionals, loops, try/catch/finally, etc., and local variables are used to capture and flow state. If more detailed compensation logic is required, it can be done so naturally with additional try/catch logic.
 
 The built-in `ctx` parameter provides methods for invoking other functions by name, passing parameters, and returning function output. Each time the code calls `await`, the orchestrator function *checkpoints* the progress of the current function instance. If the process or VM recycles midway through the execution, the function instance will resume from the previous `await` call, much like it would if we were using queues in between each function invocation. More on this later.
 
@@ -187,7 +187,7 @@ public static async Task Run(DurableOrchestrationContext ctx)
     }
 }
 ```
-The important thing to notice here is that the timeout was implemented using `ctx.CreateTimer`, `ctx.WaitForExternalEvent`, and `Task.WaitAny` to synchronize the notification and the timer expiration. Depending on which event occurs first, the orchestrator function takes the appropriate action (escalation or completing the approval process).
+The important thing to notice here is that the timeout was implemented using `ctx.CreateTimer`, `ctx.WaitForExternalEvent`, and `Task.WhenAny` to synchronize the notification and the timer expiration. Depending on which event occurs first, the orchestrator function takes the appropriate action (escalation or completing the approval process).
 
 ## The Technology
 Behind the scenes the Durable Functions extension is built on top of the [Durable Task Framework](https://github.com/Azure/durabletask), an open source library on GitHub. Much like how Azure Functions is the serverless evolution of Azure WebJobs, Durable Functions is the serverless evolution of the Durable Task Framework. It is used heavily within Microsoft and outside as well to automate mission-critical processes and is a natural fit to leverage within the serverless Azure Functions environment.

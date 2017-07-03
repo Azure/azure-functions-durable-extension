@@ -1,5 +1,5 @@
 # Performance and Scale
-Durable Functions has unique scaling characteristics that are important to understand to bet the best performance and scalability for your application. In order to understand the scale behavior, it's useful to first understand some of the details of the underlying Azure Storage provider used by Durable Functions.
+Durable Functions has unique scaling characteristics that are important to understand to get the best performance and scalability for your application. In order to understand the scale behavior, it's useful to first understand some of the details of the underlying Azure Storage provider used by Durable Functions.
 
 > [!WARNING]
 > Scale-out is not yet fully implemented for Durable Functions, so parts of this article which discuss scale-out reflect the current intended design but are subject to change. You can find more details of the intended design in the GitHub repo: https://github.com/Azure/azure-functions-durable-extension/issues/1

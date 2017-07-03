@@ -1,3 +1,6 @@
+## IMPORTANT
+This is a **VERY** early iteration of Durable Functions and does not yet have the quality of a proper public preview. The current bits should be considered "evaluation" quality intended primarily to gather early feedback. Bugs, performance issues, poor setup, poor monitoring, and breaking changes should be expected for the next couple weeks. That said, if you run into issues or have ideas for improvements, now is a great time to provide feedback in the GitHub [issues](https://github.com/Azure/azure-functions-durable-extension/issues) list.
+
 ## Documentation
 
 See [the documentation](https://azure.github.io/azure-functions-durable-extension/)

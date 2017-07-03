@@ -1,5 +1,7 @@
 # Installing Durable Functions
-Durable Functions is an extension of Azure Functions which uses a new binding extensibility model. This extensibility model is in the very early stages of development (see [this](https://github.com/Azure/azure-webjobs-sdk-script/issues/1419) GitHub issue for updates) and currently involves 1) manually deploying a set of files to the function app and 2) adding an app setting which points to the directory containing these files. You will need to do these things to use Durable Functions in your function app.
+Durable Functions is an extension of Azure Functions which uses a brand new binding extensibility model. This extensibility model is in the very early stages of development (see [this](https://github.com/Azure/azure-webjobs-sdk-script/issues/1419) GitHub issue for updates) and does not yet provide a decent setup experience. Because of this, the setup for Durable Functions currently involves 1) manually deploying a set of files to the function app and 2) adding an app setting which points to the directory containing these files. In the coming weeks, we hope to reduce this down to a simple NuGet package reference.
+
+In the meantime, you will need to follow the below manual steps to use Durable Functions in your function app.
 
 ## Using the Durable Task Binding Extension in Visual Studio (Windows Only)
 If you can't or don't want to use Visual Studio for development, you can do development directly in Azure using the Azure Management portal. In that case, skip these instructions and go straight to the Azure instructions further below.
