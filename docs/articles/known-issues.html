@@ -70,18 +70,20 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="known-issues--faq">Known-Issues / FAQ</h1>
 
+<p>In general, all known issues should be tracked in the <a href="https://github.com/Azure/azure-functions-durable-extension/issues">GitHub issues</a> list. If you run into an issue and are looking for a resolution, search here first. Make sure to check both active and closed issues since it&#39;s possible that the issue has been fixed in a more recent version of the extension or sample app.</p>
+<p>If you can&#39;t find the issue mentioned in the existing list of issues, feel free to open a new issue. Even if you simply want to ask a question, feel free to open a GitHub issue and tag it as a question. We&#39;ll add common questions to this page.</p>
 <h2 id="host-startup-errors">Host Startup Errors</h2>
 <p>If you&#39;re trying to run durable functions and the host is failing to start, check the host logs to see if it contains hints about the problem. A few examples:</p>
 <blockquote><p>error CS0006: Metadata file &#39;Microsoft.Azure.WebJobs.Extensions.DurableTask&#39; could not be found</p>
 </blockquote>
 <p>This means the <strong>Durable Task</strong> extension has not been properly installed. See the <a href="installation.html">installation guide</a> for instructions on how to do the extension setup.</p>
 <h2 id="http-500-responses-from-the-httpstart-sample-trigger">HTTP 500 responses from the &quot;HttpStart&quot; sample trigger</h2>
-<p>This likely means that the <code>HttpStart</code> sample function failed to deserialize the payload of the request. It can be caused by one of two problems:</p>
+<p>This likely means that the <code>HttpStart</code> sample function failed to deserialize the payload of the request. It can be caused by one of the following problems:</p>
 <ol>
 <li>There is content in the POST body but the request does not have a <code>Content-Type: application/json</code> header.</li>
 <li>The POST body is not properly formatted/encoded JSON.</li>
+<li>You&#39;re using an old version of the Visual Studio sample app which is missing the <code>WEBSITE_HOSTNAME</code> app setting in <code>local.appsettings.json</code>.</li>
 </ol>
-<p>This sample HTTP triggers is very sensitive to request content that is not clearly JSON content. A future version may improve on this.</p>
 </article>
           </div>
           

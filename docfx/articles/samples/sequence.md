@@ -9,9 +9,10 @@ All samples are combined into a single function app package. To get started with
 ### For Visual Studio Development (Windows Only)
 1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
 2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package.
-3. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
-4. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-5. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
+3. Uprotect the zip file: right-click `VSDFSampleApp.zip` --> **Properties** --> **Unprotect**. 
+4. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
+5. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+6. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
