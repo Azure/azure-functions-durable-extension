@@ -172,10 +172,11 @@ public static async Task&lt;HttpResponseMessage&gt; Run(
     return starter.CreateCheckStatusResponse(req, instanceId);
 }
 </code></pre><p>The <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> <code>starter</code> parameter is a value from the <code>orchestrationClient</code> output binding, which is part of the Durable Functions extension. It provides methods for starting, sending events to, terminating, and querying for new or existing orchestrator function instances. In the above example, an HTTP triggered-function takes in a <code>functionName</code> value from the incoming URL and passes that value to <a class="xref" href="../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a>. This binding API then returns response that contains a <code>Location</code> header and additional information about the instance that can later be used to look up the status of or terminate the started instance.</p>
-<h3 id="pattern-4-lightweight-actors">Pattern #4: Lightweight Actors</h3>
-<p>The <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> is a pattern that is becoming more common in distributed computing, particularly in the cloud.</p>
-<p><img src="../images/actor.png"></p>
-<p>Because ordinary functions in Azure Functions are stateless, they are not well suited to implement this kind of stateful pattern. With the Durable Functions extension it is relatively trivial to implement stateful actors. Below is an example orchestrator function which implements a counter.</p>
+<h3 id="pattern-4-stateful-singletons-aka-lightweight-actors">Pattern #4: Stateful Singletons (aka &quot;Lightweight Actors&quot;)</h3>
+<p>Most functions have an explicit start and an end and don&#39;t directly interact with external event sources. However, orchestration support a &quot;stateful singleton&quot; pattern that allow them to behavior like reliable <a href="https://en.wikipedia.org/wiki/Actor_model">actors</a> in distributed computing.</p>
+<p><img src="../images/stateful-singleton.png"></p>
+<p>While Durable Functions is by no means a proper implementation of the actor model, orchestrator functions do have many of the same runtime characteristics, including being long-running (possibly endless), stateful, reliable, single-threaded, location transparent, globally addressable, etc. This makes orchestrator functions useful for &quot;actor&quot;-like scenarios without the need for a separate framework.</p>
+<p>Ordinary Azure Functions are stateless and therefore not suited to implement a stateful singleton pattern. However, the Durable Functions extension makes stateful singleton relatively trivial to implement. Below is a simple orchestrator function which implements a basic counter.</p>
 <pre><code class="lang-cs">public static async Task Run(DurableOrchestrationContext ctx)
 {
     int counterState = ctx.GetInput&lt;int&gt;();
@@ -192,7 +193,7 @@ public static async Task&lt;HttpResponseMessage&gt; Run(
 
     ctx.ContinueAsNew(counterState);
 }
-</code></pre><p>The above function is what you might describe as an &quot;eternal orchestration&quot; - i.e. one that starts and never ends. It starts with some input value <code>counterState</code>, waits indefinitely for a message called <code>operation</code>, performs some logic to update its local state, &quot;restarts&quot; itself by calling <code>ctx.ContinueAsNew</code>, and then awaits indefinitely for the next operation.</p>
+</code></pre><p>The above function is what you might describe as an &quot;eternal orchestration&quot; - i.e. one that starts and never ends. It starts with some input value <code>counterState</code>, waits indefinitely for a message called <code>operation</code>, performs some logic to update its local state, &quot;restarts&quot; itself by calling <code>ctx.ContinueAsNew</code>, and then awaits again indefinitely for the next operation.</p>
 <h3 id="pattern-5-human-interaction-and-timeouts">Pattern #5: Human Interaction and Timeouts</h3>
 <p>Many types of process automation often need to involve some kind of human interaction. The tricky thing about involving humans in an automated process is that people are not always as highly available and responsive as cloud services. These automated processes must account for this, and often do so using timeouts and compensation.</p>
 <p>One example of a business process which involves human interaction is an approval process. One could imagine a system where a manager must approve an expense report that exceeds a certain amount. If the manager does not approve within 72 hours (maybe they went on vacation), then an escalation processes kicks in to get the approval from someone else (perhaps the manager&#39;s manager).</p>

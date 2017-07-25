@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Stateful Actor - Counter </title>
+    <title>Stateful Singleton - Counter </title>
     <!-- Prevent search engine web crawlers from indexing or crawling this page -->
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Stateful Actor - Counter ">
+    <meta name="title" content="Stateful Singleton - Counter ">
     <meta name="generator" content="docfx 2.19.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
@@ -68,9 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="stateful-actor---counter">Stateful Actor - Counter</h1>
+<h1 id="stateful-singleton---counter">Stateful Singleton - Counter</h1>
 
-<p>The <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> is an advanced stateful programming pattern that is becoming more common in distributed computing, particularly in the cloud. It is assumed that the reader is already familiar with the actor model and how actors are used, so we won&#39;t be going into those details here. The code in this sample demonstrates how Durable Functions can be used to implement the actor model. The specific example is a simple <em>counter</em> singleton object which supports <em>increment</em> and <em>decrement</em> operations.</p>
+<p>Stateful singletons are long-running (potentially eternal) orchestrator functions which store state and can be invoked and queried by other functions in your application. Stateful singletons are similar in spirit to the <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> in distributed computing.</p>
+<p>While not a proper &quot;actor&quot; implementation, orchestrator functions have many of the same runtime characteristics (stateful, reliable, single-threaded, location transparent, globally addressable, etc.) that make real actor implementations especially useful, but without the need for a separate framework. The below example is a simple <em>counter</em> singleton object which receives supports <em>increment</em> and <em>decrement</em> operations and updates its internal state accordingly.</p>
 <h2 id="before-you-begin">Before you begin</h2>
 <p>If you haven&#39;t done so already, make sure to read the <a href="../overview.html">overview</a> before jumping into samples. It will really help ensure everything you read below makes sense.</p>
 <p>All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:</p>
@@ -98,9 +99,9 @@
 <div class="NOTE"><h5>Note</h5><p>This walkthrough assumes you have already gone through the <a href="sequence.html">Hello Sequence</a> sample walkthrough. If you haven&#39;t done so already, it is recommended to first go through that walkthrough before starting this one.</p>
 </div>
 <h2 id="scenario-overview">Scenario overview</h2>
-<p>The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. The main challenge you have is managing <strong>concurrency</strong>. Operations like <em>increment</em> and <em>decrement</em> need to be atomic, or else there could be race conditions that cause operations to overwrite each other.</p>
+<p>The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenge you have is managing <strong>concurrency</strong>. Operations like <em>increment</em> and <em>decrement</em> need to be atomic, or else there could be race conditions that cause operations to overwrite each other.</p>
 <p>Using a single VM to host the counter data is one option, but this is expensive and managing <strong>reliability</strong> can be a challenge since a single VM will need to be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of <strong>complexity</strong>.</p>
-<p>Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events, making them look and behave just like a reliable actor. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.</p>
+<p>Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.</p>
 <h2 id="the-counter-orchestration">The counter orchestration</h2>
 <p>The <strong>E3_Counter</strong> function uses the standard function.json for orchestrator functions.</p>
 <pre><code class="lang-json" name="Main">{
@@ -145,7 +146,7 @@ public static async Task&lt;int&gt; Run(
 }
 </code></pre><p>This orchestrator function essentially does the following:</p>
 <ol>
-<li>Listens for an external event named <em>operation</em> using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>&gt;.</li>
+<li>Listens for an external event named <em>operation</em> using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>.</li>
 <li>Increments or decrements the <code>counterState</code> local variable depending on the operation requested.</li>
 <li>Restarts the orchestrator using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> method, setting the latest value of <code>counterState</code> as the new input.</li>
 <li>Continues running forever or until an <em>end</em> message is received.</li>
@@ -193,7 +194,7 @@ Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6
 <div class="WARNING"><h5>Warning</h5><p>There are currently race conditions in both the handling of <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> and the use of <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. Until these are addressed, it is highly recommended to not send more than one external event to an instance every few seconds.</p>
 </div>
 <h2 id="wrapping-up">Wrapping up</h2>
-<p>At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. These tools should enable you to write &quot;eternal orchestrations&quot; and/or implement the stateful actor pattern.</p>
+<p>At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. These tools should enable you to write various flavors of &quot;stateful singletons&quot; like counters, aggregators, etc.</p>
 </article>
           </div>
           

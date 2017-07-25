@@ -7,7 +7,7 @@ The following samples make use of external events. Feel free to reference these 
 * [Human Interaction & Timeouts - Phone Verification](../samples/phone-verification.md)
 
 ## Waiting For Events
-The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>> method allows an orchestrator function to asynchronously wait and listen for an external event. When using this operation, the caller declares the *name* of the event and the *shape of the data* it expects to receive.
+The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> method allows an orchestrator function to asynchronously wait and listen for an external event. When using this operation, the caller declares the *name* of the event and the *shape of the data* it expects to receive.
 
 ```csharp
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
@@ -73,15 +73,15 @@ public static async Task Run(DurableOrchestrationContext context)
 }
 ```
 
-<xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>> waits indefinitely for some input and the function app can be safely unloaded while waiting. If and when an event arrives for this orchestration instance, it will be woken up automatically and will immediately process the event.
+<xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> waits indefinitely for some input and the function app can be safely unloaded while waiting. If and when an event arrives for this orchestration instance, it will be woken up automatically and will immediately process the event.
 
 > [!NOTE]
-> No billing charges are incurred if an orchestrator function is awaiting on a task from <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>>, no matter how long it waits.
+> No billing charges are incurred if an orchestrator function is awaiting on a task from <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>, no matter how long it waits.
 
 If they event payload cannot be converted into the expected type `T`, an exception will be thrown.
 
 ## Sending Events
-The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method of the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class is used to send events that resume orchestrator functions that are waiting using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>>. <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> takes an *event name* and an *event payload* as data types. The event payload must be JSON-serializable.
+The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method of the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class is used to send events that resume orchestrator functions that are waiting using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>. <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> takes an *event name* and an *event payload* as data types. The event payload must be JSON-serializable.
 
 ```csharp
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"

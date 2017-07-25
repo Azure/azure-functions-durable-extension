@@ -70,8 +70,8 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="eternal-orchestrations">Eternal Orchestrations</h1>
 
-<p>Most functions have an explicit start and an end. <em>Eternal orchestrations</em>, however, are examples of orchestrator functions which never end. These are useful for various types of scenarios, including implementing stateful actors or implementing other types of infinite loops.</p>
-<p>For an example use-case for eternal orchestrations, see the <a href="../samples/counter.html">Stateful Actor - Counter</a> sample.</p>
+<p>Most functions have an explicit start and an end. <em>Eternal orchestrations</em>, however, are examples of orchestrator functions which never end. These are useful for various types of scenarios, including implementing aggregators or infinite loops.</p>
+<p>For an example use-case for eternal orchestrations, see the <a href="../samples/counter.html">Stateful Singleton - Counter</a> sample.</p>
 <h2 id="orchestration-history">Orchestration History</h2>
 <p>As mentioned in the <a href="checkpointing-and-replay.html">Checkpointing &amp; Replay</a> topic, the Durable Task Framework keeps track of the history of each function orchestration. This history grows continuously as long as the orchestrator function continues to schedule new work. If the orchestrator function goes into an infinite loop and continuously schedules work, this history could grow critically large and cause significant performance problems. The <em>eternal orchestration</em> concept was designed to mitigate these kinds of problems for applications that need infinite loops.</p>
 <h2 id="resetting-and-restarting">Resetting and Restarting</h2>

@@ -14,7 +14,7 @@ Are you new to Durable Functions? If so, this is the place to start.
 Here are some samples you can study and/or reference. These will help you 1) learn how to write Durable Functions by example and 2) learn the various capabilities of Durable Functions.
 * [Function Chaining - Hello Sequence](~/articles/samples/sequence.md)
 * [Fan-out/Fan-in - Cloud Backup](~/articles/samples/cloud-backup.md)
-* [Stateful Actor - Counter](~/articles/samples/counter.md)
+* [Stateful Singleton - Counter](~/articles/samples/counter.md)
 * [Human Interaction & Timeouts - Phone Verification](~/articles/samples/phone-verification.md)
 
 Also, you can download all the samples as a single function app, which you can download from one of these two links:

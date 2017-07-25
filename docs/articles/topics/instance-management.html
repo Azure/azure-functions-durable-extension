@@ -144,7 +144,7 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
 </code></pre><div class="NOTE"><h5>Note</h5><p>Instance termination is currently only supported for C# functions.</p>
 </div>
 <h2 id="sending-events-to-instances">Sending events to instances</h2>
-<p>Event notifications can be sent to running instances using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> method of the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class. Instances that can handle these events are those are awaiting on a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>&gt;. The inputs are:</p>
+<p>Event notifications can be sent to running instances using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> method of the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class. Instances that can handle these events are those are awaiting on a call to &lt;xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*. The inputs are:</p>
 <ul>
 <li><strong>InstanceId</strong>: The unique ID of the instance.</li>
 <li><strong>EventName</strong>: The name of the event to send.</li>
@@ -160,7 +160,7 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
 }
 </code></pre><div class="NOTE"><h5>Note</h5><p>Raising events is currently only supported for C# functions.</p>
 </div>
-<div class="WARNING"><h5>Warning</h5><p>Instances can only process events when they are awaiting on a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>&gt;. If an instance is not waiting on this call, then the event will be dropped.</p>
+<div class="WARNING"><h5>Warning</h5><p>Instances can only process events when they are awaiting on a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>. If an instance is not waiting on this call, then the event will be dropped.</p>
 </div>
 </article>
           </div>

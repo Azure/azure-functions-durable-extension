@@ -91,7 +91,7 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
 > Instance termination is currently only supported for C# functions.
 
 ## Sending events to instances
-Event notifications can be sent to running instances using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method of the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class. Instances that can handle these events are those are awaiting on a call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>>. The inputs are:
+Event notifications can be sent to running instances using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method of the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class. Instances that can handle these events are those are awaiting on a call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*. The inputs are:
 
 * **InstanceId**: The unique ID of the instance.
 * **EventName**: The name of the event to send.
@@ -112,4 +112,4 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
 > Raising events is currently only supported for C# functions.
 
 > [!WARNING]
-> Instances can only process events when they are awaiting on a call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>>. If an instance is not waiting on this call, then the event will be dropped.
+> Instances can only process events when they are awaiting on a call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>. If an instance is not waiting on this call, then the event will be dropped.

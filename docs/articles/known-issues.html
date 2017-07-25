@@ -84,6 +84,20 @@
 <li>The POST body is not properly formatted/encoded JSON.</li>
 <li>You&#39;re using an old version of the Visual Studio sample app which is missing the <code>WEBSITE_HOSTNAME</code> app setting in <code>local.appsettings.json</code>.</li>
 </ol>
+<h2 id="objectdisposedexception-when-starting-a-durable-function">ObjectDisposedException when starting a durable function</h2>
+<p>When attempting to start a new durable function, it may fail to run and the following error may appear in your logs:</p>
+<pre><code>Microsoft.Azure.WebJobs.Host.FunctionInvocationException : Exception while executing function: Functions.MyDurableFunction ---&gt; System.InvalidOperationException : Exception binding parameter &#39;log&#39; ---&gt; System.ObjectDisposedException : Cannot access a disposed object.
+Object name: &#39;LoggerFactory&#39;.
+   at Microsoft.Extensions.Logging.LoggerFactory.CreateLogger(String categoryName)
+   at Microsoft.Azure.WebJobs.Host.Bindings.TraceWriterBinding.BindAsync(BindingContext context)
+   at async Microsoft.Azure.WebJobs.Host.Triggers.TriggeredFunctionBinding`1.BindCoreAsync[TTriggerValue](ValueBindingContext context,Object value,IDictionary`2 parameters) 
+   End of inner exception
+   at Microsoft.Azure.WebJobs.Host.Executors.DelayedException.Throw()
+   at async Microsoft.Azure.WebJobs.Host.Executors.FunctionExecutor.ExecuteWithWatchersAsync(IFunctionInstance instance,IReadOnlyDictionary`2 parameters,TraceWriter traceWriter,ILogger logger,CancellationTokenSource functionCancellationTokenSource)
+   at async Microsoft.Azure.WebJobs.Host.Executors.FunctionExecutor.ExecuteWithLoggingAsync(??)
+   at async Microsoft.Azure.WebJobs.Host.Executors.FunctionExecutor.ExecuteWithLoggingAsync(??) 
+   End of inner exception
+</code></pre><p>This is believed to be a bug in the core Azure Functions runtime, currently tracked <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/1690">here</a>. The workaround is to set the <code>FUNCTIONS_EXTENSION_VERSION</code> app setting to <code>1.0.11015</code> and restart the function app.</p>
 </article>
           </div>
           

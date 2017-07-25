@@ -1,0 +1,15 @@
+{
+  "bindings": [
+    {
+      "type": "manualTrigger",
+      "direction": "in",
+      "name": "functionName"
+    },
+    {
+      "name": "starter",
+      "type": "orchestrationClient",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}

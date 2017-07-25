@@ -129,12 +129,14 @@ public static async Task<HttpResponseMessage> Run(
 
 The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> `starter` parameter is a value from the `orchestrationClient` output binding, which is part of the Durable Functions extension. It provides methods for starting, sending events to, terminating, and querying for new or existing orchestrator function instances. In the above example, an HTTP triggered-function takes in a `functionName` value from the incoming URL and passes that value to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync*>. This binding API then returns response that contains a `Location` header and additional information about the instance that can later be used to look up the status of or terminate the started instance.
 
-### Pattern #4: Lightweight Actors
-The [Actor model](https://en.wikipedia.org/wiki/Actor_model) is a pattern that is becoming more common in distributed computing, particularly in the cloud.
+### Pattern #4: Stateful Singletons (aka "Lightweight Actors")
+Most functions have an explicit start and an end and don't directly interact with external event sources. However, orchestration support a "stateful singleton" pattern that allow them to behavior like reliable [actors](https://en.wikipedia.org/wiki/Actor_model) in distributed computing.
 
-<img src="~/images/actor.png"/>
+<img src="~/images/stateful-singleton.png"/>
 
-Because ordinary functions in Azure Functions are stateless, they are not well suited to implement this kind of stateful pattern. With the Durable Functions extension it is relatively trivial to implement stateful actors. Below is an example orchestrator function which implements a counter.
+While Durable Functions is by no means a proper implementation of the actor model, orchestrator functions do have many of the same runtime characteristics, including being long-running (possibly endless), stateful, reliable, single-threaded, location transparent, globally addressable, etc. This makes orchestrator functions useful for "actor"-like scenarios without the need for a separate framework.
+
+Ordinary Azure Functions are stateless and therefore not suited to implement a stateful singleton pattern. However, the Durable Functions extension makes stateful singleton relatively trivial to implement. Below is a simple orchestrator function which implements a basic counter.
 
 ```cs
 public static async Task Run(DurableOrchestrationContext ctx)
@@ -154,7 +156,7 @@ public static async Task Run(DurableOrchestrationContext ctx)
     ctx.ContinueAsNew(counterState);
 }
 ```
-The above function is what you might describe as an "eternal orchestration" - i.e. one that starts and never ends. It starts with some input value `counterState`, waits indefinitely for a message called `operation`, performs some logic to update its local state, "restarts" itself by calling `ctx.ContinueAsNew`, and then awaits indefinitely for the next operation.
+The above function is what you might describe as an "eternal orchestration" - i.e. one that starts and never ends. It starts with some input value `counterState`, waits indefinitely for a message called `operation`, performs some logic to update its local state, "restarts" itself by calling `ctx.ContinueAsNew`, and then awaits again indefinitely for the next operation.
 
 ### Pattern #5: Human Interaction and Timeouts
 Many types of process automation often need to involve some kind of human interaction. The tricky thing about involving humans in an automated process is that people are not always as highly available and responsive as cloud services. These automated processes must account for this, and often do so using timeouts and compensation.

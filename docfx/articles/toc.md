@@ -6,7 +6,7 @@
 # Samples / Walkthroughs
 ## [Function Chaining](~/articles/samples/sequence.md)
 ## [Fan-out / Fan-in](~/articles/samples/cloud-backup.md)
-## [Stateful Actor](~/articles/samples/counter.md)
+## [Stateful Singleton](~/articles/samples/counter.md)
 ## [Human Interaction](~/articles/samples/phone-verification.md)
 
 # Topical Guides

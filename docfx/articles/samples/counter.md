@@ -1,5 +1,7 @@
-# Stateful Actor - Counter
-The [Actor model](https://en.wikipedia.org/wiki/Actor_model) is an advanced stateful programming pattern that is becoming more common in distributed computing, particularly in the cloud. It is assumed that the reader is already familiar with the actor model and how actors are used, so we won't be going into those details here. The code in this sample demonstrates how Durable Functions can be used to implement the actor model. The specific example is a simple *counter* singleton object which supports *increment* and *decrement* operations.
+# Stateful Singleton - Counter
+Stateful singletons are long-running (potentially eternal) orchestrator functions which store state and can be invoked and queried by other functions in your application. Stateful singletons are similar in spirit to the [Actor model](https://en.wikipedia.org/wiki/Actor_model) in distributed computing.
+
+While not a proper "actor" implementation, orchestrator functions have many of the same runtime characteristics (stateful, reliable, single-threaded, location transparent, globally addressable, etc.) that make real actor implementations especially useful, but without the need for a separate framework. The below example is a simple *counter* singleton object which receives supports *increment* and *decrement* operations and updates its internal state accordingly.
 
 ## Before you begin
 If you haven't done so already, make sure to read the [overview](~/articles/overview.md) before jumping into samples. It will really help ensure everything you read below makes sense.
@@ -30,11 +32,11 @@ This article will specifically walk through the following function in the sample
 > This walkthrough assumes you have already gone through the [Hello Sequence](./sequence.md) sample walkthrough. If you haven't done so already, it is recommended to first go through that walkthrough before starting this one.
 
 ## Scenario overview
-The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. The main challenge you have is managing **concurrency**. Operations like *increment* and *decrement* need to be atomic, or else there could be race conditions that cause operations to overwrite each other.
+The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenge you have is managing **concurrency**. Operations like *increment* and *decrement* need to be atomic, or else there could be race conditions that cause operations to overwrite each other.
 
 Using a single VM to host the counter data is one option, but this is expensive and managing **reliability** can be a challenge since a single VM will need to be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of **complexity**.
 
-Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events, making them look and behave just like a reliable actor. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.
+Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.
 
 ## The counter orchestration
 The **E3_Counter** function uses the standard function.json for orchestrator functions.
@@ -47,7 +49,7 @@ Here is the code which implements the function:
 
 This orchestrator function essentially does the following:
 
-1. Listens for an external event named *operation* using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>>.
+1. Listens for an external event named *operation* using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>.
 2. Increments or decrements the `counterState` local variable depending on the operation requested.
 3. Restarts the orchestrator using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method, setting the latest value of `counterState` as the new input.
 4. Continues running forever or until an *end* message is received.
@@ -123,4 +125,4 @@ You can continue sending new operations to this instance and observe its state g
 > There are currently race conditions in both the handling of <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> and the use of <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*>. Until these are addressed, it is highly recommended to not send more than one external event to an instance every few seconds.
 
 ## Wrapping up
-At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> and <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*>. These tools should enable you to write "eternal orchestrations" and/or implement the stateful actor pattern.
+At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> and <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*>. These tools should enable you to write various flavors of "stateful singletons" like counters, aggregators, etc.
