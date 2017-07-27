@@ -118,6 +118,8 @@ namespace Microsoft.Azure.WebJobs
 
         internal string Version => this.orchestrationVersion;
 
+        internal bool IsOutputSet => this.serializedOutput != null;
+
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
         /// </summary>
@@ -174,9 +176,14 @@ namespace Microsoft.Azure.WebJobs
         /// If this method is not called explicitly, the return value of the orchestrator function is used as the output.
         /// </remarks>
         /// <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
-        public void SetOutput(object output)
+        internal void SetOutput(object output)
         {
             this.ThrowIfInvalidAccess();
+
+            if (this.IsOutputSet)
+            {
+                throw new InvalidOperationException("The output has already been set of this orchestration instance.");
+            }
 
             if (output != null)
             {

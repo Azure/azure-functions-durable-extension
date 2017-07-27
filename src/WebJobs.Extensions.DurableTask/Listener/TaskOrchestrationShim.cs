@@ -55,9 +55,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 true /* isOrchestrator */,
                 this.context.IsReplaying);
 
+            object returnValue;
             try
             {
-                await this.functionInvocationCallback();
+                Task invokeTask = this.functionInvocationCallback();
+                if (invokeTask is Task<object> resultTask)
+                {
+                    returnValue = await resultTask;
+                }
+                else
+                {
+                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
+                }
             }
             catch (Exception e)
             {
@@ -74,6 +83,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             finally
             {
                 this.context.IsCompleted = true;
+            }
+
+            if (returnValue != null)
+            {
+                this.context.SetOutput(returnValue);
             }
 
             string serializedOutput = this.context.GetSerializedOutput();

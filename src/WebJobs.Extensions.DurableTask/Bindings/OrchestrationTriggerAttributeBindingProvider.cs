@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -59,6 +60,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
+            private static readonly IReadOnlyDictionary<string, Type> StaticBindingContract =
+                new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                };
+
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
@@ -75,16 +83,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Type TriggerValueType => typeof(DurableOrchestrationContext);
 
-            public IReadOnlyDictionary<string, Type> BindingDataContract
-            {
-                // TODO: Figure out how or whether other types of bindings could be used for this trigger.
-                get { return null; }
-            }
+            public IReadOnlyDictionary<string, Type> BindingDataContract => StaticBindingContract;
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
                 // No conversions
-                return Task.FromResult<ITriggerData>(new TriggerData(new ObjectValueProvider(value, this.TriggerValueType), null));
+                var inputValueProvider = new ObjectValueProvider(value, this.TriggerValueType);
+
+                // We don't specify any return value binding because we process the return value
+                // earlier in the pipeline via the InvokeHandler extensibility.
+                var triggerData = new TriggerData(inputValueProvider, bindingData: null);
+                return Task.FromResult<ITriggerData>(triggerData);
             }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
