@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HelloWorldOrchestration_Inline()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(HelloWorldOrchestration_Inline)))
             {
                 await host.StartAsync();
 
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HelloWorldOrchestration_Activity()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(HelloWorldOrchestration_Activity)))
             {
                 await host.StartAsync();
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task SequentialOrchestration()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(SequentialOrchestration)))
             {
                 await host.StartAsync();
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ParallelOrchestration()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(ParallelOrchestration)))
             {
                 await host.StartAsync();
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActorOrchestration()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(ActorOrchestration)))
             {
                 await host.StartAsync();
 
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task TerminateOrchestration()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(TerminateOrchestration)))
             {
                 await host.StartAsync();
 
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task TimerCancellation()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(TimerCancellation)))
             {
                 await host.StartAsync();
 
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task TimerExpiration()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(TimerExpiration)))
             {
                 await host.StartAsync();
 
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task OrchestrationConcurrency()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(OrchestrationConcurrency)))
             {
                 await host.StartAsync();
 
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HandledActivityException()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(HandledActivityException)))
             {
                 await host.StartAsync();
 
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task UnhandledOrchestrationException()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(UnhandledOrchestrationException)))
             {
                 await host.StartAsync();
 
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task UnhandledActivityException()
         {
-            using (JobHost host = GetJobHost())
+            using (JobHost host = GetJobHost(nameof(UnhandledActivityException)))
             {
                 await host.StartAsync();
 
@@ -351,9 +351,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(Orchestrations), typeof(Activities));
-            config.UseDurableTask(new DurableTaskConfiguration
+            config.UseDurableTask(new DurableTaskExtension
             {
-                HubName = taskHub,
+                HubName = taskHub.Replace("_", ""),
                 TraceInputsAndOutputs = true
             });
 

@@ -21,10 +21,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
 
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
 
-        public HttpApiHandler(DurableTaskConfiguration config, TraceWriter traceWriter)
+        public HttpApiHandler(DurableTaskExtension config, TraceWriter traceWriter)
         {
             this.config = config;
             this.traceWriter = traceWriter;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            // e.g. http://{host}/admin/extensions/DurableTaskConfiguration
+            // e.g. http://{host}/admin/extensions/DurableTaskExtension
             string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + this.config.NotificationUrl.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);

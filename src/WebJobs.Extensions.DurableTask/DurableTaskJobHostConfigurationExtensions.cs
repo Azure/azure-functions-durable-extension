@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static void UseDurableTask(
             this JobHostConfiguration hostConfig,
-            DurableTaskConfiguration listenerConfig)
+            DurableTaskExtension listenerConfig)
         {
             if (hostConfig == null)
             {

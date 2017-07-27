@@ -29,10 +29,10 @@ namespace Microsoft.Azure.WebJobs
         private readonly Dictionary<string, object> pendingExternalEvents = 
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly DurableTaskExtension config;
         private readonly string hubName;
         private readonly string orchestrationName;
         private readonly string orchestrationVersion;
-        private readonly EndToEndTraceHelper traceHelper;
 
         private OrchestrationContext innerContext;
         private string serializedInput;
@@ -40,15 +40,14 @@ namespace Microsoft.Azure.WebJobs
         private int owningThreadId;
 
         internal DurableOrchestrationContext(
-            string hubName,
+            DurableTaskExtension config,
             string functionName,
-            string functionVersion,
-            EndToEndTraceHelper traceHelper)
+            string functionVersion)
         {
-            this.hubName = hubName;
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
-            this.traceHelper = traceHelper;
             this.owningThreadId = Thread.CurrentThread.ManagedThreadId;
         }
 
@@ -113,7 +112,7 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool IsCompleted { get; set; }
 
-        internal string HubName => this.hubName;
+        internal string HubName => this.config.HubName;
 
         internal string Name => this.orchestrationName;
 
@@ -208,6 +207,15 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="functionName">The name of the activity function to call.</param>
         /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
         /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
         public Task CallFunctionAsync(string functionName, params object[] parameters)
         {
             return this.CallFunctionAsync<string>(functionName, parameters);
@@ -220,20 +228,31 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="functionName">The name of the activity function to call.</param>
         /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
         /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
         public async Task<TResult> CallFunctionAsync<TResult>(string functionName, params object[] parameters)
         {
             this.ThrowIfInvalidAccess();
 
             // TODO: Support for versioning
             string version = DefaultVersion;
+            this.config.AssertActivityExists(functionName, version);
+
             Task<TResult> callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
 
             string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion) ?
                 this.orchestrationName : 
                 this.orchestrationName + "/" + this.orchestrationVersion;
 
-            this.traceHelper.FunctionScheduled(
-                this.hubName,
+            this.config.TraceHelper.FunctionScheduled(
+                this.config.HubName,
                 functionName,
                 version,
                 this.InstanceId,
@@ -253,8 +272,8 @@ namespace Microsoft.Azure.WebJobs
                 {
                     // If this were not a replay, then the activity function trigger would have already 
                     // emitted a FunctionFailed trace with the full exception details.
-                    this.traceHelper.FunctionFailed(
-                        this.hubName,
+                    this.config.TraceHelper.FunctionFailed(
+                        this.config.HubName,
                         functionName,
                         version,
                         this.InstanceId,
@@ -270,8 +289,8 @@ namespace Microsoft.Azure.WebJobs
             {
                 // If this were not a replay, then the activity function trigger would have already 
                 // emitted a FunctionCompleted trace with the actual output details.
-                this.traceHelper.FunctionCompleted(
-                    this.hubName,
+                this.config.TraceHelper.FunctionCompleted(
+                    this.config.HubName,
                     functionName,
                     version,
                     this.InstanceId,
@@ -319,8 +338,8 @@ namespace Microsoft.Azure.WebJobs
 
             Task<T> timerTask = this.innerContext.CreateTimer(fireAt, state, cancelToken);
 
-            this.traceHelper.FunctionListening(
-                this.hubName,
+            this.config.TraceHelper.FunctionListening(
+                this.config.HubName,
                 this.orchestrationName,
                 this.orchestrationVersion,
                 this.InstanceId,
@@ -350,8 +369,8 @@ namespace Microsoft.Azure.WebJobs
                     this.pendingExternalEvents[name] = tcs;
                 }
 
-                this.traceHelper.FunctionListening(
-                    this.hubName,
+                this.config.TraceHelper.FunctionListening(
+                    this.config.HubName,
                     this.orchestrationName,
                     this.orchestrationVersion,
                     this.InstanceId,

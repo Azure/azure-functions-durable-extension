@@ -15,13 +15,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskActivityShim : TaskActivity
     {
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly ITriggeredFunctionExecutor executor;
         private readonly string activityName;
         private readonly string activityVersion;
 
         public TaskActivityShim(
-            DurableTaskConfiguration config,
+            DurableTaskExtension config,
             ITriggeredFunctionExecutor executor,
             string activityName,
             string activityVersion)

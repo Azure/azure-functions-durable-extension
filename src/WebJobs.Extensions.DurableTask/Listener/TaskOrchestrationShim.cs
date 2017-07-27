@@ -12,13 +12,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskOrchestrationShim : TaskOrchestration
     {
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly DurableOrchestrationContext context;
 
         private Func<Task> functionInvocationCallback;
 
         public TaskOrchestrationShim(
-            DurableTaskConfiguration config,
+            DurableTaskExtension config,
             DurableOrchestrationContext context)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));

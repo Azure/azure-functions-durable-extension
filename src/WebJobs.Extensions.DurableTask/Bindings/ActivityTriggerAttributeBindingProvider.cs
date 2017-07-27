@@ -16,12 +16,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ActivityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
-        private readonly DurableTaskConfiguration durableTaskConfig;
+        private readonly DurableTaskExtension durableTaskConfig;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
         public ActivityTriggerAttributeBindingProvider(
-            DurableTaskConfiguration durableTaskConfig,
+            DurableTaskExtension durableTaskConfig,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
         {
@@ -47,14 +47,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // The activity name defaults to the method name.
-            string activityName = trigger.Activity ?? parameter.Member.Name;
-
-            var binding = new ActivityTriggerBinding(
-                this,
-                parameter,
-                trigger,
-                activityName,
-                trigger.Version);
+            var activityName = new FunctionName(trigger.Activity ?? parameter.Member.Name, trigger.Version);
+            var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
@@ -69,21 +63,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly ActivityTriggerAttributeBindingProvider parent;
             private readonly ParameterInfo parameterInfo;
             private readonly ActivityTriggerAttribute attribute;
-            private readonly string activityName;
-            private readonly string activityVersion;
+            private readonly FunctionName activityName;
 
             public ActivityTriggerBinding(
                 ActivityTriggerAttributeBindingProvider parent,
                 ParameterInfo parameterInfo,
                 ActivityTriggerAttribute attribute,
-                string activityName,
-                string activityVersion)
+                FunctionName activity)
             {
                 this.parent = parent;
                 this.parameterInfo = parameterInfo;
                 this.attribute = attribute;
-                this.activityName = activityName;
-                this.activityVersion = activityVersion;
+                this.activityName = activity;
             }
 
             public Type TriggerValueType => typeof(DurableActivityContext);
@@ -128,11 +119,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var listener = DurableTaskListener.CreateForActivity(
+                var listener = new DurableTaskListener(
                     this.parent.durableTaskConfig,
                     this.activityName,
-                    this.activityVersion,
-                    context.Executor);
+                    context.Executor,
+                    isOrchestrator: false);
                 return Task.FromResult<IListener>(listener);
             }
 

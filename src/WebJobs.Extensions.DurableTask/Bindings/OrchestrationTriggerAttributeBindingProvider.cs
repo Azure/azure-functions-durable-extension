@@ -15,12 +15,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class OrchestrationTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
         public OrchestrationTriggerAttributeBindingProvider(
-            DurableTaskConfiguration config,
+            DurableTaskExtension config,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
         {
@@ -44,34 +44,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // The orchestration name defaults to the method name.
-            string orchestrationName = trigger.Orchestration ?? parameter.Member.Name;
-
-            // TODO: Support for per-function connection string and task hub names
-            var binding = new OrchestrationTriggerBinding(
-                this.config,
-                parameter,
-                orchestrationName,
-                trigger.Version);
+            var orchestratorName = new FunctionName(trigger.Orchestration ?? parameter.Member.Name, trigger.Version);
+            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
-            private readonly DurableTaskConfiguration config;
+            private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
-            private readonly string orchestrationName;
-            private readonly string version;
+            private readonly FunctionName orchestratorName;
 
             public OrchestrationTriggerBinding(
-                DurableTaskConfiguration config,
+                DurableTaskExtension config,
                 ParameterInfo parameterInfo,
-                string orchestrationName,
-                string version)
+                FunctionName orchestratorName)
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
-                this.orchestrationName = orchestrationName;
-                this.version = version;
+                this.orchestratorName = orchestratorName;
             }
 
             public Type TriggerValueType => typeof(DurableOrchestrationContext);
@@ -96,11 +87,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var listener = DurableTaskListener.CreateForOrchestration(
+                var listener = new DurableTaskListener(
                     this.config,
-                    this.orchestrationName,
-                    this.version,
-                    context.Executor);
+                    this.orchestratorName,
+                    context.Executor,
+                    isOrchestrator: true);
                 return Task.FromResult<IListener>(listener);
             }
 
