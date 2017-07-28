@@ -43,8 +43,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
+            // Priority for getting the name is [OrchestrationTrigger], [FunctionName], method name
+            string name = trigger.Orchestration;
+            if (string.IsNullOrEmpty(name))
+            {
+                MemberInfo method = context.Parameter.Member;
+                name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
+            }
+
             // The orchestration name defaults to the method name.
-            var orchestratorName = new FunctionName(trigger.Orchestration ?? parameter.Member.Name, trigger.Version);
+            var orchestratorName = new FunctionName(name, trigger.Version);
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
         }

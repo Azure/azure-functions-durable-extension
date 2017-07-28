@@ -46,8 +46,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
+            // Priority for getting the name is [ActivityTrigger], [FunctionName], method name
+            string name = trigger.Activity;
+            if (string.IsNullOrEmpty(name))
+            {
+                MemberInfo method = context.Parameter.Member;
+                name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
+            }
+
             // The activity name defaults to the method name.
-            var activityName = new FunctionName(trigger.Activity ?? parameter.Member.Name, trigger.Version);
+            var activityName = new FunctionName(name, trigger.Version);
             var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
