@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -47,11 +48,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);
             string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
-            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
 
-            Uri statusQueryGetUri = new Uri(instancePrefix + "?" + querySuffix);
-            Uri sendEventPostUri = new Uri(instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix);
-            Uri terminatePostUri = new Uri(instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix);
+            string authKey;
+            if (request.Headers.TryGetValues("x-function-key", out IEnumerable<string> functionKeyHeaders))
+            {
+                authKey = functionKeyHeaders.FirstOrDefault();
+            }
+            else
+            {
+                authKey = request.GetQueryNameValuePairs().FirstOrDefault(
+                    pair => pair.Key.Equals("x-function-key", StringComparison.OrdinalIgnoreCase)).Value;
+            }
+
+            string querySuffix;
+            if (!string.IsNullOrEmpty(authKey))
+            {
+                authKey = WebUtility.UrlEncode(authKey);
+                querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}&code={authKey}";
+            }
+            else
+            {
+                querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
+            }
+
+            string statusQueryGetUri = instancePrefix + "?" + querySuffix;
+            string sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
+            string terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
 
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -62,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri = sendEventPostUri,
                     terminatePostUri = terminatePostUri
                 });
-            response.Headers.Location = statusQueryGetUri;
+            response.Headers.Location = new Uri(statusQueryGetUri);
             return response;
         }
 
