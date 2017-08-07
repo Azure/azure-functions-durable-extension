@@ -41,34 +41,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            // e.g. http://{host}/admin/extensions/DurableTaskExtension
+            Uri notificationUri = this.config.NotificationUrl;
+
+            // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
             string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
-            string baseUrl = hostUrl + this.config.NotificationUrl.AbsolutePath.TrimEnd('/');
+            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
             string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);
             string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
 
-            string authKey;
-            if (request.Headers.TryGetValues("x-function-key", out IEnumerable<string> functionKeyHeaders))
+            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
+            if (!string.IsNullOrEmpty(notificationUri.Query))
             {
-                authKey = functionKeyHeaders.FirstOrDefault();
-            }
-            else
-            {
-                authKey = request.GetQueryNameValuePairs().FirstOrDefault(
-                    pair => pair.Key.Equals("x-function-key", StringComparison.OrdinalIgnoreCase)).Value;
-            }
-
-            string querySuffix;
-            if (!string.IsNullOrEmpty(authKey))
-            {
-                authKey = WebUtility.UrlEncode(authKey);
-                querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}&code={authKey}";
-            }
-            else
-            {
-                querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
+                // This is expected to include the auto-generated system key for this extension.
+                querySuffix += "&" + notificationUri.Query.TrimStart('?');
             }
 
             string statusQueryGetUri = instancePrefix + "?" + querySuffix;
