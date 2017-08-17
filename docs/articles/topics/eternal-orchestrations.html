@@ -80,8 +80,9 @@
 <div class="NOTE"><h5>Note</h5><p>The Durable Task Framework maintains the same instance ID but internally creates a new <em>execution ID</em> for the orchestrator function that gets reset using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. This execution ID is generally not exposed externally, but may be useful to know about when debugging orchestration execution.</p>
 </div>
 <p>One potential use case is code that needs to do periodic work indefinitely.</p>
-<pre><code class="lang-csharp">public static async Task Run(
-    DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;Periodic_Cleanup_Loop&quot;)]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     await context.CallFunctionAsync(&quot;DoCleanup&quot;);
 
@@ -94,10 +95,9 @@
 </code></pre><div class="NOTE"><h5>Note</h5><p>The difference between this example and a timer-triggered function is that cleanup trigger times here are not based on a schedule. For example, a CRON schedule which executes a function every hour will execute it at 1:00, 2:00, 3:00 etc. and could potentially run into overlap issues. In this example, however, if the cleanup takes 30 minutes, then it will be scheduled at 1:00, 2:30, 4:00, etc. and there is no chance of overlap.</p>
 </div>
 <p>Here is a simplified example of a <em>counter</em> function which listens for <em>increment</em> and <em>decrement</em> events eternally.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
+<pre><code class="lang-csharp">[FunctionName(&quot;SimpleCounter&quot;)]
 public static async Task Run(
-    DurableOrchestrationContext context)
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     int counterState = context.GetInput&lt;int&gt;();
 
@@ -124,7 +124,7 @@ public static async Task Run(
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/eternal-orchestrations.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/eternal-orchestrations.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

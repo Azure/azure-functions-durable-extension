@@ -77,11 +77,9 @@
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
 <li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
-<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package.</li>
-<li>Uprotect the zip file: right-click <code>VSDFSampleApp.zip</code> --&gt; <strong>Properties</strong> --&gt; <strong>Unprotect</strong>. </li>
-<li>Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).</li>
+<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
 <li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
-<li>The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions in Azure.</li>
+<li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.</li>
 </ol>
 <h3 id="for-azure-portal-development">For Azure Portal Development</h3>
 <ol>
@@ -116,7 +114,7 @@
   ],
   &quot;disabled&quot;: false
 }
-</code></pre><p>Here is the code which implements the function:</p>
+</code></pre><p>Here is the code which implements the orchestrator function:</p>
 <pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
 
 public static async Task&lt;long&gt; Run(DurableOrchestrationContext backupContext)
@@ -238,15 +236,15 @@ Content-Length: 20
 <pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 
 (...trimmed...)
 </code></pre><p>Depending on how many log files you have in your function app, this operation could take several minutes to complete. You can get the latest status by querying the URL in the <code>Location</code> header of the previous HTTP 202 response.</p>
-<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskExtension/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 148
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 
 {&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:&quot;D:\\home\\LogFiles&quot;,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-06-29T18:50:55Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:51:16Z&quot;}
 </code></pre><p>In this case, the function is still running. We are also able to see the input that was saved into the orchestrator state and the last updated time. We can continue to use the <code>Location</code> header values to poll for completion. Once complete, we can expect to see an HTTP response value similar to the following:</p>
@@ -258,7 +256,92 @@ Content-Type: application/json; charset=utf-8
 </code></pre><p>Now we can see that the orchestration is complete and approximately how much time it took to complete. We now also see a value for the <code>output</code> field, which indicates that around 450 KB of logs were uploaded.</p>
 <h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a greater understanding of the core capabilities of Durable Functions. Subsequent samples will go into more advanced features and scenarios.</p>
-</article>
+<h2 id="full-sample-code">Full Sample Code</h2>
+<p>Here is the full orchestration as a single C# file using the Visual Studio project syntax:</p>
+<pre><code class="lang-csharp" name="Main">// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.WindowsAzure.Storage.Blob;
+
+namespace VSSample
+{
+    public static class BackupSiteContent
+    {
+        [FunctionName(&quot;E2_BackupSiteContent&quot;)]
+        public static async Task&lt;long&gt; Run(
+            [OrchestrationTrigger] DurableOrchestrationContext backupContext)
+        {
+            string rootDirectory = backupContext.GetInput&lt;string&gt;()?.Trim();
+            if (string.IsNullOrEmpty(rootDirectory))
+            {
+                rootDirectory = Environment.CurrentDirectory;
+            }
+
+            string[] files = await backupContext.CallFunctionAsync&lt;string[]&gt;(
+                &quot;E2_GetFileList&quot;,
+                rootDirectory);
+
+            var tasks = new Task&lt;long&gt;[files.Length];
+            for (int i = 0; i &lt; files.Length; i++)
+            {
+                tasks[i] = backupContext.CallFunctionAsync&lt;long&gt;(
+                    &quot;E2_CopyFileToBlob&quot;,
+                    files[i]);
+            }
+
+            await Task.WhenAll(tasks);
+
+            long totalBytes = tasks.Sum(t =&gt; t.Result);
+            return totalBytes;
+        }
+
+        [FunctionName(&quot;E2_GetFileList&quot;)]
+        public static string[] GetFileList(
+            [ActivityTrigger] string rootDirectory, 
+            TraceWriter log)
+        {
+            log.Info($&quot;Searching for files under &#39;{rootDirectory}&#39;...&quot;);
+            string[] files = Directory.GetFiles(rootDirectory, &quot;*&quot;, SearchOption.AllDirectories);
+            log.Info($&quot;Found {files.Length} file(s) under {rootDirectory}.&quot;);
+
+            return files;
+        }
+
+        [FunctionName(&quot;E2_CopyFileToBlob&quot;)]
+        public static async Task&lt;long&gt; CopyFileToBlob(
+            [ActivityTrigger] string filePath,
+            Binder binder,
+            TraceWriter log)
+        {
+            long byteCount = new FileInfo(filePath).Length;
+
+            // strip the drive letter prefix and convert to forward slashes
+            string blobPath = filePath
+                .Substring(Path.GetPathRoot(filePath).Length)
+                .Replace(&#39;\\&#39;, &#39;/&#39;);
+            string outputLocation = $&quot;backups/{blobPath}&quot;;
+
+            log.Info($&quot;Copying &#39;{filePath}&#39; to &#39;{outputLocation}&#39;. Total bytes = {byteCount}.&quot;);
+
+            // copy the file contents into a blob
+            using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (Stream destination = await binder.BindAsync&lt;CloudBlobStream&gt;(
+                new BlobAttribute(outputLocation)))
+            {
+                await source.CopyToAsync(destination);
+            }
+
+            return byteCount;
+        }
+    }
+}
+</code></pre></article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">
@@ -266,7 +349,7 @@ Content-Type: application/json; charset=utf-8
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/samples/cloud-backup.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/samples/cloud-backup.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

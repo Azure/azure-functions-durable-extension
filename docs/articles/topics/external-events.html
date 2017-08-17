@@ -78,9 +78,9 @@
 </ul>
 <h2 id="waiting-for-events">Waiting For Events</h2>
 <p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> method allows an orchestrator function to asynchronously wait and listen for an external event. When using this operation, the caller declares the <em>name</em> of the event and the <em>shape of the data</em> it expects to receive.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static async Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;BudgetApproval&quot;)]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool approved = await context.WaitForExternalEvent&lt;bool&gt;(&quot;Approval&quot;);
     if (approved)
@@ -93,9 +93,9 @@ public static async Task Run(DurableOrchestrationContext context)
     }
 }
 </code></pre><p>The preceding example listened for a single event and took action when it was received. It&#39;s also possible to listen for multiple events concurrently, like in the following example which waits for one of three possible event notifications.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static async Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;Select&quot;)]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     var event1 = context.WaitForExternalEvent&lt;float&gt;(&quot;Event1&quot;);
     var event2 = context.WaitForExternalEvent&lt;bool&gt;(&quot;Event2&quot;);
@@ -116,9 +116,9 @@ public static async Task Run(DurableOrchestrationContext context)
     }
 }
 </code></pre><p>The previous example showed listening to <em>one</em> of many possible events. It&#39;s also possible to wait for <em>all</em> events to arrive.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static async Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;NewBuildingPermit&quot;)]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     string applicationId = context.GetInput&lt;string&gt;();
 
@@ -137,9 +137,10 @@ public static async Task Run(DurableOrchestrationContext context)
 <p>If they event payload cannot be converted into the expected type <code>T</code>, an exception will be thrown.</p>
 <h2 id="sending-events">Sending Events</h2>
 <p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> method of the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class is used to send events that resume orchestrator functions that are waiting using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>. <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> takes an <em>event name</em> and an <em>event payload</em> as data types. The event payload must be JSON-serializable.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static async Task Run(string instanceId, DurableOrchestrationClient client)
+<pre><code class="lang-csharp">[FunctionName(&quot;ApprovalQueueProcessor&quot;)]
+public static async Task Run(
+    [QueueTrigger(&quot;approval-queue&quot;)] string instanceId,
+    [OrchestrationClient] DurableOrchestrationClient client)
 {
     await client.RaiseEventAsync(instanceId, &quot;Approval&quot;, true);
 }
@@ -154,7 +155,7 @@ public static async Task Run(string instanceId, DurableOrchestrationClient clien
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/external-events.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/external-events.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

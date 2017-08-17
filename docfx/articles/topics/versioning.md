@@ -13,7 +13,8 @@ A signature change refers to a change in the name, input, or output of a functio
 As an example, suppose we have the following function.
 
 ```csharp
-public static Task Run(DurableOrchestrationContext context)
+[FunctionName("FooBar")]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool result = await context.CallFunctionAsync<bool>("Foo");
     await context.CallFunctionAsync("Bar", result);
@@ -23,7 +24,8 @@ public static Task Run(DurableOrchestrationContext context)
 This simplistic function takes the results of **Foo** and passes it to **Bar**. Let's assume we need to change the return value of **Foo** from `bool` to `int` to support a wider variety of result values. The result looks like this:
 
 ```csharp
-public static Task Run(DurableOrchestrationContext context)
+[FunctionName("FooBar")]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     int result = await context.CallFunctionAsync<int>("Foo");
     await context.CallFunctionAsync("Bar", result);
@@ -40,7 +42,8 @@ The other class of versioning problems come from changing the orchestrator funct
 Consider the following orchestrator function:
 
 ```csharp
-public static Task Run(DurableOrchestrationContext context)
+[FunctionName("FooBar")]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool result = await context.CallFunctionAsync<bool>("Foo");
     await context.CallFunctionAsync("Bar", result);
@@ -50,7 +53,8 @@ public static Task Run(DurableOrchestrationContext context)
 Now let's assume you want to make a seemingly innocent change to add another function call.
 
 ```csharp
-public static Task Run(DurableOrchestrationContext context)
+[FunctionName("FooBar")]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool result = await context.CallFunctionAsync<bool>("Foo");
     if (result)

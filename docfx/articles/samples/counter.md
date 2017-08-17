@@ -10,11 +10,9 @@ All samples are combined into a single function app package. To get started with
 
 ### For Visual Studio Development (Windows Only)
 1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package.
-3. Uprotect the zip file: right-click `VSDFSampleApp.zip` --> **Properties** --> **Unprotect**. 
-4. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
-5. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-6. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
+2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -39,13 +37,9 @@ Using a single VM to host the counter data is one option, but this is expensive 
 Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.
 
 ## The counter orchestration
-The **E3_Counter** function uses the standard function.json for orchestrator functions.
+Here is the code which implements the orchestrator function:
 
-[!code-json[Main](~/../samples/csx/E3_Counter/function.json)]
-
-Here is the code which implements the function:
-
-[!code-csharp[Main](~/../samples/csx/E3_Counter/run.csx)]
+[!code-csharp[Main](~/../samples/precompiled/Counter.cs)]
 
 This orchestrator function essentially does the following:
 
@@ -73,9 +67,9 @@ Content-Length: 0
 HTTP/1.1 202 Accepted
 Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 
-{"id":"bcf6fb5067b046fbb021b52ba7deae5a","statusQueryGetUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage","sendEventPostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage","terminatePostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage"}
+{"id":"bcf6fb5067b046fbb021b52ba7deae5a","statusQueryGetUri":"http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}","sendEventPostUri":"http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}","terminatePostUri":"http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}"}
 ```
 
 The **E3_Counter** instance starts and then immediately waits for an event to be sent to it using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> or using the **sendEventUrl** HTTP POST webhook referenced in the 202 response above. Valid `eventName` values include *incr*, *decr*, and *end*.
@@ -84,7 +78,7 @@ The **E3_Counter** instance starts and then immediately waits for an event to be
 > Feel free to take a look at the source code for HttpSendEvent to get an idea of how <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> is used by client functions.
 
 ```plaintext
-POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&connection=Storage HTTP/1.1
+POST http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey} HTTP/1.1
 Content-Type: application/json
 Content-Length: 6
 
@@ -107,14 +101,14 @@ You can see the results of the "incr" operation by looking at the function logs 
 Similarly, if you check the orchestrator status, you should see the `input` field has been set to the updated value (1).
 
 ```plaintext
-GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage HTTP/1.1
+GET http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey} HTTP/1.1
 ```
 
 ```plaintext
 HTTP/1.1 202 Accepted
 Content-Length: 129
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 
 {"runtimeStatus":"Running","input":1,"output":null,"createdTime":"2017-06-29T18:58:01Z","lastUpdatedTime":"2017-06-29T18:58:11Z"}
 ```

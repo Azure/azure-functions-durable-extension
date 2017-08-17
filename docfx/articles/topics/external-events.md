@@ -10,9 +10,9 @@ The following samples make use of external events. Feel free to reference these 
 The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> method allows an orchestrator function to asynchronously wait and listen for an external event. When using this operation, the caller declares the *name* of the event and the *shape of the data* it expects to receive.
 
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task Run(DurableOrchestrationContext context)
+[FunctionName("BudgetApproval")]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool approved = await context.WaitForExternalEvent<bool>("Approval");
     if (approved)
@@ -29,9 +29,9 @@ public static async Task Run(DurableOrchestrationContext context)
 The preceding example listened for a single event and took action when it was received. It's also possible to listen for multiple events concurrently, like in the following example which waits for one of three possible event notifications.
 
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task Run(DurableOrchestrationContext context)
+[FunctionName("Select")]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     var event1 = context.WaitForExternalEvent<float>("Event1");
     var event2 = context.WaitForExternalEvent<bool>("Event2");
@@ -56,9 +56,9 @@ public static async Task Run(DurableOrchestrationContext context)
 The previous example showed listening to *one* of many possible events. It's also possible to wait for *all* events to arrive.
 
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task Run(DurableOrchestrationContext context)
+[FunctionName("NewBuildingPermit")]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     string applicationId = context.GetInput<string>();
 
@@ -84,9 +84,10 @@ If they event payload cannot be converted into the expected type `T`, an excepti
 The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method of the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class is used to send events that resume orchestrator functions that are waiting using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>. <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> takes an *event name* and an *event payload* as data types. The event payload must be JSON-serializable.
 
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task Run(string instanceId, DurableOrchestrationClient client)
+[FunctionName("ApprovalQueueProcessor")]
+public static async Task Run(
+    [QueueTrigger("approval-queue")] string instanceId,
+    [OrchestrationClient] DurableOrchestrationClient client)
 {
     await client.RaiseEventAsync(instanceId, "Approval", true);
 }

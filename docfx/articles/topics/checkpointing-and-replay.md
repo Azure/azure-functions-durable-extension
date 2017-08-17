@@ -7,9 +7,9 @@ In spite of this, Durable Functions ensures reliable execution of orchestrations
 Suppose you have the following orchestrator function.
 
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task<List<string>> Run(DurableOrchestrationContext context)
+[FunctionName("E1_HelloSequence")]
+public static async Task<List<string>> Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     var outputs = new List<string>();
 
@@ -73,7 +73,7 @@ A few notes on the column values:
 * **Timestamp**: The UTC timestamp of the history event.
 * **Name**: The name of the function which was invoked.
 * **Input**: The JSON-formatted input of the function.
-* **Output**: The output of the function, which either comes from the return value or a call to <xref:Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput*> in the context object.
+* **Output**: The output of the function (if any) which comes from its return value.
 
 > [!WARNING]
 > While it's useful as a debugging tool, you should not take any dependency on the existence or the format of this table as the specifics of its usage may change as the Durable Functions extension evolves.

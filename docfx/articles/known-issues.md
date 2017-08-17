@@ -14,7 +14,6 @@ This means the **Durable Task** extension has not been properly installed. See t
 This likely means that the `HttpStart` sample function failed to deserialize the payload of the request. It can be caused by one of the following problems:
 1. There is content in the POST body but the request does not have a `Content-Type: application/json` header.
 2. The POST body is not properly formatted/encoded JSON.
-3. You're using an old version of the Visual Studio sample app which is missing the `WEBSITE_HOSTNAME` app setting in `local.appsettings.json`.
 
 ## ObjectDisposedException when starting a durable function
 When attempting to start a new durable function, it may fail to run and the following error may appear in your logs:

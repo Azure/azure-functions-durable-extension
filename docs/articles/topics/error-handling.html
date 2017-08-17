@@ -99,7 +99,7 @@ public static async Task Run(DurableOrchestrationContext context)
 
         credited = true;
     }
-    catch (TaskFailedException)
+    catch (Exception)
     {
         credited = false;
     }
@@ -116,10 +116,7 @@ public static async Task Run(DurableOrchestrationContext context)
             });
     }
 }
-</code></pre><div class="NOTE"><h5>Note</h5><p>The above code requires a DLL reference to DurableTask.Framework assembly, which is not ideal.
-<a href="https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/41">https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/41</a></p>
-</div>
-<p>If the call to the <strong>CreditAccount</strong> function fails for the destination account, the orchestrator function compensates for this by crediting the funds back to the source account.</p>
+</code></pre><p>If the call to the <strong>CreditAccount</strong> function fails for the destination account, the orchestrator function compensates for this by crediting the funds back to the source account.</p>
 <h2 id="retry-on-failure">Retry on failure</h2>
 <p>There is currently no first-class support for retrying function calls which fail with an error. However, it is still possible to implement retry manually using code, like in the following example:</p>
 <pre><code class="lang-csharp">public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
@@ -138,7 +135,7 @@ public static async Task Run(DurableOrchestrationContext context)
 
     return false;
 }
-</code></pre><div class="NOTE"><h5>Note</h5><p>Automatic retry is a planned feature for public preview: <a href="https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/42">https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/42</a></p>
+</code></pre><div class="NOTE"><h5>Note</h5><p>Automatic retry is currently a planned feature for beta: <a href="https://github.com/Azure/azure-functions-durable-extension/issues/30">https://github.com/Azure/azure-functions-durable-extension/issues/30</a></p>
 </div>
 <h2 id="function-timeouts">Function timeouts</h2>
 <p>It&#39;s possible that you may want to abandon a function call within an orchestrator function if it is taking too long to complete. The proper way to do this today is by creating a durable timer using <code>context.CreateTimer</code> in conjunction with <code>Task.WhenAny</code>, as in the following example:</p>
@@ -169,9 +166,6 @@ public static async Task Run(DurableOrchestrationContext context)
 </code></pre><p>For more information on timers, see the <a href="timers.html">Durable Timers</a> topic.</p>
 <h2 id="unhandled-exceptions">Unhandled exceptions</h2>
 <p>If an orchestrator function fails with an unhandled exception, the details of the exception will be logged and the instance will complete with a <code>Failed</code> status.</p>
-<div class="NOTE"><h5>Note</h5><p>Failed instances cannot be recovered currently. However, it would be extremely useful if they could be recovered in certain situations to help mitigate potential data loss.
-<a href="https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/20">https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/20</a></p>
-</div>
 </article>
           </div>
           
@@ -180,7 +174,7 @@ public static async Task Run(DurableOrchestrationContext context)
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/error-handling.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/error-handling.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

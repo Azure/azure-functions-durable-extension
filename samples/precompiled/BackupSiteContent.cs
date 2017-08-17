@@ -17,10 +17,10 @@ namespace VSSample
         public static async Task<long> Run(
             [OrchestrationTrigger] DurableOrchestrationContext backupContext)
         {
-            string rootDirectory = backupContext.GetInput<string>();
+            string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                throw new ArgumentNullException(nameof(rootDirectory), "A root directory must be specified");
+                rootDirectory = Environment.CurrentDirectory;
             }
 
             string[] files = await backupContext.CallFunctionAsync<string[]>(
@@ -43,11 +43,10 @@ namespace VSSample
 
         [FunctionName("E2_GetFileList")]
         public static string[] GetFileList(
-            [ActivityTrigger] DurableActivityContext getFileListContext,
+            [ActivityTrigger] string rootDirectory, 
             TraceWriter log)
         {
-            string rootDirectory = getFileListContext.GetInput<string>();
-            log.Info($"Searching for files under {rootDirectory}...");
+            log.Info($"Searching for files under '{rootDirectory}'...");
             string[] files = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
             log.Info($"Found {files.Length} file(s) under {rootDirectory}.");
 
@@ -56,11 +55,10 @@ namespace VSSample
 
         [FunctionName("E2_CopyFileToBlob")]
         public static async Task<long> CopyFileToBlob(
-            [ActivityTrigger] DurableActivityContext copyFileContext,
+            [ActivityTrigger] string filePath,
             Binder binder,
             TraceWriter log)
         {
-            string filePath = copyFileContext.GetInput<string>();
             long byteCount = new FileInfo(filePath).Length;
 
             // strip the drive letter prefix and convert to forward slashes
@@ -72,7 +70,7 @@ namespace VSSample
             log.Info($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
 
             // copy the file contents into a blob
-            using (Stream source = File.Open(filePath, FileMode.Open))
+            using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (Stream destination = await binder.BindAsync<CloudBlobStream>(
                 new BlobAttribute(outputLocation)))
             {

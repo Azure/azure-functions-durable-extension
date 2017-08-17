@@ -11,11 +11,9 @@ All samples are combined into a single function app package. To get started with
 
 ### For Visual Studio Development (Windows Only)
 1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package.
-3. Uprotect the zip file: right-click `VSDFSampleApp.zip` --> **Properties** --> **Unprotect**. 
-4. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
-5. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-6. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
+2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud (note that you'll need to manually replicate your local Twilio app settings to Azure).
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -102,9 +100,9 @@ Content-Type: application/json
 HTTP/1.1 202 Accepted
 Content-Length: 695
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 
-{"id":"741c65651d4c40cea29acdd5bb47baf1","statusQueryGetUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage","sendEventPostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage","terminatePostUri":"http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage"}
+{"id":"741c65651d4c40cea29acdd5bb47baf1","statusQueryGetUri":"http://{host}/admin/extensions/DurableTaskExtension/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}","sendEventPostUri":"http://{host}/admin/extensions/DurableTaskExtension/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}","terminatePostUri":"http://{host}/admin/extensions/DurableTaskExtension/instances/741c65651d4c40cea29acdd5bb47baf1/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}"}
 ```
 
 The orchestrator function will receive the supplied phone number and immediately send it an SMS message with a randomly generated 4-digit verification code - e.g. *2168*. The function will then wait 90 seconds for a response.
@@ -112,7 +110,7 @@ The orchestrator function will receive the supplied phone number and immediately
 To reply with the code, you can use <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> inside another function or invoke the **sendEventUrl** HTTP POST webhook referenced in the 202 response above, replacing `{eventName}` with the name of the event, `SmsChallengeResponse`:
 
 ```plaintext
-POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/SmsChallengeResponse?taskHub=DurableFunctionsHub&connection=Storage
+POST http://{host}/admin/extensions/DurableTaskExtension/instances/741c65651d4c40cea29acdd5bb47baf1/raiseEvent/SmsChallengeResponse?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 Content-Length: 4
 Content-Type: application/json
 
@@ -122,7 +120,7 @@ Content-Type: application/json
 If sent before the timer expires, you should see that the orchestration has completed and that the `output` field is set to `true`, indicating a successful verification.
 
 ```plaintext
-GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage
+GET http://{host}/admin/extensions/DurableTaskExtension/instances/741c65651d4c40cea29acdd5bb47baf1?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 ```
 ```plaintext
 HTTP/1.1 200 OK
@@ -144,3 +142,8 @@ Content-Length: 145
 
 ## Wrapping up
 At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> and <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*>, and how these can be combined with `Task.WaitAny` to implement a reliable timeout system (which is often useful when doing any interaction with real people).
+
+## Full Sample Code
+Here is the full orchestration as a single C# file using the Visual Studio project syntax:
+
+[!code-csharp[Main](~/../samples/precompiled/PhoneVerification.cs)]

@@ -74,9 +74,9 @@
 <p>In spite of this, Durable Functions ensures reliable execution of orchestrations. It does so by using storage queues to drive function invocation and by periodically checkpointing execution history into storage tables (using a cloud design pattern known as <a href="https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing">Event Sourcing</a>). Replaying that history can then be used to automatically rebuild the in-memory state of an orchestrator function. The rest of this article will go into the details.</p>
 <h2 id="orchestration-history">Orchestration History</h2>
 <p>Suppose you have the following orchestrator function.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;E1_HelloSequence&quot;)]
+public static async Task&lt;List&lt;string&gt;&gt; Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     var outputs = new List&lt;string&gt;();
 
@@ -277,7 +277,7 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationConte
 <li><strong>Timestamp</strong>: The UTC timestamp of the history event.</li>
 <li><strong>Name</strong>: The name of the function which was invoked.</li>
 <li><strong>Input</strong>: The JSON-formatted input of the function.</li>
-<li><strong>Output</strong>: The output of the function, which either comes from the return value or a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_SetOutput_">SetOutput</a> in the context object.</li>
+<li><strong>Output</strong>: The output of the function (if any) which comes from its return value.</li>
 </ul>
 <div class="WARNING"><h5>Warning</h5><p>While it&#39;s useful as a debugging tool, you should not take any dependency on the existence or the format of this table as the specifics of its usage may change as the Durable Functions extension evolves.</p>
 </div>
@@ -314,7 +314,7 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationConte
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/checkpointing-and-replay.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/checkpointing-and-replay.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

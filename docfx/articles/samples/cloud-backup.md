@@ -8,11 +8,9 @@ All samples are combined into a single function app package. To get started with
 
 ### For Visual Studio Development (Windows Only)
 1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package.
-3. Uprotect the zip file: right-click `VSDFSampleApp.zip` --> **Properties** --> **Unprotect**. 
-4. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
-5. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-6. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
+2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -45,7 +43,7 @@ The **E2_BackupSiteContent** function uses the standard function.json for orches
 
 [!code-json[Main](~/../samples/csx/E2_BackupSiteContent/function.json)]
 
-Here is the code which implements the function:
+Here is the code which implements the orchestrator function:
 
 [!code-csharp[Main](~/../samples/csx/E2_BackupSiteContent/run.csx)]
 
@@ -106,7 +104,7 @@ This will trigger the **E2_BackupSiteContent** orchestrator and pass the string 
 HTTP/1.1 202 Accepted
 Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 
 (...trimmed...)
 ```
@@ -114,14 +112,14 @@ Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9
 Depending on how many log files you have in your function app, this operation could take several minutes to complete. You can get the latest status by querying the URL in the `Location` header of the previous HTTP 202 response.
 
 ```plaintext
-GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage
+GET http://{host}/admin/extensions/DurableTaskExtension/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 ```
 
 ```plaintext
 HTTP/1.1 202 Accepted
 Content-Length: 148
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/b4e9bdcc435d460f8dc008115ff0a8a9?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 
 {"runtimeStatus":"Running","input":"D:\\home\\LogFiles","output":null,"createdTime":"2017-06-29T18:50:55Z","lastUpdatedTime":"2017-06-29T18:51:16Z"}
 ```
@@ -140,3 +138,8 @@ Now we can see that the orchestration is complete and approximately how much tim
 
 ## Wrapping up
 At this point, you should have a greater understanding of the core capabilities of Durable Functions. Subsequent samples will go into more advanced features and scenarios.
+
+## Full Sample Code
+Here is the full orchestration as a single C# file using the Visual Studio project syntax:
+
+[!code-csharp[Main](~/../samples/precompiled/BackupSiteContent.cs)]
