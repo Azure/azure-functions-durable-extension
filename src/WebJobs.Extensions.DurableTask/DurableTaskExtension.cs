@@ -361,7 +361,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException(
                     string.Format("The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: {1}.",
                         functionName,
-                        string.Join(", ", this.registeredOrchestrators)));
+                        string.Join(", ", this.registeredOrchestrators.Keys)));
             }
         }
 
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException(
                     string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: {1}.",
                         functionName,
-                        string.Join(", ", this.registeredActivities)));
+                        string.Join(", ", this.registeredActivities.Keys)));
             }
         }
 

@@ -254,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     var timeout = TimeSpan.FromSeconds(10);
                     var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
 
                     // Don't send any notification - let the internal timeout expire
                 };
@@ -266,9 +266,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     tasks[i] = orchestrationStarter();
                 }
 
-                // The 100 orchestrations above (which each delay for 10 seconds) should all complete in less than 30 seconds.
+                // The 100 orchestrations above (which each delay for 10 seconds) should all complete in less than 40 seconds.
                 Task parallelOrchestrations = Task.WhenAll(tasks);
-                Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(30));
+                Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(40));
 
                 Task winner = await Task.WhenAny(parallelOrchestrations, timeoutTask);
                 Assert.Equal(parallelOrchestrations, winner);

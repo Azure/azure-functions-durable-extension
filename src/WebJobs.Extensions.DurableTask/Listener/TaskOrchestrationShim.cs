@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"The {nameof(functionInvocationCallback)} has not been assigned!");
             }
 
+            this.context.AssignToCurrentThread();
             this.context.SetInput(innerContext, serializedInput);
 
             this.config.TraceHelper.FunctionStarting(

@@ -15,6 +15,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TraceInputsAndOutputs = true
             });
 
+            // Performance is *significantly* worse when dashboard logging is enabled, at least
+            // when running in the storage emulator. Disabling to keep tests running quickly.
+            config.DashboardConnectionString = null;
+
             var host = new JobHost(config);
             return host;
         }

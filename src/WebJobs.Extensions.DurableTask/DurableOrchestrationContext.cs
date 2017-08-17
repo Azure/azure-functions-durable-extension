@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs
 
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
-            this.owningThreadId = Thread.CurrentThread.ManagedThreadId;
+            this.owningThreadId = -1;
         }
 
         /// <summary>
@@ -61,14 +61,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The ID of the current orchestration instance.
         /// </value>
-        public string InstanceId
-        {
-            get
-            {
-                this.ThrowIfInvalidAccess();
-                return this.innerContext.OrchestrationInstance.InstanceId;
-            }
-        }
+        public string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
 
         /// <summary>
         /// Gets the current date/time in a way that is safe for use by orchestrator functions.
@@ -78,14 +71,7 @@ namespace Microsoft.Azure.WebJobs
         /// at specific points in the orchestrator function code, making it deterministic and safe for replay.
         /// </remarks>
         /// <value>The orchestration's current date/time in UTC.</value>
-        public DateTime CurrentUtcDateTime
-        {
-            get
-            {
-                this.ThrowIfInvalidAccess();
-                return this.innerContext.CurrentUtcDateTime;
-            }
-        }
+        public DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
 
         /// <summary>
         /// Gets a value indicating whether the orchestrator function is currently replaying itself.
@@ -99,14 +85,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// <c>true</c> if the orchestrator function is currently being replayed; otherwise <c>false</c>.
         /// </value>
-        public bool IsReplaying
-        {
-            get
-            {
-                this.ThrowIfInvalidAccess();
-                return this.innerContext.IsReplaying;
-            }
-        }
+        public bool IsReplaying => this.innerContext.IsReplaying;
 
         internal bool ContinuedAsNew { get; private set; }
 
@@ -119,6 +98,11 @@ namespace Microsoft.Azure.WebJobs
         internal string Version => this.orchestrationVersion;
 
         internal bool IsOutputSet => this.serializedOutput != null;
+
+        internal void AssignToCurrentThread()
+        {
+            this.owningThreadId = Thread.CurrentThread.ManagedThreadId;
+        }
 
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
@@ -427,10 +411,10 @@ namespace Microsoft.Azure.WebJobs
             // TODO: This should be considered best effort because it's possible that async work 
             // was scheduled and the CLR decided to run it on the same thread. The only guaranteed 
             // way to detect cross-thread access is to do it in the Durable Task Framework directly.
-            if (this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
+            if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
             {
                 throw new InvalidOperationException(
-                    "Multithreaded execution was detected. Code that requires async callbacks which may execute on alternate threads should be moved into activity functions.");
+                    "Multithreaded execution was detected. This can happen if the orchestrator function previously resumed from an unsupported async callback.");
             }
         }
     }

@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityTriggerAsNumber()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(ActivityTriggerAsPOCO)))
+            using (JobHost host = TestHelpers.GetJobHost(nameof(ActivityTriggerAsNumber)))
             {
                 await host.StartAsync();
 

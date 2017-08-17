@@ -34,11 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         
             IExtensionRegistry extensions = hostConfig.GetService<IExtensionRegistry>();
             extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
-
-            // TODO: We try to disable dashboard logging because the dashboard logger's
-            // network I/O causes DTFx orchestrations to hang. This is an open issue
-            // that currently has no solution.
-            hostConfig.DashboardConnectionString = null;
         }
     }
 }
