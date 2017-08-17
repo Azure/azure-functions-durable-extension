@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <value>The task hub used by this binding.</value>
         /// <remarks>
-        /// The default behavior is to use the task hub name specified in <see cref="DurableTaskConfiguration.HubName"/>.
+        /// The default behavior is to use the task hub name specified in <see cref="DurableTaskExtension.HubName"/>.
         /// If no value exists there, then a default value will be used.
         /// </remarks>
         public string TaskHub { get; set; }
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>The name of a connection string that exists in the app's application settings.</value>
         /// <remarks>
         /// The default behavior is to use the value specified in 
-        /// <see cref="DurableTaskConfiguration.AzureStorageConnectionStringName"/>. If no value exists there, then
+        /// <see cref="DurableTaskExtension.AzureStorageConnectionStringName"/>. If no value exists there, then
         /// the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         public string ConnectionName { get; set; }

@@ -78,11 +78,9 @@
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
 <li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
-<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package.</li>
-<li>Uprotect the zip file: right-click <code>VSDFSampleApp.zip</code> --&gt; <strong>Properties</strong> --&gt; <strong>Unprotect</strong>. </li>
-<li>Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).</li>
+<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
 <li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
-<li>The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions in Azure.</li>
+<li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.</li>
 </ol>
 <h3 id="for-azure-portal-development">For Azure Portal Development</h3>
 <ol>
@@ -103,46 +101,47 @@
 <p>Using a single VM to host the counter data is one option, but this is expensive and managing <strong>reliability</strong> can be a challenge since a single VM will need to be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of <strong>complexity</strong>.</p>
 <p>Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.</p>
 <h2 id="the-counter-orchestration">The counter orchestration</h2>
-<p>The <strong>E3_Counter</strong> function uses the standard function.json for orchestrator functions.</p>
-<pre><code class="lang-json" name="Main">{
-  &quot;bindings&quot;: [
-    {
-      &quot;name&quot;: &quot;counterContext&quot;,
-      &quot;type&quot;: &quot;orchestrationTrigger&quot;,
-      &quot;direction&quot;: &quot;in&quot;
-    }
-  ],
-  &quot;disabled&quot;: false
-}
-</code></pre><p>Here is the code which implements the function:</p>
-<pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
+<p>Here is the code which implements the orchestrator function:</p>
+<pre><code class="lang-csharp" name="Main">// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
 
-public static async Task&lt;int&gt; Run(
-    DurableOrchestrationContext counterContext,
-    TraceWriter log)
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Host;
+
+namespace VSSample
 {
-    int counterState = counterContext.GetInput&lt;int&gt;();
-    log.Info($&quot;Current counter state is {counterState}. Waiting for next operation.&quot;);
-
-    string operation = await counterContext.WaitForExternalEvent&lt;string&gt;(&quot;operation&quot;);
-    log.Info($&quot;Received &#39;{operation}&#39; operation.&quot;);
-
-    operation = operation?.ToLowerInvariant();
-    if (operation == &quot;incr&quot;)
+    public static class Counter
     {
-        counterState++;
-    }
-    else if (operation == &quot;decr&quot;)
-    {
-        counterState--;
-    }
-    
-    if (operation != &quot;end&quot;)
-    {
-        counterContext.ContinueAsNew(counterState);
-    }
+        [FunctionName(&quot;E3_Counter&quot;)]
+        public static async Task&lt;int&gt; Run(
+            [OrchestrationTrigger] DurableOrchestrationContext counterContext,
+            TraceWriter log)
+        {
+            int counterState = counterContext.GetInput&lt;int&gt;();
+            log.Info($&quot;Current counter state is {counterState}. Waiting for next operation.&quot;);
 
-    return counterState;
+            string operation = await counterContext.WaitForExternalEvent&lt;string&gt;(&quot;operation&quot;);
+            log.Info($&quot;Received &#39;{operation}&#39; operation.&quot;);
+
+            operation = operation?.ToLowerInvariant();
+            if (operation == &quot;incr&quot;)
+            {
+                counterState++;
+            }
+            else if (operation == &quot;decr&quot;)
+            {
+                counterState--;
+            }
+
+            if (operation != &quot;end&quot;)
+            {
+                counterContext.ContinueAsNew(counterState);
+            }
+
+            return counterState;
+        }
+    }
 }
 </code></pre><p>This orchestrator function essentially does the following:</p>
 <ol>
@@ -162,13 +161,13 @@ Content-Length: 0
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 
-{&quot;id&quot;:&quot;bcf6fb5067b046fbb021b52ba7deae5a&quot;,&quot;statusQueryGetUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&quot;,&quot;sendEventPostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&amp;connection=Storage&quot;,&quot;terminatePostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&amp;taskHub=DurableFunctionsHub&amp;connection=Storage&quot;}
+{&quot;id&quot;:&quot;bcf6fb5067b046fbb021b52ba7deae5a&quot;,&quot;statusQueryGetUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}&quot;,&quot;sendEventPostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}&quot;,&quot;terminatePostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&amp;taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}&quot;}
 </code></pre><p>The <strong>E3_Counter</strong> instance starts and then immediately waits for an event to be sent to it using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> or using the <strong>sendEventUrl</strong> HTTP POST webhook referenced in the 202 response above. Valid <code>eventName</code> values include <em>incr</em>, <em>decr</em>, and <em>end</em>.</p>
 <div class="NOTE"><h5>Note</h5><p>Feel free to take a look at the source code for HttpSendEvent to get an idea of how <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> is used by client functions.</p>
 </div>
-<pre><code class="lang-plaintext">POST http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&amp;connection=Storage HTTP/1.1
+<pre><code class="lang-plaintext">POST http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey} HTTP/1.1
 Content-Type: application/json
 Content-Length: 6
 
@@ -183,11 +182,11 @@ Content-Length: 6
 2017-06-29T18:58:11.518 Function started (Id=e1f38cb2-546a-404d-ab22-1ac8f81a93d9)
 2017-06-29T18:58:11.518 Current counter state is 1. Waiting for next operation.
 </code></pre><p>Similarly, if you check the orchestrator status, you should see the <code>input</code> field has been set to the updated value (1).</p>
-<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage HTTP/1.1
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey} HTTP/1.1
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 129
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 
 {&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:1,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-06-29T18:58:01Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:58:11Z&quot;}
 </code></pre><p>You can continue sending new operations to this instance and observe its state gets updated accordingly. If you wish to kill the instance, you can do so by sending an <em>end</em> operation.</p>
@@ -203,7 +202,7 @@ Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/bcf6
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/samples/counter.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/samples/counter.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

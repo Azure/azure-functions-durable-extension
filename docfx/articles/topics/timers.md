@@ -8,7 +8,7 @@ These timers are "durable" because they are internally backed by scheduled messa
 
 > [!WARNING]
 > Durable timers cannot last longer than 7 days due to limitations in Azure Storage.
-> This will be fixed in a future update.
+> [This GitHub issue](https://github.com/Azure/azure-functions-durable-extension/issues/14) tracks extending timers beyond 7 days.
 
 > [!WARNING]
 > Always make sure to use <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime> instead of `DateTime.UtcNow` as shown in the examples below when computing a relative deadline of a durable timer.
@@ -17,11 +17,9 @@ These timers are "durable" because they are internally backed by scheduled messa
 The following example illustrates how to use durable timers for delaying execution. The specific example is issuing a billing notification every day for ten days.
 
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-using System.Threading;
-
-public static async Task Run(DurableOrchestrationContext context)
+[FunctionName("BillingIssuer")]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     for (int i = 0; i < 10; i++)
     {
@@ -39,7 +37,9 @@ public static async Task Run(DurableOrchestrationContext context)
 This next example illustrates how to use durable timers to implement timeouts.
 
 ```csharp
-public static async Task<bool> Run(DurableOrchestrationContext context)
+[FunctionName("TryGetQuote")]
+public static async Task<bool> Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     TimeSpan timeout = TimeSpan.FromSeconds(30);
     DateTime deadline = context.CurrentUtcDateTime.Add(timeout);

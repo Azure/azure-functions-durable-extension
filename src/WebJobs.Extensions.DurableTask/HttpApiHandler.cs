@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -21,10 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
 
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
 
-        public HttpApiHandler(DurableTaskConfiguration config, TraceWriter traceWriter)
+        public HttpApiHandler(DurableTaskExtension config, TraceWriter traceWriter)
         {
             this.config = config;
             this.traceWriter = traceWriter;
@@ -40,18 +41,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            // e.g. http://{host}/admin/extensions/DurableTaskConfiguration
+            Uri notificationUri = this.config.NotificationUrl;
+
+            // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
             string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
-            string baseUrl = hostUrl + this.config.NotificationUrl.AbsolutePath.TrimEnd('/');
+            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
             string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);
             string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
-            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
 
-            Uri statusQueryGetUri = new Uri(instancePrefix + "?" + querySuffix);
-            Uri sendEventPostUri = new Uri(instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix);
-            Uri terminatePostUri = new Uri(instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix);
+            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
+            if (!string.IsNullOrEmpty(notificationUri.Query))
+            {
+                // This is expected to include the auto-generated system key for this extension.
+                querySuffix += "&" + notificationUri.Query.TrimStart('?');
+            }
+
+            string statusQueryGetUri = instancePrefix + "?" + querySuffix;
+            string sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
+            string terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
 
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -62,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri = sendEventPostUri,
                     terminatePostUri = terminatePostUri
                 });
-            response.Headers.Location = statusQueryGetUri;
+            response.Headers.Location = new Uri(statusQueryGetUri);
             return response;
         }
 

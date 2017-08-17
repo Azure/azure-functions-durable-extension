@@ -77,11 +77,9 @@
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
 <li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
-<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package.</li>
-<li>Uprotect the zip file: right-click <code>VSDFSampleApp.zip</code> --&gt; <strong>Properties</strong> --&gt; <strong>Unprotect</strong>. </li>
-<li>Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).</li>
+<li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
 <li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
-<li>The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions in Azure.</li>
+<li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.</li>
 </ol>
 <h3 id="for-azure-portal-development">For Azure Portal Development</h3>
 <ol>
@@ -159,11 +157,11 @@ public static string Run(DurableActivityContext helloContext)
 <pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&amp;connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 
 (...trimmed...)
 </code></pre><p>At this point, the orchestration is queued up and should begin running immediately. The URL in the <code>Location</code> header above can be used to check the status of the execution.</p>
-<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&amp;connection=Storage
+<pre><code class="lang-plaintext">GET http://{host}/admin/extensions/DurableTaskExtension/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}
 </code></pre><p>The result is the status of the orchestration. It should run and complete quickly, so you should expect to see it in the <em>Completed</em> state with a response that looks like this (trimmed for brevity):</p>
 <pre><code class="lang-plaintext">HTTP/1.1 200 OK
 Content-Length: 179
@@ -176,7 +174,41 @@ Content-Type: application/json; charset=utf-8
 <p>Also, be sure to take a look at the function execution logs. You should notice that <strong>E1_HelloSequence</strong> was started multiple times (due to the replay behavior) and completed exactly once. Similarly, you should see exactly three executions of <strong>E1_SayHello</strong> since those function executions do not get replayed.</p>
 <h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a basic understanding of the core mechanics for Durable Functions. This sample was quite trivial and only showed a small number of features available. Subsequent samples, however, are more &quot;real world&quot; and will display a greater breadth of functionality.</p>
-</article>
+<h2 id="full-sample-code">Full Sample Code</h2>
+<p>Here is the full orchestration as a single C# file using the Visual Studio project syntax:</p>
+<pre><code class="lang-csharp" name="Main">// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(&quot;E1_HelloSequence&quot;)]
+        public static async Task&lt;List&lt;string&gt;&gt; Run(
+            [OrchestrationTrigger] DurableOrchestrationContext context)
+        {
+            var outputs = new List&lt;string&gt;();
+
+            outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
+            outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
+            outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
+
+            // returns [&quot;Hello Tokyo!&quot;, &quot;Hello Seattle!&quot;, &quot;Hello London!&quot;]
+            return outputs;
+        }
+
+        [FunctionName(&quot;E1_SayHello&quot;)]
+        public static string SayHello([ActivityTrigger] string name)
+        {
+            return $&quot;Hello {name}!&quot;;
+        }
+    }
+ }
+</code></pre></article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">
@@ -184,7 +216,7 @@ Content-Type: application/json; charset=utf-8
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/samples/sequence.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/samples/sequence.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

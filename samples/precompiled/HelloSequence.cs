@@ -24,10 +24,8 @@ namespace VSSample
         }
 
         [FunctionName("E1_SayHello")]
-        public static string SayHello(
-            [ActivityTrigger] DurableActivityContext helloContext)
+        public static string SayHello([ActivityTrigger] string name)
         {
-            string name = helloContext.GetInput<string>();
             return $"Hello {name}!";
         }
     }

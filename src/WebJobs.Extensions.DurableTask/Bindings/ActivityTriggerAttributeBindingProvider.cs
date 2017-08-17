@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -16,12 +17,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ActivityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
-        private readonly DurableTaskConfiguration durableTaskConfig;
+        private readonly DurableTaskExtension durableTaskConfig;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
         public ActivityTriggerAttributeBindingProvider(
-            DurableTaskConfiguration durableTaskConfig,
+            DurableTaskExtension durableTaskConfig,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
         {
@@ -46,15 +47,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
-            // The activity name defaults to the method name.
-            string activityName = trigger.Activity ?? parameter.Member.Name;
+            // Priority for getting the name is [ActivityTrigger], [FunctionName], method name
+            string name = trigger.Activity;
+            if (string.IsNullOrEmpty(name))
+            {
+                MemberInfo method = context.Parameter.Member;
+                name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
+            }
 
-            var binding = new ActivityTriggerBinding(
-                this,
-                parameter,
-                trigger,
-                activityName,
-                trigger.Version);
+            // The activity name defaults to the method name.
+            var activityName = new FunctionName(name, trigger.Version);
+            var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
@@ -63,27 +66,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private static readonly IReadOnlyDictionary<string, Type> StaticBindingContract =
                 new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { nameof(DurableActivityContext.InstanceId), typeof(string) }
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                    { nameof(DurableActivityContext.InstanceId), typeof(string) },
                 };
 
             private readonly ActivityTriggerAttributeBindingProvider parent;
             private readonly ParameterInfo parameterInfo;
             private readonly ActivityTriggerAttribute attribute;
-            private readonly string activityName;
-            private readonly string activityVersion;
+            private readonly FunctionName activityName;
 
             public ActivityTriggerBinding(
                 ActivityTriggerAttributeBindingProvider parent,
                 ParameterInfo parameterInfo,
                 ActivityTriggerAttribute attribute,
-                string activityName,
-                string activityVersion)
+                FunctionName activity)
             {
                 this.parent = parent;
                 this.parameterInfo = parameterInfo;
                 this.attribute = attribute;
-                this.activityName = activityName;
-                this.activityVersion = activityVersion;
+                this.activityName = activity;
             }
 
             public Type TriggerValueType => typeof(DurableActivityContext);
@@ -92,27 +94,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                IConverterManager cm = this.parent.extensionContext.Config.ConverterManager;
-                MethodInfo getConverterMethod = cm.GetType().GetMethod(nameof(cm.GetConverter));
-                getConverterMethod = getConverterMethod.MakeGenericMethod(
-                    typeof(DurableActivityContext),
-                    this.parameterInfo.ParameterType,
-                    typeof(ActivityTriggerAttribute));
+                var activityContext = (DurableActivityContext)value;
+                Type destinationType = this.parameterInfo.ParameterType;
 
-                Delegate d = (Delegate)getConverterMethod.Invoke(cm, null);
-                object convertedValue = d.DynamicInvoke(value, this.attribute, context);
+                object convertedValue;
+                if (destinationType == typeof(object))
+                {
+                    // Straight assignment
+                    convertedValue = value;
+                }
+                else
+                {
+                    // Try using the converter manager
+                    IConverterManager cm = this.parent.extensionContext.Config.ConverterManager;
+                    MethodInfo getConverterMethod = cm.GetType().GetMethod(nameof(cm.GetConverter));
+                    getConverterMethod = getConverterMethod.MakeGenericMethod(
+                        typeof(DurableActivityContext),
+                        destinationType,
+                        typeof(ActivityTriggerAttribute));
 
-                var valueProvider = new ObjectValueProvider(
-                    convertedValue,
+                    Delegate d = (Delegate)getConverterMethod.Invoke(cm, null);
+                    if (d != null)
+                    {
+                        convertedValue = d.DynamicInvoke(value, this.attribute, context);
+                    }
+                    else if (!destinationType.IsInterface)
+                    {
+                        MethodInfo getInputMethod = activityContext.GetType()
+                            .GetMethod(nameof(activityContext.GetInput))
+                            .MakeGenericMethod(destinationType);
+                        convertedValue = getInputMethod.Invoke(activityContext, null);
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            $"Activity triggers cannot be bound to {destinationType}.",
+                            this.parameterInfo.Name);
+                    }
+                }
+
+                var inputValueProvider = new ObjectValueProvider(
+                    convertedValue, 
                     this.parameterInfo.ParameterType);
 
-                DurableActivityContext activityContext = (DurableActivityContext)value;
                 var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { nameof(DurableActivityContext.InstanceId), activityContext.InstanceId }
+                    { nameof(DurableActivityContext.InstanceId), activityContext.InstanceId },
                 };
 
-                var triggerData = new TriggerData(valueProvider, bindingData);
+                var triggerData = new TriggerData(inputValueProvider, bindingData);
+                triggerData.ReturnValueProvider = new ActivityTriggerReturnValueBinder(
+                    activityContext,
+                    this.parameterInfo.ParameterType);
+
                 return Task.FromResult<ITriggerData>(triggerData);
             }
 
@@ -128,11 +162,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var listener = DurableTaskListener.CreateForActivity(
+                var listener = new DurableTaskListener(
                     this.parent.durableTaskConfig,
                     this.activityName,
-                    this.activityVersion,
-                    context.Executor);
+                    context.Executor,
+                    isOrchestrator: false);
                 return Task.FromResult<IListener>(listener);
             }
 
@@ -141,18 +175,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IConverterManager cm = hostConfig.ConverterManager;
                 cm.AddConverter<DurableActivityContext, string>(ActivityContextToString);
                 cm.AddConverter<DurableActivityContext, JObject>(ActivityContextToJObject);
-
-                // TODO: Add support for open types - i.e. POCO objects
             }
 
             private static JObject ActivityContextToJObject(DurableActivityContext arg)
             {
-                return JObject.Parse(arg.GetRawInput());
+                JToken token = arg.GetInputAsJson();
+                if (token == null)
+                {
+                    return null;
+                }
+
+                JObject jObj = token as JObject;
+                if (jObj == null)
+                {
+                    throw new ArgumentException($"Cannot convert '{token}' to a JSON object.");
+                }
+
+                return jObj;
             }
 
             private static string ActivityContextToString(DurableActivityContext arg)
             {
                 return arg.GetInput<string>();
+            }
+
+            private class ActivityTriggerReturnValueBinder : IValueBinder
+            {
+                private readonly DurableActivityContext context;
+                private readonly Type valueType;
+
+                public ActivityTriggerReturnValueBinder(DurableActivityContext context, Type valueType)
+                {
+                    this.context = context ?? throw new ArgumentNullException(nameof(context));
+                    this.valueType = valueType ?? throw new ArgumentNullException(nameof(valueType));
+                }
+
+                public Type Type => this.valueType;
+
+                public Task<object> GetValueAsync()
+                {
+                    throw new NotImplementedException("This binder should only be used for setting return values!");
+                }
+
+                public Task SetValueAsync(object value, CancellationToken cancellationToken)
+                {
+                    if (value != null)
+                    {
+                        this.context.SetOutput(value);
+                    }
+
+                    return Task.CompletedTask;
+                }
+
+                public string ToInvokeString()
+                {
+                    return this.context.GetSerializedOutput();
+                }
             }
         }
     }

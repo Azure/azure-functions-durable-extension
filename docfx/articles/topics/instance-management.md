@@ -9,16 +9,18 @@ The supported parameters are as follows:
 * **Input**: Any JSON-serializable data which should be passed as the input to the orchestrator function.
 * **InstanceId**: (Optional) The unique ID of the instance. If not specified, a random instance ID will be generated.
 
-The output of this method is the instance ID of the scheduled instance (which may have been generated). Here is a simple C# example:
+Here is a simple C# example:
 
 __C# example__
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static Task<string> Run(string input, DurableOrchestrationClient starter)
+[FunctionName("HelloWorldManualStart")]
+public static Task Run(
+    [ManualTrigger] string input,
+    [OrchestrationClient] DurableOrchestrationClient starter,
+    TraceWriter log)
 {
     string instanceId = starter.StartNewAsync("HelloWorld", input);
-    return instanceId;
+    log.Info($"Started orchestration with ID = '{instanceId}'.");
 }
 ```
 
@@ -34,7 +36,7 @@ module.exports = function (context, input) {
         InstanceId: id
     }];
 
-    context.done(null, id);
+    context.done(null);
 };
 ```
 
@@ -61,9 +63,10 @@ This method returns `null` if the instance either doesn't exist or has not yet s
 
 __C# example__
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task Run(DurableOrchestrationClient client, string instanceId)
+[FunctionName("GetStatus")]
+public static async Task Run(
+    [OrchestrationClient] DurableOrchestrationClient client,
+    [ManualTrigger] string instanceId)
 {
     var status = await checker.GetStatusAsync(instanceId);
     // do something based on the current status.
@@ -78,9 +81,10 @@ A running instance can be terminated using the <xref:Microsoft.Azure.WebJobs.Dur
 
 __C# example__
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static Task Run(DurableOrchestrationClient client, string instanceId)
+[FunctionName("TerminateInstance")]
+public static Task Run(
+    [OrchestrationClient] DurableOrchestrationClient client,
+    [ManualTrigger] string instanceId)
 {
     string reason = "It was time to be done.";
     return client.TerminateAsync(instanceId, reason);
@@ -101,7 +105,10 @@ __C# example__
 ```csharp
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 
-public static Task Run(DurableOrchestrationClient client, string instanceId)
+[FunctionName("RaiseEvent")]
+public static Task Run(
+    [OrchestrationClient] DurableOrchestrationClient client,
+    [ManualTrigger] string instanceId)
 {
     int[] eventData = new int[] { 1, 2, 3 };
     return client.RaiseEventAsync(instanceId, "MyEvent", eventData);
@@ -112,4 +119,4 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
 > Raising events is currently only supported for C# functions.
 
 > [!WARNING]
-> Instances can only process events when they are awaiting on a call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>. If an instance is not waiting on this call, then the event will be dropped.
+> Instances can only process events when they are awaiting on a call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>. If an instance is not waiting on this call, then the event will be dropped. [This GitHub issue](https://github.com/Azure/azure-functions-durable-extension/issues/29) tracks this current behavior.

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26608.5
+VisualStudioVersion = 15.0.26621.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask", "src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}"
 EndProject
@@ -37,5 +37,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
 		{5077E0FB-7011-4869-84B7-B0D67964F832} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}
 	EndGlobalSection
 EndGlobal

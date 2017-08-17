@@ -32,7 +32,7 @@ public static async Task Run(DurableOrchestrationContext context)
 
         credited = true;
     }
-    catch (TaskFailedException)
+    catch (Exception)
     {
         credited = false;
     }
@@ -50,9 +50,6 @@ public static async Task Run(DurableOrchestrationContext context)
     }
 }
 ```
-> [!NOTE]
-> The above code requires a DLL reference to DurableTask.Framework assembly, which is not ideal.
-> https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/41
 
 If the call to the **CreditAccount** function fails for the destination account, the orchestrator function compensates for this by crediting the funds back to the source account.
 
@@ -79,7 +76,7 @@ public static async Task<bool> Run(DurableOrchestrationContext context)
 ```
 
 > [!NOTE]
-> Automatic retry is a planned feature for public preview: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/42
+> Automatic retry is currently a planned feature for beta: https://github.com/Azure/azure-functions-durable-extension/issues/30
 
 ## Function timeouts
 It's possible that you may want to abandon a function call within an orchestrator function if it is taking too long to complete. The proper way to do this today is by creating a durable timer using `context.CreateTimer` in conjunction with `Task.WhenAny`, as in the following example:
@@ -115,7 +112,3 @@ For more information on timers, see the [Durable Timers](./timers.md) topic.
 
 ## Unhandled exceptions
 If an orchestrator function fails with an unhandled exception, the details of the exception will be logged and the instance will complete with a `Failed` status.
-
-> [!NOTE]
-> Failed instances cannot be recovered currently. However, it would be extremely useful if they could be recovered in certain situations to help mitigate potential data loss.
-> https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/20

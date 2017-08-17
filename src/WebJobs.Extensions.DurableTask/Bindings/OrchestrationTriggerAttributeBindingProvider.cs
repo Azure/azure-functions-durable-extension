@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -15,12 +16,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class OrchestrationTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
         public OrchestrationTriggerAttributeBindingProvider(
-            DurableTaskConfiguration config,
+            DurableTaskExtension config,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
         {
@@ -43,49 +44,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
-            // The orchestration name defaults to the method name.
-            string orchestrationName = trigger.Orchestration ?? parameter.Member.Name;
+            // Priority for getting the name is [OrchestrationTrigger], [FunctionName], method name
+            string name = trigger.Orchestration;
+            if (string.IsNullOrEmpty(name))
+            {
+                MemberInfo method = context.Parameter.Member;
+                name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
+            }
 
-            // TODO: Support for per-function connection string and task hub names
-            var binding = new OrchestrationTriggerBinding(
-                this.config,
-                parameter,
-                orchestrationName,
-                trigger.Version);
+            // The orchestration name defaults to the method name.
+            var orchestratorName = new FunctionName(name, trigger.Version);
+            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
-            private readonly DurableTaskConfiguration config;
+            private static readonly IReadOnlyDictionary<string, Type> StaticBindingContract =
+                new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                };
+
+            private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
-            private readonly string orchestrationName;
-            private readonly string version;
+            private readonly FunctionName orchestratorName;
 
             public OrchestrationTriggerBinding(
-                DurableTaskConfiguration config,
+                DurableTaskExtension config,
                 ParameterInfo parameterInfo,
-                string orchestrationName,
-                string version)
+                FunctionName orchestratorName)
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
-                this.orchestrationName = orchestrationName;
-                this.version = version;
+                this.orchestratorName = orchestratorName;
             }
 
             public Type TriggerValueType => typeof(DurableOrchestrationContext);
 
-            public IReadOnlyDictionary<string, Type> BindingDataContract
-            {
-                // TODO: Figure out how or whether other types of bindings could be used for this trigger.
-                get { return null; }
-            }
+            public IReadOnlyDictionary<string, Type> BindingDataContract => StaticBindingContract;
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
                 // No conversions
-                return Task.FromResult<ITriggerData>(new TriggerData(new ObjectValueProvider(value, this.TriggerValueType), null));
+                var inputValueProvider = new ObjectValueProvider(value, this.TriggerValueType);
+
+                // We don't specify any return value binding because we process the return value
+                // earlier in the pipeline via the InvokeHandler extensibility.
+                var triggerData = new TriggerData(inputValueProvider, bindingData: null);
+                return Task.FromResult<ITriggerData>(triggerData);
             }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
@@ -96,11 +104,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var listener = DurableTaskListener.CreateForOrchestration(
+                var listener = new DurableTaskListener(
                     this.config,
-                    this.orchestrationName,
-                    this.version,
-                    context.Executor);
+                    this.orchestratorName,
+                    context.Executor,
+                    isOrchestrator: true);
                 return Task.FromResult<IListener>(listener);
             }
 

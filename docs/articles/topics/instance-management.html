@@ -79,14 +79,16 @@
 <li><strong>Input</strong>: Any JSON-serializable data which should be passed as the input to the orchestrator function.</li>
 <li><strong>InstanceId</strong>: (Optional) The unique ID of the instance. If not specified, a random instance ID will be generated.</li>
 </ul>
-<p>The output of this method is the instance ID of the scheduled instance (which may have been generated). Here is a simple C# example:</p>
+<p>Here is a simple C# example:</p>
 <p><strong>C# example</strong></p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static Task&lt;string&gt; Run(string input, DurableOrchestrationClient starter)
+<pre><code class="lang-csharp">[FunctionName(&quot;HelloWorldManualStart&quot;)]
+public static Task Run(
+    [ManualTrigger] string input,
+    [OrchestrationClient] DurableOrchestrationClient starter,
+    TraceWriter log)
 {
     string instanceId = starter.StartNewAsync(&quot;HelloWorld&quot;, input);
-    return instanceId;
+    log.Info($&quot;Started orchestration with ID = &#39;{instanceId}&#39;.&quot;);
 }
 </code></pre><p>For non-.NET languages, the function output binding can be used to start new instances as well. In this case, any JSON-serializable object which has the above three parameters as fields can be used. For example, consider the following Node.js function:</p>
 <p><strong>Node.js example</strong></p>
@@ -98,7 +100,7 @@ public static Task&lt;string&gt; Run(string input, DurableOrchestrationClient st
         InstanceId: id
     }];
 
-    context.done(null, id);
+    context.done(null);
 };
 </code></pre><div class="NOTE"><h5>Note</h5><p>It is generally recommended that you use a random identifier for the instance ID. This will help ensure an equal load distribution when scaling orchestrator functions across multiple VMs.</p>
 </div>
@@ -122,9 +124,10 @@ public static Task&lt;string&gt; Run(string input, DurableOrchestrationClient st
 </ul>
 <p>This method returns <code>null</code> if the instance either doesn&#39;t exist or has not yet started running.</p>
 <p><strong>C# example</strong></p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static async Task Run(DurableOrchestrationClient client, string instanceId)
+<pre><code class="lang-csharp">[FunctionName(&quot;GetStatus&quot;)]
+public static async Task Run(
+    [OrchestrationClient] DurableOrchestrationClient client,
+    [ManualTrigger] string instanceId)
 {
     var status = await checker.GetStatusAsync(instanceId);
     // do something based on the current status.
@@ -134,9 +137,10 @@ public static async Task Run(DurableOrchestrationClient client, string instanceI
 <h2 id="terminating-instances">Terminating instances</h2>
 <p>A running instance can be terminated using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_TerminateAsync_">TerminateAsync</a> method of the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class. The two parameters are an <code>instanceId</code> and a <code>reason</code> string, which will be written to logs and to the instance status. A terminated instance will stop running as soon as it reaches the next <code>await</code> point, or will terminate immediately if it is already on an <code>await</code>.</p>
 <p><strong>C# example</strong></p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static Task Run(DurableOrchestrationClient client, string instanceId)
+<pre><code class="lang-csharp">[FunctionName(&quot;TerminateInstance&quot;)]
+public static Task Run(
+    [OrchestrationClient] DurableOrchestrationClient client,
+    [ManualTrigger] string instanceId)
 {
     string reason = &quot;It was time to be done.&quot;;
     return client.TerminateAsync(instanceId, reason);
@@ -153,14 +157,17 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
 <p><strong>C# example</strong></p>
 <pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
 
-public static Task Run(DurableOrchestrationClient client, string instanceId)
+[FunctionName(&quot;RaiseEvent&quot;)]
+public static Task Run(
+    [OrchestrationClient] DurableOrchestrationClient client,
+    [ManualTrigger] string instanceId)
 {
     int[] eventData = new int[] { 1, 2, 3 };
     return client.RaiseEventAsync(instanceId, &quot;MyEvent&quot;, eventData);
 }
 </code></pre><div class="NOTE"><h5>Note</h5><p>Raising events is currently only supported for C# functions.</p>
 </div>
-<div class="WARNING"><h5>Warning</h5><p>Instances can only process events when they are awaiting on a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>. If an instance is not waiting on this call, then the event will be dropped.</p>
+<div class="WARNING"><h5>Warning</h5><p>Instances can only process events when they are awaiting on a call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>. If an instance is not waiting on this call, then the event will be dropped. <a href="https://github.com/Azure/azure-functions-durable-extension/issues/29">This GitHub issue</a> tracks this current behavior.</p>
 </div>
 </article>
           </div>
@@ -170,7 +177,7 @@ public static Task Run(DurableOrchestrationClient client, string instanceId)
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/instance-management.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/instance-management.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

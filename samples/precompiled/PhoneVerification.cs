@@ -69,12 +69,10 @@ namespace VSSample
 
         [FunctionName("E4_SendSmsChallenge")]
         public static int SendSmsChallenge(
-            [ActivityTrigger] DurableActivityContext sendChallengeContext,
+            [ActivityTrigger] string phoneNumber,
             TraceWriter log,
             [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")] out SMSMessage message)
         {
-            string phoneNumber = sendChallengeContext.GetInput<string>();
-
             // Get a random number generator with a random seed (not time-based)
             var rand = new Random(Guid.NewGuid().GetHashCode());
             int challengeCode = rand.Next(10000);

@@ -70,27 +70,24 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="installing-durable-functions">Installing Durable Functions</h1>
 
-<p>Durable Functions is an extension of Azure Functions which uses a brand new binding extensibility model. This extensibility model is in the very early stages of development (see <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/1419">this</a> GitHub issue for updates) and does not yet provide a decent setup experience. Because of this, the setup for Durable Functions currently involves 1) manually deploying a set of files to the function app and 2) adding an app setting which points to the directory containing these files. In the coming weeks, we hope to reduce this down to a simple NuGet package reference.</p>
-<p>In the meantime, you will need to follow the below manual steps to use Durable Functions in your function app.</p>
-<h2 id="using-the-durable-task-binding-extension-in-visual-studio-windows-only">Using the Durable Task Binding Extension in Visual Studio (Windows Only)</h2>
-<p>If you can&#39;t or don&#39;t want to use Visual Studio for development, you can do development directly in Azure using the Azure Management portal. In that case, skip these instructions and go straight to the Azure instructions further below.</p>
+<p>Durable Functions is an extension of Azure Functions which uses a brand new binding extensibility model. This extensibility model is still in the early stages of development and not yet finalized. If you&#39;re interested, you can track the status of this extensibility <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/1419">in GitHub</a>.</p>
+<p>When using Visual Studio to author functions using this Durable Task extension, you can simply add a NuGet reference to the <code>Microsoft.Azure.WebJobs.Extensions.DurableTask</code>. For Azure Portal development, manual setup is required (details below).</p>
+<h2 id="using-the-durable-task-binding-extension-in-visual-studio-recommended---windows-only">Using the Durable Task Binding Extension in Visual Studio (Recommended - Windows Only)</h2>
 <p>Visual Studio currently provides the best experience for evaluating Durable Functions. Here is how to get started:</p>
 <ol>
-<li>Install the <a href="https://blogs.msdn.microsoft.com/webdev/2017/05/10/azure-function-tools-for-visual-studio-2017/">Visual Studio Tools for Azure Functions</a> if you haven&#39;t already.</li>
-<li>Download the <a href="../files/DurableFunctionsBinding.zip">DurableFunctionsBinding.zip</a> file and unzip its contents into your C:\ directory (any location will work, but the samples currently assume it&#39;s in the C:\ directory). Once unzipped, you should have a <code>C:\BindingExtensions</code> directory that contains a single folder named <code>DurableTask</code>. The <code>DurableTask</code> directory will contain several DLLs.</li>
-<li>Create a new Function App project (an existing one also works).</li>
-<li>Add a new app setting called <code>AzureWebJobs_ExtensionsPath</code> in your <code>local.settings.json</code> file. Set it to <code>C:\\BindingExtensions</code> (the <code>\\</code> is to escape the backslash, since this is a JSON file).</li>
+<li>Install the <a href="https://www.visualstudio.com/downloads/">latest version of Visual Studio</a> (VS 2017 15.3 or greater) if you haven&#39;t already and include the Azure tools in your setup options.</li>
+<li>Create a new Function App project. Even better, start with the <a href="../files/VSDFSampleApp.zip">Visual Studio Sample App (.zip)</a>.</li>
 <li>In Visual Studio, select <strong>Tools</strong> --&gt; <strong>NuGet Package Manager</strong> --&gt; <strong>Manage NuGet Packages for Solution..</strong>.</li>
 <li>In the upper-right hand corner, click the &quot;Settings&quot; gear icon.</li>
 <li>Add a new package source with <code>https://www.myget.org/F/azure-appservice/api/v3/index.json</code> as the <strong>Source</strong>, click <strong>Update</strong>, and click <strong>OK</strong>. The Durable Task packages are published to our team&#39;s myget feed (and not NuGet.org) because they are still in active development. Note that this is the same location for nightly builds of Azure Functions and Azure WebJobs packages.</li>
-<li>Add the following NuGet package reference to your .csproj file:</li>
+<li>Add the following NuGet package reference to your .csproj file (NOTE: the sample app already has this):</li>
 </ol>
-<pre><code class="lang-xml">&lt;PackageReference Include=&quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot; Version=&quot;0.1.0-alpha&quot; /&gt;
-</code></pre><p>This allows your project to download and reference the DurableTask extension which is required for Durable Functions.</p>
-<p>This should be sufficient for local F5 development. If you would like to publish your solution to Azure, then you&#39;ll need to follow the Azure instructions below.</p>
-<h2 id="deploying-the-durable-task-binding-extension-in-azure">Deploying the Durable Task Binding Extension in Azure</h2>
+<pre><code class="lang-xml">&lt;PackageReference Include=&quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot; Version=&quot;0.2.2-alpha&quot; /&gt;
+</code></pre><p>This allows your project to download and reference the <strong>DurableTask</strong> extension which is required for Durable Functions. Your functions can be run locally and can also be published to and run in Azure.</p>
+<h2 id="using-the-durable-task-binding-extension-for-portal-development">Using the Durable Task Binding Extension for Portal Development</h2>
+<p>A word of caution: the Azure Functions extensibility model currently has only primitive support for binding extensions, so the setup is going to be more involved than it is for Visual Studio projects.</p>
 <p>The below steps assume you have a function app up and running. If you do not, go ahead and create one by navigating to <a href="https://functions.azure.com/signin">https://functions.azure.com/signin</a> and create a new function app there. It only requires a few clicks.</p>
-<p>Deploying the extension requires uploading some assemblies and creating an app setting.</p>
+<p>When NOT using Visual Studio for publishing function apps, the the Durable Task extension needs to be uploaded and configured manually. Here are the required steps:</p>
 <ol>
 <li>Open your function app in the <a href="https://functions.azure.com/signin">Azure Functions portal</a>.</li>
 <li>Navigate to the Kudu console (Platform Features --&gt; Advanced Tools (Kudu))</li>
@@ -116,7 +113,7 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/installation.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/installation.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

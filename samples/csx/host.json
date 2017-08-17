@@ -1,7 +1,4 @@
 {
-    "tracing": {
-        "fileLoggingMode": "always"
-    },
     "http": {
         "routePrefix": ""
     }

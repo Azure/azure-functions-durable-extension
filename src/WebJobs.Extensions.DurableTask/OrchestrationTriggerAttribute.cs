@@ -31,10 +31,16 @@ namespace Microsoft.Azure.WebJobs
         /// </value>
         public string Version { get; set; }
 
-        // Remove this with https://github.com/Azure/azure-webjobs-sdk/issues/1104 
+        // Remove this with https://github.com/Azure/azure-webjobs-sdk-script/issues/1422
         internal static void ApplyReturn(object context, object returnValue)
         {
-            ((DurableOrchestrationContext)context).SetOutput(returnValue);
+            DurableOrchestrationContext orchestrationContext = context as DurableOrchestrationContext;
+            if (orchestrationContext == null)
+            {
+                throw new InvalidOperationException($"Only .NET {nameof(DurableOrchestrationContext)} trigger parameters are supported at this time.");
+            }
+
+            orchestrationContext.SetOutput(returnValue);
         }
     }
 }

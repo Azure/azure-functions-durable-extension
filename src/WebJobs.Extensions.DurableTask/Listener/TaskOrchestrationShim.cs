@@ -12,13 +12,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskOrchestrationShim : TaskOrchestration
     {
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly DurableOrchestrationContext context;
 
         private Func<Task> functionInvocationCallback;
 
         public TaskOrchestrationShim(
-            DurableTaskConfiguration config,
+            DurableTaskExtension config,
             DurableOrchestrationContext context)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"The {nameof(functionInvocationCallback)} has not been assigned!");
             }
 
+            this.context.AssignToCurrentThread();
             this.context.SetInput(innerContext, serializedInput);
 
             this.config.TraceHelper.FunctionStarting(
@@ -55,9 +56,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 true /* isOrchestrator */,
                 this.context.IsReplaying);
 
+            object returnValue;
             try
             {
-                await this.functionInvocationCallback();
+                Task invokeTask = this.functionInvocationCallback();
+                if (invokeTask is Task<object> resultTask)
+                {
+                    returnValue = await resultTask;
+                }
+                else
+                {
+                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
+                }
             }
             catch (Exception e)
             {
@@ -74,6 +84,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             finally
             {
                 this.context.IsCompleted = true;
+            }
+
+            if (returnValue != null)
+            {
+                this.context.SetOutput(returnValue);
             }
 
             string serializedOutput = this.context.GetSerializedOutput();

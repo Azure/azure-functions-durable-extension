@@ -78,13 +78,15 @@
 <h3 id="changing-activity-function-signatures">Changing activity function signatures</h3>
 <p>A signature change refers to a change in the name, input, or output of a function. If this kind of change is made to an activity function, it could potentially break the orchestrator function which depends on it. Furthermore, it is often not possible to simply update the orchestrator function because those updates could break existing in-flight instances. </p>
 <p>As an example, suppose we have the following function.</p>
-<pre><code class="lang-csharp">public static Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;FooBar&quot;)]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool result = await context.CallFunctionAsync&lt;bool&gt;(&quot;Foo&quot;);
     await context.CallFunctionAsync(&quot;Bar&quot;, result);
 }
 </code></pre><p>This simplistic function takes the results of <strong>Foo</strong> and passes it to <strong>Bar</strong>. Let&#39;s assume we need to change the return value of <strong>Foo</strong> from <code>bool</code> to <code>int</code> to support a wider variety of result values. The result looks like this:</p>
-<pre><code class="lang-csharp">public static Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;FooBar&quot;)]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     int result = await context.CallFunctionAsync&lt;int&gt;(&quot;Foo&quot;);
     await context.CallFunctionAsync(&quot;Bar&quot;, result);
@@ -94,13 +96,15 @@
 <h3 id="changing-orchestrator-logic">Changing orchestrator logic</h3>
 <p>The other class of versioning problems come from changing the orchestrator function code in a way that confuses the replay logic for in-flight instances.</p>
 <p>Consider the following orchestrator function:</p>
-<pre><code class="lang-csharp">public static Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;FooBar&quot;)]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool result = await context.CallFunctionAsync&lt;bool&gt;(&quot;Foo&quot;);
     await context.CallFunctionAsync(&quot;Bar&quot;, result);
 }
 </code></pre><p>Now let&#39;s assume you want to make a seemingly innocent change to add another function call.</p>
-<pre><code class="lang-csharp">public static Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;FooBar&quot;)]
+public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
     bool result = await context.CallFunctionAsync&lt;bool&gt;(&quot;Foo&quot;);
     if (result)
@@ -134,7 +138,7 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/versioning.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/versioning.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

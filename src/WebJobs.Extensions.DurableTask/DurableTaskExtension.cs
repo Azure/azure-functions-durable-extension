@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -10,8 +11,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
+using DurableTask.Core;
+using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -19,12 +23,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-    public class DurableTaskConfiguration : IExtensionConfigProvider, IAsyncConverter<HttpRequestMessage, HttpResponseMessage>
+    public class DurableTaskExtension : 
+        IExtensionConfigProvider,
+        IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
+        INameVersionObjectManager<TaskOrchestration>,
+        INameVersionObjectManager<TaskActivity>
     {
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that OrchestrationClientAttribute defines a custom equality comparer.
         private readonly ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient> cachedClients =
             new ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient>();
+
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredOrchestrators = 
+            new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities = 
+            new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
+
+        private readonly AsyncLock taskHubLock = new AsyncLock();
+
+        private AzureStorageOrchestrationService orchestrationService;
+        private TaskHubWorker taskHubWorker;
+        private bool isTaskHubWorkerStarted;
 
         private EndToEndTraceHelper traceHelper;
         private HttpApiHandler httpApiHandler;
@@ -164,6 +183,80 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.traceHelper));
+
+            AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings();
+            this.orchestrationService = new AzureStorageOrchestrationService(settings);
+            this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
+            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+        }
+
+        void INameVersionObjectManager<TaskOrchestration>.Add(ObjectCreator<TaskOrchestration> creator)
+        {
+            throw new InvalidOperationException("Orchestrations should never be added explicitly.");
+        }
+
+        TaskOrchestration INameVersionObjectManager<TaskOrchestration>.GetObject(string name, string version)
+        {
+            var context = new DurableOrchestrationContext(this, name, version);
+            return new TaskOrchestrationShim(this, context);
+        }
+
+        void INameVersionObjectManager<TaskActivity>.Add(ObjectCreator<TaskActivity> creator)
+        {
+            throw new InvalidOperationException("Activities should never be added explicitly.");
+        }
+
+        TaskActivity INameVersionObjectManager<TaskActivity>.GetObject(string name, string version)
+        {
+            FunctionName activityFunction = new FunctionName(name, version);
+
+            ITriggeredFunctionExecutor executor;
+            if (!this.registeredActivities.TryGetValue(activityFunction, out executor))
+            {
+                throw new InvalidOperationException($"Activity function '{activityFunction}' does not exist.");
+            }
+
+            return new TaskActivityShim(this, executor, name, version);
+        }
+
+        private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            TaskOrchestrationShim shim = (TaskOrchestrationShim)dispatchContext.GetProperty<TaskOrchestration>();
+            DurableOrchestrationContext context = shim.Context;
+
+            FunctionName orchestratorFunction = new FunctionName(context.Name, context.Version);
+
+            ITriggeredFunctionExecutor executor;
+            if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out executor))
+            {
+                throw new InvalidOperationException($"Orchestrator function '{orchestratorFunction}' does not exist.");
+            }
+
+            // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+            FunctionResult result = await executor.TryExecuteAsync(
+                new TriggeredFunctionData
+                {
+                    TriggerValue = context,
+                    InvokeHandler = userCodeInvoker =>
+                    {
+                        // 2. Configure the shim with the inner invoker to execute the user code.
+                        shim.SetFunctionInvocationCallback(userCodeInvoker);
+
+                        // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
+                        return next();
+                    }
+                },
+                CancellationToken.None);
+
+            if (!context.IsCompleted)
+            {
+                this.TraceHelper.FunctionAwaited(
+                    context.HubName,
+                    context.Name,
+                    context.Version,
+                    context.InstanceId,
+                    context.IsReplaying);
+            }
         }
 
         // This is temporary until script loading 
@@ -232,6 +325,92 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentTaskOrchestrationWorkItems,
                 MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentTaskActivityWorkItems,
             };
+        }
+
+        internal void RegisterOrchestrator(FunctionName orchestratorFunction, ITriggeredFunctionExecutor executor)
+        {
+            if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, executor))
+            {
+                throw new ArgumentException($"The orchestrator function named '{orchestratorFunction}' is already registered.");
+            }
+        }
+
+        internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
+        {
+            this.registeredOrchestrators.TryRemove(orchestratorFunction, out _);
+        }
+
+        internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
+        {
+            if (!this.registeredActivities.TryAdd(activityFunction, executor))
+            {
+                throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
+            }
+        }
+
+        internal void DeregisterActivity(FunctionName activityFunction)
+        {
+            this.registeredActivities.TryRemove(activityFunction, out _);
+        }
+
+        internal void AssertOrchestratorExists(string name, string version)
+        {
+            var functionName = new FunctionName(name, version);
+            if (!this.registeredOrchestrators.ContainsKey(functionName))
+            {
+                throw new ArgumentException(
+                    string.Format("The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: {1}.",
+                        functionName,
+                        string.Join(", ", this.registeredOrchestrators.Keys)));
+            }
+        }
+
+        internal void AssertActivityExists(string name, string version)
+        {
+            var functionName = new FunctionName(name, version);
+            if (!this.registeredActivities.ContainsKey(functionName))
+            {
+                throw new ArgumentException(
+                    string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: {1}.",
+                        functionName,
+                        string.Join(", ", this.registeredActivities.Keys)));
+            }
+        }
+
+        internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
+        {
+            if (!this.isTaskHubWorkerStarted)
+            {
+                using (await this.taskHubLock.AcquireAsync())
+                {
+                    if (!this.isTaskHubWorkerStarted)
+                    {
+                        await this.orchestrationService.CreateIfNotExistsAsync();
+                        await this.taskHubWorker.StartAsync();
+                        this.isTaskHubWorkerStarted = true;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        internal async Task<bool> StopTaskHubWorkerIfIdleAsync()
+        {
+            using (await this.taskHubLock.AcquireAsync())
+            {
+                if (!this.isTaskHubWorkerStarted && 
+                    this.registeredOrchestrators.Count == 0 &&
+                    this.registeredActivities.Count == 0)
+                {
+                    await this.taskHubWorker.StopAsync(isForced: true);
+                    this.isTaskHubWorkerStarted = false;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal string GetIntputOutputTrace(string rawInputOutputData)

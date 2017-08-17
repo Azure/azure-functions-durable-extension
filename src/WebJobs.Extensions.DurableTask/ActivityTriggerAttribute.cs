@@ -32,10 +32,16 @@ namespace Microsoft.Azure.WebJobs
         /// </value>
         public string Version { get; set; }
 
-        // Remove this with https://github.com/Azure/azure-webjobs-sdk/issues/1104 
+        // Remove this with https://github.com/Azure/azure-webjobs-sdk-script/issues/1422
         internal static void ApplyReturn(object context, object returnValue)
         {
-            ((DurableActivityContext)context).SetOutput(returnValue);
+            DurableActivityContext activityContext = context as DurableActivityContext;
+            if (activityContext == null)
+            {
+                throw new InvalidOperationException($"Only .NET {nameof(DurableActivityContext)} trigger parameters are supported at this time.");
+            }
+
+            activityContext.SetOutput(returnValue);
         }
     }
 }

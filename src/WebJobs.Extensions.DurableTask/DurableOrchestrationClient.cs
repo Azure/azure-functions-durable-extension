@@ -21,12 +21,12 @@ namespace Microsoft.Azure.WebJobs
         private readonly TaskHubClient client;
         private readonly string hubName;
         private readonly EndToEndTraceHelper traceHelper;
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly OrchestrationClientAttribute attribute; // for rehydrating a Client after a webhook
 
         internal DurableOrchestrationClient(
             IOrchestrationServiceClient serviceClient,
-            DurableTaskConfiguration config,
+            DurableTaskExtension config,
             OrchestrationClientAttribute attribute,
             EndToEndTraceHelper traceHelper)
         {
@@ -54,6 +54,9 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
         /// <returns>A task that completes when the start message is enqueued.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
         public Task<string> StartNewAsync(string orchestratorFunctionName, object input)
         {
             return this.StartNewAsync(orchestratorFunctionName, string.Empty, input);
@@ -66,8 +69,13 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
         /// <returns>A task that completes when the start message is enqueued.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
         public async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
         {
+            this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
+
             OrchestrationInstance instance = await this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName, DefaultVersion, instanceId, input);
 

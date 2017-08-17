@@ -75,17 +75,15 @@
 <p>A durable timer can be created using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a> API. The API returns a task which will be resumed on the specified deadline (i.e. a <code>DateTime</code>).</p>
 <p>These timers are &quot;durable&quot; because they are internally backed by scheduled messages in Azure Storage. For example, if you create a timer that will expire at 4:30pm, the underlying Durable Task Framework will enqueue a message which becomes visible only at 4:30pm. When running in the Azure Functions consumption plan, the newly visible timer message will ensure that the function app gets activated on an appropriate VM.</p>
 <div class="WARNING"><h5>Warning</h5><p>Durable timers cannot last longer than 7 days due to limitations in Azure Storage.
-This will be fixed in a future update.</p>
+<a href="https://github.com/Azure/azure-functions-durable-extension/issues/14">This GitHub issue</a> tracks extending timers beyond 7 days.</p>
 </div>
 <div class="WARNING"><h5>Warning</h5><p>Always make sure to use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> instead of <code>DateTime.UtcNow</code> as shown in the examples below when computing a relative deadline of a durable timer.</p>
 </div>
 <h2 id="delay-usage">Delay Usage</h2>
 <p>The following example illustrates how to use durable timers for delaying execution. The specific example is issuing a billing notification every day for ten days.</p>
-<pre><code class="lang-csharp">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-using System.Threading;
-
-public static async Task Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;BillingIssuer&quot;)]
+public static async Task Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     for (int i = 0; i &lt; 10; i++)
     {
@@ -98,7 +96,9 @@ public static async Task Run(DurableOrchestrationContext context)
 </div>
 <h2 id="timeout-usage">Timeout Usage</h2>
 <p>This next example illustrates how to use durable timers to implement timeouts.</p>
-<pre><code class="lang-csharp">public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
+<pre><code class="lang-csharp">[FunctionName(&quot;TryGetQuote&quot;)]
+public static async Task&lt;bool&gt; Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     TimeSpan timeout = TimeSpan.FromSeconds(30);
     DateTime deadline = context.CurrentUtcDateTime.Add(timeout);
@@ -134,7 +134,7 @@ public static async Task Run(DurableOrchestrationContext context)
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/timers.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/activity-binding/docfx/articles/topics/timers.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

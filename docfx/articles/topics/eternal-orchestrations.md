@@ -17,8 +17,9 @@ When an orchestrator function exits after <xref:Microsoft.Azure.WebJobs.DurableO
 One potential use case is code that needs to do periodic work indefinitely.
 
 ```csharp
+[FunctionName("Periodic_Cleanup_Loop")]
 public static async Task Run(
-    DurableOrchestrationContext context)
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     await context.CallFunctionAsync("DoCleanup");
 
@@ -35,10 +36,9 @@ public static async Task Run(
 
 Here is a simplified example of a *counter* function which listens for *increment* and *decrement* events eternally.
 ```csharp
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
+[FunctionName("SimpleCounter")]
 public static async Task Run(
-    DurableOrchestrationContext context)
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     int counterState = context.GetInput<int>();
 

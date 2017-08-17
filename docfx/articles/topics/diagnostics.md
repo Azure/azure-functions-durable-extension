@@ -5,9 +5,9 @@ There are several options for diagnosing issues with Durable Functions. Some of 
 The Durable Functions host extension automatically emits semi-structured logs as it executes orchestrator and activity functions. These logs live alongside the application logs and can be used to monitor the behavior of your orchestrations. To give an example, consider the following orchestrator function:
 
 ```cs
-#r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
-
-public static async Task<List<string>> Run(DurableOrchestrationContext context)
+[FunctionName("E1_HelloSequence")]
+public static async Task<List<string>> Run(
+    [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     var outputs = new List<string>();
 
@@ -81,14 +81,14 @@ Note that for the best monitoring and diagnostics experience, it is recommended 
 > [!TIP]
 > When emitting log statements in the orchestrator function, if you want to only log on non-replay execution, you can write a conditional expression to log only if <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying> is equal to `false`.
 
-> [!WARNING]
-> The monitoring tab in the Functions portal and the WebJobs dashboard of the Kudu website show all durable function executions, including replays. However, these components were not designed to understand the replay behavior of orchestrator functions. For example, you can expect to see many orchestrator function executions with a warning status because they never complete (as we observed earlier when looking at the host logs). https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/33.
+> [!NOTE]
+> The monitoring tab in the Functions portal and the WebJobs dashboard of the Kudu website show all durable function executions, including replays. Each replay is considered its own function invocation.
 
 ## Debugging
 Azure Functions supports debugging function code directly and that same support carries forward to Durable Functions, whether running in Azure or locally. However, there are a few behaviors to be aware of when debugging:
 
 * **Replay**: Orchestrator functions regularly replay when new inputs are received. This means a single *logical* execution of an orchestrator function can result in hitting the same breakpoint multiple times, especially if it is set early in the function code.
-* **Await**: Whenever an `await` is encountered, it yields control back to the Durable Task Framework dispatcher. If this is the first time a particular `await` has been encountered, the associated task is *never* resumed. Because the task never resumes, stepping *over* the await (e.g. F10 in Visual Studio) is not actually possible.
+* **Await**: Whenever an `await` is encountered, it yields control back to the Durable Task Framework dispatcher. If this is the first time a particular `await` has been encountered, the associated task is *never* resumed. Because the task never resumes, stepping *over* the await (e.g. F10 in Visual Studio) is not actually possible. Stepping over only works when a task is being replayed.
 * **Messaging Timeouts**: Durable Functions internally uses queue messages to drive execution of both orchestrator functions and activity functions. In a multi-VM environment, breaking into the debugging for extended periods of time could cause a another VM to pick up the message, resulting in duplicate execution. This behavior exists for regular queue-trigger functions as well, but is important to point out in this context since the queues are an implementation detail.
 
 > [!TIP]

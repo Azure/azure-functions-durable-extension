@@ -13,10 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class BindingHelper 
     {
-        private readonly DurableTaskConfiguration config;
+        private readonly DurableTaskExtension config;
         private readonly EndToEndTraceHelper traceHelper;
 
-        public BindingHelper(DurableTaskConfiguration config, EndToEndTraceHelper traceHelper)
+        public BindingHelper(DurableTaskExtension config, EndToEndTraceHelper traceHelper)
         {
             this.config = config;
             this.traceHelper = traceHelper;

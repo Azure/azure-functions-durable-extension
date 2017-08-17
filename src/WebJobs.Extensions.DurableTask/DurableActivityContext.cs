@@ -58,7 +58,21 @@ namespace Microsoft.Azure.WebJobs
         /// </returns>
         public JToken GetInputAsJson()
         {
-            return this.serializedInput != null ? JToken.Parse(this.serializedInput) : null;
+            if (this.serializedInput == null)
+            {
+                return null;
+            }
+            else
+            {
+                JArray array = JArray.Parse(this.serializedInput);
+                if (array?.Count != 1)
+                {
+                    throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
+                }
+
+                JToken token = array[0];
+                return token;
+            }
         }
 
         /// <summary>
@@ -68,40 +82,20 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>The deserialized input value.</returns>
         public T GetInput<T>()
         {
-            return ParseActivityInput<T>(this.serializedInput);
-        }
-
-        internal static T ParseActivityInput<T>(string rawInput)
-        {
-            // Copied from DTFx Framework\TaskActivity.cs
-            T parameter = default(T);
-            JArray array = JArray.Parse(rawInput);
-            if (array != null)
+            if (this.serializedInput == null)
             {
-                int parameterCount = array.Count;
-                if (parameterCount > 1)
-                {
-                    throw new ArgumentException(
-                        "Activity implementation cannot be invoked due to more than expected input parameters.  Signature mismatch.");
-                }
-
-                if (parameterCount == 1)
-                {
-                    JToken token = array[0];
-                    var value = token as JValue;
-                    if (value != null)
-                    {
-                        parameter = value.ToObject<T>();
-                    }
-                    else
-                    {
-                        string serializedValue = token.ToString();
-                        parameter = SharedJsonConverter.Deserialize<T>(serializedValue);
-                    }
-                }
+                return default(T);
             }
 
-            return parameter;
+            JToken jToken = this.GetInputAsJson();
+            var value = jToken as JValue;
+            if (value != null)
+            {
+                return value.ToObject<T>();
+            }
+
+            string serializedValue = jToken.ToString(Formatting.None);
+            return SharedJsonConverter.Deserialize<T>(serializedValue);
         }
 
         internal string GetSerializedOutput()
@@ -118,8 +112,13 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="output">
         /// The JSON-serializeable value to use as the activity function output.
         /// </param>
-        public void SetOutput(object output)
+        internal void SetOutput(object output)
         {
+            if (this.serializedOutput != null)
+            {
+                throw new InvalidOperationException("The output has already been set of this activity instance.");
+            }
+
             if (output != null)
             {
                 JToken json = output as JToken;

@@ -8,11 +8,9 @@ All samples are combined into a single function app package. To get started with
 
 ### For Visual Studio Development (Windows Only)
 1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package.
-3. Uprotect the zip file: right-click `VSDFSampleApp.zip` --> **Properties** --> **Unprotect**. 
-4. Unzip the sample package and open the solution file in Visual Studio 2017 (version 15.3).
-5. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-6. The sample can now be run locally via F5. If you want to publish the solution to Azure, follow the [installation instructions](~/articles/installation.md) to configure Durable Functions in Azure.
+2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -75,7 +73,7 @@ The result will be an HTTP 202 response, like this (trimmed for brevity):
 HTTP/1.1 202 Accepted
 Content-Length: 719
 Content-Type: application/json; charset=utf-8
-Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&connection=Storage
+Location: http://{host}/admin/extensions/DurableTaskExtension/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 
 (...trimmed...)
 ```
@@ -83,7 +81,7 @@ Location: http://{host}/admin/extensions/DurableTaskConfiguration/instances/9692
 At this point, the orchestration is queued up and should begin running immediately. The URL in the `Location` header above can be used to check the status of the execution.
 
 ```plaintext
-GET http://{host}/admin/extensions/DurableTaskConfiguration/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&connection=Storage
+GET http://{host}/admin/extensions/DurableTaskExtension/instances/96924899c16d43b08a536de376ac786b?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey}
 ```
 
 The result is the status of the orchestration. It should run and complete quickly, so you should expect to see it in the *Completed* state with a response that looks like this (trimmed for brevity):
@@ -105,3 +103,8 @@ Also, be sure to take a look at the function execution logs. You should notice t
 
 ## Wrapping up
 At this point, you should have a basic understanding of the core mechanics for Durable Functions. This sample was quite trivial and only showed a small number of features available. Subsequent samples, however, are more "real world" and will display a greater breadth of functionality.
+
+## Full Sample Code
+Here is the full orchestration as a single C# file using the Visual Studio project syntax:
+
+[!code-csharp[Main](~/../samples/precompiled/HelloSequence.cs)]
