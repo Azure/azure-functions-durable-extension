@@ -401,39 +401,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which runs a orchestrator function that calls another unregistered orchestrator function.
-        /// </summary>
-        [Fact]
-        public async Task Orchestration_OnUnregisteredOrchestrator()
-        {
-            const string functionName = "UnregisteredOrchestrator";
-            string errorMessage = $"The function '{functionName}' doesn't exist, is disabled, or is not an activity or orchestrator function";
-            const string greetingName = "ValidOrchestrator";
-            var input = new { Foo = greetingName };
-
-            using (JobHost host = TestHelpers.GetJobHost(nameof(Orchestration_OnUnregisteredOrchestrator)))
-            {
-                await host.StartAsync();
-
-                var startArgs = new StartOrchestrationArgs
-                {
-                    FunctionName = functionName,
-                    Input = input
-                };
-
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
-
-                Assert.Equal("Failed", status?.RuntimeStatus);
-
-                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
-                Assert.True(status?.Output.ToString().Contains(errorMessage));
-
-                await host.StopAsync();
-            }
-        }
-
-        /// <summary>
         /// End-to-end test which runs a orchestrator function that calls another orchestrator function.
         /// </summary>
         [Fact]
