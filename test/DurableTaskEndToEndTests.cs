@@ -388,7 +388,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Input = new {Foo = "Bar"}
                 };
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallUnregisteredActivity), startArgs, this.output);
+                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Input = input
                 };
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallUnregisteredOrchestrator), startArgs, this.output);
+                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Input = input
                 };
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallRegisteredOrchestrator), startArgs, this.output);
+                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
 
