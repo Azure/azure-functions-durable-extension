@@ -154,5 +154,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var result = await ctx.CallFunctionAsync<object>(startArgs.FunctionName, startArgs.Input);
             return result;
         }
+
+        public static async Task<string> CallUnregisteredActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            var startArgs = ctx.GetInput<StartOrchestrationArgs>();
+            string output = await ctx.CallFunctionAsync<string>(startArgs.FunctionName, startArgs.Input);
+            return output;
+        }
+
+        public static async Task<string> CallRegisteredOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            var startArgs = ctx.GetInput<StartOrchestrationArgs>();
+            string output = await ctx.CallFunctionAsync<string>(startArgs.FunctionName, startArgs.Input);
+            return output;
+        }
     }
 }
