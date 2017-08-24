@@ -247,8 +247,9 @@ namespace Microsoft.Azure.WebJobs
                     callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version, JsonConvert.SerializeObject(parameters));
                     break;
                 default:
-                    callTask = null;
-                    break;
+                    throw new ArgumentException(
+                        string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function",
+                            functionName));
             }
 
             string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion) ?
