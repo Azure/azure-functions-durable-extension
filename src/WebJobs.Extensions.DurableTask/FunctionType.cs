@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// The type of a function.
     /// </summary>
-    public enum FunctionType
+    internal enum FunctionType
     {
         Activity,
         Orchestrator
