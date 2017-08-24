@@ -234,9 +234,23 @@ namespace Microsoft.Azure.WebJobs
 
             // TODO: Support for versioning
             string version = DefaultVersion;
-            this.config.AssertActivityExists(functionName, version);
+            FunctionType functionType = this.config.GetFunctionType(functionName, version);
 
-            Task<TResult> callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
+            Task<TResult> callTask;
+
+            switch (functionType)
+            {
+                case FunctionType.Activity:
+                    callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
+                    break;
+                case FunctionType.Orchestrator:
+                    callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version, JsonConvert.SerializeObject(parameters));
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        string.Format("Unexpected function type '{0}'.",
+                            functionType));
+            }
 
             string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion) ?
                 this.orchestrationName : 

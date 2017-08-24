@@ -2,7 +2,10 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -339,6 +342,96 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
                 Assert.True(status?.Output.ToString().Contains("Exception"));
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
+        /// </summary>
+        [Fact]
+        public async Task StartOrchestration_OnUnregisteredOrchestrator()
+        {
+            const string functionName = "UnregisteredOrchestrator";
+            string errorMessage = $"The function '{functionName}' doesn't exist, is disabled, or is not an orchestrator function";
+
+            using (JobHost host = TestHelpers.GetJobHost(nameof(StartOrchestration_OnUnregisteredOrchestrator)))
+            {
+                await host.StartAsync();
+
+                Exception ex = await Assert.ThrowsAsync<FunctionInvocationException>(async () => await host.StartFunctionAsync("UnregisteredOrchestrator", "Unregistered", this.output));
+                
+                Assert.NotNull(ex.InnerException);
+                Assert.Contains(errorMessage, ex.InnerException?.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
+        /// </summary>
+        [Fact]
+        public async Task Orchestration_OnUnregisteredActivity()
+        {
+            const string functionName = "UnregisteredActivity";
+            string errorMessage = $"The function '{functionName}' doesn't exist, is disabled, or is not an activity or orchestrator function";
+
+            using (JobHost host = TestHelpers.GetJobHost(nameof(Orchestration_OnUnregisteredActivity)))
+            {
+                await host.StartAsync();
+
+                var startArgs = new StartOrchestrationArgs
+                {
+                    FunctionName = functionName,
+                    Input = new {Foo = "Bar"}
+                };
+
+                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains(errorMessage));
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls another orchestrator function.
+        /// </summary>
+        [Fact]
+        public async Task Orchestration_OnValidOrchestrator()
+        {
+            const string greetingName = "ValidOrchestrator";
+            const string validOrchestratorName = "SayHelloWithActivity";
+            var input = new {Foo = greetingName};
+            var inputJson = JsonConvert.SerializeObject(input);
+
+            using (JobHost host = TestHelpers.GetJobHost(nameof(Orchestration_OnValidOrchestrator)))
+            {
+                await host.StartAsync();
+
+                var startArgs = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.SayHelloWithActivity),
+                    Input = input
+                };
+
+                // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
+                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
+
+                Assert.NotNull(status);
+                Assert.Equal("Completed", status.RuntimeStatus);
+                Assert.Equal(client.InstanceId, status.InstanceId);
+                Assert.Equal(validOrchestratorName, statusInput["FunctionName"].ToString());
+                Assert.Contains(greetingName, statusInput["Input"].ToString());
+                Assert.Equal($"Hello, [{inputJson}]!", status.Output.ToString());
 
                 await host.StopAsync();
             }
