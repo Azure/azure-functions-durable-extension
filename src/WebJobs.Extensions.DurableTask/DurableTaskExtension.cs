@@ -365,25 +365,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal FunctionType GetFunctionType(string name, string version)
+        internal bool TryGetActivityFunction(string name, string version, out string activityFunctions)
         {
             var functionName = new FunctionName(name, version);
+            activityFunctions = string.Join(", ", this.registeredActivities.Keys);
 
-            if (this.registeredActivities.ContainsKey(functionName))
-            {
-                return FunctionType.Activity;
-            }
+            return this.registeredActivities.ContainsKey(functionName);
+        }
 
-            if (this.registeredOrchestrators.ContainsKey(functionName))
-            {
-                return FunctionType.Orchestrator;
-            }
+        internal bool TryGetOrchestratorFunction(string name, string version, out string orchestratorFunctions)
+        {
+            var functionName = new FunctionName(name, version);
+            orchestratorFunctions = string.Join(", ", this.registeredOrchestrators.Keys);
 
-            throw new ArgumentException(
-                    string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
-                        functionName,
-                        string.Join(", ", this.registeredActivities.Keys),
-                        string.Join(", ", this.registeredOrchestrators.Keys)));
+            return this.registeredOrchestrators.ContainsKey(functionName);
         }
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()

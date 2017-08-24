@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -234,18 +235,28 @@ namespace Microsoft.Azure.WebJobs
 
             // TODO: Support for versioning
             string version = DefaultVersion;
-            FunctionType functionType = this.config.GetFunctionType(functionName, version);
+            //FunctionType functionType = this.config.GetFunctionType(functionName, version);
 
             Task<TResult> callTask = null;
+            string activityFunctions = null;
+            string orchestratorFunctions = null;
 
-            switch (functionType)
+            if (this.config.TryGetActivityFunction(functionName, version, out activityFunctions))
             {
-                case FunctionType.Activity:
-                    callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
-                    break;
-                case FunctionType.Orchestrator:
-                    callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version, JsonConvert.SerializeObject(parameters));
-                    break;
+                callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
+            }
+            else if (this.config.TryGetOrchestratorFunction(functionName, version, out orchestratorFunctions))
+            {
+                callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version,
+                    JsonConvert.SerializeObject(parameters));
+            }
+            else
+            {
+                throw new ArgumentException(
+                    string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
+                        functionName,
+                        activityFunctions,
+                        orchestratorFunctions));
             }
 
             string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion) ?
