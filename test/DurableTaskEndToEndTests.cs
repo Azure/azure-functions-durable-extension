@@ -407,7 +407,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task Orchestration_OnValidOrchestrator()
         {
             const string greetingName = "ValidOrchestrator";
-            const string validOrchestratorName = "SayHelloInline";
+            const string validOrchestratorName = "SayHelloWithActivity";
             var input = new {Foo = greetingName};
             var inputJson = JsonConvert.SerializeObject(input);
 
@@ -417,10 +417,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var startArgs = new StartOrchestrationArgs
                 {
-                    FunctionName = nameof(TestOrchestrations.SayHelloInline),
+                    FunctionName = nameof(TestOrchestrations.SayHelloWithActivity),
                     Input = input
                 };
 
+                // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
                 var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
