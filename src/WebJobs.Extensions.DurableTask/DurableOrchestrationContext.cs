@@ -246,6 +246,9 @@ namespace Microsoft.Azure.WebJobs
                 case FunctionType.Orchestrator:
                     callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version, JsonConvert.SerializeObject(parameters));
                     break;
+                default:
+                    callTask = null;
+                    break;
             }
 
             string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion) ?
