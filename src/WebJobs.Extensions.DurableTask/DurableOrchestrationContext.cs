@@ -236,7 +236,7 @@ namespace Microsoft.Azure.WebJobs
             string version = DefaultVersion;
             FunctionType functionType = this.config.GetFunctionType(functionName, version);
 
-            Task<TResult> callTask = null;
+            Task<TResult> callTask;
 
             switch (functionType)
             {
