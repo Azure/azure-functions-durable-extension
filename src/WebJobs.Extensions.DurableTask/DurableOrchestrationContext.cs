@@ -235,8 +235,7 @@ namespace Microsoft.Azure.WebJobs
 
             // TODO: Support for versioning
             string version = DefaultVersion;
-            //FunctionType functionType = this.config.GetFunctionType(functionName, version);
-
+            
             Task<TResult> callTask = null;
             string activityFunctions = null;
             string orchestratorFunctions = null;
