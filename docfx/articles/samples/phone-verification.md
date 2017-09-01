@@ -71,7 +71,7 @@ At this point, the user should have received an SMS message with a four digit co
 > It may not be obvious at first, but this orchestrator function is completely deterministic. This is because the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime> property is used to calculate the timer expiration time, and this property returns the same value on every replay at this point in the orchestrator code. This is important to ensure we get the same `winner` result in every repeated call to `Task.WhenAny`.
 
 > [!WARNING]
-> It's very important to cancel timers using a `CancellationTokenSource` if we no longer need them to expire, like we do in the examle above when a challenge response is accepted.
+> It's very important to cancel timers using a `CancellationTokenSource` if we no longer need them to expire, like we do in the example above when a challenge response is accepted.
 
 For more information on timers, see the [Durable Timers](../topics/timers.md) topic.
 
