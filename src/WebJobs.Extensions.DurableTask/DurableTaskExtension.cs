@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Register the trigger bindings
             JobHostConfiguration hostConfig = context.Config;
 
-            this.traceHelper = new EndToEndTraceHelper(context.Trace);
+            this.traceHelper = new EndToEndTraceHelper(hostConfig, context.Trace);
             this.httpApiHandler = new HttpApiHandler(this, context.Trace);
 
             // Register the non-trigger bindings, which have a different model.

@@ -3,20 +3,23 @@
 
 using System;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EndToEndTraceHelper
     {
+        private const string CategoryName = "Host.Triggers.DurableTask";
         private static string appName;
         private static string slotName;
 
-        // TODO: Replace TraceWriter with structured event client
         private readonly TraceWriter appTraceWriter;
+        private readonly ILogger logger;
 
-        public EndToEndTraceHelper(TraceWriter appTraceWriter)
+        public EndToEndTraceHelper(JobHostConfiguration config, TraceWriter traceWriter)
         {
-            this.appTraceWriter = appTraceWriter;
+            this.appTraceWriter = traceWriter;
+            this.logger = config.LoggerFactory?.CreateLogger(CategoryName);
         }
 
         public static string LocalAppName
@@ -51,11 +54,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string version,
             string instanceId,
             string reason,
-            bool isOrchestrator,
+            FunctionType functionType,
             bool isReplay)
         {
-            EtwEventSource.Instance.FunctionScheduled(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, reason, isOrchestrator, isReplay);
-            this.appTraceWriter.Info($"[DF] {instanceId}: Scheduling function '{functionName}', version '{version}'. reason: {reason}. IsReplay: {isReplay}.");
+            EtwEventSource.Instance.FunctionScheduled(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, reason, functionType.ToString(), isReplay);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' scheduled. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, reason, isReplay, FunctionState.Scheduled, hubName,
+                LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' scheduled. Reason: {reason}. IsReplay: {isReplay}. State: {FunctionState.Scheduled}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void FunctionStarting(
@@ -64,11 +74,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string version,
             string instanceId,
             string input,
-            bool isOrchestrator,
+            FunctionType functionType,
             bool isReplay)
         {
-            EtwEventSource.Instance.FunctionStarting(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, input, isOrchestrator, isReplay);
-            this.appTraceWriter.Info($"[DF] {instanceId}: Starting function '{functionName}', version '{version}'. IsReplay: {isReplay}. Input: {input}");
+            EtwEventSource.Instance.FunctionStarting(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, input, functionType.ToString(), isReplay);
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' started. IsReplay: {isReplay}. Input: {input}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, isReplay, input, FunctionState.Started, hubName,
+                LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' started. IsReplay: {isReplay}. Input: {input}. State: {FunctionState.Started}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void FunctionAwaited(
@@ -78,8 +94,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             bool isReplay)
         {
-            EtwEventSource.Instance.FunctionAwaited(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, IsOrchestrator: true, IsReplay: isReplay);
-            this.appTraceWriter.Info($"[DF] {instanceId}: Function '{functionName}', version '{version}' awaited. IsReplay: {isReplay}.");
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.FunctionAwaited(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, functionType.ToString(), IsReplay: isReplay);
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' awaited. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, isReplay, FunctionState.Awaited, hubName, LocalAppName,
+                LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' awaited. IsReplay: {isReplay}. State: {FunctionState.Awaited}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void FunctionListening(
@@ -90,8 +114,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason,
             bool isReplay)
         {
-            EtwEventSource.Instance.FunctionListening(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, reason, IsOrchestrator: true, IsReplay: isReplay);
-            this.appTraceWriter.Info($"[DF] {instanceId}: Function '{functionName}', version '{version}' is waiting for input. Reason: {reason}. IsReplay: {isReplay}.");
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.FunctionListening(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, reason, functionType.ToString(), IsReplay: isReplay);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' is waiting for input. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, reason, isReplay, FunctionState.Listening, hubName,
+                LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' is waiting for input. Reason: {reason}. IsReplay: {isReplay}. State: {FunctionState.Listening}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void FunctionCompleted(
@@ -101,11 +134,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string output,
             bool continuedAsNew,
-            bool isOrchestrator,
+            FunctionType functionType,
             bool isReplay)
         {
-            EtwEventSource.Instance.FunctionCompleted(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, output, continuedAsNew, isOrchestrator, isReplay);
-            this.appTraceWriter.Info($"[DF] {instanceId}: Function '{functionName}', version '{version}' completed. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}");
+            EtwEventSource.Instance.FunctionCompleted(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, output, continuedAsNew, functionType.ToString(), isReplay);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' completed. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, continuedAsNew, isReplay, output,
+                FunctionState.Completed, hubName, LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' completed. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {FunctionState.Completed}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void FunctionTerminated(
@@ -115,8 +155,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            EtwEventSource.Instance.FunctionTerminated(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, reason, IsOrchestrator: true, IsReplay: false);
-            this.appTraceWriter.Warning($"[DF] {instanceId}: Function '{functionName}', version '{version}' was terminated. Reason: {reason}");
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.FunctionTerminated(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, reason, functionType.ToString(), IsReplay: false);
+
+            this.logger.LogWarning(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' was terminated. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, reason, FunctionState.Terminated, hubName,
+                LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' was terminated. Reason: {reason}. State: {FunctionState.Terminated}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void FunctionFailed(
@@ -125,11 +174,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string version,
             string instanceId,
             string reason,
-            bool isOrchestrator,
+            FunctionType functionType,
             bool isReplay)
         {
-            EtwEventSource.Instance.FunctionFailed(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, reason, isOrchestrator, IsReplay: false);
-            this.appTraceWriter.Error($"[DF] {instanceId}: Function '{functionName}', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}.");
+            EtwEventSource.Instance.FunctionFailed(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, reason, functionType.ToString(), IsReplay: false);
+
+            this.logger.LogError(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, reason, isReplay, FunctionState.Failed, hubName,
+                LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {FunctionState.Failed}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
 
         public void ExternalEventRaised(
@@ -141,8 +197,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string input,
             bool isReplay)
         {
-            EtwEventSource.Instance.ExternalEventRaised(hubName, LocalAppName, LocalSlotName, functionName, version, instanceId, eventName, input, IsOrchestrator: true, IsReplay: isReplay);
-            this.appTraceWriter.Info($"[DF] {instanceId}: Function '{functionName}', version '{version}' received a '{eventName}' event.");
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.ExternalEventRaised(hubName, LocalAppName, LocalSlotName, functionName, version,
+                instanceId, eventName, input, functionType.ToString(), IsReplay: isReplay);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' received a '{eventName}' event. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.",
+                instanceId, functionName, functionType, version, eventName, FunctionState.ExternalEventRaised,
+                hubName, LocalAppName, LocalSlotName);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' received a '{eventName}' event. State: {FunctionState.ExternalEventRaised}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}.");
         }
     }
 }

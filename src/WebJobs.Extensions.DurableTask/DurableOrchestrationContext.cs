@@ -262,7 +262,7 @@ namespace Microsoft.Azure.WebJobs
                 version,
                 this.InstanceId,
                 reason: sourceFunctionId,
-                isOrchestrator: true,
+                functionType: functionType,
                 isReplay: this.innerContext.IsReplaying);
 
             TResult output;
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs
                         version,
                         this.InstanceId,
                         reason: $"(replayed {e.GetType().Name})",
-                        isOrchestrator: false,
+                        functionType: FunctionType.Activity,
                         isReplay: true);
                 }
 
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs
                     this.InstanceId,
                     output: "(replayed)",
                     continuedAsNew: false,
-                    isOrchestrator: false,
+                    functionType: FunctionType.Activity,
                     isReplay: true);
             }
 

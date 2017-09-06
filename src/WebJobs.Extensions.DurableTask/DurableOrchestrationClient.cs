@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs
                 DefaultVersion,
                 instance.InstanceId,
                 reason: "NewInstance",
-                isOrchestrator: true,
+                functionType: FunctionType.Orchestrator, 
                 isReplay: false);
 
             return instance.InstanceId;
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs
                     state.Version,
                     state.OrchestrationInstance.InstanceId,
                     reason: "RaiseEvent:" + eventName,
-                    isOrchestrator: true,
+                    functionType: FunctionType.Orchestrator,
                     isReplay: false);
             }
         }

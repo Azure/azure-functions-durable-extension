@@ -3,12 +3,15 @@
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    /// <summary>
-    /// The type of a function.
-    /// </summary>
-    internal enum FunctionType
+    internal enum FunctionState
     {
-        Activity,
-        Orchestrator
+        Scheduled,
+        Started,
+        Awaited,
+        Listening,
+        Completed,
+        Terminated,
+        Failed,
+        ExternalEventRaised
     }
 }
