@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,9 +19,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private readonly ITestOutputHelper output;
 
+        private readonly ILoggerFactory loggerFactory;
+        private readonly TestLoggerProvider loggerProvider;
+        private readonly bool useTestLogger;
+
+        private readonly string instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+
         public DurableTaskEndToEndTests(ITestOutputHelper output)
         {
             this.output = output;
+
+            // Set to false to manually verify log entries in Application Insights but tests with TestHelpers.AssertLogMessageSequence will be skipped
+            this.useTestLogger = true;
+
+            loggerProvider = new TestLoggerProvider();
+            loggerFactory = new LoggerFactory();
+
+            if (useTestLogger)
+            {
+                loggerFactory.AddProvider(loggerProvider);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(instrumentationKey))
+                {
+                    var filter = new LogCategoryFilter
+                    {
+                        DefaultLevel = LogLevel.Debug
+                    };
+
+                    filter.CategoryLevels[TestHelpers.LogCategory] = LogLevel.Debug;
+
+                    loggerFactory = new LoggerFactory()
+                        .AddApplicationInsights(instrumentationKey, filter.Filter);
+                }
+            }
         }
 
         /// <summary>
@@ -26,11 +62,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HelloWorldOrchestration_Inline()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(HelloWorldOrchestration_Inline)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline)
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(HelloWorldOrchestration_Inline)))
             {
                 await host.StartAsync();
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.SayHelloInline), "World", this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -38,6 +79,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("Hello, World!", status?.Output);
 
                 await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "HelloWorldOrchestration_Inline",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -47,11 +94,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HelloWorldOrchestration_Activity()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(HelloWorldOrchestration_Activity)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity)
+            };
+            string activityFunctionName = nameof(TestActivities.Hello);
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(HelloWorldOrchestration_Activity)))
             {
                 await host.StartAsync();
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -59,6 +112,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("Hello, World!", status?.Output);
 
                 await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "HelloWorldOrchestration_Activity",
+                    orchestratorFunctionNames, activityFunctionName);
             }
         }
 
@@ -68,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task SequentialOrchestration()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(SequentialOrchestration)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(SequentialOrchestration)))
             {
                 await host.StartAsync();
 
@@ -81,8 +140,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
-        }
 
+            // Assert log entry count
+            if (this.useTestLogger)
+            {
+                var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
+                var logMessages = logger.LogMessages.ToList();
+                Assert.Equal(153, logMessages.Count);
+            }
+        }
+        
+        
         /// <summary>
         /// End-to-end test which validates parallel function execution by enumerating all files in the current directory 
         /// in parallel and getting the sum total of all file sizes.
@@ -90,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ParallelOrchestration()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(ParallelOrchestration)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ParallelOrchestration)))
             {
                 await host.StartAsync();
 
@@ -105,18 +173,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+
         /// <summary>
         /// End-to-end test which validates the ContinueAsNew functionality by implementing a counter actor pattern.
         /// </summary>
         [Fact]
         public async Task ActorOrchestration()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(ActorOrchestration)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActorOrchestration)))
             {
                 await host.StartAsync();
 
                 int initialValue = 0;
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
+                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Counter), initialValue,
+                    this.output);
 
                 // Need to wait for the instance to start before sending events to it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -150,12 +220,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
-                Assert.Equal(3, (int)status?.Output);
+                Assert.Equal(3, (int) status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
                 Assert.NotEqual(initialValue, status?.Input);
 
                 await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
+                var logMessages = logger.LogMessages.ToList();
+                Assert.Equal(49, logMessages.Count);
             }
         }
 
@@ -165,12 +242,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task TerminateOrchestration()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(TerminateOrchestration)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Counter)
+            };
+            
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(TerminateOrchestration)))
             {
                 await host.StartAsync();
 
                 // Using the counter orchestration because it will wait indefinitely for input.
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Counter), 0, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], 0, this.output);
 
                 // Need to wait for the instance to start before we can terminate it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -186,6 +268,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "TerminateOrchestration",
+                    orchestratorFunctionNames);
+            }
         }
 
         /// <summary>
@@ -194,12 +282,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task TimerCancellation()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(TimerCancellation)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Approval)
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(TimerCancellation)))
             {
                 await host.StartAsync();
 
                 var timeout = TimeSpan.FromSeconds(10);
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], timeout, this.output);
 
                 // Need to wait for the instance to start before sending events to it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -213,6 +306,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "TimerCancellation", orchestratorFunctionNames);
+            }
         }
 
         /// <summary>
@@ -221,12 +319,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task TimerExpiration()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(TimerExpiration)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Approval)
+            };
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(TimerExpiration)))
             {
                 await host.StartAsync();
 
                 var timeout = TimeSpan.FromSeconds(10);
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], timeout, this.output);
 
                 // Need to wait for the instance to start before sending events to it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -241,6 +343,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "TimerExpiration", orchestratorFunctionNames);
+            }
         }
 
         /// <summary>
@@ -249,7 +356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task OrchestrationConcurrency()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(OrchestrationConcurrency)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(OrchestrationConcurrency)))
             {
                 await host.StartAsync();
 
@@ -286,7 +393,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HandledActivityException()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(HandledActivityException)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(HandledActivityException)))
             {
                 await host.StartAsync();
 
@@ -307,7 +414,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task UnhandledOrchestrationException()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(UnhandledOrchestrationException)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Throw)
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(UnhandledOrchestrationException)))
             {
                 await host.StartAsync();
 
@@ -322,6 +434,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledOrchestrationException",
+                    orchestratorFunctionNames);
+            }
         }
 
         /// <summary>
@@ -330,12 +448,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task UnhandledActivityException()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(UnhandledActivityException)))
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Throw)
+            };
+            string activityFunctioName = nameof(TestActivities.Throw);
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(UnhandledActivityException)))
             {
                 await host.StartAsync();
 
                 string message = "Kah-BOOOOM!!!";
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Throw), message, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -345,6 +469,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledActivityException",
+                    orchestratorFunctionNames, activityFunctioName);
+            }
         }
 
         /// <summary>
@@ -353,10 +483,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task StartOrchestration_OnUnregisteredOrchestrator()
         {
-            const string functionName = "UnregisteredOrchestrator";
-            string errorMessage = $"The function '{functionName}' doesn't exist, is disabled, or is not an orchestrator function";
+            const string activityFunctionName = "UnregisteredOrchestrator";
+            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an orchestrator function";
 
-            using (JobHost host = TestHelpers.GetJobHost(nameof(StartOrchestration_OnUnregisteredOrchestrator)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(StartOrchestration_OnUnregisteredOrchestrator)))
             {
                 await host.StartAsync();
 
@@ -375,20 +505,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task Orchestration_OnUnregisteredActivity()
         {
-            const string functionName = "UnregisteredActivity";
-            string errorMessage = $"The function '{functionName}' doesn't exist, is disabled, or is not an activity or orchestrator function";
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.CallActivity)
+            };
+            const string activityFunctionName = "UnregisteredActivity";
+            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity or orchestrator function";
 
-            using (JobHost host = TestHelpers.GetJobHost(nameof(Orchestration_OnUnregisteredActivity)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(Orchestration_OnUnregisteredActivity)))
             {
                 await host.StartAsync();
 
                 var startArgs = new StartOrchestrationArgs
                 {
-                    FunctionName = functionName,
+                    FunctionName = activityFunctionName,
                     Input = new {Foo = "Bar"}
                 };
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -397,6 +531,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status?.Output.ToString().Contains(errorMessage));
 
                 await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_OnUnregisteredActivity",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -408,10 +548,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             const string greetingName = "ValidOrchestrator";
             const string validOrchestratorName = "SayHelloWithActivity";
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.CallActivity),
+                validOrchestratorName
+            };
+            string activityFunctionName = nameof(TestActivities.Hello);
+
             var input = new {Foo = greetingName};
             var inputJson = JsonConvert.SerializeObject(input);
-
-            using (JobHost host = TestHelpers.GetJobHost(nameof(Orchestration_OnValidOrchestrator)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(Orchestration_OnValidOrchestrator)))
             {
                 await host.StartAsync();
 
@@ -422,7 +568,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
 
@@ -434,6 +580,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal($"Hello, [{inputJson}]!", status.Output.ToString());
 
                 await host.StopAsync();
+
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_OnValidOrchestrator",
+                        orchestratorFunctionNames, activityFunctionName);
+                }
             }
         }
     }

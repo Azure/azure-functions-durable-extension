@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.Version,
                 this.context.InstanceId,
                 this.config.GetIntputOutputTrace(serializedInput),
-                true /* isOrchestrator */,
+                FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
             object returnValue;
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.Version,
                     this.context.InstanceId,
                     e.ToString(),
-                    true /* isOrchestrator */,
+                    FunctionType.Orchestrator,
                     this.context.IsReplaying);
                 throw;
             }
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.InstanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
                 this.context.ContinuedAsNew,
-                true /* isOrchestrator */,
+                FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
             return serializedOutput;

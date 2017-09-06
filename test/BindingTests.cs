@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -13,15 +15,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private readonly ITestOutputHelper output;
 
+        private readonly ILoggerFactory loggerFactory;
+        private readonly TestLoggerProvider loggerProvider;
+
         public BindingTests(ITestOutputHelper output)
         {
             this.output = output;
+            loggerProvider = new TestLoggerProvider();
+            loggerFactory = new LoggerFactory();
+            loggerFactory.AddProvider(loggerProvider);
         }
 
         [Fact]
         public async Task ActivityTriggerAsJObject()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(ActivityTriggerAsJObject)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityTriggerAsJObject)))
             {
                 await host.StartAsync();
 
@@ -46,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityTriggerAsPOCO()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(ActivityTriggerAsPOCO)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityTriggerAsPOCO)))
             {
                 await host.StartAsync();
 
@@ -73,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityTriggerAsNumber()
         {
-            using (JobHost host = TestHelpers.GetJobHost(nameof(ActivityTriggerAsNumber)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityTriggerAsNumber)))
             {
                 await host.StartAsync();
 

@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.activityVersion,
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
-                isOrchestrator: false,
+                functionType: FunctionType.Activity,
                 isReplay: false);
 
             FunctionResult result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.activityVersion,
                     instanceId,
                     result.Exception?.ToString() ?? string.Empty,
-                    isOrchestrator: false,
+                    functionType: FunctionType.Activity,
                     isReplay: false);
 
                 if (result.Exception != null)
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
                 continuedAsNew: false,
-                isOrchestrator: false,
+                functionType: FunctionType.Activity,
                 isReplay: false);
 
             return serializedOutput;

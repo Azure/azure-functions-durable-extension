@@ -26,10 +26,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Version,
             string InstanceId,
             string Reason,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(201, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, IsOrchestrator, IsReplay);
+            this.WriteEvent(201, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, IsReplay);
         }
 
         [Event(202, Level = EventLevel.Informational)]
@@ -41,10 +41,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Version,
             string InstanceId,
             string Input,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(202, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Input ?? "(null)", IsOrchestrator, IsReplay);
+            this.WriteEvent(202, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Input ?? "(null)", FunctionType, IsReplay);
         }
 
         [Event(203, Level = EventLevel.Informational)]
@@ -55,10 +55,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string FunctionName,
             string Version,
             string InstanceId,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(203, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, IsOrchestrator, IsReplay);
+            this.WriteEvent(203, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, FunctionType, IsReplay);
         }
 
         [Event(204, Level = EventLevel.Informational)]
@@ -70,10 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Version,
             string InstanceId,
             string Reason,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(204, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, IsOrchestrator, IsReplay);
+            this.WriteEvent(204, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, IsReplay);
         }
 
         [Event(205, Level = EventLevel.Informational)]
@@ -86,10 +86,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string InstanceId,
             string EventName,
             string Input,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(205, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, EventName, Input ?? "(null)", IsOrchestrator, IsReplay);
+            this.WriteEvent(205, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, EventName, Input ?? "(null)", FunctionType, IsReplay);
         }
 
         [Event(206, Level = EventLevel.Informational)]
@@ -102,10 +102,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string InstanceId,
             string Output,
             bool ContinuedAsNew,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(206, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Output ?? "(null)", ContinuedAsNew, IsOrchestrator, IsReplay);
+            this.WriteEvent(206, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Output ?? "(null)", ContinuedAsNew, FunctionType, IsReplay);
         }
 
         [Event(207, Level = EventLevel.Warning)]
@@ -117,10 +117,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Version,
             string InstanceId,
             string Reason,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(207, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, IsOrchestrator, IsReplay);
+            this.WriteEvent(207, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, IsReplay);
         }
 
         [Event(208, Level = EventLevel.Error)]
@@ -132,10 +132,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Version,
             string InstanceId,
             string Reason,
-            bool IsOrchestrator,
+            string FunctionType,
             bool IsReplay)
         {
-            this.WriteEvent(208, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, IsOrchestrator, IsReplay);
+            this.WriteEvent(208, HubName, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, IsReplay);
         }
     }
 }
