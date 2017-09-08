@@ -115,6 +115,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallFunctionAsync(nameof(TestActivities.Throw), message);
         }
 
+        public static async Task ThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+            if (string.IsNullOrEmpty(message))
+            {
+                // This throw happens directly in the orchestration.
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+
+            // This throw happens in the implementation of an activity.
+            await ctx.CallFunctionWithRetryAsync(nameof(TestActivities.Throw), options, message);
+        }
+
         public static async Task<int> TryCatchLoop([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             int iterations = ctx.GetInput<int>();

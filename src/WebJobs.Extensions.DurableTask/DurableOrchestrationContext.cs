@@ -216,6 +216,27 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Schedules an activity function named <paramref name="functionName"/> for execution.
         /// </summary>
+        /// <param name="functionName">The name of the activity function to call.</param>
+        /// <param name="retryOptions">The retry option for the activity function.</param>
+        /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
+        /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        public Task CallFunctionWithRetryAsync(string functionName, Extensions.DurableTask.RetryOptions retryOptions, params object[] parameters)
+        {
+            return this.CallFunctionWithRetryAsync<string>(functionName, retryOptions, parameters);
+        }
+
+        /// <summary>
+        /// Schedules an activity function named <paramref name="functionName"/> for execution.
+        /// </summary>
         /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
         /// <param name="functionName">The name of the activity function to call.</param>
         /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
@@ -231,82 +252,29 @@ namespace Microsoft.Azure.WebJobs
         /// </exception>
         public async Task<TResult> CallFunctionAsync<TResult>(string functionName, params object[] parameters)
         {
-            this.ThrowIfInvalidAccess();
+            return await CallDurableTaskFunctionAsync<TResult>(functionName, null, parameters);
+        }
 
-            // TODO: Support for versioning
-            string version = DefaultVersion;
-            FunctionType functionType = this.config.GetFunctionType(functionName, version);
-
-            Task<TResult> callTask;
-
-            switch (functionType)
-            {
-                case FunctionType.Activity:
-                    callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
-                    break;
-                case FunctionType.Orchestrator:
-                    callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version, JsonConvert.SerializeObject(parameters));
-                    break;
-                default:
-                    throw new InvalidOperationException(
-                        string.Format("Unexpected function type '{0}'.",
-                            functionType));
-            }
-
-            string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion) ?
-                this.orchestrationName : 
-                this.orchestrationName + "/" + this.orchestrationVersion;
-
-            this.config.TraceHelper.FunctionScheduled(
-                this.config.HubName,
-                functionName,
-                version,
-                this.InstanceId,
-                reason: sourceFunctionId,
-                functionType: functionType,
-                isReplay: this.innerContext.IsReplaying);
-
-            TResult output;
-
-            try
-            {
-                output = await callTask;
-            }
-            catch (Exception e)
-            {
-                if (this.innerContext.IsReplaying)
-                {
-                    // If this were not a replay, then the activity function trigger would have already 
-                    // emitted a FunctionFailed trace with the full exception details.
-                    this.config.TraceHelper.FunctionFailed(
-                        this.config.HubName,
-                        functionName,
-                        version,
-                        this.InstanceId,
-                        reason: $"(replayed {e.GetType().Name})",
-                        functionType: FunctionType.Activity,
-                        isReplay: true);
-                }
-
-                throw;
-            }
-
-            if (this.innerContext.IsReplaying)
-            {
-                // If this were not a replay, then the activity function trigger would have already 
-                // emitted a FunctionCompleted trace with the actual output details.
-                this.config.TraceHelper.FunctionCompleted(
-                    this.config.HubName,
-                    functionName,
-                    version,
-                    this.InstanceId,
-                    output: "(replayed)",
-                    continuedAsNew: false,
-                    functionType: FunctionType.Activity,
-                    isReplay: true);
-            }
-
-            return output;
+        /// <summary>
+        /// Schedules an activity function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
+        /// <param name="functionName">The name of the activity function to call.</param>
+        /// <param name="retryOptions">The retry option for the activity function.</param>
+        /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
+        /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        public async Task<TResult> CallFunctionWithRetryAsync<TResult>(string functionName, Extensions.DurableTask.RetryOptions retryOptions, params object[] parameters)
+        {
+            return await CallDurableTaskFunctionAsync<TResult>(functionName, retryOptions, parameters);
         }
 
         /// <summary>
@@ -405,6 +373,97 @@ namespace Microsoft.Azure.WebJobs
             this.innerContext.ContinueAsNew(input);
             this.ContinuedAsNew = true;
         }
+
+        internal async Task<TResult> CallDurableTaskFunctionAsync<TResult>(string functionName,
+            Extensions.DurableTask.RetryOptions retryOptions,
+            object[] parameters)
+        {
+            this.ThrowIfInvalidAccess();
+
+            // TODO: Support for versioning
+            string version = DefaultVersion;
+            FunctionType functionType = this.config.GetFunctionType(functionName, version);
+
+            Task<TResult> callTask;
+
+            switch (functionType)
+            {
+                case FunctionType.Activity:
+                    if (retryOptions == null)
+                    {
+                        callTask = this.innerContext.ScheduleTask<TResult>(functionName, version, parameters);
+                    }
+                    else
+                    {
+                        callTask = this.innerContext.ScheduleWithRetry<TResult>(functionName, version,
+                            retryOptions.GetRetryOptions(), parameters);
+                    }
+                    break;
+                case FunctionType.Orchestrator:
+                    callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version,
+                        JsonConvert.SerializeObject(parameters));
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        string.Format("Unexpected function type '{0}'.",
+                            functionType));
+            }
+
+            string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion)
+                ? this.orchestrationName
+                : this.orchestrationName + "/" + this.orchestrationVersion;
+
+            this.config.TraceHelper.FunctionScheduled(
+                this.config.HubName,
+                functionName,
+                version,
+                this.InstanceId,
+                reason: sourceFunctionId,
+                functionType: functionType,
+                isReplay: this.innerContext.IsReplaying);
+
+            TResult output;
+
+            try
+            {
+                output = await callTask;
+            }
+            catch (Exception e)
+            {
+                if (this.innerContext.IsReplaying)
+                {
+                    // If this were not a replay, then the activity function trigger would have already 
+                    // emitted a FunctionFailed trace with the full exception details.
+                    this.config.TraceHelper.FunctionFailed(
+                        this.config.HubName,
+                        functionName,
+                        version,
+                        this.InstanceId,
+                        reason: $"(replayed {e.GetType().Name})",
+                        functionType: FunctionType.Activity,
+                        isReplay: true);
+                }
+                throw;
+            }
+
+            if (this.innerContext.IsReplaying)
+            {
+                // If this were not a replay, then the activity function trigger would have already 
+                // emitted a FunctionCompleted trace with the actual output details.
+                this.config.TraceHelper.FunctionCompleted(
+                    this.config.HubName,
+                    functionName,
+                    version,
+                    this.InstanceId,
+                    output: "(replayed)",
+                    continuedAsNew: false,
+                    functionType: FunctionType.Activity,
+                    isReplay: true);
+            }
+
+            return output;
+        }
+
 
         internal void RaiseEvent(string name, string input)
         {

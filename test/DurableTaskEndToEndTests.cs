@@ -478,6 +478,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the retries of unhandled exceptions generated from activity code.
+        /// </summary>
+        [Fact]
+        public async Task UnhandledActivityExceptionWithRetry()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ThrowWithRetry)
+            };
+            string activityFunctioName = nameof(TestActivities.Throw);
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(UnhandledActivityException)))
+            {
+                await host.StartAsync();
+
+                string message = "Kah-BOOOOM!!!";
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains("Exception"));
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledActivityExceptionWithRetry",
+                    orchestratorFunctionNames, activityFunctioName);
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
         /// </summary>
         [Fact]
