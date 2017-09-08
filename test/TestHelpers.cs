@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -266,18 +265,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static string GetMessageId(string message)
         {
-            string regexPattern = @"([A-Za-z0-9])\w+";
-            var matches = Regex.Match(message, regexPattern).Groups[0];
-            return matches.Value;
+            return message.Substring(0, message.IndexOf(':'));
         }
 
         private static string GetTimerTimestamp(string message)
         {
-            string regexPattern = @"CreateTimer\:.*\.\w+";
-            var match = Regex.Match(message, regexPattern).Groups[0];
-            Regex rgx = new Regex(@"CreateTimer:");
-            string result = rgx.Replace(match.Value, string.Empty);
-            return result;
+            const string CreateTimerPrefix = "CreateTimer:";
+            int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
+            int end = message.IndexOf('Z', start) + 1;
+            return message.Substring(start, end - start);
         }
     }
 }
