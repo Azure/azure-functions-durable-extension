@@ -4,14 +4,14 @@
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
-    <AssemblyVersion>0.2.0.0</AssemblyVersion>
-    <FileVersion>0.2.2.0</FileVersion>
-    <Version>0.2.2-alpha</Version>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <FileVersion>0.3.0.0</FileVersion>
+    <Version>0.3.0-alpha</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="0.1.0-alpha" />
+    <PackageReference Include="DurableTask.AzureStorage" Version="0.2.0" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.1.0-beta1-11013" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.1" />
@@ -19,7 +19,7 @@
 
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
-    <Title>Azure Functions Durable Extension</Title>
+    <Title>Azure Functions Durable Task Extension</Title>
     <Authors>Microsoft</Authors>
     <Description>Azure WebJobs SDK Extension for the Durable Task Framework</Description>
     <PackageReleaseNotes>This is an alpha release of the Durable Task Extension for Azure WebJobs.</PackageReleaseNotes>
