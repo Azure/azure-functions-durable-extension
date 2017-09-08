@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs
     public sealed class DurableOrchestrationContext
     {
         private const string DefaultVersion = "";
+        private const int MaxTimerDurationInDays = 6;
 
         // The default JsonDataConverter for DTFx includes type information in JSON objects. This blows up when using Functions 
         // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
@@ -340,6 +341,13 @@ namespace Microsoft.Azure.WebJobs
         public Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
+
+            // This check can be removed once the storage provider supports extended timers.
+            // https://github.com/Azure/azure-functions-durable-extension/issues/14
+            if (fireAt.Subtract(this.CurrentUtcDateTime) > TimeSpan.FromDays(MaxTimerDurationInDays))
+            {
+                throw new ArgumentException($"Timer durations must not exceed {MaxTimerDurationInDays} days.", nameof(fireAt));
+            }
 
             Task<T> timerTask = this.innerContext.CreateTimer(fireAt, state, cancelToken);
 
