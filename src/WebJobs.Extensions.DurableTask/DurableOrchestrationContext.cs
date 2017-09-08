@@ -220,6 +220,9 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="retryOptions">The retry option for the activity function.</param>
         /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
         /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -229,8 +232,13 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public Task CallFunctionWithRetryAsync(string functionName, Extensions.DurableTask.RetryOptions retryOptions, params object[] parameters)
+        public Task CallFunctionWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)
         {
+            if (retryOptions == null)
+            {
+                throw new ArgumentNullException(nameof(retryOptions));    
+            }
+
             return this.CallFunctionWithRetryAsync<string>(functionName, retryOptions, parameters);
         }
 
@@ -263,6 +271,9 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="retryOptions">The retry option for the activity function.</param>
         /// <param name="parameters">The JSON-serializeable parameters to pass as input to the function.</param>
         /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -272,8 +283,13 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public async Task<TResult> CallFunctionWithRetryAsync<TResult>(string functionName, Extensions.DurableTask.RetryOptions retryOptions, params object[] parameters)
+        public async Task<TResult> CallFunctionWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, params object[] parameters)
         {
+            if (retryOptions == null)
+            {
+                throw new ArgumentNullException(nameof(retryOptions));
+            }
+
             return await CallDurableTaskFunctionAsync<TResult>(functionName, retryOptions, parameters);
         }
 
@@ -374,8 +390,8 @@ namespace Microsoft.Azure.WebJobs
             this.ContinuedAsNew = true;
         }
 
-        internal async Task<TResult> CallDurableTaskFunctionAsync<TResult>(string functionName,
-            Extensions.DurableTask.RetryOptions retryOptions,
+        private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(string functionName,
+            RetryOptions retryOptions,
             object[] parameters)
         {
             this.ThrowIfInvalidAccess();
@@ -400,8 +416,16 @@ namespace Microsoft.Azure.WebJobs
                     }
                     break;
                 case FunctionType.Orchestrator:
-                    callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version,
-                        JsonConvert.SerializeObject(parameters));
+                    if (retryOptions == null)
+                    {
+                        callTask = this.innerContext.CreateSubOrchestrationInstance<TResult>(functionName, version,
+                            JsonConvert.SerializeObject(parameters));
+                    }
+                    else
+                    {
+                        callTask = this.innerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(functionName, version,
+                            retryOptions.GetRetryOptions(), JsonConvert.SerializeObject(parameters));
+                    }
                     break;
                 default:
                     throw new InvalidOperationException(

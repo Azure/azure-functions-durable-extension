@@ -102,10 +102,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public static async Task Throw([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task OrchestratorThrow([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
-            if (string.IsNullOrEmpty(message))
+            if (string.IsNullOrEmpty(message) || message.Contains("null"))
             {
                 // This throw happens directly in the orchestration.
                 throw new ArgumentNullException(nameof(message));
@@ -115,7 +115,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallFunctionAsync(nameof(TestActivities.Throw), message);
         }
 
-        public static async Task ThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task OrchestratorThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+
+            // This throw happens in the implementation of an activity.
+            await ctx.CallFunctionWithRetryAsync(nameof(TestOrchestrations.OrchestratorThrow), options, message);
+        }
+
+        public static async Task OrchestratorWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            RetryOptions options = null;
+
+            // This throw happens in the implementation of an activity.
+            await ctx.CallFunctionWithRetryAsync(nameof(TestOrchestrations.OrchestratorThrow), options, message);
+        }
+
+        public static async Task ActivityThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
             if (string.IsNullOrEmpty(message))
@@ -125,6 +145,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+
+            // This throw happens in the implementation of an activity.
+            await ctx.CallFunctionWithRetryAsync(nameof(TestActivities.Throw), options, message);
+        }
+
+        public static async Task ActivityWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+            if (string.IsNullOrEmpty(message))
+            {
+                // This throw happens directly in the orchestration.
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            RetryOptions options = null;
 
             // This throw happens in the implementation of an activity.
             await ctx.CallFunctionWithRetryAsync(nameof(TestActivities.Throw), options, message);
