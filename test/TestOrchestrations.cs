@@ -154,5 +154,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var result = await ctx.CallFunctionAsync<object>(startArgs.FunctionName, startArgs.Input);
             return result;
         }
+
+        public static async Task Timer([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            DateTime fireAt = ctx.GetInput<DateTime>();
+            await ctx.CreateTimer(fireAt, CancellationToken.None);
+        }
     }
 }
