@@ -38,15 +38,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static void AssertLogMessageSequence(TestLoggerProvider loggerProvider, string testName,
             string[] orchestratorFunctionNames, string activityFunctionName = null)
         {
+            List<string> messageIds;
+            string timeStamp;
+            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
+
+            var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp);
+            var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
+
+            Assert.Equal(expectedLogMessages.Count, logMessages.Count);
+            AssertLogMessages(expectedLogMessages, actualLogMessages);
+        }
+
+        public static void UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(TestLoggerProvider loggerProvider, string testName,
+            string[] orchestratorFunctionNames, string activityFunctionName = null)
+        {
+            List<string> messageIds;
+            string timeStamp;
+            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
+
+            var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
+            var exceptionCount =
+                actualLogMessages.FindAll(m => m.Contains("failed with an error")).Count;
+
+            Assert.Equal(4, exceptionCount);
+        }
+
+        private static List<LogMessage> GetLogMessages(TestLoggerProvider loggerProvider, string testName, out List<string> messageIds,
+            out string timeStamp)
+        {
             var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == LogCategory);
             var logMessages = logger.LogMessages.ToList();
-            var messageIds = new List<string>()
+            messageIds = new List<string>()
             {
                 GetMessageId(logMessages[0].FormattedMessage)
             };
 
-            string timeStamp = string.Empty;
-            
+            timeStamp = string.Empty;
+
             if (testName.Equals("TimerCancellation", StringComparison.InvariantCultureIgnoreCase)
                 || testName.Equals("TimerExpiration", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -57,13 +85,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 messageIds.Add(GetMessageId(logMessages[4].FormattedMessage));
             }
 
-            var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp);
-            var actualLogMessage = logMessages.Select(m => m.FormattedMessage).ToList();
-
             Assert.True(
                 logMessages.TrueForAll(m => m.Category.Equals(LogCategory, StringComparison.InvariantCultureIgnoreCase)));
-            Assert.Equal(expectedLogMessages.Count, logMessages.Count);
-            AssertLogMessages(expectedLogMessages, actualLogMessage);
+            return logMessages;
         }
 
         private static IList<string> GetExpectedLogMessages(string testName, List<string> messageIds, string[] orchestratorFunctionNames, string activityFunctionName = null, string timeStamp = null)
@@ -91,6 +115,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
                 case "UnhandledActivityException":
                     messages = GetLogs_UnhandledActivityException(messageIds[0], orchestratorFunctionNames, activityFunctionName);
+                    break;
+                case "UnhandledActivityExceptionWithRetry":
+                    messages = GetLogs_UnhandledActivityExceptionWithRetry(messageIds[0], orchestratorFunctionNames, activityFunctionName);
                     break;
                 case "Orchestration_OnUnregisteredActivity":
                     messages = GetLogs_Orchestration_OnUnregisteredActivity(messageIds[0], orchestratorFunctionNames);
@@ -215,12 +242,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Activity})', version '' scheduled. Reason: Throw. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: OrchestratorThrow. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Activity})', version '' scheduled. Reason: Throw. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: OrchestratorThrow. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: DurableTask.Core.Exceptions.TaskFailedException",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_UnhandledActivityExceptionWithRetry(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: DurableTask.Core.Exceptions.TaskFailedException",
             };
 

@@ -416,7 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.Throw)
+                nameof(TestOrchestrations.OrchestratorThrow)
             };
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(UnhandledOrchestrationException)))
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 // Null input should result in ArgumentNullException in the orchestration code.
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Throw), null, this.output);
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -443,6 +443,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the retries of unhandled exceptions generated from orchestrator functions.
+        /// </summary>
+        [Fact]
+        public async Task UnhandledOrchestrationExceptionWithRetry()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.OrchestratorThrowWithRetry)
+            };
+
+            using (JobHost host =
+                TestHelpers.GetJobHost(loggerFactory, nameof(UnhandledOrchestrationExceptionWithRetry)))
+            {
+                await host.StartAsync();
+
+                // Null input should result in ArgumentNullException in the orchestration code.
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(loggerProvider, "UnhandledOrchestrationExceptionWithRetry",
+                    orchestratorFunctionNames);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates the retries for an orchestrator function with null RetryOptions fails.
+        /// </summary>
+        [Fact]
+        public async Task OrchestrationWithRetry_NullRetryOptions()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.OrchestratorWithRetry_NullRetryOptions)
+            };
+
+            using (JobHost host =
+                TestHelpers.GetJobHost(loggerFactory, nameof(OrchestrationWithRetry_NullRetryOptions)))
+            {
+                await host.StartAsync();
+
+                // Null input should result in ArgumentNullException in the orchestration code.
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains("Value cannot be null.\r\nParameter name: retryOptions"));
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the handling of unhandled exceptions generated from activity code.
         /// </summary>
         [Fact]
@@ -450,9 +514,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.Throw)
+                nameof(TestOrchestrations.OrchestratorThrow)
             };
-            string activityFunctioName = nameof(TestActivities.Throw);
+            string activityFunctionName = nameof(TestActivities.Throw);
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(UnhandledActivityException)))
             {
@@ -473,7 +537,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledActivityException",
-                    orchestratorFunctionNames, activityFunctioName);
+                    orchestratorFunctionNames, activityFunctionName);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates the retries of unhandled exceptions generated from activity functions.
+        /// </summary>
+        [Fact]
+        public async Task UnhandledActivityExceptionWithRetry()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ActivityThrowWithRetry)
+            };
+            string activityFunctionName = nameof(TestActivities.Throw);
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(UnhandledActivityExceptionWithRetry)))
+            {
+                await host.StartAsync();
+
+                string message = "Kah-BOOOOM!!!";
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains("Exception"));
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledActivityExceptionWithRetry",
+                    orchestratorFunctionNames, activityFunctionName);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates the retries for an activity function with null RetryOptions fails.
+        /// </summary>
+        [Fact]
+        public async Task ActivityWithRetry_NullRetryOptions()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ActivityWithRetry_NullRetryOptions)
+            };
+            string activityFunctionName = nameof(TestActivities.Throw);
+
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityWithRetry_NullRetryOptions)))
+            {
+                await host.StartAsync();
+
+                string message = "Kah-BOOOOM!!!";
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains("Value cannot be null.\r\nParameter name: retryOptions"));
+
+                await host.StopAsync();
             }
         }
 
