@@ -208,9 +208,9 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public Task CallFunctionAsync(string functionName, params object[] parameters)
+        public Task CallActivityAsync(string functionName, params object[] parameters)
         {
-            return this.CallFunctionAsync<string>(functionName, parameters);
+            return this.CallActivityAsync<string>(functionName, parameters);
         }
 
         /// <summary>
@@ -232,14 +232,14 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public Task CallFunctionWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)
+        public Task CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)
         {
             if (retryOptions == null)
             {
                 throw new ArgumentNullException(nameof(retryOptions));    
             }
 
-            return this.CallFunctionWithRetryAsync<string>(functionName, retryOptions, parameters);
+            return this.CallActivityWithRetryAsync<string>(functionName, retryOptions, parameters);
         }
 
         /// <summary>
@@ -257,9 +257,9 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public Task CallOrchestratorAsync(string functionName, params object[] parameters)
+        public Task CallSubOrchestratorAsync(string functionName, params object[] parameters)
         {
-            return this.CallOrchestratorAsync<string>(functionName, parameters);
+            return this.CallSubOrchestratorAsync<string>(functionName, parameters);
         }
 
         /// <summary>
@@ -281,14 +281,14 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public Task CallOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)
+        public Task CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)
         {
             if (retryOptions == null)
             {
                 throw new ArgumentNullException(nameof(retryOptions));
             }
 
-            return this.CallOrchestratorWithRetryAsync<string>(functionName, retryOptions, parameters);
+            return this.CallSubOrchestratorWithRetryAsync<string>(functionName, retryOptions, parameters);
         }
 
         /// <summary>
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public async Task<TResult> CallFunctionAsync<TResult>(string functionName, params object[] parameters)
+        public async Task<TResult> CallActivityAsync<TResult>(string functionName, params object[] parameters)
         {
             return await CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, null, parameters);
         }
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public async Task<TResult> CallFunctionWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, params object[] parameters)
+        public async Task<TResult> CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, params object[] parameters)
         {
             if (retryOptions == null)
             {
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public async Task<TResult> CallOrchestratorAsync<TResult>(string functionName, params object[] parameters)
+        public async Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, params object[] parameters)
         {
             return await CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, null, parameters);
         }
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="DurableTask.Core.Exceptions.TaskFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public async Task<TResult> CallOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, params object[] parameters)
+        public async Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, params object[] parameters)
         {
             if (retryOptions == null)
             {

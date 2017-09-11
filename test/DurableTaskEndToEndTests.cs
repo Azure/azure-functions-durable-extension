@@ -443,7 +443,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates the handling of unhandled exceptions generated from orchestrator code.
+        /// End-to-end test which validates calling an orchestrator function.
         /// </summary>
         [Fact]
         public async Task Orchestration_Activity()
@@ -460,9 +460,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal("Completed", status.RuntimeStatus);
