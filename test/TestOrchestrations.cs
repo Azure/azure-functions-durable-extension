@@ -102,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public static async Task OrchestratorThrow([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task Throw([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
             if (string.IsNullOrEmpty(message) || message.Contains("null"))
@@ -115,14 +115,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallFunctionAsync(nameof(TestActivities.Throw), message);
         }
 
+        public static async Task OrchestratorGreeting([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            // This throw happens in the implementation of an orchestrator.
+            await ctx.CallOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), message);
+        }
+
         public static async Task OrchestratorThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
 
             RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
 
-            // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionWithRetryAsync(nameof(TestOrchestrations.OrchestratorThrow), options, message);
+            // This throw happens in the implementation of an orchestrator.
+            await ctx.CallOrchestratorWithRetryAsync(nameof(TestOrchestrations.Throw), options, message);
         }
 
         public static async Task OrchestratorWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -131,8 +139,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             RetryOptions options = null;
 
-            // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionWithRetryAsync(nameof(TestOrchestrations.OrchestratorThrow), options, message);
+            // This throw happens in the implementation of an orchestrator.
+            await ctx.CallOrchestratorWithRetryAsync(nameof(TestOrchestrations.Throw), options, message);
         }
 
         public static async Task ActivityThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -202,6 +210,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
             var startArgs = ctx.GetInput<StartOrchestrationArgs>();
             var result = await ctx.CallFunctionAsync<object>(startArgs.FunctionName, startArgs.Input);
+            return result;
+        }
+
+        public static async Task<object> CallOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            // Using StartOrchestrationArgs to start an orchestrator function because it's easier than creating a new type.
+            var startArgs = ctx.GetInput<StartOrchestrationArgs>();
+            var result = await ctx.CallOrchestratorAsync<object>(startArgs.FunctionName, startArgs.Input);
             return result;
         }
 

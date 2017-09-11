@@ -364,22 +364,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal FunctionType GetFunctionType(string name, string version)
+        internal FunctionType ThrowIfInvalidFunctionType(string name, FunctionType functionType, string version)
         {
             var functionName = new FunctionName(name, version);
 
-            if (this.registeredActivities.ContainsKey(functionName))
+            if (functionType == FunctionType.Activity)
             {
-                return FunctionType.Activity;
+                if (this.registeredActivities.ContainsKey(functionName))
+                {
+                    return FunctionType.Activity;
+                }
+
+                throw new ArgumentException(
+                        string.Format(
+                            "The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: '{1}'",
+                            functionName,
+                            string.Join(", ", this.registeredActivities.Keys)));
             }
 
-            if (this.registeredOrchestrators.ContainsKey(functionName))
+            if (functionType == FunctionType.Orchestrator)
             {
-                return FunctionType.Orchestrator;
+                if (this.registeredOrchestrators.ContainsKey(functionName))
+                {
+                    return FunctionType.Orchestrator;
+                }
+
+                throw new ArgumentException(
+                    string.Format(
+                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: '{1}'",
+                        functionName,
+                        string.Join(", ", this.registeredOrchestrators.Keys)));
             }
 
             throw new ArgumentException(
-                string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
+                string.Format(
+                    "The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
                     functionName,
                     string.Join(", ", this.registeredActivities.Keys),
                     string.Join(", ", this.registeredOrchestrators.Keys)));
