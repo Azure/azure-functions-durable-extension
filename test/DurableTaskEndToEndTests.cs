@@ -416,7 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.OrchestratorThrow)
+                nameof(TestOrchestrations.Throw)
             };
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(UnhandledOrchestrationException)))
@@ -439,6 +439,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledOrchestrationException",
                     orchestratorFunctionNames);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates calling an orchestrator function.
+        /// </summary>
+        [Fact]
+        public async Task Orchestration_Activity()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.OrchestratorGreeting),
+                nameof(TestOrchestrations.SayHelloWithActivity)
+            };
+
+            string activityFunctionName = nameof(TestActivities.Hello);
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(Orchestration_Activity)))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal("Completed", status.RuntimeStatus);
+                Assert.Equal(client.InstanceId, status.InstanceId);
+                Assert.Equal(orchestratorFunctionNames[0], status?.Name);
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_Activity",
+                    orchestratorFunctionNames, activityFunctionName);
             }
         }
 
@@ -514,7 +550,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.OrchestratorThrow)
+                nameof(TestOrchestrations.Throw)
             };
             string activityFunctionName = nameof(TestActivities.Throw);
 
@@ -638,7 +674,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.CallActivity)
             };
             const string activityFunctionName = "UnregisteredActivity";
-            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity or orchestrator function";
+            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity function";
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(Orchestration_OnUnregisteredActivity)))
             {
@@ -678,7 +714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string validOrchestratorName = "SayHelloWithActivity";
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.CallActivity),
+                nameof(TestOrchestrations.CallOrchestrator),
                 validOrchestratorName
             };
             string activityFunctionName = nameof(TestActivities.Hello);
@@ -691,7 +727,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var startArgs = new StartOrchestrationArgs
                 {
-                    FunctionName = nameof(TestOrchestrations.SayHelloWithActivity),
+                    FunctionName = orchestratorFunctionNames[1],
                     Input = input
                 };
 
@@ -735,6 +771,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status.Output.ToString().Contains("fireAt"));
 
                 await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
+        /// </summary>
+        [Fact]
+        public async Task Orchestration_OnUnregisteredOrchestrator()
+        {
+            const string unregisteredOrchestrator = "UnregisteredOrchestrator";
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.CallOrchestrator),
+                unregisteredOrchestrator
+            };
+            
+            string errorMessage = $"The function '{unregisteredOrchestrator}' doesn't exist, is disabled, or is not an orchestrator function";
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(Orchestration_OnUnregisteredActivity)))
+            {
+                await host.StartAsync();
+
+                var startArgs = new StartOrchestrationArgs
+                {
+                    FunctionName = unregisteredOrchestrator,
+                    Input = new { Foo = "Bar" }
+                };
+
+                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], startArgs, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains(errorMessage));
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_OnUnregisteredOrchestrator",
+                    orchestratorFunctionNames);
             }
         }
     }

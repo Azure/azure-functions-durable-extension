@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
-            string output = await ctx.CallFunctionAsync<string>(nameof(TestActivities.Hello), input);
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             return output;
         }
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             long result = 1;
             for (int i = 1; i <= n; i++)
             {
-                result = await ctx.CallFunctionAsync<int>(nameof(TestActivities.Multiply), new[] { result, i });
+                result = await ctx.CallActivityAsync<int>(nameof(TestActivities.Multiply), new[] { result, i });
             }
 
             return result;
@@ -36,12 +36,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<long> DiskUsage([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string directory = ctx.GetInput<string>();
-            string[] files = await ctx.CallFunctionAsync<string[]>(nameof(TestActivities.GetFileList), directory);
+            string[] files = await ctx.CallActivityAsync<string[]>(nameof(TestActivities.GetFileList), directory);
 
             var tasks = new Task<long>[files.Length];
             for (int i = 0; i < files.Length; i++)
             {
-                tasks[i] = ctx.CallFunctionAsync<long>(nameof(TestActivities.GetFileSize), files[i]);
+                tasks[i] = ctx.CallActivityAsync<long>(nameof(TestActivities.GetFileSize), files[i]);
             }
 
             await Task.WhenAll(tasks);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public static async Task OrchestratorThrow([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task Throw([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
             if (string.IsNullOrEmpty(message) || message.Contains("null"))
@@ -112,7 +112,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionAsync(nameof(TestActivities.Throw), message);
+            await ctx.CallActivityAsync(nameof(TestActivities.Throw), message);
+        }
+
+        public static async Task OrchestratorGreeting([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            await ctx.CallSubOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), message);
         }
 
         public static async Task OrchestratorThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -121,8 +128,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
 
-            // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionWithRetryAsync(nameof(TestOrchestrations.OrchestratorThrow), options, message);
+            // This throw happens in the implementation of an orchestrator.
+            await ctx.CallSubOrchestratorWithRetryAsync(nameof(TestOrchestrations.Throw), options, message);
         }
 
         public static async Task OrchestratorWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -131,8 +138,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             RetryOptions options = null;
 
-            // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionWithRetryAsync(nameof(TestOrchestrations.OrchestratorThrow), options, message);
+            // This throw happens in the implementation of an orchestrator.
+            await ctx.CallSubOrchestratorWithRetryAsync(nameof(TestOrchestrations.Throw), options, message);
         }
 
         public static async Task ActivityThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -147,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
 
             // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionWithRetryAsync(nameof(TestActivities.Throw), options, message);
+            await ctx.CallActivityWithRetryAsync(nameof(TestActivities.Throw), options, message);
         }
 
         public static async Task ActivityWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -162,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             RetryOptions options = null;
 
             // This throw happens in the implementation of an activity.
-            await ctx.CallFunctionWithRetryAsync(nameof(TestActivities.Throw), options, message);
+            await ctx.CallActivityWithRetryAsync(nameof(TestActivities.Throw), options, message);
         }
 
         public static async Task<int> TryCatchLoop([OrchestrationTrigger] DurableOrchestrationContext ctx)
@@ -174,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 try
                 {
-                    await ctx.CallFunctionAsync(nameof(TestActivities.Throw), "Kah-BOOOOOM!!!");
+                    await ctx.CallActivityAsync(nameof(TestActivities.Throw), "Kah-BOOOOOM!!!");
                 }
                 catch
                 {
@@ -188,20 +195,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // TODO: It's not currently possible to detect this failure except by examining logs.
         public static async Task IllegalAwait([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
-            await ctx.CallFunctionAsync(nameof(TestActivities.Hello), "Foo");
+            await ctx.CallActivityAsync(nameof(TestActivities.Hello), "Foo");
 
             // This is the illegal await
             await Task.Run(() => { });
 
             // This call should throw
-            await ctx.CallFunctionAsync(nameof(TestActivities.Hello), "Bar");
+            await ctx.CallActivityAsync(nameof(TestActivities.Hello), "Bar");
         }
 
         public static async Task<object> CallActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
             var startArgs = ctx.GetInput<StartOrchestrationArgs>();
-            var result = await ctx.CallFunctionAsync<object>(startArgs.FunctionName, startArgs.Input);
+            var result = await ctx.CallActivityAsync<object>(startArgs.FunctionName, startArgs.Input);
+            return result;
+        }
+
+        public static async Task<object> CallOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            // Using StartOrchestrationArgs to start an orchestrator function because it's easier than creating a new type.
+            var startArgs = ctx.GetInput<StartOrchestrationArgs>();
+            var result = await ctx.CallSubOrchestratorAsync<object>(startArgs.FunctionName, startArgs.Input);
             return result;
         }
 
