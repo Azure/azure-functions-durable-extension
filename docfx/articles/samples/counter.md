@@ -1,7 +1,7 @@
 # Stateful Singleton - Counter
 Stateful singletons are long-running (potentially eternal) orchestrator functions which store state and can be invoked and queried by other functions in your application. Stateful singletons are similar in spirit to the [Actor model](https://en.wikipedia.org/wiki/Actor_model) in distributed computing.
 
-While not a proper "actor" implementation, orchestrator functions have many of the same runtime characteristics (stateful, reliable, single-threaded, location transparent, globally addressable, etc.) that make real actor implementations especially useful, but without the need for a separate framework. The below example is a simple *counter* singleton object which receives supports *increment* and *decrement* operations and updates its internal state accordingly.
+While not a proper "actor" implementation, orchestrator functions have many of the same runtime characteristics (stateful, reliable, single-threaded, location transparent, globally addressable, etc.) that make real actor implementations especially useful, but without the need for a separate framework. The below example is a simple *counter* singleton object which supports *increment* and *decrement* operations and updates its internal state accordingly.
 
 ## Before you begin
 If you haven't done so already, make sure to read the [overview](~/articles/overview.md) before jumping into samples. It will really help ensure everything you read below makes sense.
@@ -30,9 +30,9 @@ This article will specifically walk through the following function in the sample
 > This walkthrough assumes you have already gone through the [Hello Sequence](./sequence.md) sample walkthrough. If you haven't done so already, it is recommended to first go through that walkthrough before starting this one.
 
 ## Scenario overview
-The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenge you have is managing **concurrency**. Operations like *increment* and *decrement* need to be atomic, or else there could be race conditions that cause operations to overwrite each other.
+The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenges you have is managing **concurrency**. Operations like *increment* and *decrement* need to be atomic, or else there could be race conditions that cause operations to overwrite each other.
 
-Using a single VM to host the counter data is one option, but this is expensive and managing **reliability** can be a challenge since a single VM will need to be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of **complexity**.
+Using a single VM to host the counter data is one option, but this is expensive and managing **reliability** can be a challenge since a single VM could be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of **complexity**.
 
 Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.
 
@@ -50,7 +50,7 @@ This orchestrator function essentially does the following:
 
 This is an example of an *eternal orchestration* - i.e. one that potentially never ends. It responds to messages sent to it using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method, which can be called by any non-orchestrator function.
 
-One unique characteristic of this orchestrator function is that it effectively has no history: the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method will reset the history after each processed event. This is the prefered way to implement an orchestrator which has an arbitrary lifetime as using a `while` loop could cause the orchestrator function's history to grow unbounded, resulting in unnecessarily high memory usage.
+One unique characteristic of this orchestrator function is that it effectively has no history: the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method will reset the history after each processed event. This is the preferred way to implement an orchestrator which has an arbitrary lifetime as using a `while` loop could cause the orchestrator function's history to grow unbounded, resulting in unnecessarily high memory usage.
 
 > [!NOTE]
 > The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method has other interesting use-cases besides just eternal orchestrations. See the [Eternal Orchestrations](../topics/eternal-orchestrations.md) topic guide for more information.

@@ -206,7 +206,7 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
 <p>At this point, the user should have received an SMS message with a four digit code. They have 90 seconds to send that same 4-digit code back to the orchestrator function instance to complete the verification process. If they submit the wrong code, they get an additional three tries to get it right (within the same 90 second window).</p>
 <div class="NOTE"><h5>Note</h5><p>It may not be obvious at first, but this orchestrator function is completely deterministic. This is because the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> property is used to calculate the timer expiration time, and this property returns the same value on every replay at this point in the orchestrator code. This is important to ensure we get the same <code>winner</code> result in every repeated call to <code>Task.WhenAny</code>.</p>
 </div>
-<div class="WARNING"><h5>Warning</h5><p>It&#39;s very important to cancel timers using a <code>CancellationTokenSource</code> if we no longer need them to expire, like we do in the examle above when a challenge response is accepted.</p>
+<div class="WARNING"><h5>Warning</h5><p>It&#39;s very important to cancel timers using a <code>CancellationTokenSource</code> if we no longer need them to expire, like we do in the example above when a challenge response is accepted.</p>
 </div>
 <p>For more information on timers, see the <a href="../topics/timers.html">Durable Timers</a> topic.</p>
 <h2 id="sending-the-sms-message">Sending the SMS message</h2>

@@ -34,7 +34,7 @@ In this sample, we write a function which uploads all files under a specified di
 
 The naive way to implement this solution is to write a single function to take care of everything. The main problem you'll run into is **scalability**. A single function execution can only run on a single VM, so the throughput will be limited by the throughput of that single VM. Another problem is **reliability**. If there is a failure midway through, or if the entire process takes more than 5 minutes, then the backup will fail in a partial state and needs to be restarted.
 
-An more robust approach would be to write two regular functions: one which enumerates the files and adds the file names to a queue, and another function which reads from the queue and uploads the files to blob storage. This is better in terms of throughput and reliability, but requires you to provision and manage a queue. More importantly, significant complexity is introduced in terms of **state management** and **coordination** if you want to do anything more, like report the total number of bytes uploaded.
+A more robust approach would be to write two regular functions: one which enumerates the files and adds the file names to a queue, and another function which reads from the queue and uploads the files to blob storage. This is better in terms of throughput and reliability, but requires you to provision and manage a queue. More importantly, significant complexity is introduced in terms of **state management** and **coordination** if you want to do anything more, like report the total number of bytes uploaded.
 
 A Durable Functions approach gives you all of the mentioned benefits with very low overhead.
 
