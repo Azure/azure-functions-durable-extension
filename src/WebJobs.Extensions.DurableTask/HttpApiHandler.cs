@@ -205,9 +205,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case OrchestrationStatus.Completed:
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
-
-            string reason = request.GetQueryNameValuePairs().FirstOrDefault(
-                pair => pair.Key.Equals("reason", StringComparison.OrdinalIgnoreCase)).Value;
+            
+            string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.TerminateAsync(instanceId, reason);
 
@@ -264,19 +263,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHub = null;
             string connectionName = null;
 
-            foreach (var pair in request.GetQueryNameValuePairs())
+            var pairs = request.GetQueryNameValuePairs();
+            foreach (var key in pairs.AllKeys)
             {
                 if (taskHub == null 
-                    && pair.Key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(pair.Value))
+                    && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
-                    taskHub = pair.Value;
+                    taskHub = pairs[key];
                 }
                 else if (connectionName == null 
-                    && pair.Key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(pair.Value))
+                    && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
-                    connectionName = pair.Value;
+                    connectionName = pairs[key];
                 }
             }
 

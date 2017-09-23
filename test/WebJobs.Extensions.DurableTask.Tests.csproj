@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <PackageReference Include="DurableTask.AzureStorage" Version="1.0.0-beta-02" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.3" />
     <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
   </ItemGroup>
