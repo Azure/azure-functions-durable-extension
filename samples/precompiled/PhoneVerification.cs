@@ -25,7 +25,7 @@ namespace VSSample
                     "A phone number input is required.");
             }
 
-            int challengeCode = await context.CallFunctionAsync<int>(
+            int challengeCode = await context.CallActivityAsync<int>(
                 "E4_SendSmsChallenge",
                 phoneNumber);
 
