@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.01</FileVersion>
-    <Version>1.0.0-beta-01</Version>
+    <FileVersion>1.0.0.02</FileVersion>
+    <Version>1.0.0-beta-02</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
@@ -16,11 +16,11 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.1.0-beta1-11013" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.1.0-beta4" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta1-11006" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta3" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
