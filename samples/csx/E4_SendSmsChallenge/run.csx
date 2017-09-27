@@ -1,13 +1,14 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 #r "Newtonsoft.Json"
-#r "Twilio.Api"
+#r "Twilio"
 
-using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
 
 public static int Run(
     DurableActivityContext sendChallengeContext,
     TraceWriter log,
-    out SMSMessage message)
+    out CreateMessageOptions message)
 {
     string phoneNumber = sendChallengeContext.GetInput<string>();
 
@@ -17,8 +18,7 @@ public static int Run(
 
     log.Info($"Sending verification code {challengeCode} to {phoneNumber}.");
 
-    message = new SMSMessage();
-    message.To = phoneNumber;
+    message = new CreateMessageOptions(new PhoneNumber(phoneNumber));
     message.Body = $"Your verification code is {challengeCode:0000}";
 
     return challengeCode;
