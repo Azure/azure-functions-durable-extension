@@ -5,13 +5,13 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.02</FileVersion>
-    <Version>1.0.0-beta-02</Version>
+    <FileVersion>1.0.0.03</FileVersion>
+    <Version>1.0.0-beta-03</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="1.0.0-beta-03" />
+    <PackageReference Include="DurableTask.AzureStorage" Version="1.0.0-beta-04" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
