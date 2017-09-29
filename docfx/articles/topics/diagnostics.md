@@ -1,6 +1,40 @@
 # Diagnostics
 There are several options for diagnosing issues with Durable Functions. Some of these options are the same for regular functions and some of them are unique to Durable Functions. This article goes into detail about what options are available.
 
+## Application Insights
+[Application Insights](https://docs.microsoft.com/en-us/azure/application-insights/app-insights-overview) is the recommended way to do diagnostics and monitoring in Azure Functions. The same applies to Durable Functions. For an overview of how to leverage Application Insights in your function app, see the [Functions Monitoring](https://docs.microsoft.com/en-us/azure/azure-functions/functions-monitoring) topic of the Azure Functions documentation.
+
+The Azure Functions Durable Extension also emits *tracking events* which allow you to trace the end-to-end execution of an orchestration. These can be found and queried using the [Application Insights Analytics](https://docs.microsoft.com/en-us/azure/application-insights/app-insights-analytics) tool in the Azure Portal.
+
+### Instance Summary Query
+TODO: Show querying for all instances over a period of time
+
+
+### Single Instance Query
+Below is a query which shows the tracking output of a single instance of the [Hello Sequence](~/articles/samples/sequence.md) function orchestration using the [Application Insights Query Language (AIQL)](https://docs.loganalytics.io/docs/Language-Reference). Note that it filters out replay execution.
+
+```AIQL
+let start = datetime(2017-09-29T00:00:00);
+traces
+| where timestamp > start and timestamp < start + 30m
+| extend category = customDimensions["Category"]
+| where category == "Host.Triggers.DurableTask"
+| extend functionName = customDimensions["prop__functionName"]
+| extend instanceId = customDimensions["prop__instanceId"]
+| extend state = customDimensions["prop__state"]
+| extend isReplay = tobool(tolower(customDimensions["prop__isReplay"]))
+| extend extensionVersion = customDimensions["prop__extensionVersion"]
+| project timestamp, cloud_RoleName, extensionVersion, instanceId, functionName, state, isReplay
+| where instanceId == "bf71335b26564016a93860491aa50c7f"
+| where isReplay == false
+```
+
+All of the tracking information specific to the Durable Task extension can be found in the `customDimensions` object.
+Below is what the output looks like:
+
+
+
+
 ## Logging
 The Durable Functions host extension automatically emits semi-structured logs as it executes orchestrator and activity functions. These logs live alongside the application logs and can be used to monitor the behavior of your orchestrations. To give an example, consider the following orchestrator function:
 
@@ -11,8 +45,8 @@ public static async Task<List<string>> Run(
 {
     var outputs = new List<string>();
 
-    outputs.Add(await context.CallFunctionAsync<string>("E1_SayHello", "Tokyo"));
-    outputs.Add(await context.CallFunctionAsync<string>("E1_SayHello", "Seattle"));
+    outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Tokyo"));
+    outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Seattle"));
 
     // returns ["Hello Tokyo!", "Hello Seattle!"]
     return outputs;
@@ -56,7 +90,7 @@ Below are the log statements that a single execution emits into the host logs. I
 
 There is a lot here, but there are a few important things to notice:
 
-- Per the host logs, **E1_HelloSequence** is started *three* times and completed *once*. This is an artifact of the replay behavior.
+- Per the host logs, **E1_HelloSequence** is run *three* times. This is an artifact of the replay behavior.
 - Per the host logs, **E1_SayHello** is executed exactly two times. This is expected because it is called twice in the source code and activity functions are never replayed.
 - Each of the Durable Functions trigger logs are prefixed with `[DF]` to distinguish it from host logs.
 - There is an `IsReplay` flag in each of the traces with a value of `True` or `False` indicating whether a trace was generated as part of replay execution.
@@ -97,9 +131,9 @@ Azure Functions supports debugging function code directly and that same support 
 ## Storage
 By default Durable Functions stores state in Azure Storage. This means you can inspect the state of your orchestrations using tools such as [Microsoft Azure Storage Explorer](https://docs.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer).
 
-<img src="~/images/storage-explorer.png"/>
+<a href="~/images/storage-explorer.png" target="_blank"><img src="~/images/storage-explorer.png"/></a>
 
 This is useful for debugging because you see exactly what state an orchestration may be in. Messages in the queues can also be examined to learn what work is pending (or stuck in some cases).
 
 > [!WARNING]
-> While it's easy and convenient to see orchestration state in Azure Storage, you should not take any dependency on the storage entities or schemas as the specifics of their usage may change as the Durable Functions extension evolves.
+> While it's easy and convenient to see execution history in table storage, you should avoid taking any dependency on this table at this time as the specifics of its usage may change prior to the general availability of the Durable Functions extension.

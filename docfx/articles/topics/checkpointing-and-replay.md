@@ -13,16 +13,16 @@ public static async Task<List<string>> Run(
 {
     var outputs = new List<string>();
 
-    outputs.Add(await context.CallFunctionAsync<string>("E1_SayHello", "Tokyo"));
-    outputs.Add(await context.CallFunctionAsync<string>("E1_SayHello", "Seattle"));
-    outputs.Add(await context.CallFunctionAsync<string>("E1_SayHello", "London"));
+    outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Tokyo"));
+    outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Seattle"));
+    outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "London"));
 
     // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
     return outputs;
 }
 ```
 
-At each `await` statement, the orchestrator function dispatcher checkpoints the execution state of the function into table storage. This state is what is referred to as the *orchestration history*.
+At each `await` statement, the Durable Task Framework will checkpoint the execution state of the function into table storage. This state is what is referred to as the *orchestration history*.
 
 ## History Table
 Generally speaking, each checkpoint will include the following:.
@@ -78,7 +78,7 @@ A few notes on the column values:
 > [!WARNING]
 > While it's useful as a debugging tool, you should not take any dependency on the existence or the format of this table as the specifics of its usage may change as the Durable Functions extension evolves.
 
-Every time the function resumes from an `await`, the Durable Task Framework re-runs the orchestrator function from scratch. On each re-run it consults the execution history to determine whether a async operation has taken place and, if so, replays the output of that operation immediately. This continues until the entire history has been replayed, at which point all the local variables in the orchestrator function should be restored to their previous values.
+Every time the function resumes from an `await`, the Durable Task Framework re-runs the orchestrator function from scratch. On each re-run it consults the execution history to determine whether the current async operation has taken place and, if so, replays the output of that operation immediately and moves on to the next `await`. This continues until the entire history has been replayed, at which point all the local variables in the orchestrator function should be restored to their previous values.
 
 ## Code Constraints
 With this replay behavior in mind, there are a very important set of constraints on the type of code that can be written in an orchestrator function:
@@ -98,9 +98,9 @@ If the runtime is replaying the orchestrator code and detects that the replay is
 > [!NOTE]
 > This section describes internal implementation details of the Durable Task Framework. It is intended to be informative and help make sense of the replay behavior. However, it is not necessary to fully understand this information.
 
-Tasks that can be safely awaited in orchestrator functions are occasionally referred to as *durable tasks*. These are tasks that are created and managed by the Durable Task Framework, such as the tasks returned by <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync*>, <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>, and <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*>.
+Tasks that can be safely awaited in orchestrator functions are occasionally referred to as *durable tasks*. These are tasks that are created and managed by the Durable Task Framework, such as the tasks returned by <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*>, <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>, and <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*>.
 
-These *durable tasks* are internally managed using a table of parent `TaskCompletionSource` objects. During replay, these tasks get created as part of orchestrator code execution and are completed as the dispatcher enumerates the corresponding history events. This is all done synchronously using a single thread until all the history has been replayed. Any durable tasks which are not completed by the end of history replay will have appropriate actions carried out (enqueuing a message to call an activity function, etc.).
+These *durable tasks* are internally managed using a list of `TaskCompletionSource` objects. During replay, these tasks get created as part of orchestrator code execution and are completed as the dispatcher enumerates the corresponding history events. This is all done synchronously using a single thread until all the history has been replayed. Any durable tasks which are not completed by the end of history replay will have appropriate actions carried out (enqueuing a message to call an activity function, etc.).
 
 The execution behavior described here should help you understand why orchestrator function code must never `await` on a non-durable task: the dispatcher thread cannot wait for it to complete and any callback by that task could potentially corrupt the tracking state of the orchestrator function (though some runtime checks are in place to try and detect and prevent this).
 

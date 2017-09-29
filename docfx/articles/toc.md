@@ -13,6 +13,7 @@
 ## [Bindings](~/articles/topics/bindings.md)
 ## [Checkpointing & Replay](~/articles/topics/checkpointing-and-replay.md)
 ## [Instance Management](~/articles/topics/instance-management.md)
+## [HTTP APIs](~/articles/topics/http-api.md)
 ## [Error Handling & Compensation](~/articles/topics/error-handling.md)
 ## [Diagnostics](~/articles/topics/diagnostics.md)
 ## [Durable Timers](~/articles/topics/timers.md)

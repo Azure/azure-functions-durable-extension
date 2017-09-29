@@ -9,10 +9,9 @@ If you haven't done so already, make sure to read the [overview](~/articles/over
 All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:
 
 ### For Visual Studio Development (Windows Only)
-1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
-3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
+1. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+2. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+3. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -30,11 +29,11 @@ This article will specifically walk through the following function in the sample
 > This walkthrough assumes you have already gone through the [Hello Sequence](./sequence.md) sample walkthrough. If you haven't done so already, it is recommended to first go through that walkthrough before starting this one.
 
 ## Scenario overview
-The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenges you have is managing **concurrency**. Operations like *increment* and *decrement* need to be atomic, or else there could be race conditions that cause operations to overwrite each other.
+The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenges you have is managing **concurrency**. Operations like *increment* and *decrement* need to be atomic or else there could be race conditions that cause operations to overwrite each other.
 
 Using a single VM to host the counter data is one option, but this is expensive and managing **reliability** can be a challenge since a single VM could be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of **complexity**.
 
-Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.
+Durable Functions makes this kind of scenario trivial to implement because orchestration instances are affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.
 
 ## The counter orchestration
 Here is the code which implements the orchestrator function:
@@ -50,7 +49,7 @@ This orchestrator function essentially does the following:
 
 This is an example of an *eternal orchestration* - i.e. one that potentially never ends. It responds to messages sent to it using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method, which can be called by any non-orchestrator function.
 
-One unique characteristic of this orchestrator function is that it effectively has no history: the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method will reset the history after each processed event. This is the preferred way to implement an orchestrator which has an arbitrary lifetime as using a `while` loop could cause the orchestrator function's history to grow unbounded, resulting in unnecessarily high memory usage.
+One unique characteristic of this orchestrator function is that it effectively has no history: the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method will reset the history after each processed event. This is the preferred way to implement an orchestrator which has an arbitrary lifetime. Using a `while` loop could cause the orchestrator function's history to grow unbounded, resulting in unnecessarily high memory usage.
 
 > [!NOTE]
 > The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> method has other interesting use-cases besides just eternal orchestrations. See the [Eternal Orchestrations](../topics/eternal-orchestrations.md) topic guide for more information.
@@ -73,9 +72,6 @@ Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb50
 ```
 
 The **E3_Counter** instance starts and then immediately waits for an event to be sent to it using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> or using the **sendEventUrl** HTTP POST webhook referenced in the 202 response above. Valid `eventName` values include *incr*, *decr*, and *end*.
-
-> [!NOTE]
-> Feel free to take a look at the source code for HttpSendEvent to get an idea of how <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> is used by client functions.
 
 ```plaintext
 POST http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&connection=Storage&code={systemKey} HTTP/1.1
@@ -116,7 +112,7 @@ Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb50
 You can continue sending new operations to this instance and observe its state gets updated accordingly. If you wish to kill the instance, you can do so by sending an *end* operation.
 
 > [!WARNING]
-> There are currently race conditions in both the handling of <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> and the use of <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*>. Until these are addressed, it is highly recommended to not send more than one external event to an instance every few seconds.
+> At the time of writing, there are known race conditions when calling <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> while concurrently processing messages, such external events or termination requests. For the latest information on these race conditions, see this [GitHub issue](https://github.com/Azure/azure-functions-durable-extension/issues/67).
 
 ## Wrapping up
 At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*> and <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*>. These tools should enable you to write various flavors of "stateful singletons" like counters, aggregators, etc.
