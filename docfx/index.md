@@ -34,6 +34,9 @@ Here you will find comprehensive documentation with examples on all of the featu
 * [Durable Timers](~/articles/topics/timers.md)
 * [External Events](~/articles/topics/external-events.md)
 * [Eternal Orchestrations](~/articles/topics/eternal-orchestrations.md)
+* [Singleton Orchestrations](~/articles/topics/singletons.md)
+* [Sub-Orchestrations](~/articles/topics/sub-orchestrations.md)
+* [Task Hubs](~/articles/topics/task-hubs.md)
 * [Versioning](~/articles/topics/versioning.md)
 * [Performance & Scale](~/articles/topics/perf-and-scale.md)
  
