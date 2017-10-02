@@ -106,5 +106,5 @@ The execution behavior described here should help you understand why orchestrato
 
 If you'd like more information about how the Durable Task Framework executes orchestrator functions, the best thing to do is to consult the source code on [GitHub](https://github.com/Azure/durabletask). In particular, the following two files will be the most informative, and contain relatively simple logic:
 
-* [TaskOrchestrationDispatcher](https://github.com/Azure/durabletask/blob/master/src/DurableTask.Core/TaskOrchestrationExecutor.cs)
+* [TaskOrchestrationExecutor](https://github.com/Azure/durabletask/blob/master/src/DurableTask.Core/TaskOrchestrationExecutor.cs)
 * [TaskOrchestrationContext](https://github.com/Azure/durabletask/blob/master/src/DurableTask.Core/TaskOrchestrationContext.cs)
