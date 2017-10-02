@@ -16,6 +16,13 @@ Visual Studio currently provides the best experience for evaluating Durable Func
 ```xml
 <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="0.2.2-alpha" />
 ```
+7. You need to use Azure Storage account so please set the connection string in local.settins.json file. Both Azure Storage Emulator and Azure Storage accounts are acceptable. If you prefer to use Azure Storage Emulator, please first start it and then set the connection in local.settings.json:
+
+```xml
+"AzureWebJobsStorage": "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10002/",
+"AzureWebJobsDashboard": "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10002/"
+```
+
 
 This allows your project to download and reference the **DurableTask** extension which is required for Durable Functions. Your functions can be run locally and can also be published to and run in Azure.
 
