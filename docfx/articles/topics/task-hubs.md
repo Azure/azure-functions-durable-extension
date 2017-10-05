@@ -3,7 +3,7 @@ A task hub is a logical container for durable task orchestrations and activities
 
 Task hubs do not need to be created explicitly. Rather, they are declared by name in **host.json** and initialized automatically by the runtime. Each task hub has its own set of storage queues, tables, and blobs within a single storage account, and all function apps which run in a given task hub will share the same storage resources. Orchestrator and activity functions can only interact with each other when they belong to the same task hub.
 
-# Configuring a Task Hub in host.json
+## Configuring a Task Hub in host.json
 A task hub name can be configured in the **host.json** file of a function app.
 
 ```json
@@ -19,7 +19,7 @@ Task hub names must start with a letter and consist of only letters and numbers.
 > [!NOTE]
 > If you have multiple function apps which share a storage account, it is recommended to configure a different task hub name for each function app. This ensures that each function app is properly isolated from each other.
 
-# Azure Storage resources
+## Azure Storage resources
 A task hub consists of several Azure Storage resources:
 
 * One or more control queues.
