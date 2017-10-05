@@ -1,14 +1,16 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    public static class HttpRequestMessageExtensions
+    internal static class HttpRequestMessageExtensions
     {
         public static HttpResponseMessage CreateResponse(this HttpRequestMessage request, HttpStatusCode statusCode)
         {
@@ -65,7 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var s = request.RequestUri.Query;
             var separator = '&';
 
-            // copied from http://referencesource.microsoft.com/#System.Web/HttpValueCollection.cs,222f9a1bfd1f9a98
             int l = (s != null) ? s.Length : 0;
             int i = 0;
 

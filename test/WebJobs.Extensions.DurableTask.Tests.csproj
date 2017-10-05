@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="1.0.0-beta-03" />
+    <PackageReference Include="DurableTask.AzureStorage" Version="1.0.0-beta" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.0-beta3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.1" />
