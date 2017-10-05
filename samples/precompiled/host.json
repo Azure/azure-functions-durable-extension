@@ -6,5 +6,8 @@
     "sampling": {
       "isEnabled": false
     }
+  },
+  "durableTask": {
+    "HubName": "SampleHubVS"
   }
 }
