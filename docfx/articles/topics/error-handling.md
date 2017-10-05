@@ -60,7 +60,7 @@ public static async Task Run(DurableOrchestrationContext context)
     // ...
 }
 ```
-As shown in the code, the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync> API takes a <xref:Microsoft.Azure.WebJobs.RetryOptions> parameter which describes the retry policy. Sub-orchestration calls using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync> API can also leverage these same retry policies.
+As shown in the code, the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync*> API takes a <xref:Microsoft.Azure.WebJobs.RetryOptions> parameter which describes the retry policy. Sub-orchestration calls using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync*> API can also leverage these same retry policies.
 
 There are several options for customizing the automatic retry policy. They include the following:
 
