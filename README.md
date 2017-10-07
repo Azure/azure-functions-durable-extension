@@ -1,11 +1,13 @@
+## Durable Functions
+
 **Durable Functions** is an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs) that allows writing *long-running*, *stateful* function orchestrations in code in a serverless environment.
 
-A new type of function called the *orchestrator function* allows you to do several new things that differentiates it from an ordinary, stateless function:
+This extension enables a new type of function called the *orchestrator function* that allows you to do several new things that differentiates it from an ordinary, stateless function:
 * They are stateful workflows **authored in code**. No JSON schemas or designers.
 * They can *synchronously* and *asynchronously* **call other functions** and **save output to local variables**.
 * They **automatically checkpoint** their progress whenever the function awaits so that local state is never lost if the process recycles or the VM reboots.
 
-Durable Functions currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package which can be referenced by an Azure Functions Visual Studio project. The project is currently in a public preview "beta" status.
+The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package that can be referenced by an Azure Functions Visual Studio project. The project is currently in a public preview "beta" status.
 
 ## Documentation
 
