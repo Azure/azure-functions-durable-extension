@@ -44,7 +44,7 @@ Here is the source code:
 All C# orchestration functions must have a **DurableOrchestrationContext** parameter, which exists in the **Microsoft.Azure.WebJobs.Extensions.DurableTask** assembly that can be referenced using the `#r` notation. This context object allows calling other *activity* functions and passing input parameters using its <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync*> method.
 
 > [!WARNING]
-> Make sure to spell the name of the function your are calling correctly. There is currently no active validation of function names, so trying to call a function that doesn't exist will result in a silent failure.
+> Make sure to spell the name of the function you are calling correctly. There is currently no active validation of function names, so trying to call a function that doesn't exist will result in a silent failure.
 
 The code is very simple in that it calls **E1_SayHello** three times in a sequence with different parameter values. The return value of each call is added to the `outputs` list, which is returned at the end of the function.
 
