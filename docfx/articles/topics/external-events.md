@@ -1,7 +1,7 @@
 # External Events
 Orchestrator functions have the ability to wait and listen for external events, which is often useful for handling human interaction or other external triggers.
 
-The following samples make use of external events. Feel free to reference these as possible use-cases:
+The following samples make use of external events. Feel free to reference these as example use-cases:
 
 * [Stateful Actor - Counter](../samples/counter.md)
 * [Human Interaction & Timeouts - Phone Verification](../samples/phone-verification.md)
@@ -69,7 +69,7 @@ public static async Task Run(
     // all three departments must grant approval before a permit can be issued
     await Task.WhenAll(gate1, gate2, gate3);
 
-    await context.CallFunctionAsync("IssueBuildingPermit", applicationId);
+    await context.CallActivityAsync("IssueBuildingPermit", applicationId);
 }
 ```
 
@@ -78,10 +78,12 @@ public static async Task Run(
 > [!NOTE]
 > No billing charges are incurred if an orchestrator function is awaiting on a task from <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>, no matter how long it waits.
 
-If they event payload cannot be converted into the expected type `T`, an exception will be thrown.
+If the event payload cannot be converted into the expected type `T`, an exception will be thrown.
 
 ## Sending Events
 The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> method of the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class is used to send events that resume orchestrator functions that are waiting using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*>. <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync*> takes an *event name* and an *event payload* as data types. The event payload must be JSON-serializable.
+
+Below is an example queue-triggered function which sends an "Approval" event to an existing orchestrator function instance. The orchestration instance ID comes from the body of the queue message.
 
 ```csharp
 [FunctionName("ApprovalQueueProcessor")]

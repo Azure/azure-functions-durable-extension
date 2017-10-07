@@ -266,18 +266,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
         {
-            var appDomain = (AppDomain)sender;
-            string assemblyName = appDomain.ApplyPolicy(args.Name);
-
-            // Fallback.
-            var shortName = new AssemblyName(assemblyName).Name;
-            foreach (var assembly in appDomain.GetAssemblies())
+            if (args.Name.StartsWith("DurableTask.Core"))
             {
-                if (string.Equals(assembly.GetName().Name, shortName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly;
-                }
+                return typeof(TaskOrchestration).Assembly;
             }
+            else if (args.Name.StartsWith("DurableTask.AzureStorage"))
+            {
+                return typeof(AzureStorageOrchestrationService).Assembly;
+            }
+            else if (args.Name.StartsWith("Microsoft.Azure.WebJobs.DurableTask"))
+            {
+                return typeof(DurableTaskExtension).Assembly;
+            }
+
             return null;
         }
 

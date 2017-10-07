@@ -1,9 +1,6 @@
 # Performance and Scale
 Durable Functions has unique scaling characteristics that are important to understand to get the best performance and scalability for your application. In order to understand the scale behavior, it's useful to first understand some of the details of the underlying Azure Storage provider used by Durable Functions.
 
-> [!WARNING]
-> Scale-out is not yet fully implemented for Durable Functions, so parts of this article which discuss scale-out reflect the current intended design but are subject to change. You can find more details of the intended design in the GitHub repo: https://github.com/Azure/azure-functions-durable-extension/issues/1
-
 ## History table
 The history table is an Azure Storage table which contains the history events for all orchestration instances. As instances run, new rows are added to this table. The partition-key of this table is derived from the instance ID of the orchestration (which are random in most cases), to ensure optimal distribution of internal partitions in Azure Storage.
 
@@ -21,10 +18,7 @@ Control queues contain a variety of message types, including orchestrator contro
 ## Orchestrator scale-out
 Activity functions are stateless and scale out automatically by simply adding VMs. Orchestrator functions, on the other hand, are *partitioned* across one or more control queues. The number of control queues is fixed and cannot be changed after you start creating load.
 
-> [!NOTE]
-> It may actually be possible to change partition counts while the function app is completely shut down. This needs to be investigated further.
-
-When scaling out to multiple function host instances (typically on different VMs), each instance acquires a lock on one of the control queues. This lock ensures that an orchestration instance only runs on a single VM at a time. This means that if an app is configured with three control queues, then orchestration instances can be load-balanced across as many as three VMs. Additional VMs can be added to increase capacity for activity function execution, but these additional resources will not be usable for running orchestrator functions.
+When scaling out to multiple function host instances (typically on different VMs), each instance acquires a lock on one of the control queues. This lock ensures that an orchestration instance only runs on a single VM at a time. This means that if a [task hub](~/articles/topics/task-hubs.md) is configured with three control queues, then orchestration instances can be load-balanced across as many as three VMs. Additional VMs can be added to increase capacity for activity function execution, but these additional resources will not be usable for running orchestrator functions.
 
 The following diagram illustrates how the Azure Functions host interacts with the storage entities in a scaled out environment when running Durable Functions.
 
@@ -32,7 +26,10 @@ The following diagram illustrates how the Azure Functions host interacts with th
 
 As you can see, all VMs can compete for messages on the work-item queue. However, only three VMs can acquire messages from control queues (and each VM locks a single control queue).
 
-Orchestration instances are distributed across control queue instances by running an internal hash function against the orchestration's instance ID. Instance IDs are auto-generated and random by default which ensures that instances are balanced across all available control queues. The current maximum number of supported control queue partitions is **4**.
+Orchestration instances are distributed across control queue instances by running an internal hash function against the orchestration's instance ID. Instance IDs are auto-generated and random by default which ensures that instances are balanced across all available control queues. The current default number of supported control queue partitions is **4**.
+
+> [!NOTE]
+> It's not currently possible to configure the number of partitions in Azure Functions. Support for this configuration option is being tracked as [GitHub issue #73](https://github.com/Azure/azure-functions-durable-extension/issues/73).
 
 In general, orchestrator functions are intended to be lightweight and should not need a lot of computing power. For this reason, it is not necessary to create a large number of control queue partitions to get great throughput. Rather, most of the heavy work is expected to be done in stateless activity functions which can be scaled out infinitely.
 

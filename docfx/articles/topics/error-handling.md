@@ -13,35 +13,27 @@ public static async Task Run(DurableOrchestrationContext context)
 {
     var transferDetails = ctx.GetInput<TransferOperation>();
 
-    await context.CallFunctionAsync("DebitAccount",
+    await context.CallActivityAsync("DebitAccount",
         new
         { 
             Account = transferDetails.SourceAccount,
             Amount = transferDetails.Amount
         });
 
-    bool credited;
     try
     {
-        await context.CallFunctionAsync("CreditAccount",         
+        await context.CallActivityAsync("CreditAccount",         
             new
             { 
                 Account = transferDetails.DestinationAccount,
                 Amount = transferDetails.Amount
             });
-
-        credited = true;
     }
     catch (Exception)
     {
-        credited = false;
-    }
-
-    if (!credited)
-    {
         // Refund the source account.
         // Another try/catch could be used here based on the needs of the application.
-        await context.CallFunctionAsync("CreditAccount",         
+        await context.CallActivityAsync("CreditAccount",         
             new
             { 
                 Account = transferDetails.SourceAccount,
@@ -53,30 +45,31 @@ public static async Task Run(DurableOrchestrationContext context)
 
 If the call to the **CreditAccount** function fails for the destination account, the orchestrator function compensates for this by crediting the funds back to the source account.
 
-## Retry on failure
-There is currently no first-class support for retrying function calls which fail with an error. However, it is still possible to implement retry manually using code, like in the following example:
+## Automatic retry on failure
+When calling activity functions or sub-orchestration functions it is possible to specify an automatic retry policy. The below example attempts to call a function up to 3 times and waits 5 seconds in between each retry:
 
 ```csharp
-public static async Task<bool> Run(DurableOrchestrationContext context)
+public static async Task Run(DurableOrchestrationContext context)
 {
-    const int MaxRetries = 3;
+    var retryOptions = new RetryOptions(
+        firstRetryInterval: TimeSpan.FromSeconds(5),
+        maxNumberOfAttempts: 3);
 
-    for (int i = 0; i <= MaxRetries; i++)
-    {
-        try
-        {
-            await context.CallFunctionAsync("FlakyFunction");
-            return true;
-        }
-        catch { }
-    }
-
-    return false;
+    await ctx.CallActivityWithRetryAsync("FlakyFunction", retryOptions);
+    
+    // ...
 }
 ```
+As shown in the code, the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync*> API takes a <xref:Microsoft.Azure.WebJobs.RetryOptions> parameter which describes the retry policy. Sub-orchestration calls using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync*> API can also leverage these same retry policies.
 
-> [!NOTE]
-> Automatic retry is currently a planned feature for beta: https://github.com/Azure/azure-functions-durable-extension/issues/30
+There are several options for customizing the automatic retry policy. They include the following:
+
+* **Max number of attempts**: The maximum number of retry attempts.
+* **First retry interval**: The amount of time to wait before the first retry attempt.
+* **Backoff coefficient**: The coefficient used to determine rate of increase of backoff. Defaults to 1.
+* **Max retry interval**: The maximum amount of time to wait in between retry attempts.
+* **Retry timeout**: The maximum amount of time to spend doing retries. The default behavior is to retry indefinitely.
+* **Custom**: A user-defined callback can be specified which determines whether or not a function call should be retried.
 
 ## Function timeouts
 It's possible that you may want to abandon a function call within an orchestrator function if it is taking too long to complete. The proper way to do this today is by creating a durable timer using `context.CreateTimer` in conjunction with `Task.WhenAny`, as in the following example:
@@ -89,7 +82,7 @@ public static async Task<bool> Run(DurableOrchestrationContext context)
 
     using (var cts = new CancellationTokenSource())
     {
-        Task activityTask = context.CallFunctionAsync("FlakyFunction");
+        Task activityTask = context.CallActivityAsync("FlakyFunction");
         Task timeoutTask = context.CreateTimer(deadline, cts.Token);
 
         Task winner = await Task.WhenAny(activityTask, timeoutTask);

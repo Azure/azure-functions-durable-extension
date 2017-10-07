@@ -1,5 +1,13 @@
 {
-    "http": {
-        "routePrefix": ""
+  "http": {
+    "routePrefix": ""
+  },
+  "applicationInsights": {
+    "sampling": {
+      "isEnabled": false
     }
+  },
+  "durableTask": {
+    "HubName": "SampleHubCsx"
+  }
 }

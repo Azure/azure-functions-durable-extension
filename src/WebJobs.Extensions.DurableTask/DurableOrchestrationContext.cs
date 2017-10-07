@@ -31,7 +31,6 @@ namespace Microsoft.Azure.WebJobs
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
-        private readonly string hubName;
         private readonly string orchestrationName;
         private readonly string orchestrationVersion;
 

@@ -2,7 +2,7 @@
 Durable Function orchestration instances can be started, terminated, queried, and sent notification events. All instance management is done using the orchestration client binding. More details on this binding can be found in the [Bindings](./bindings.md) topic. This article goes into the details of each of the instance management operations.
 
 ## Starting instances
-The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync*> method on the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class can be used to start a new instances of an orchestrator function. Instances of this class can be acquired using the `orchestrationClient` binding. Internally, this method will enqueue a message into the control queue, which will then trigger the start of a function with the specified name which uses the `orchestrationTrigger` trigger binding.
+The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync*> method on the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class can be used to start a new instances of an orchestrator function. Instances of this class can be acquired using the `orchestrationClient` binding. Internally, this method will enqueue a message into the control queue, which will then trigger the start of a function with the specified name that uses the `orchestrationTrigger` trigger binding.
 
 The supported parameters are as follows:
 * **Name**: The name of the orchestrator function to schedule.
@@ -41,7 +41,7 @@ module.exports = function (context, input) {
 ```
 
 > [!NOTE]
-> It is generally recommended that you use a random identifier for the instance ID. This will help ensure an equal load distribution when scaling orchestrator functions across multiple VMs.
+> It is generally recommended that you use a random identifier for the instance ID. This will help ensure an equal load distribution when scaling orchestrator functions across multiple VMs. The proper time to use non-random instance IDs is when the ID must come from an external source or when implementing the [singleton orchestrator](~/articles/topics/singletons.md) pattern.
 
 ## Querying instances
 The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync*> method on the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> class can be used to query the status of an orchestration instance. It takes an `instanceId` as a parameter and returns an object with the following properties:

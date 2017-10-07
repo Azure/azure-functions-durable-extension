@@ -26,10 +26,10 @@ public static async Task<object> Run(DurableOrchestrationContext ctx)
 {
     try
     {
-        var x = await ctx.CallFunctionAsync<object>("F1");
-        var y = await ctx.CallFunctionAsync<object>("F2", x);
-        var z = await ctx.CallFunctionAsync<object>("F3", y);
-        return  await ctx.CallFunctionAsync<object>("F4", z);
+        var x = await ctx.CallActivityAsync<object>("F1");
+        var y = await ctx.CallActivityAsync<object>("F2", x);
+        var z = await ctx.CallActivityAsync<object>("F3", y);
+        return  await ctx.CallActivityAsync<object>("F4", z);
     }
     catch (Exception)
     {
@@ -38,12 +38,12 @@ public static async Task<object> Run(DurableOrchestrationContext ctx)
 }
 ```
 
-This code above is concise and easily understood by any developer. Control flow is implemented using normal imperitive coding constructs - i.e. code executes top-down and can involve existing language control flow semantics, like conditionals, loops, try/catch/finally, etc., and local variables are used to capture and flow state. If more detailed compensation logic is required, it can be done so naturally with additional try/catch logic.
+Generally speaking, this logic is concise and easily understood by any developer. The values "F1", "F2", "F3", and "F4" are the names of other functions in the function app. Control flow is implemented using normal imperative coding constructs - i.e. code executes top-down and can involve existing language control flow semantics, like conditionals, loops, try/catch/finally, etc., and local variables are used to capture and flow state. If more detailed compensation logic is required, it can be done so naturally with additional try/catch logic.
 
 The built-in `ctx` parameter provides methods for invoking other functions by name, passing parameters, and returning function output. Each time the code calls `await`, the orchestrator function *checkpoints* the progress of the current function instance. If the process or VM recycles midway through the execution, the function instance will resume from the previous `await` call, much like it would if we were using queues in between each function invocation. More on this later.
 
 ### Pattern #2: Fan-out, Fan-in
-A more interesting pattern enabled by the Durable Functions extension is fan-out, fan-in.
+A slightly more interesting pattern enabled by the Durable Functions extension is fan-out, fan-in.
 
 <img src="~/images/fan-out-fan-in.png"/>
 
@@ -57,10 +57,10 @@ public static async Task Run(DurableOrchestrationContext ctx)
     var parallelTasks = new List<Task<int>>();
  
     // get a list of N work items to process in parallel
-    object[] workBatch = await ctx.CallFunctionAsync<object[]>("F1");
+    object[] workBatch = await ctx.CallActivityAsync<object[]>("F1");
     for (int i = 0; i < workBatch.Length; i++)
     {
-        Task<int> task = ctx.CallFunctionAsync<int>("F2", workBatch[i]);
+        Task<int> task = ctx.CallActivityAsync<int>("F2", workBatch[i]);
         parallelTasks.Add(task);
     }
  
@@ -68,7 +68,7 @@ public static async Task Run(DurableOrchestrationContext ctx)
  
     // aggregate all N outputs and send result to F3
     int sum = parallelTasks.Sum(t => t.Result);
-    await ctx.CallFunctionAsync("F3", sum);
+    await ctx.CallActivityAsync("F3", sum);
 }
 ```
 
@@ -79,7 +79,7 @@ The third pattern is all about the problem of coordinating the state of long-run
 
 <img src="~/images/async-http-api.png"/>
 
-Durable functions makes implementing these kinds of Async HTTP APIs very simple by providing a set of built-in HTTP APIs for interacting with long-running function executions. We show in the samples a simple REST commands can be used to start new orchestrator function instances. Once an instance is started, the durable extension exposes web hook HTTP APIs that can be used to query their status.
+Durable functions makes implementing these kinds of Async HTTP APIs very simple by providing a set of built-in HTTP APIs for interacting with long-running function executions. We show in the samples a simple REST command that can be used to start new orchestrator function instances. Once an instance is started, the durable extension exposes web hook HTTP APIs that can be used to query their status (for clarity, some details have been removed from the example below).
 
 <pre>
 > curl -X POST https://myfunc.azurewebsites.net/orchestrators/DoWork -H "Content-Length: 0" -i
@@ -106,6 +106,9 @@ Content-Type: application/json
 
 Because all the state is managed by the Durable Functions runtime, it's not necessary for you to implement your own status tracking mechanism.
 
+> [!NOTE]
+> More information on the HTTP APIs exposed by the Durable Functions extension can be found in the [HTTP APIs](~/articles/topics/http-api.md) topic.
+
 It's important to point out that even though the Durable Functions extension has built-in web hooks for managing long-running orchestrations, it's entirely possible for you to implement this pattern yourself using your own function triggers (e.g. HTTP, queue, Event Hub, etc.) and the `orchestrationClient` binding.
 
 ```cs
@@ -129,7 +132,7 @@ public static async Task<HttpResponseMessage> Run(
 
 The <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient> `starter` parameter is a value from the `orchestrationClient` output binding, which is part of the Durable Functions extension. It provides methods for starting, sending events to, terminating, and querying for new or existing orchestrator function instances. In the above example, an HTTP triggered-function takes in a `functionName` value from the incoming URL and passes that value to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync*>. This binding API then returns response that contains a `Location` header and additional information about the instance that can later be used to look up the status of or terminate the started instance.
 
-### Pattern #4: Stateful Singletons (aka "Lightweight Actors")
+### Pattern #4: Stateful Singletons (aka "Reliable Actors")
 Most functions have an explicit start and an end and don't directly interact with external event sources. However, orchestration support a "stateful singleton" pattern that allow them to behavior like reliable [actors](https://en.wikipedia.org/wiki/Actor_model) in distributed computing.
 
 <img src="~/images/stateful-singleton.png"/>
@@ -159,7 +162,7 @@ public static async Task Run(DurableOrchestrationContext ctx)
 The above function is what you might describe as an "eternal orchestration" - i.e. one that starts and never ends. It starts with some input value `counterState`, waits indefinitely for a message called `operation`, performs some logic to update its local state, "restarts" itself by calling `ctx.ContinueAsNew`, and then awaits again indefinitely for the next operation.
 
 ### Pattern #5: Human Interaction and Timeouts
-Many types of process automation often need to involve some kind of human interaction. The tricky thing about involving humans in an automated process is that people are not always as highly available and responsive as cloud services. These automated processes must account for this, and often do so using timeouts and compensation.
+Many types of process automation often needs to involve some kind of human interaction. The tricky thing about involving humans in an automated process is that people are not always as highly available and responsive as cloud services. These automated processes must account for this, and often do so using timeouts and compensation logic.
 
 One example of a business process which involves human interaction is an approval process. One could imagine a system where a manager must approve an expense report that exceeds a certain amount. If the manager does not approve within 72 hours (maybe they went on vacation), then an escalation processes kicks in to get the approval from someone else (perhaps the manager's manager).
 
@@ -170,7 +173,7 @@ This kind of pattern can be implemented using an orchestrator function to coordi
 ```cs
 public static async Task Run(DurableOrchestrationContext ctx)
 {
-    await ctx.CallFunctionAsync("RequestApproval");
+    await ctx.CallActivityAsync("RequestApproval");
     using (var timeoutCts = new CancellationTokenSource())
     {
         DateTime dueTime = ctx.CurrentUtcDateTime.AddHours(72);
@@ -180,11 +183,11 @@ public static async Task Run(DurableOrchestrationContext ctx)
         if (approvalEvent == await Task.WhenAny(approvalEvent, durableTimeout))
         {
             timeoutCts.Cancel();
-            await ctx.CallFunctionAsync("HandleApproval", approvalEvent.Result);
+            await ctx.CallActivityAsync("HandleApproval", approvalEvent.Result);
         }
         else
         {
-            await ctx.CallFunctionAsync("Escalate");
+            await ctx.CallActivityAsync("Escalate");
         }
     }
 }
@@ -192,12 +195,12 @@ public static async Task Run(DurableOrchestrationContext ctx)
 The important thing to notice here is that the timeout was implemented using `ctx.CreateTimer`, `ctx.WaitForExternalEvent`, and `Task.WhenAny` to synchronize the notification and the timer expiration. Depending on which event occurs first, the orchestrator function takes the appropriate action (escalation or completing the approval process).
 
 ## The Technology
-Behind the scenes the Durable Functions extension is built on top of the [Durable Task Framework](https://github.com/Azure/durabletask), an open source library on GitHub. Much like how Azure Functions is the serverless evolution of Azure WebJobs, Durable Functions is the serverless evolution of the Durable Task Framework. It is used heavily within Microsoft and outside as well to automate mission-critical processes and is a natural fit to leverage within the serverless Azure Functions environment.
+Behind the scenes the Durable Functions extension is built on top of the [Durable Task Framework](https://github.com/Azure/durabletask), an open source library on GitHub for building durable task orchestrations. Much like how Azure Functions is the serverless evolution of Azure WebJobs, Durable Functions is the serverless evolution of the Durable Task Framework. It is used heavily within Microsoft and outside as well to automate mission-critical processes and is a natural fit for the serverless Azure Functions environment.
 
 ### Event Sourcing, Checkpointing, and Orchestrator Replay
 Orchestrator functions reliably maintain their execution state using a cloud design pattern known as [Event Sourcing](https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing). Instead of directly storing the *current* state of an orchestration, the durable extension uses an append-only store to record the *full series of actions* taken by the function orchestration. This has many benefits, including improving performance, scalability, and responsiveness compared to "dumping" the full runtime state. Other benefits include providing eventual consistency for transactional data and maintaining full audit trails/history, which itself can enable reliable compensating actions.
 
-The use of Event Sourcing by this extension is completely transparent. Under the covers, the `await` operator in an orchestrator function yields control of the thread back to the Durable Task Framework dispatcher. The dispatcher then commits any new actions that the orchestrator function scheduled (such as calling one or more child functions or scheduling a durable timer) to storage. This transparent commit action appends to the *execution history* of the orchestration instance to durable storage and subsequently add messages to a queue to schedule the actual work. At this point, the orchestrator function can be unloaded from memory and billing can be stopped (if using the Azure Functions Consumption Plan) until there is more work to do, at which point its state can be reconstructed.
+The use of Event Sourcing by this extension is completely transparent. Under the covers, the `await` operator in an orchestrator function yields control of the orchestrator thread back to the Durable Task Framework dispatcher. The dispatcher then commits any new actions that the orchestrator function scheduled (such as calling one or more child functions or scheduling a durable timer) to storage. This transparent commit action appends to the *execution history* of the orchestration instance to durable storage and subsequently add messages to a queue to schedule the actual work. At this point, the orchestrator function can be unloaded from memory and billing can be stopped (if using the Azure Functions Consumption Plan) until there is more work to do, at which point its state can be reconstructed.
 
 Once an orchestration function is given more work to do (e.g. a response message is received or a durable timer expires), the orchestrator will wake up again and **re-execute the entire function from the start** in order to rebuild the local state. If during this replay the code tries to call a function (or do any other async work), the Durable Task Framework will consult with the *execution history* of the current orchestration. If it finds that the activity function has already executed and yielded some result, it will replay that function's result immediately and the orchestrator code will continue running. This will continue happening until the function code gets to a point where either it is finished or it has scheduled new async work.
 
@@ -207,7 +210,7 @@ With this replay behavior in mind, there are a very important set of constraints
 * If orchestrator code needs to get the current date/time, it should use the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime> API, which is safe for replay.
 * Non-deterministic operations need to be done in activity functions. This includes any interaction with other input or output bindings. This ensures any non-deterministic values will be generated once on the first execution and saved into the execution history. Subsequent executions will then use the saved value automatically.
 * Orchestrator code should be **non-blocking** - i.e. no `Thread.Sleep` or equivalent APIs. If an orchestrator needs to delay for a period of time, it should use the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*> API.
-* Orchestrator code must never initiate any async operation outside of the operations exposed by <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext> - e.g. no `Task.Delay` or `HttpClient.SendAsync`. The Durable Task Framework executes orchestrator code on a single thread and cannot interact with any other threads which could be scheduled by other async APIs.
+* Orchestrator code must never initiate any async operation outside of the operations exposed by <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext> - e.g. no `Task.Run`, `Task.Delay` or `HttpClient.SendAsync`. The Durable Task Framework executes orchestrator code on a single thread and cannot interact with any other threads which could be scheduled by other async APIs.
 * Because the Durable Task Framework saves execution history as the orchestration function progresses, **infinite loops should be avoided** to ensure orchestrator instances do not run out of memory. Instead, APIs such as <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*> should be used to restart the function execution and discard previous execution history.
 
 While these constraints may seem daunting at first, in practice they are quite easy to follow. Where possible, the Durable Task Framework will attempt to detect violations of the above rules and throw a `NonDeterministicOrchestrationException`. However, this detection behavior is best-effort and orchestrator code should never depend on it.
@@ -219,50 +222,35 @@ While these constraints may seem daunting at first, in practice they are quite e
 Currently C# is the only supported language for Durable Functions. This includes authoring orchestrator functions and activity functions. In the future, we will add support for all languages supported by Azure Functions.
 
 > [!NOTE]
-> It's actually possible to write *activity functions* in any supported languages, including JavaScript (node.js). However, return values in these languages are currently not working, which limits the usefulness of using non-C# languages. If you are not using return values, then using languages other than C# are expected to work without issue.
+> See our [GitHub repository issues list](https://github.com/Azure/azure-functions-durable-extension/issues) to submit requests or see the latest status of our additional language support work.
 
 ## Monitoring and Diagnostics
-The Durable Functions host extension automatically emits semi-structured logs as it executes orchestrator and activity functions. These logs live alongside the application logs and can be used to monitor the behavior of your orchestrations.
+The Durable Functions host extension automatically emits structured tracking data to [Application Insights](https://azure.microsoft.com/en-us/services/application-insights/) when the function app is configured with an Application Insights key. This tracking data can be used to monitor the behavior and progress of your orchestrations.
 
-Because of the replay behavior of the Durable Task Framework dispatcher, you can expect to see redundant log entries for replayed actions. This can be useful to understand the replay behavior of the core engine. If you would like to see just the "real-time" logs, you can use `grep` or `findstr` to filter log entries based on the `IsReplay` text.
+Here is an example of what the Durable Functions tracking events look like in the Application Insights portal using [Application Insights Analytics](https://docs.microsoft.com/en-us/azure/application-insights/app-insights-analytics) (click the image below to enlarge):
 
-Example logs (no filtering):
+<a href="~/images/app-insights-1.png" target="_blank"><img src="~/images/app-insights-1.png"/></a>
 
-<pre>
-2017-05-01T22:47:49.048 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'ProcessWorkBatch', version ''. reason: NewInstance. IsReplay: False.
-2017-05-01T22:47:49.481 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'ProcessWorkBatch', version ''. IsReplay: False. Input: (1 bytes)
-2017-05-01T22:47:49.505 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'HelloWorld', version ''. reason: ProcessWorkBatch. IsReplay: False.
-2017-05-01T22:47:49.509 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' awaited. IsReplay: False.
-2017-05-01T22:47:49.789 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'HelloWorld', version ''. IsReplay: False. Input: (9 bytes)
-2017-05-01T22:47:51.361 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'HelloWorld', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
-2017-05-01T22:47:51.451 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'ProcessWorkBatch', version ''. IsReplay: True. Input: (1 bytes)
-2017-05-01T22:47:51.452 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'HelloWorld', version ''. reason: ProcessWorkBatch. IsReplay: True.
-2017-05-01T22:47:51.454 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' awaited. IsReplay: True.
-2017-05-01T22:47:51.462 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
-</pre>
+As you can see, there is a lot of useful structured data packed into the `customDimensions` field in each log entry. Here is an example of one such entry fully expanded.
 
-...and with replay logs filtered out (e.g. `findstr /C:"IsReplay: False"`)...
+<img src="~/images/app-insights-2.png"/>
 
-<pre>
-2017-05-01T22:47:49.048 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'ProcessWorkBatch', version ''. reason: NewInstance. IsReplay: False.
-2017-05-01T22:47:49.481 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'ProcessWorkBatch', version ''. IsReplay: False. Input: (1 bytes)
-2017-05-01T22:47:49.505 [DF] e35a4e6ce5984c81850fc6e1f2573262: Scheduling function 'HelloWorld', version ''. reason: ProcessWorkBatch. IsReplay: False.
-2017-05-01T22:47:49.509 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' awaited. IsReplay: False.
-2017-05-01T22:47:49.789 [DF] e35a4e6ce5984c81850fc6e1f2573262: Starting function 'HelloWorld', version ''. IsReplay: False. Input: (9 bytes)
-2017-05-01T22:47:51.361 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'HelloWorld', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
-2017-05-01T22:47:51.462 [DF] e35a4e6ce5984c81850fc6e1f2573262: Function 'ProcessWorkBatch', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)
-</pre>
+Because of the replay behavior of the Durable Task Framework dispatcher, you can expect to see redundant log entries for replayed actions. This can be useful to understand the replay behavior of the core engine. If you would like to see just the "real-time" logs, you can modify the example query above with a `isReplay == false` filter.
 
-For the best monitoring and diagnostics experience, it is recommended that you enable [Application Insights integration](https://blogs.msdn.microsoft.com/appserviceteam/2017/04/06/azure-functions-application-insights/). This will allow you to store execution logs for longer periods of time and do more efficient query and analysis.
+> [!NOTE]
+> For more information and samples related to monitoring and diagnostics, see the [Diagnostics](~/articles/topics/diagnostics.md) topic. General information on monitoring in Azure Functions can be found in the [Monitoring Azure Functions](https://docs.microsoft.com/en-us/azure/azure-functions/functions-monitoring) documentation.
 
 ## Storage and Scalability
 The Durable Functions extension uses Azure Storage queues, tables, and blobs to persist execution history state and messages that are used to trigger function execution. The default storage account for the function app can be used, or you can configure a separate storage account to create greater isolation in terms of storage throughput limits. The orchestrator code you write does not need to (and should not) interact with the entities in these storage accounts - the entities are managed directly by the Durable Task Framework as an implementation detail.
 
-Orchestrator functions schedule activity functions and receive their responses via internal queue messages. When running in the Azure Functions Consumption plan, these queues are monitored by the Azure Functions Scale Controller and new compute instances are added as needed. When scaled out to multiple VMs, an orchestrator function may run on one VM while activity functions it calls run on several different VMs. You can find more details on the scale behavior of Durable Functions can be found in the <a href="./topics/perf-and-scale.md">Performance and Scale</a> topic.
+Orchestrator functions schedule activity functions and receive their responses via internal queue messages. When running in the Azure Functions Consumption plan, these queues are monitored by the [Azure Functions Scale Controller](https://docs.microsoft.com/en-us/azure/azure-functions/functions-scale#how-the-consumption-plan-works) and new compute instances are added as needed. When scaled out to multiple VMs, an orchestrator function may run on one VM while activity functions it calls run on several different VMs.
 
-Lastly, table storage is used to store the execution history for orchestrator accounts. Whenever an instance rehydrates on a particular VM, it fetches its execution history from table storage so that it can rebuild its local state. One of the convenient things about having the history available in Table storage is that you can take a look and see the history of your orchestrations using tools such as [Microsoft Azure Storage Explorer](https://docs.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer).
+> [!NOTE]
+> You can find more details on the scale behavior of Durable Functions can be found in the <a href="./topics/perf-and-scale.md">Performance and Scale</a> topic.
 
-<img src="~/images/storage-explorer.png"/>
+Lastly, table storage is used to store the execution history for orchestrator accounts. Whenever an instance re-hydrates on a particular VM, it fetches its execution history from table storage so that it can rebuild its local state. One of the convenient things about having the history available in Table storage is that you can take a look and see the history of your orchestrations using tools such as [Microsoft Azure Storage Explorer](https://docs.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer).
+
+<a href="~/images/storage-explorer.png" target="_blank"><img src="~/images/storage-explorer.png"/></a>
 
 > [!WARNING]
-> While it's easy and convenient to see execution history in table storage, you should not take any dependency on this table as the specifics of its usage may change as the Durable Functions extension evolves.
+> While it's easy and convenient to see execution history in table storage, you should avoid taking any dependency on this table at this time as the specifics of its usage may change prior to the general availability of the Durable Functions extension.

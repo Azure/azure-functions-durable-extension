@@ -10,10 +10,9 @@ If you haven't done so already, make sure to read the [overview](~/articles/over
 All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:
 
 ### For Visual Studio Development (Windows Only)
-1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
-3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud (note that you'll need to manually replicate your local Twilio app settings to Azure).
+1. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+2. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+3. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud (note that you'll need to manually replicate your local Twilio app settings to Azure).
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -34,7 +33,7 @@ This article will specifically walk through the following function in the sample
 ## Scenario overview
 Phone verification is an important technique used to 1) verify that end users of your application are not spammers and 2) to verify that users of your application are who they say they are. Multi-factor authentication is a common use case for protecting user accounts from hackers. The challenge with implementing your own phone verification is that it requires a **stateful interaction** with a human being. An end user is typically provided some code (e.g. a 4-digit number) and is expected to respond back to the system **in a reasonable amount of time** to complete the operation.
 
-Ordinary Azure Functions are stateless (as are many other cloud endpoints on other platforms), so these types of interactions will involve managing state externally in a database or some other persistent store. In addition, the interaction must be broken up into multiple functions that can be coordinated together. For example, you need at least one function for deciding on a code, persisting it somewhere, and sending it to the user's phone. Additionally, you need at least one other function to receive a response from the user and somehow map it back to the original function call in order to do the code validation. A timeout is also an important aspect to ensure security. You can imagine that this can get fairly complex pretty quickly!
+Ordinary Azure Functions are stateless (as are many other cloud endpoints on other platforms), so these types of interactions will involve explicitly managing state externally in a database or some other persistent store. In addition, the interaction must be broken up into multiple functions that can be coordinated together. For example, you need at least one function for deciding on a code, persisting it somewhere, and sending it to the user's phone. Additionally, you need at least one other function to receive a response from the user and somehow map it back to the original function call in order to do the code validation. A timeout is also an important aspect to ensure security. You can imagine that this can get fairly complex pretty quickly!
 
 The complexity of this scenario is greatly reduced when using Durable Functions. As you will see in this sample, an orchestrator function can manage the stateful interaction very easily and without involving any external data stores. Because orchestrator functions are *durable*, these interactive flows are also highly reliable.
 
@@ -94,7 +93,7 @@ POST http://{host}/orchestrators/E4_SmsPhoneVerification
 Content-Length: 14
 Content-Type: application/json
 
-"+1425466XXXX"
+"+1425XXXXXXX"
 ```
 ```plaintext
 HTTP/1.1 202 Accepted
@@ -127,7 +126,7 @@ HTTP/1.1 200 OK
 Content-Length: 144
 Content-Type: application/json; charset=utf-8
 
-{"runtimeStatus":"Completed","input":"+1425466XXXX","output":true,"createdTime":"2017-06-29T19:10:49Z","lastUpdatedTime":"2017-06-29T19:12:23Z"}
+{"runtimeStatus":"Completed","input":"+1425XXXXXXX","output":true,"createdTime":"2017-06-29T19:10:49Z","lastUpdatedTime":"2017-06-29T19:12:23Z"}
 ```
 
 Alternately, if you let the timer expire (willingly or unwillingly), or if you entered the wrong code four times, you should be able to query for the status and see a `false` orchestration function output, indicating that phone verification failed.
@@ -137,7 +136,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
 Content-Length: 145
 
-{"runtimeStatus":"Completed","input":"+1425466XXXX","output":false,"createdTime":"2017-06-29T19:20:49Z","lastUpdatedTime":"2017-06-29T19:22:23Z"}
+{"runtimeStatus":"Completed","input":"+1425XXXXXXX","output":false,"createdTime":"2017-06-29T19:20:49Z","lastUpdatedTime":"2017-06-29T19:22:23Z"}
 ```
 
 ## Wrapping up
