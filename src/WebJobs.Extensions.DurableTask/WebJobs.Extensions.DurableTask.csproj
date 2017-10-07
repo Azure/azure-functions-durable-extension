@@ -27,7 +27,7 @@
     <Title>Azure Functions Durable Task Extension</Title>
     <Authors>Microsoft</Authors>
     <Description>Azure WebJobs SDK Extension for the Durable Task Framework</Description>
-    <PackageReleaseNotes>This is an alpha release of the Durable Task Extension for Azure WebJobs.</PackageReleaseNotes>
+    <PackageReleaseNotes>This is a beta release of the Durable Task Extension for Azure WebJobs.</PackageReleaseNotes>
     <Copyright>(c) Microsoft Corporation. All rights reserved.</Copyright>
     <PackageTags>Microsoft;Azure;WebJobs;Durable;Extension;Orchestration;Workflow</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
