@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Bindings ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -75,7 +75,7 @@
 <h2 id="orchestration-triggers">Orchestration triggers</h2>
 <p>The orchestration trigger enables you to author durable orchestrator functions. This trigger supports starting new orchestrator function instances and resuming existing orchestrator function instances that are &quot;awaiting&quot; on a task.</p>
 <p>When using the Visual Studio tools for Azure Functions, the orchestration trigger is configured using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html">OrchestrationTriggerAttribute</a> .NET attribute.</p>
-<p>When authoring orchestrator functions in the Azure management portal, the orchestration trigger is defined by the following JSON object in the <code>bindings</code> array of function.json:</p>
+<p>When authoring orchestrator functions in scripting languages (e.g. in the Azure management portal), the orchestration trigger is defined by the following JSON object in the <code>bindings</code> array of function.json:</p>
 <pre><code class="lang-json">{
     &quot;name&quot;: &quot;&lt;Name of input parameter in function signature&gt;&quot;,
     &quot;orchestration&quot;: &quot;&lt;Optional - name of the orchestration&gt;&quot;,
@@ -89,12 +89,12 @@
 <li><code>version</code> is a version label of the orchestration. Clients that start a new instance of an orchestration must include the matching version label. This property is optional. If not specified, the empty string is used. For more information on versioning, see the <a href="versioning.html">Versioning</a> topic.</li>
 </ul>
 <p>Internally this trigger binding polls a series of queues in the default storage account for the function app. These queues are internal implementation details of the extension, which is why they are not explicitly configured in the binding properties.</p>
-<div class="NOTE"><h5>Note</h5><p>Setting values for <code>orchestration</code> or <code>version</code> properties is not recommended at this time. These are advanced settings and are generally not needed except in versioning scenarios, which have not yet received much testing.</p>
+<div class="NOTE"><h5>Note</h5><p>Setting values for <code>orchestration</code> or <code>version</code> properties is not recommended at this time.</p>
 </div>
 <h3 id="trigger-behavior">Trigger behavior</h3>
 <p>Note the following behaviors of the orchestration trigger:</p>
 <ul>
-<li><strong>single-threading</strong> - a single dispatcher thread is used for all orchestrator function execution. For this reason, it is important to ensure that orchestrator function code is efficient and doesn&#39;t perform any I/O. It is also important that this thread does not do any async work except when awaiting on Durable Functions-specific task types.</li>
+<li><strong>single-threading</strong> - a single dispatcher thread is used for all orchestrator function execution on a single host instance. For this reason, it is important to ensure that orchestrator function code is efficient and doesn&#39;t perform any I/O. It is also important that this thread does not do any async work except when awaiting on Durable Functions-specific task types.</li>
 <li><strong>Poising-message handling</strong> - there is no poison message support in orchestration triggers.</li>
 <li><strong>Message visibility</strong> - orchestration trigger messages are dequeued and kept invisible for a configurable duration. The visibility of these messages is renewed automatically as long as the function app is running and healthy.</li>
 <li><strong>Return values</strong> - return values are serialized to JSON and persisted to the orchestration history table in Azure Table storage. These return values can be queried by the orchestration client binding, described later.</li>
@@ -104,10 +104,10 @@
 <h3 id="trigger-usage">Trigger usage</h3>
 <p>The orchestration trigger binding supports both inputs and outputs. Here are some things to know about input and output handling:</p>
 <ul>
-<li><strong>inputs</strong> - orchestration functions only support using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html">DurableOrchestrationContext</a> as a parameter type. Deserialization inputs directly in the function signature is not yet supported. Code must use the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInput_">GetInput</a> method to fetch orchestrator function inputs. These inputs must be JSON-serializable types.</li>
+<li><strong>inputs</strong> - orchestration functions only support using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html">DurableOrchestrationContext</a> as a parameter type. Deserialization inputs directly in the function signature is not supported. Code must use the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInput_">GetInput</a> method to fetch orchestrator function inputs. These inputs must be JSON-serializable types.</li>
 <li><strong>outputs</strong> - Orchestration triggers support output values as well as inputs. The return value of the function is used to assign the output value and must be JSON-serializable. If a function returns <code>Task</code> or <code>void</code> then a <code>null</code> value will be saved as the output.</li>
 </ul>
-<div class="NOTE"><h5>Note</h5><p>Orchestration triggers are not currently supported in Node.js functions.</p>
+<div class="NOTE"><h5>Note</h5><p>Orchestration triggers are only supported in C# at this time.</p>
 </div>
 <h3 id="trigger-sample">Trigger sample</h3>
 <p>The following is an example of what the simplest &quot;Hello World&quot; C# orchestrator function might look like:</p>
@@ -123,7 +123,7 @@ public static async Task&lt;string&gt; Run(
     [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     string name = await context.GetInput&lt;string&gt;();
-    string result = await context.CallFunctionAsync&lt;string&gt;(&quot;SayHello&quot;, name);
+    string result = await context.CallActivityAsync&lt;string&gt;(&quot;SayHello&quot;, name);
     return result;
 }
 </code></pre><h2 id="activity-triggers">Activity triggers</h2>
@@ -143,9 +143,9 @@ public static async Task&lt;string&gt; Run(
 <li><code>version</code> is a version label of the activity. Orchestrator functions that invoke an activity must include the matching version label. This property is optional. If not specified, the empty string is used. For more information on versioning, see the <a href="versioning.html">Versioning</a> topic.</li>
 </ul>
 <p>Internally this trigger binding polls a queue in the default storage account for the function app. This queue is an internal implementation detail of the extension, which is why it is not explicitly configured in the binding properties.</p>
-<div class="NOTE"><h5>Note</h5><p>Setting values for <code>activity</code> or <code>version</code> properties is not recommended at this time. These are advanced settings and are generally not needed except in versioning scenarios, which have not yet received much testing.</p>
+<div class="NOTE"><h5>Note</h5><p>Setting values for <code>activity</code> or <code>version</code> properties is not recommended at this time.</p>
 </div>
-<h3 id="trigger-behavior-1">Trigger behavior</h3>
+<h3 id="trigger-behavior">Trigger behavior</h3>
 <p>Note the following behaviors of the activity trigger:</p>
 <ul>
 <li><strong>threading</strong> - unlike the orchestration trigger, activity triggers don&#39;t have any restrictions around threading or I/O. They can be treated like regular functions.</li>
@@ -155,16 +155,16 @@ public static async Task&lt;string&gt; Run(
 </ul>
 <div class="WARNING"><h5>Warning</h5><p>The storage backend for activity functions is an implementation detail and user code should not interact with these storage entities directly.</p>
 </div>
-<h3 id="trigger-usage-1">Trigger usage</h3>
+<h3 id="trigger-usage">Trigger usage</h3>
 <p>The activity trigger binding supports both inputs and outputs, just like the orchestration trigger. Here are some things to know about input and output handling:</p>
 <ul>
-<li><strong>inputs</strong> - activity functions natively use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a> as a parameter type. Alternatively, an activity function can be declared with any parameter type that is JSON-serializable. When using <code>DurableActivityContext</code>, code can use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetInput__1">GetInput&lt;T&gt;()</a> to fetch and deserialize the activity function input.</li>
+<li><strong>inputs</strong> - activity functions natively use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a> as a parameter type. Alternatively, an activity function can be declared with any parameter type that is JSON-serializable. When using <code>DurableActivityContext</code>, code can use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetInput_">GetInput</a> to fetch and deserialize the activity function input.</li>
 <li><strong>outputs</strong> - activity triggers support output values as well as inputs. The return value of the function is used to assign the output value and must be JSON-serializable. If a function returns <code>Task</code> or <code>void</code> then a <code>null</code> value will be saved as the output.</li>
 <li><strong>metadata</strong> - activity functions can also bind to a <code>string instanceId</code> parameter to get the instance ID of the parent orchestration.</li>
 </ul>
 <div class="NOTE"><h5>Note</h5><p>Activity triggers are not currently supported in Node.js functions.</p>
 </div>
-<h3 id="trigger-sample-1">Trigger sample</h3>
+<h3 id="trigger-sample">Trigger sample</h3>
 <p>The following is an example of what a very simple &quot;Hello World&quot; C# activity function might look like:</p>
 <pre><code class="lang-csharp">[FunctionName(&quot;SayHello&quot;)]
 public static string SayHello([ActivityTrigger] DurableActivityContext helloContext)
@@ -181,7 +181,7 @@ public static string SayHello([ActivityTrigger] string name)
 </code></pre><h2 id="orchestration-client">Orchestration client</h2>
 <p>The orchestration client binding enables you to write functions which interact with orchestrator functions. This includes starting new orchestration instances, querying their status, terminating, and sending events to running orchestration instances.</p>
 <p>When using the Visual Studio tools for Azure Functions, the orchestration client can be bound to using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html">OrchestrationClientAttribute</a> .NET attribute.</p>
-<p>When using the Azure Portal for development, the orchestration trigger is defined by the following JSON object in the <code>bindings</code> array of function.json:</p>
+<p>When using scripting languages (e.g. .csx files) for development, the orchestration trigger is defined by the following JSON object in the <code>bindings</code> array of function.json:</p>
 <pre><code class="lang-json">{
     &quot;name&quot;: &quot;&lt;Name of input parameter in function signature&gt;&quot;,
     &quot;taskHub&quot;: &quot;&lt;Optional - name of the task hub&gt;&quot;,

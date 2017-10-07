@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Installing Durable Functions ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../images/favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -70,41 +70,40 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="installing-durable-functions">Installing Durable Functions</h1>
 
-<p>Durable Functions is an extension of Azure Functions which uses a brand new binding extensibility model. This extensibility model is still in the early stages of development and not yet finalized. If you&#39;re interested, you can track the status of this extensibility <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/1419">in GitHub</a>.</p>
-<p>When using Visual Studio to author functions using this Durable Task extension, you can simply add a NuGet reference to the <code>Microsoft.Azure.WebJobs.Extensions.DurableTask</code>. For Azure Portal development, manual setup is required (details below).</p>
-<h2 id="using-the-durable-task-binding-extension-in-visual-studio-recommended---windows-only">Using the Durable Task Binding Extension in Visual Studio (Recommended - Windows Only)</h2>
-<p>Visual Studio currently provides the best experience for evaluating Durable Functions. Here is how to get started:</p>
+<p>Durable Functions is an extension of Azure Functions which uses a brand new binding extensibility model. Binding extensions can be added to a function app project using a simple NuGet package reference. The details of how to install this NuGet reference depends on how you are developing your function app.</p>
+<p>When using Visual Studio to author functions using this Durable Task extension, you can simply add a NuGet reference to the <a href="https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask">Microsoft.Azure.WebJobs.Extensions.DurableTask</a>. For Azure Portal development, function templates exist which can automatically install this extension.</p>
+<h2 id="visual-studio-2017-recommended">Visual Studio 2017 (Recommended)</h2>
+<p>Visual Studio currently provides the most robust experience for developing against Durable Functions. Here is how to get started:</p>
 <ol>
 <li>Install the <a href="https://www.visualstudio.com/downloads/">latest version of Visual Studio</a> (VS 2017 15.3 or greater) if you haven&#39;t already and include the Azure tools in your setup options.</li>
 <li>Create a new Function App project. Even better, start with the <a href="../files/VSDFSampleApp.zip">Visual Studio Sample App (.zip)</a>.</li>
-<li>In Visual Studio, select <strong>Tools</strong> --&gt; <strong>NuGet Package Manager</strong> --&gt; <strong>Manage NuGet Packages for Solution..</strong>.</li>
-<li>In the upper-right hand corner, click the &quot;Settings&quot; gear icon.</li>
-<li>Add a new package source with <code>https://www.myget.org/F/azure-appservice/api/v3/index.json</code> as the <strong>Source</strong>, click <strong>Update</strong>, and click <strong>OK</strong>. The Durable Task packages are published to our team&#39;s myget feed (and not NuGet.org) because they are still in active development. Note that this is the same location for nightly builds of Azure Functions and Azure WebJobs packages.</li>
 <li>Add the following NuGet package reference to your .csproj file (NOTE: the sample app already has this):</li>
 </ol>
-<pre><code class="lang-xml">&lt;PackageReference Include=&quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot; Version=&quot;0.2.2-alpha&quot; /&gt;
-</code></pre><p>This allows your project to download and reference the <strong>DurableTask</strong> extension which is required for Durable Functions. Your functions can be run locally and can also be published to and run in Azure.</p>
-<h2 id="using-the-durable-task-binding-extension-for-portal-development">Using the Durable Task Binding Extension for Portal Development</h2>
-<p>A word of caution: the Azure Functions extensibility model currently has only primitive support for binding extensions, so the setup is going to be more involved than it is for Visual Studio projects.</p>
-<p>The below steps assume you have a function app up and running. If you do not, go ahead and create one by navigating to <a href="https://functions.azure.com/signin">https://functions.azure.com/signin</a> and create a new function app there. It only requires a few clicks.</p>
-<p>When NOT using Visual Studio for publishing function apps, the the Durable Task extension needs to be uploaded and configured manually. Here are the required steps:</p>
-<ol>
-<li>Open your function app in the <a href="https://functions.azure.com/signin">Azure Functions portal</a>.</li>
-<li>Navigate to the Kudu console (Platform Features --&gt; Advanced Tools (Kudu))</li>
-<li>Click <strong>Debug Console</strong> and select <strong>CMD</strong></li>
-<li>Drag/drop the <a href="../files/DurableFunctionsBinding.zip">DurableFunctionsBinding.zip</a> file onto the right-side of the directory list in the browser window to unzip the contents into your function app.</li>
+<pre><code class="lang-xml">&lt;PackageReference Include=&quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot; Version=&quot;1.0.0-beta&quot; /&gt;
+</code></pre><ol>
+<li>Configure the Azure Storage account connection string in the <strong>local.settins.json</strong> file. Both Azure Storage Emulator and Azure Storage account connection strings are acceptable. If you prefer to use Azure Storage Emulator, please first start it and then set the connection in local.settings.json:</li>
 </ol>
-<div class="NOTE"><h5>Note</h5><p>Chrome is the recommended browser for drag-dropping zip files. If you can&#39;t or don&#39;t want to use Chrome or drag/drop isn&#39;t working, you can alternatively upload the zip file using FTP and use the <code>unzip</code> command in the Kudu console window to unzip the contents in the remote file system.</p>
+<pre><code class="lang-xml">&quot;AzureWebJobsStorage&quot;: &quot;UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10002/&quot;,
+&quot;AzureWebJobsDashboard&quot;: &quot;UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10002/&quot;
+</code></pre><p>Your functions can be run locally and can also be published to and run in Azure.</p>
+<div class="NOTE"><h5>Note</h5><p>At the time of writing, Visual Studio does not yet have good support for developing functions apps that target the Azure Functions 2.x runtime. For this reason, it is recommended that all Durable Functions development in Visual Studio target the default Azure Functions 1.x runtime. Note that the <a href="https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask">Microsoft.Azure.WebJobs.Extensions.DurableTask</a> extension is dual-targeted and designed to run in either version of the runtime.</p>
 </div>
-<p>At this point you should have a <code>D:\home\BindingExtensions</code> directory which contains a single folder named <code>DurableTask</code>. The <code>DurableTask</code> directory will contain several DLLs.</p>
+<h2 id="azure-portal">Azure Portal</h2>
+<p>When using the Azure Portal for development, you can create Durable Functions using a predefined set of function templates. These function templates are only available when the function app is configured to target the Azure Functions 2.x runtime. These templates can be found under the <strong>Durable Functions</strong> scenario category, as shown in the screenshot below.</p>
+<p><img src="../images/durable-functions-templates.png"></p>
+<p>The following steps will help you install the Durable Functions extension and author a simple function orchestration.</p>
 <ol>
-<li>Back in the Functions portal, click <strong>Application settings</strong> (under <em>General Settings</em>)</li>
-<li>Add a new app setting named <code>AzureWebJobs_ExtensionsPath</code> and set the value to <code>D:\home\BindingExtensions</code>.</li>
-<li>Stop and start your function app to load the extension.</li>
+<li>Create a function app and set the <strong>Runtime version</strong> to <strong>beta</strong> under <strong>Function app settings</strong>. This is required to leverage the new Functions 2.x runtime, which supports binding extensibility using templates.</li>
+<li>Create a new HTTP trigger function using the <strong>Durable Functions Http Start - C#</strong> template. This function can be used to create new orchestration instances.</li>
+<li>Click the <strong>Install</strong> link to install the <strong>Microsoft.Azure.WebJobs.Extensions.DurableTask</strong> extension into the function app. This can be done from any of the <strong>Durable Functions</strong> templates.</li>
+<li>Create a new activity function using the <strong>Durable Functions Activity - C#</strong> template.</li>
+<li>Create a new orchestrator function using the <strong>Durable Functions Orchestrator - C#</strong> template. Replace the <code>&quot;Hello&quot;</code> function name text with the name of the function you created in the previous step (e.g. <code>&quot;Hello1&quot;</code>).</li>
 </ol>
-<div class="WARNING"><h5>Warning</h5><p>Do NOT point your app setting to the <strong>DurableTask</strong> directory or else the runtime will not find your extension.</p>
+<p>At this point your function app should be set up to run a basic Durable Functions scenario. You can test it out by manually invoking the HTTP trigger function that you created in step #2.</p>
+<div class="NOTE"><h5>Note</h5><p>Manually triggering orchestrator and activity functions in the portal is not supported at this time. Instead, you must manually trigger a function which uses the <strong>Orchestration client</strong> input binding (such as the one created by the <strong>Durable Functions Http Start - C#</strong> template) to indirectly invoke orchestrator functions. Because the execution spans multiple functions, the recommended way to view the output of the orchestration is to open a new browser tab and open the <strong>Streaming logs</strong> blade, which can be found under <strong>Platform features</strong>.</p>
 </div>
-<p>At this point, your binding extension should be installed and you can start using it in your function code!</p>
+<h2 id="azure-functions-cli">Azure Functions CLI</h2>
+<p>Authoring Durable Functions using the Azure Functions CLI is not supported at this time. Support will become available only after the Azure Functions CLI is updated to support installing binding extensions.</p>
 </article>
           </div>
           

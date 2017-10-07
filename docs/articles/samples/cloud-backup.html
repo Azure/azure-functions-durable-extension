@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Fan-In/Fan-Out - Cloud Backup ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -76,7 +76,6 @@
 <p>All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:</p>
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
-<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
 <li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
 <li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
 <li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.</li>
@@ -84,7 +83,7 @@
 <h3 id="for-azure-portal-development">For Azure Portal Development</h3>
 <ol>
 <li>Create a new function app at <a href="https://functions.azure.com/signin">https://functions.azure.com/signin</a>.</li>
-<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions.</li>
+<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for portal development.</li>
 <li>Download the <a href="../../files/DFSampleApp.zip">DFSampleApp.zip</a> package.</li>
 <li>Unzip the sample package file into <code>D:\home\site\wwwroot</code> using Kudu or FTP.</li>
 </ol>
@@ -125,14 +124,14 @@ public static async Task&lt;long&gt; Run(DurableOrchestrationContext backupConte
         rootDirectory = Environment.CurrentDirectory;
     }
 
-    string[] files = await backupContext.CallFunctionAsync&lt;string[]&gt;(
+    string[] files = await backupContext.CallActivityAsync&lt;string[]&gt;(
         &quot;E2_GetFileList&quot;,
         rootDirectory);
 
     var tasks = new Task&lt;long&gt;[files.Length];
     for (int i = 0; i &lt; files.Length; i++)
     {
-        tasks[i] = backupContext.CallFunctionAsync&lt;long&gt;(
+        tasks[i] = backupContext.CallActivityAsync&lt;long&gt;(
             &quot;E2_CopyFileToBlob&quot;,
             files[i]);
     }
@@ -150,8 +149,8 @@ public static async Task&lt;long&gt; Run(DurableOrchestrationContext backupConte
 <li>Waits for all uploads to complete.</li>
 <li>Returns the sum total bytes that were uploaded to Azure Blob Storage.</li>
 </ol>
-<p>The most interesting part of this function is the <code>await Task.WhenAll(tasks);</code> line. You may have noticed that all the calls to the <strong>E2_CopyFileToBlob</strong> function were <em>not</em> awaited. This is intentional to allow them to run in parallel. When we pass this array of tasks to <code>Task.WhenAll</code>, then we get back a task which won&#39;t complete <em>until all the copy operations have completed</em>. If you&#39;re familiar with the Task Parallel Library (TPL) in .NET, then this is not new to you. The difference is that these tasks could be running on multiple VMs concurrently, and we ensure that the end-to-end execution is resilient to process recycling.</p>
-<p>After awaiting from <code>Task.WhenAll</code>, then we know that all function calls have completed and have returned values back to us. In this case, each call to <strong>E2_CopyFileToBlob</strong> will return the number of bytes uploaded, so calculating the sum total byte count is a matter of adding all those return values together.</p>
+<p>The most interesting part of this function is the <code>await Task.WhenAll(tasks);</code> line. You may have noticed that all the calls to the <strong>E2_CopyFileToBlob</strong> function were <em>not</em> awaited. This is intentional to allow them to run in parallel. When we pass this array of tasks to <code>Task.WhenAll</code>, we get back a task which won&#39;t complete <em>until all the copy operations have completed</em>. If you&#39;re familiar with the Task Parallel Library (TPL) in .NET, then this is not new to you. The difference is that these tasks could be running on multiple VMs concurrently, and the extension ensures that the end-to-end execution is resilient to process recycling.</p>
+<p>After awaiting from <code>Task.WhenAll</code>, we know that all function calls have completed and have returned values back to us. In this case, each call to <strong>E2_CopyFileToBlob</strong> will return the number of bytes uploaded, so calculating the sum total byte count is a matter of adding all those return values together.</p>
 <h2 id="helper-activity-functions">Helper activity functions</h2>
 <p>The helper activity functions, just as with other samples, are just regular functions that use the <code>activityTrigger</code> trigger binding. For example, the <strong>function.json</strong> file for <strong>E2_GetFileList</strong> looks like the following:</p>
 <pre><code class="lang-json" name="Main">{
@@ -221,7 +220,7 @@ public static async Task&lt;long&gt; Run(
     return byteCount;
 }
 </code></pre><p>The implementation loads the file from disk and asynchronously streams the contents into a blob of the same name. The return value is the number of bytes copied to storage, which is then used by the orchestrator function to compute the aggregate sum.</p>
-<div class="NOTE"><h5>Note</h5><p>This is a perfect example of moving I/O operations into an <code>activityTrigger</code> function. Not only can the work be distributed across many different VMs, but we also get the benefits of checkpointing the progress, meaning we&#39;re able to automatically keep track of which uploads have already completed if the orchestration gets terminated for any reason.</p>
+<div class="NOTE"><h5>Note</h5><p>This is a perfect example of moving I/O operations into an <code>activityTrigger</code> function. Not only can the work be distributed across many different VMs, but we also get the benefits of checkpointing the progress, meaning we&#39;re able to automatically keep track of which uploads have already completed if the host process gets terminated for any reason.</p>
 </div>
 <h2 id="running-the-sample">Running the sample</h2>
 <p>Using the HTTP-triggered functions included in the sample, you can start the orchestration using the below HTTP POST request.</p>
@@ -255,7 +254,7 @@ Content-Type: application/json; charset=utf-8
 {&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;D:\\home\\LogFiles&quot;,&quot;output&quot;:452071,&quot;createdTime&quot;:&quot;2017-06-29T18:50:55Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:51:26Z&quot;}
 </code></pre><p>Now we can see that the orchestration is complete and approximately how much time it took to complete. We now also see a value for the <code>output</code> field, which indicates that around 450 KB of logs were uploaded.</p>
 <h2 id="wrapping-up">Wrapping up</h2>
-<p>At this point, you should have a greater understanding of the core capabilities of Durable Functions. Subsequent samples will go into more advanced features and scenarios.</p>
+<p>At this point, you should have a greater understanding of the core orchestration capabilities of Durable Functions. Subsequent samples will go into more advanced features and scenarios.</p>
 <h2 id="full-sample-code">Full Sample Code</h2>
 <p>Here is the full orchestration as a single C# file using the Visual Studio project syntax:</p>
 <pre><code class="lang-csharp" name="Main">// Copyright (c) .NET Foundation. All rights reserved.
@@ -283,14 +282,14 @@ namespace VSSample
                 rootDirectory = Environment.CurrentDirectory;
             }
 
-            string[] files = await backupContext.CallFunctionAsync&lt;string[]&gt;(
+            string[] files = await backupContext.CallActivityAsync&lt;string[]&gt;(
                 &quot;E2_GetFileList&quot;,
                 rootDirectory);
 
             var tasks = new Task&lt;long&gt;[files.Length];
             for (int i = 0; i &lt; files.Length; i++)
             {
-                tasks[i] = backupContext.CallFunctionAsync&lt;long&gt;(
+                tasks[i] = backupContext.CallActivityAsync&lt;long&gt;(
                     &quot;E2_CopyFileToBlob&quot;,
                     files[i]);
             }

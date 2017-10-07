@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Function Chaining - Hello Sequence ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -76,9 +76,8 @@
 <p>All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:</p>
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
-<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
 <li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
-<li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
+<li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a> (Version 5.2 or later is required). Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
 <li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.</li>
 </ol>
 <h3 id="for-azure-portal-development">For Azure Portal Development</h3>
@@ -117,16 +116,14 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationConte
 {
     var outputs = new List&lt;string&gt;();
 
-    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
-    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
-    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
+    outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
+    outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
+    outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
 
     // returns [&quot;Hello Tokyo!&quot;, &quot;Hello Seattle!&quot;, &quot;Hello London!&quot;]
     return outputs;
 }
-</code></pre><p>All C# orchestration functions must have a <strong>DurableOrchestrationContext</strong> parameter, which exists in the <strong>Microsoft.Azure.WebJobs.Extensions.DurableTask</strong> assembly that can be referenced using the <code>#r</code> notation. This context object allows calling other <em>activity</em> functions and passing input parameters using its <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_">CallFunctionAsync</a> method.</p>
-<div class="WARNING"><h5>Warning</h5><p>Make sure to spell the name of the function your are calling correctly. There is currently no active validation of function names, so trying to call a function that doesn&#39;t exist will result in a silent failure.</p>
-</div>
+</code></pre><p>All C# orchestration functions must have a <strong>DurableOrchestrationContext</strong> parameter, which exists in the <strong>Microsoft.Azure.WebJobs.Extensions.DurableTask</strong> assembly. If authoring the function using C# scripting syntax, it can be referenced using the <code>#r</code> notation. This context object allows calling other <em>activity</em> functions and passing input parameters using its <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_">CallActivityAsync</a> method.</p>
 <p>The code is very simple in that it calls <strong>E1_SayHello</strong> three times in a sequence with different parameter values. The return value of each call is added to the <code>outputs</code> list, which is returned at the end of the function.</p>
 <p>The function.json for <strong>E1_SayHello</strong> is similar to to that of <strong>E1_HelloSequence</strong> except that it uses an <code>activityTrigger</code> binding type instead of an <code>orchestrationTrigger</code> binding type.</p>
 <pre><code class="lang-json" name="Main">{
@@ -141,7 +138,7 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationConte
 }
 </code></pre><div class="NOTE"><h5>Note</h5><p>Any function called by an orchestration function must use the <code>activityTrigger</code> binding.</p>
 </div>
-<p>The implementation of <strong>E1_SayHello</strong> is relatively trivial string formatting operation.</p>
+<p>The implementation of <strong>E1_SayHello</strong> is a relatively trivial string formatting operation.</p>
 <pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
 
 public static string Run(DurableActivityContext helloContext)
@@ -149,7 +146,7 @@ public static string Run(DurableActivityContext helloContext)
     string name = helloContext.GetInput&lt;string&gt;();
     return $&quot;Hello {name}!&quot;;
 }
-</code></pre><p>Note that this function has a corresponding <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a>, which it uses to get to input that was passed to it by the orchestrator&#39;s call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_">CallFunctionAsync</a>.</p>
+</code></pre><p>Note that this function has a corresponding <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a>, which it uses to get to input that was passed to it by the orchestrator function&#39;s call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_">CallActivityAsync</a>.</p>
 <h2 id="running-the-orchestration">Running the orchestration</h2>
 <p>The simplest way to execute the <strong>E1_HelloSequence</strong> orchestration is to make the following HTTP call.</p>
 <pre><code class="lang-plaintext">POST http://{app-name}.azurewebsites.net/orchestrators/E1_HelloSequence
@@ -169,9 +166,9 @@ Content-Type: application/json; charset=utf-8
 
 {&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:null,&quot;output&quot;:[&quot;Hello Tokyo!&quot;,&quot;Hello Seattle!&quot;,&quot;Hello London!&quot;],&quot;createdTime&quot;:&quot;2017-06-29T05:24:57Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T05:24:59Z&quot;}
 </code></pre><p>As you can see, the <code>runtimeStatus</code> of the instance is <em>Completed</em> and the <code>output</code> contains the JSON-serialized result of the orchestrator function execution.</p>
-<div class="NOTE"><h5>Note</h5><p>The HTTP POST endpoint which started the orchestrator function is implemented in the sample app as an HTTP trigger function. You may find that you want to implement similar starter logic for other trigger types, like <code>queueTrigger</code>, <code>eventHubTrigger</code>, or <code>timerTrigger</code>.</p>
+<div class="NOTE"><h5>Note</h5><p>The HTTP POST endpoint which started the orchestrator function is implemented in the sample app as an HTTP trigger function named &quot;HttpStart&quot;. You may find that you want to implement similar starter logic for other trigger types, like <code>queueTrigger</code>, <code>eventHubTrigger</code>, or <code>timerTrigger</code>.</p>
 </div>
-<p>Also, be sure to take a look at the function execution logs. You should notice that <strong>E1_HelloSequence</strong> was started multiple times (due to the replay behavior) and completed exactly once. Similarly, you should see exactly three executions of <strong>E1_SayHello</strong> since those function executions do not get replayed.</p>
+<p>Also, be sure to take a look at the function execution logs. You should notice that <strong>E1_HelloSequence</strong> started and completed multiple times due to the replay behavior described in the <a href="../overview.html">overview</a>. On the other hand, you should see exactly three executions of <strong>E1_SayHello</strong> since those function executions do not get replayed.</p>
 <h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a basic understanding of the core mechanics for Durable Functions. This sample was quite trivial and only showed a small number of features available. Subsequent samples, however, are more &quot;real world&quot; and will display a greater breadth of functionality.</p>
 <h2 id="full-sample-code">Full Sample Code</h2>
@@ -193,9 +190,9 @@ namespace VSSample
         {
             var outputs = new List&lt;string&gt;();
 
-            outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
-            outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
-            outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
+            outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
+            outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
+            outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
 
             // returns [&quot;Hello Tokyo!&quot;, &quot;Hello Seattle!&quot;, &quot;Hello London!&quot;]
             return outputs;

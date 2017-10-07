@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Orchestrator Checkpointing and Replay ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -80,14 +80,14 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(
 {
     var outputs = new List&lt;string&gt;();
 
-    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
-    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
-    outputs.Add(await context.CallFunctionAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
+    outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Tokyo&quot;));
+    outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;Seattle&quot;));
+    outputs.Add(await context.CallActivityAsync&lt;string&gt;(&quot;E1_SayHello&quot;, &quot;London&quot;));
 
     // returns [&quot;Hello Tokyo!&quot;, &quot;Hello Seattle!&quot;, &quot;Hello London!&quot;]
     return outputs;
 }
-</code></pre><p>At each <code>await</code> statement, the orchestrator function dispatcher checkpoints the execution state of the function into table storage. This state is what is referred to as the <em>orchestration history</em>.</p>
+</code></pre><p>At each <code>await</code> statement, the Durable Task Framework will checkpoint the execution state of the function into table storage. This state is what is referred to as the <em>orchestration history</em>.</p>
 <h2 id="history-table">History Table</h2>
 <p>Generally speaking, each checkpoint will include the following:.</p>
 <ol>
@@ -281,7 +281,7 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(
 </ul>
 <div class="WARNING"><h5>Warning</h5><p>While it&#39;s useful as a debugging tool, you should not take any dependency on the existence or the format of this table as the specifics of its usage may change as the Durable Functions extension evolves.</p>
 </div>
-<p>Every time the function resumes from an <code>await</code>, the Durable Task Framework re-runs the orchestrator function from scratch. On each re-run it consults the execution history to determine whether a async operation has taken place and, if so, replays the output of that operation immediately. This continues until the entire history has been replayed, at which point all the local variables in the orchestrator function should be restored to their previous values.</p>
+<p>Every time the function resumes from an <code>await</code>, the Durable Task Framework re-runs the orchestrator function from scratch. On each re-run it consults the execution history to determine whether the current async operation has taken place and, if so, replays the output of that operation immediately and moves on to the next <code>await</code>. This continues until the entire history has been replayed, at which point all the local variables in the orchestrator function should be restored to their previous values.</p>
 <h2 id="code-constraints">Code Constraints</h2>
 <p>With this replay behavior in mind, there are a very important set of constraints on the type of code that can be written in an orchestrator function:</p>
 <ul>
@@ -298,13 +298,13 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(
 <h2 id="durable-tasks">Durable Tasks</h2>
 <div class="NOTE"><h5>Note</h5><p>This section describes internal implementation details of the Durable Task Framework. It is intended to be informative and help make sense of the replay behavior. However, it is not necessary to fully understand this information.</p>
 </div>
-<p>Tasks that can be safely awaited in orchestrator functions are occasionally referred to as <em>durable tasks</em>. These are tasks that are created and managed by the Durable Task Framework, such as the tasks returned by <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_">CallFunctionAsync</a>, <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>, and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a>.</p>
-<p>These <em>durable tasks</em> are internally managed using a table of parent <code>TaskCompletionSource</code> objects. During replay, these tasks get created as part of orchestrator code execution and are completed as the dispatcher enumerates the corresponding history events. This is all done synchronously using a single thread until all the history has been replayed. Any durable tasks which are not completed by the end of history replay will have appropriate actions carried out (enqueuing a message to call an activity function, etc.).</p>
+<p>Tasks that can be safely awaited in orchestrator functions are occasionally referred to as <em>durable tasks</em>. These are tasks that are created and managed by the Durable Task Framework, such as the tasks returned by <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_">CallActivityAsync</a>, <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>, and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a>.</p>
+<p>These <em>durable tasks</em> are internally managed using a list of <code>TaskCompletionSource</code> objects. During replay, these tasks get created as part of orchestrator code execution and are completed as the dispatcher enumerates the corresponding history events. This is all done synchronously using a single thread until all the history has been replayed. Any durable tasks which are not completed by the end of history replay will have appropriate actions carried out (enqueuing a message to call an activity function, etc.).</p>
 <p>The execution behavior described here should help you understand why orchestrator function code must never <code>await</code> on a non-durable task: the dispatcher thread cannot wait for it to complete and any callback by that task could potentially corrupt the tracking state of the orchestrator function (though some runtime checks are in place to try and detect and prevent this).</p>
 <p>If you&#39;d like more information about how the Durable Task Framework executes orchestrator functions, the best thing to do is to consult the source code on <a href="https://github.com/Azure/durabletask">GitHub</a>. In particular, the following two files will be the most informative, and contain relatively simple logic:</p>
 <ul>
-<li><a href="https://github.com/Azure/durabletask/blob/master/Framework/TaskOrchestrationExecutor.cs">TaskOrchestrationDispatcher</a></li>
-<li><a href="https://github.com/Azure/durabletask/blob/master/Framework/TaskOrchestrationContext.cs">TaskOrchestrationContext</a></li>
+<li><a href="https://github.com/Azure/durabletask/blob/master/src/DurableTask.Core/TaskOrchestrationExecutor.cs">TaskOrchestrationExecutor</a></li>
+<li><a href="https://github.com/Azure/durabletask/blob/master/src/DurableTask.Core/TaskOrchestrationContext.cs">TaskOrchestrationContext</a></li>
 </ul>
 </article>
           </div>

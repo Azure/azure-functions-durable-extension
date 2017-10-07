@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class DurableActivityContext
    ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../images/favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -82,35 +82,11 @@
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">DurableActivityContext</span></div>
   </div>
-  <div class="inheritedMembers">
-    <h5>Inherited Members</h5>
-    <div>
-      <span class="xref">System.Object.ToString()</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.Equals(System.Object)</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.GetHashCode()</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.GetType()</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.MemberwiseClone()</span>
-    </div>
-  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.html">Microsoft.Azure.WebJobs</a></h6>
   <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
   <h5 id="Microsoft_Azure_WebJobs_DurableActivityContext_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class DurableActivityContext</code></pre>
+    <pre><code class="lang-csharp hljs">public class DurableActivityContext : object</code></pre>
   </div>
   <h3 id="properties">Properties
   </h3>
@@ -157,7 +133,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContext_GetInput__1.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContext.GetInput%60%601%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L69">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L83">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableActivityContext_GetInput_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.GetInput*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableActivityContext_GetInput__1" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.GetInput``1">GetInput&lt;T&gt;()</h4>
@@ -226,7 +202,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Newtonsoft.Json.Linq.JToken</span></td>
+        <td><span class="xref">JToken</span></td>
         <td><p>The parsed <code>JToken</code> representation of the activity input.</p>
 </td>
       </tr>
@@ -264,43 +240,6 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
       </tr>
     </tbody>
   </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContext_SetOutput_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput(System.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L121">View Source</a>
-  </span>
-  <a id="Microsoft_Azure_WebJobs_DurableActivityContext_SetOutput_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_DurableActivityContext_SetOutput_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput(System.Object)">SetOutput(Object)</h4>
-  <div class="markdown level1 summary"><p>Sets the JSON-serializeable output of the activity function.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public void SetOutput(object output)</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">System.Object</span></td>
-        <td><span class="parametername">output</span></td>
-        <td><p>The JSON-serializeable value to use as the activity function output.</p>
-</td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Microsoft_Azure_WebJobs_DurableActivityContext_SetOutput_System_Object__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>If this method is not called explicitly, the return value of the activity function is used as the output.</p>
-</div>
 </article>
           </div>
           

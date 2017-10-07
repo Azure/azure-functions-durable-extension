@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Stateful Singleton - Counter ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -77,7 +77,6 @@
 <p>All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:</p>
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
-<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
 <li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
 <li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
 <li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.</li>
@@ -97,9 +96,9 @@
 <div class="NOTE"><h5>Note</h5><p>This walkthrough assumes you have already gone through the <a href="sequence.html">Hello Sequence</a> sample walkthrough. If you haven&#39;t done so already, it is recommended to first go through that walkthrough before starting this one.</p>
 </div>
 <h2 id="scenario-overview">Scenario overview</h2>
-<p>The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenges you have is managing <strong>concurrency</strong>. Operations like <em>increment</em> and <em>decrement</em> need to be atomic, or else there could be race conditions that cause operations to overwrite each other.</p>
+<p>The counter scenario is very simple to understand, but surprisingly difficult to implement using regular stateless functions. One of the main challenges you have is managing <strong>concurrency</strong>. Operations like <em>increment</em> and <em>decrement</em> need to be atomic or else there could be race conditions that cause operations to overwrite each other.</p>
 <p>Using a single VM to host the counter data is one option, but this is expensive and managing <strong>reliability</strong> can be a challenge since a single VM could be periodically rebooted. You could alternatively use a distributed platform with synchronization tools like blob leases to help manage concurrency, but this introduces a great deal of <strong>complexity</strong>.</p>
-<p>Durable Functions makes this kind of scenario trivial to implement because orchestration instances affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.</p>
+<p>Durable Functions makes this kind of scenario trivial to implement because orchestration instances are affinitized to a single VM and orchestrator function execution is always single-threaded. Not only that, but they are long-running, stateful, and can react to external events. The sample code below will demonstrate how to implement such a counter as a long-running orchestrator function.</p>
 <h2 id="the-counter-orchestration">The counter orchestration</h2>
 <p>Here is the code which implements the orchestrator function:</p>
 <pre><code class="lang-csharp" name="Main">// Copyright (c) .NET Foundation. All rights reserved.
@@ -151,7 +150,7 @@ namespace VSSample
 <li>Continues running forever or until an <em>end</em> message is received.</li>
 </ol>
 <p>This is an example of an <em>eternal orchestration</em> - i.e. one that potentially never ends. It responds to messages sent to it using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> method, which can be called by any non-orchestrator function.</p>
-<p>One unique characteristic of this orchestrator function is that it effectively has no history: the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> method will reset the history after each processed event. This is the preferred way to implement an orchestrator which has an arbitrary lifetime as using a <code>while</code> loop could cause the orchestrator function&#39;s history to grow unbounded, resulting in unnecessarily high memory usage.</p>
+<p>One unique characteristic of this orchestrator function is that it effectively has no history: the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> method will reset the history after each processed event. This is the preferred way to implement an orchestrator which has an arbitrary lifetime. Using a <code>while</code> loop could cause the orchestrator function&#39;s history to grow unbounded, resulting in unnecessarily high memory usage.</p>
 <div class="NOTE"><h5>Note</h5><p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> method has other interesting use-cases besides just eternal orchestrations. See the <a href="../topics/eternal-orchestrations.html">Eternal Orchestrations</a> topic guide for more information.</p>
 </div>
 <h2 id="running-the-sample">Running the sample</h2>
@@ -165,8 +164,6 @@ Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb50
 
 {&quot;id&quot;:&quot;bcf6fb5067b046fbb021b52ba7deae5a&quot;,&quot;statusQueryGetUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}&quot;,&quot;sendEventPostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}&quot;,&quot;terminatePostUri&quot;:&quot;http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/terminate?reason={text}&amp;taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey}&quot;}
 </code></pre><p>The <strong>E3_Counter</strong> instance starts and then immediately waits for an event to be sent to it using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> or using the <strong>sendEventUrl</strong> HTTP POST webhook referenced in the 202 response above. Valid <code>eventName</code> values include <em>incr</em>, <em>decr</em>, and <em>end</em>.</p>
-<div class="NOTE"><h5>Note</h5><p>Feel free to take a look at the source code for HttpSendEvent to get an idea of how <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> is used by client functions.</p>
-</div>
 <pre><code class="lang-plaintext">POST http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb5067b046fbb021b52ba7deae5a/raiseEvent/operation?taskHub=DurableFunctionsHub&amp;connection=Storage&amp;code={systemKey} HTTP/1.1
 Content-Type: application/json
 Content-Length: 6
@@ -190,7 +187,7 @@ Location: http://{host}/admin/extensions/DurableTaskExtension/instances/bcf6fb50
 
 {&quot;runtimeStatus&quot;:&quot;Running&quot;,&quot;input&quot;:1,&quot;output&quot;:null,&quot;createdTime&quot;:&quot;2017-06-29T18:58:01Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T18:58:11Z&quot;}
 </code></pre><p>You can continue sending new operations to this instance and observe its state gets updated accordingly. If you wish to kill the instance, you can do so by sending an <em>end</em> operation.</p>
-<div class="WARNING"><h5>Warning</h5><p>There are currently race conditions in both the handling of <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> and the use of <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. Until these are addressed, it is highly recommended to not send more than one external event to an instance every few seconds.</p>
+<div class="WARNING"><h5>Warning</h5><p>At the time of writing, there are known race conditions when calling <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a> while concurrently processing messages, such external events or termination requests. For the latest information on these race conditions, see this <a href="https://github.com/Azure/azure-functions-durable-extension/issues/67">GitHub issue</a>.</p>
 </div>
 <h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_">ContinueAsNew</a>. These tools should enable you to write various flavors of &quot;stateful singletons&quot; like counters, aggregators, etc.</p>

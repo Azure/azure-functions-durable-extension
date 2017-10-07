@@ -1,0 +1,368 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class RetryOptions
+   </title>
+    <!-- Prevent search engine web crawlers from indexing or crawling this page -->
+    <meta name="robots" content="none">
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class RetryOptions
+   ">
+    <meta name="generator" content="docfx 2.24.0.0">
+    
+    <link rel="shortcut icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="Microsoft.Azure.WebJobs.RetryOptions">
+  
+  
+  <h1 id="Microsoft_Azure_WebJobs_RetryOptions" data-uid="Microsoft.Azure.WebJobs.RetryOptions" class="text-break">Class RetryOptions
+  </h1>
+  <div class="markdown level0 summary"><p>Contains retry policies that can be passed as parameters to various operations</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">RetryOptions</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.html">Microsoft.Azure.WebJobs</a></h6>
+  <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
+  <h5 id="Microsoft_Azure_WebJobs_RetryOptions_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public class RetryOptions : object</code></pre>
+  </div>
+  <h3 id="constructors">Constructors
+  </h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions__ctor_TimeSpan_System_Int32_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.%23ctor(TimeSpan%2CSystem.Int32)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L24">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions__ctor_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.#ctor*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions__ctor_TimeSpan_System_Int32_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.#ctor(TimeSpan,System.Int32)">RetryOptions(TimeSpan, Int32)</h4>
+  <div class="markdown level1 summary"><p>Creates a new instance RetryOptions with the supplied first retry and max attempts</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TimeSpan</span></td>
+        <td><span class="parametername">firstRetryInterval</span></td>
+        <td><p>Timespan to wait for the first retry</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">maxNumberOfAttempts</span></td>
+        <td><p>Max number of attempts to retry</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L60">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient" data-uid="Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient">BackoffCoefficient</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the backoff coefficient</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public double BackoffCoefficient { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Double</span></td>
+        <td><p>The backoff coefficient used to determine rate of increase of backoff, defaults to 1.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L35">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval" data-uid="Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval">FirstRetryInterval</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the first retry interval</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public TimeSpan FirstRetryInterval { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TimeSpan</span></td>
+        <td><p>The TimeSpan to wait for the first retries</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_Handle.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.Handle%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L96">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions_Handle_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.Handle*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions_Handle" data-uid="Microsoft.Azure.WebJobs.RetryOptions.Handle">Handle</h4>
+  <div class="markdown level1 summary"><p>Gets or sets a Func to call on exception to determine if retries should proceed</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Func&lt;Exception, bool&gt; Handle { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Func</span>&lt;<span class="xref">Exception</span>, <span class="xref">System.Boolean</span>&gt;</td>
+        <td><p>The Func to handle exception to determie if retries should proceed</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L84">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts">MaxNumberOfAttempts</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the max number of attempts</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int MaxNumberOfAttempts { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><p>The maximum number of retry attempts</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L47">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval">MaxRetryInterval</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the max retry interval</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public TimeSpan MaxRetryInterval { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TimeSpan</span></td>
+        <td><p>The TimeSpan of the max retry interval, defaults to TimeSpan.MaxValue</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L72">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout" data-uid="Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout">RetryTimeout</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the timeout for retries</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public TimeSpan RetryTimeout { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TimeSpan</span></td>
+        <td><p>The TimeSpan timeout for retries, defaults to TimeSpan.MaxValue</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L12" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © .NET Foundation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

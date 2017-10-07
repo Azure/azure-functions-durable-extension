@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Performance and Scale ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -71,8 +71,6 @@
 <h1 id="performance-and-scale">Performance and Scale</h1>
 
 <p>Durable Functions has unique scaling characteristics that are important to understand to get the best performance and scalability for your application. In order to understand the scale behavior, it&#39;s useful to first understand some of the details of the underlying Azure Storage provider used by Durable Functions.</p>
-<div class="WARNING"><h5>Warning</h5><p>Scale-out is not yet fully implemented for Durable Functions, so parts of this article which discuss scale-out reflect the current intended design but are subject to change. You can find more details of the intended design in the GitHub repo: <a href="https://github.com/Azure/azure-functions-durable-extension/issues/1">https://github.com/Azure/azure-functions-durable-extension/issues/1</a></p>
-</div>
 <h2 id="history-table">History table</h2>
 <p>The history table is an Azure Storage table which contains the history events for all orchestration instances. As instances run, new rows are added to this table. The partition-key of this table is derived from the instance ID of the orchestration (which are random in most cases), to ensure optimal distribution of internal partitions in Azure Storage.</p>
 <h2 id="internal-queue-triggers">Internal queue triggers</h2>
@@ -84,13 +82,13 @@
 <p>Control queues contain a variety of message types, including orchestrator control messages (see the <a href="instance-management.html">Instance Management</a> topic for more details on the supported control operations), activity function <em>response</em> messages, timer messages, and other orchestration lifecycle messages.</p>
 <h2 id="orchestrator-scale-out">Orchestrator scale-out</h2>
 <p>Activity functions are stateless and scale out automatically by simply adding VMs. Orchestrator functions, on the other hand, are <em>partitioned</em> across one or more control queues. The number of control queues is fixed and cannot be changed after you start creating load.</p>
-<div class="NOTE"><h5>Note</h5><p>It may actually be possible to change partition counts while the function app is completely shut down. This needs to be investigated further.</p>
-</div>
-<p>When scaling out to multiple function host instances (typically on different VMs), each instance acquires a lock on one of the control queues. This lock ensures that an orchestration instance only runs on a single VM at a time. This means that if an app is configured with three control queues, then orchestration instances can be load-balanced across as many as three VMs. Additional VMs can be added to increase capacity for activity function execution, but these additional resources will not be usable for running orchestrator functions.</p>
+<p>When scaling out to multiple function host instances (typically on different VMs), each instance acquires a lock on one of the control queues. This lock ensures that an orchestration instance only runs on a single VM at a time. This means that if a <a href="task-hubs.html">task hub</a> is configured with three control queues, then orchestration instances can be load-balanced across as many as three VMs. Additional VMs can be added to increase capacity for activity function execution, but these additional resources will not be usable for running orchestrator functions.</p>
 <p>The following diagram illustrates how the Azure Functions host interacts with the storage entities in a scaled out environment when running Durable Functions.</p>
 <p><img src="../../images/scale-diagram.png"></p>
 <p>As you can see, all VMs can compete for messages on the work-item queue. However, only three VMs can acquire messages from control queues (and each VM locks a single control queue).</p>
-<p>Orchestration instances are distributed across control queue instances by running an internal hash function against the orchestration&#39;s instance ID. Instance IDs are auto-generated and random by default which ensures that instances are balanced across all available control queues. The current maximum number of supported control queue partitions is <strong>4</strong>.</p>
+<p>Orchestration instances are distributed across control queue instances by running an internal hash function against the orchestration&#39;s instance ID. Instance IDs are auto-generated and random by default which ensures that instances are balanced across all available control queues. The current default number of supported control queue partitions is <strong>4</strong>.</p>
+<div class="NOTE"><h5>Note</h5><p>It&#39;s not currently possible to configure the number of partitions in Azure Functions. Support for this configuration option is being tracked as <a href="https://github.com/Azure/azure-functions-durable-extension/issues/73">GitHub issue #73</a>.</p>
+</div>
 <p>In general, orchestrator functions are intended to be lightweight and should not need a lot of computing power. For this reason, it is not necessary to create a large number of control queue partitions to get great throughput. Rather, most of the heavy work is expected to be done in stateless activity functions which can be scaled out infinitely.</p>
 <h2 id="auto-scale">Auto-scale</h2>
 <p>As with all Azure Functions running in the Consumption plan, Durable Functions supports auto-scale via the <a href="https://docs.microsoft.com/en-us/azure/azure-functions/functions-scale#runtime-scaling">Azure Functions scale-controller</a>. Specifically, the Scale Controller monitors the length of the work-item queue and each of the control queues, adding or removing VM resources accordingly. If the control queue lengths are increasing over time, the scale controller will continue adding instances until it reaches the control queue partition count. If work item queue lengths are increasing over time, the scale controller will continue adding VM resources until it can match the load, regardless of the control queue partition count.</p>
