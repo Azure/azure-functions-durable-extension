@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "name": "sendChallengeContext",
+      "name": "phoneNumber",
       "type": "activityTrigger",
       "direction": "in"
     },

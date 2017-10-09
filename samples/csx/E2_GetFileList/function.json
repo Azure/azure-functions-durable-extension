@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "name": "getFileListContext",
+      "name": "rootDirectory",
       "type": "activityTrigger",
       "direction": "in"
     }

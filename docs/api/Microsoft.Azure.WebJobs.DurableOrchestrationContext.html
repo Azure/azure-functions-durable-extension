@@ -82,11 +82,35 @@
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">DurableOrchestrationContext</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.html">Microsoft.Azure.WebJobs</a></h6>
   <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
   <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class DurableOrchestrationContext : object</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class DurableOrchestrationContext</code></pre>
   </div>
   <h3 id="properties">Properties
   </h3>
@@ -116,7 +140,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">DateTime</span></td>
+        <td><span class="xref">System.DateTime</span></td>
         <td><p>The orchestration&apos;s current date/time in UTC.</p>
 </td>
       </tr>
@@ -252,8 +276,34 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span></td>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -308,7 +358,7 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;TResult&gt;</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
 </td>
       </tr>
@@ -326,6 +376,32 @@ being replayed and then issue the log statements when this value is <code>false<
       <tr>
         <td><span class="parametername">TResult</span></td>
         <td><p>The return type of the scheduled activity function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -386,8 +462,39 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span></td>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -448,7 +555,7 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;TResult&gt;</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
 </td>
       </tr>
@@ -466,6 +573,37 @@ being replayed and then issue the log statements when this value is <code>false<
       <tr>
         <td><span class="parametername">TResult</span></td>
         <td><p>The return type of the scheduled activity function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -520,8 +658,34 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span></td>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -576,7 +740,7 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;TResult&gt;</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
 </td>
       </tr>
@@ -594,6 +758,32 @@ being replayed and then issue the log statements when this value is <code>false<
       <tr>
         <td><span class="parametername">TResult</span></td>
         <td><p>The return type of the scheduled orchestrator function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -654,8 +844,39 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span></td>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -716,7 +937,7 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;TResult&gt;</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
         <td><p>A durable task that completes when the called function completes or fails.</p>
 </td>
       </tr>
@@ -734,6 +955,37 @@ being replayed and then issue the log statements when this value is <code>false<
       <tr>
         <td><span class="parametername">TResult</span></td>
         <td><p>The return type of the scheduled orchestrator function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
 </td>
       </tr>
     </tbody>
@@ -774,13 +1026,13 @@ being replayed and then issue the log statements when this value is <code>false<
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_DateTime_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(DateTime%2CCancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L406">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_DateTime_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(DateTime,CancellationToken)">CreateTimer(DateTime, CancellationToken)</h4>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)">CreateTimer(DateTime, CancellationToken)</h4>
   <div class="markdown level1 summary"><p>Creates a durable timer which expires at a specified time.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
@@ -799,13 +1051,13 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">DateTime</span></td>
+        <td><span class="xref">System.DateTime</span></td>
         <td><span class="parametername">fireAt</span></td>
         <td><p>The time at which the timer should expire.</p>
 </td>
       </tr>
       <tr>
-        <td><span class="xref">CancellationToken</span></td>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
         <td><span class="parametername">cancelToken</span></td>
         <td><p>The <code>CancellationToken</code> to use for cancelling the timer.</p>
 </td>
@@ -822,26 +1074,26 @@ being replayed and then issue the log statements when this value is <code>false<
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span></td>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
         <td><p>A durable task that completes when the durable timer expires.</p>
 </td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_DateTime_CancellationToken__remarks">Remarks</h5>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken__remarks">Remarks</h5>
   <div class="markdown level1 remarks"><p>All durable timers created using this method must either expire or be cancelled 
 using the <code data-dev-comment-type="paramref" class="paramref">cancelToken</code> before the orchestrator function completes.
 Otherwise the underlying framework will keep the instance alive until the timer expires.</p>
 </div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_DateTime___0_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer%60%601(DateTime%2C%60%600%2CCancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer%60%601(System.DateTime%2C%60%600%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L424">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_DateTime___0_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(DateTime,``0,CancellationToken)">CreateTimer&lt;T&gt;(DateTime, T, CancellationToken)</h4>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">CreateTimer&lt;T&gt;(DateTime, T, CancellationToken)</h4>
   <div class="markdown level1 summary"><p>Creates a durable timer which expires at a specified time.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
@@ -860,7 +1112,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">DateTime</span></td>
+        <td><span class="xref">System.DateTime</span></td>
         <td><span class="parametername">fireAt</span></td>
         <td><p>The time at which the timer should expire.</p>
 </td>
@@ -872,7 +1124,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
 </td>
       </tr>
       <tr>
-        <td><span class="xref">CancellationToken</span></td>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
         <td><span class="parametername">cancelToken</span></td>
         <td><p>The <code>CancellationToken</code> to use for cancelling the timer.</p>
 </td>
@@ -889,7 +1141,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;T&gt;</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;T&gt;</td>
         <td><p>A durable task that completes when the durable timer expires.</p>
 </td>
       </tr>
@@ -911,7 +1163,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
       </tr>
     </tbody>
   </table>
-  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_DateTime___0_CancellationToken__remarks">Remarks</h5>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken__remarks">Remarks</h5>
   <div class="markdown level1 remarks"><p>All durable timers created using this method must either expire or be cancelled 
 using the <code data-dev-comment-type="paramref" class="paramref">cancelToken</code> before the orchestrator function completes.
 Otherwise the underlying framework will keep the instance alive until the timer expires.</p>
@@ -990,7 +1242,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">JToken</span></td>
+        <td><span class="xref">Newtonsoft.Json.Linq.JToken</span></td>
         <td><p>The parsed <code>JToken</code> representation of the orchestrator function input.</p>
 </td>
       </tr>
@@ -1072,7 +1324,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Task</span>&lt;T&gt;</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;T&gt;</td>
         <td><p>A durable task that completes when the external event is received.</p>
 </td>
       </tr>

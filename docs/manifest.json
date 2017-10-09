@@ -9,7 +9,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html",
-          "hash": "RLHinBWmCacTJsqReIYCVQ=="
+          "hash": "zkeWfemBLENX4sU6xn3kgQ=="
         }
       },
       "is_incremental": false,
@@ -21,7 +21,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableActivityContext.html",
-          "hash": "v0mLHbLDkO2fFqPrzVwo4g=="
+          "hash": "/DmErQtc83Wysz/UekfidQ=="
         }
       },
       "is_incremental": false,
@@ -33,7 +33,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html",
-          "hash": "dRe89QrKkyL75aj8mnmtcw=="
+          "hash": "7G/A7VfP1E5ycU1psi7GHQ=="
         }
       },
       "is_incremental": false,
@@ -45,7 +45,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html",
-          "hash": "OqqzHSBgfiMwaY5vSmiHDQ=="
+          "hash": "5dnzZ+mPLF1sQMPmTTkECg=="
         }
       },
       "is_incremental": false,
@@ -57,7 +57,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html",
-          "hash": "sGiHp7qXc0KSPtdGv8ttfg=="
+          "hash": "aPb2cit8d+wuZPFNPLShtg=="
         }
       },
       "is_incremental": false,
@@ -69,7 +69,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html",
-          "hash": "ih2gGrRmVuIw/xnxePPZUg=="
+          "hash": "5oyS4TIHiIQgBrpcMuNAew=="
         }
       },
       "is_incremental": false,
@@ -81,7 +81,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html",
-          "hash": "3dgL7/oJVPRSaEOm3k1m8w=="
+          "hash": "3S8/PAyUxg2fvqdHegpyWQ=="
         }
       },
       "is_incremental": false,
@@ -105,7 +105,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html",
-          "hash": "9h7Iz/nw/BUdlQSLmF/vdA=="
+          "hash": "DdGpXVEs2NGzpPgMdJlqww=="
         }
       },
       "is_incremental": false,
@@ -117,7 +117,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html",
-          "hash": "Ydvzz+TY6w7hOFtI0rw1EQ=="
+          "hash": "w63Hatak5xOjbTxUJJd+Wg=="
         }
       },
       "is_incremental": false,
@@ -129,7 +129,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.RetryOptions.html",
-          "hash": "NdrcTOl2CoEyHGI92GliNQ=="
+          "hash": "EiRBtGVAnlt4XtxDRyKdUw=="
         }
       },
       "is_incremental": false,
@@ -141,7 +141,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html",
-          "hash": "5L+mfRprftApF3tHmRdUNw=="
+          "hash": "GuvidJrZzbNlCgU2bj4YyA=="
         }
       },
       "is_incremental": false,
@@ -213,7 +213,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/cloud-backup.html",
-          "hash": "ZceTEMx4O7uz+6cL3bZx9g=="
+          "hash": "dQiGQG7CBW+NhRMt1dhp9g=="
         }
       },
       "is_incremental": false,
@@ -237,7 +237,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/phone-verification.html",
-          "hash": "IyBKCFZ9nZwqnz80add8MQ=="
+          "hash": "rN2/amvYiuI34QT1dTK/Ww=="
         }
       },
       "is_incremental": false,
@@ -249,7 +249,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/sequence.html",
-          "hash": "5gwe6onSOrCivhzZHrX0tw=="
+          "hash": "OzcWfHgbWc+q7rFgXQitJw=="
         }
       },
       "is_incremental": false,
@@ -448,17 +448,6 @@
     },
     {
       "type": "Resource",
-      "source_relative_path": "files/DurableFunctionsBinding.zip",
-      "output": {
-        "resource": {
-          "relative_path": "files/DurableFunctionsBinding.zip"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
       "source_relative_path": "files/VSDFSampleApp.zip",
       "output": {
         "resource": {
@@ -644,27 +633,27 @@
         "incrementalPhase": "build"
       },
       "processors": {
-        "RestApiDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
-          "incrementalPhase": "build"
-        },
         "ResourceDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
-          "incrementalPhase": "build"
-        },
-        "ManagedReferenceDocumentProcessor": {
-          "can_incremental": false,
           "incrementalPhase": "build"
         },
         "ConceptualDocumentProcessor": {
           "can_incremental": false,
           "incrementalPhase": "build"
         },
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": false,
+          "incrementalPhase": "build"
+        },
         "TocDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
+        "RestApiDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         }
       }

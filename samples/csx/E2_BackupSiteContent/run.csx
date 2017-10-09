@@ -5,7 +5,7 @@ public static async Task<long> Run(DurableOrchestrationContext backupContext)
     string rootDirectory = backupContext.GetInput<string>();
     if (string.IsNullOrEmpty(rootDirectory))
     {
-        rootDirectory = Environment.CurrentDirectory;
+        rootDirectory = Environment.ExpandEnvironmentVariables(@"%HOME%\site\wwwroot");
     }
 
     string[] files = await backupContext.CallActivityAsync<string[]>(

@@ -20,7 +20,7 @@ namespace VSSample
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                rootDirectory = Environment.CurrentDirectory;
+                rootDirectory = Directory.GetParent(typeof(BackupSiteContent).Assembly.Location).FullName;
             }
 
             string[] files = await backupContext.CallActivityAsync<string[]>(
@@ -72,7 +72,7 @@ namespace VSSample
             // copy the file contents into a blob
             using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (Stream destination = await binder.BindAsync<CloudBlobStream>(
-                new BlobAttribute(outputLocation)))
+                new BlobAttribute(outputLocation, FileAccess.Write)))
             {
                 await source.CopyToAsync(destination);
             }

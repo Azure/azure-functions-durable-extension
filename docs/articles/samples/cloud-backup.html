@@ -121,7 +121,7 @@ public static async Task&lt;long&gt; Run(DurableOrchestrationContext backupConte
     string rootDirectory = backupContext.GetInput&lt;string&gt;();
     if (string.IsNullOrEmpty(rootDirectory))
     {
-        rootDirectory = Environment.CurrentDirectory;
+        rootDirectory = Environment.ExpandEnvironmentVariables(@&quot;%HOME%\site\wwwroot&quot;);
     }
 
     string[] files = await backupContext.CallActivityAsync&lt;string[]&gt;(
@@ -156,7 +156,7 @@ public static async Task&lt;long&gt; Run(DurableOrchestrationContext backupConte
 <pre><code class="lang-json" name="Main">{
   &quot;bindings&quot;: [
     {
-      &quot;name&quot;: &quot;getFileListContext&quot;,
+      &quot;name&quot;: &quot;rootDirectory&quot;,
       &quot;type&quot;: &quot;activityTrigger&quot;,
       &quot;direction&quot;: &quot;in&quot;
     }
@@ -166,9 +166,8 @@ public static async Task&lt;long&gt; Run(DurableOrchestrationContext backupConte
 </code></pre><p>And here is the implementation:</p>
 <pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
 
-public static string[] Run(DurableActivityContext getFileListContext, TraceWriter log)
+public static string[] Run(string rootDirectory, TraceWriter log)
 {
-    string rootDirectory = getFileListContext.GetInput&lt;string&gt;();
     string[] files = Directory.GetFiles(rootDirectory, &quot;*&quot;, SearchOption.AllDirectories);
     log.Info($&quot;Found {files.Length} file(s) under {rootDirectory}.&quot;);
 
@@ -180,7 +179,7 @@ public static string[] Run(DurableActivityContext getFileListContext, TraceWrite
 <pre><code class="lang-json" name="Main">{
   &quot;bindings&quot;: [
     {
-      &quot;name&quot;: &quot;copyFileContext&quot;,
+      &quot;name&quot;: &quot;filePath&quot;,
       &quot;type&quot;: &quot;activityTrigger&quot;,
       &quot;direction&quot;: &quot;in&quot;
     }
@@ -194,11 +193,10 @@ public static string[] Run(DurableActivityContext getFileListContext, TraceWrite
 using Microsoft.WindowsAzure.Storage.Blob;
 
 public static async Task&lt;long&gt; Run(
-    DurableActivityContext copyFileContext,
+    string filePath,
     Binder binder,
     TraceWriter log)
 {
-    string filePath = copyFileContext.GetInput&lt;string&gt;();
     long byteCount = new FileInfo(filePath).Length;
 
     // strip the drive letter prefix and convert to forward slashes
@@ -210,7 +208,7 @@ public static async Task&lt;long&gt; Run(
     log.Info($&quot;Copying &#39;{filePath}&#39; to &#39;{outputLocation}&#39;. Total bytes = {byteCount}.&quot;);
 
     // copy the file contents into a blob
-    using (Stream source = File.Open(filePath, FileMode.Open))
+    using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
     using (Stream destination = await binder.BindAsync&lt;CloudBlobStream&gt;(
         new BlobAttribute(outputLocation)))
     {
@@ -279,7 +277,7 @@ namespace VSSample
             string rootDirectory = backupContext.GetInput&lt;string&gt;()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                rootDirectory = Environment.CurrentDirectory;
+                rootDirectory = Directory.GetParent(typeof(BackupSiteContent).Assembly.Location).FullName;
             }
 
             string[] files = await backupContext.CallActivityAsync&lt;string[]&gt;(
@@ -331,7 +329,7 @@ namespace VSSample
             // copy the file contents into a blob
             using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (Stream destination = await binder.BindAsync&lt;CloudBlobStream&gt;(
-                new BlobAttribute(outputLocation)))
+                new BlobAttribute(outputLocation, FileAccess.Write)))
             {
                 await source.CopyToAsync(destination);
             }

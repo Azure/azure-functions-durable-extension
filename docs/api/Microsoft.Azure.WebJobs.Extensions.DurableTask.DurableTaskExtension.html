@@ -82,6 +82,30 @@
     <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">DurableTaskExtension</span></div>
   </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+  </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.html">Microsoft.Azure.WebJobs.Extensions.DurableTask</a></h6>
   <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
   <h5 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_syntax">Syntax</h5>
@@ -183,7 +207,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">TimeSpan</span></td>
+        <td><span class="xref">System.TimeSpan</span></td>
         <td><p>A <code>TimeSpan</code> configured by the host. The default is 5 minutes.</p>
 </td>
       </tr>
@@ -354,7 +378,7 @@ multiple Durable Functions applications from each other, even if they are using 
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Uri</span></td>
+        <td><span class="xref">System.Uri</span></td>
         <td><p>A URL pointing to the hosted function app that responds to status polling requests.</p>
 </td>
       </tr>
@@ -425,12 +449,278 @@ the entire contents of function inputs and outputs.</p>
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">TimeSpan</span></td>
+        <td><span class="xref">System.TimeSpan</span></td>
         <td><p>A <code>TimeSpan</code> configured by the host. The default is 5 minutes.</p>
 </td>
       </tr>
     </tbody>
   </table>
+  <h3 id="eii">Explicit Interface Implementations
+  </h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskActivity__.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask%23Core%23INameVersionObjectManager%7BDurableTask%23Core%23TaskActivity%7D%23Add(DurableTask.Core.ObjectCreator%7BDurableTask.Core.TaskActivity%7D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskExtension.cs/#L203">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskActivity__" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})">INameVersionObjectManager&lt;TaskActivity&gt;.Add(ObjectCreator&lt;TaskActivity&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void INameVersionObjectManager&lt;TaskActivity&gt;.Add(ObjectCreator&lt;TaskActivity&gt; creator)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">DurableTask.Core.ObjectCreator</span>&lt;<span class="xref">DurableTask.Core.TaskActivity</span>&gt;</td>
+        <td><span class="parametername">creator</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="implements">Implements</h5>
+      <div><span class="xref">DurableTask.Core.INameVersionObjectManager&lt;T&gt;.Add(DurableTask.Core.ObjectCreator&lt;T&gt;)</span></div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__GetObject_System_String_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask%23Core%23INameVersionObjectManager%7BDurableTask%23Core%23TaskActivity%7D%23GetObject(System.String%2CSystem.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskExtension.cs/#L208">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__GetObject_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__GetObject_System_String_System_String_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject(System.String,System.String)">INameVersionObjectManager&lt;TaskActivity&gt;.GetObject(String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">TaskActivity INameVersionObjectManager&lt;TaskActivity&gt;.GetObject(string name, string version)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">DurableTask.Core.TaskActivity</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="implements">Implements</h5>
+      <div><span class="xref">DurableTask.Core.INameVersionObjectManager&lt;T&gt;.GetObject(System.String, System.String)</span></div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskOrchestration__.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask%23Core%23INameVersionObjectManager%7BDurableTask%23Core%23TaskOrchestration%7D%23Add(DurableTask.Core.ObjectCreator%7BDurableTask.Core.TaskOrchestration%7D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskExtension.cs/#L192">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__Add_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskOrchestration__" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskOrchestration})">INameVersionObjectManager&lt;TaskOrchestration&gt;.Add(ObjectCreator&lt;TaskOrchestration&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void INameVersionObjectManager&lt;TaskOrchestration&gt;.Add(ObjectCreator&lt;TaskOrchestration&gt; creator)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">DurableTask.Core.ObjectCreator</span>&lt;<span class="xref">DurableTask.Core.TaskOrchestration</span>&gt;</td>
+        <td><span class="parametername">creator</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="implements">Implements</h5>
+      <div><span class="xref">DurableTask.Core.INameVersionObjectManager&lt;T&gt;.Add(DurableTask.Core.ObjectCreator&lt;T&gt;)</span></div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__GetObject_System_String_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask%23Core%23INameVersionObjectManager%7BDurableTask%23Core%23TaskOrchestration%7D%23GetObject(System.String%2CSystem.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskExtension.cs/#L197">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__GetObject_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__GetObject_System_String_System_String_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject(System.String,System.String)">INameVersionObjectManager&lt;TaskOrchestration&gt;.GetObject(String, String)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">TaskOrchestration INameVersionObjectManager&lt;TaskOrchestration&gt;.GetObject(string name, string version)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">version</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">DurableTask.Core.TaskOrchestration</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="implements">Implements</h5>
+      <div><span class="xref">DurableTask.Core.INameVersionObjectManager&lt;T&gt;.GetObject(System.String, System.String)</span></div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_Microsoft_Azure_WebJobs_Host_Config_ExtensionConfigContext_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft%23Azure%23WebJobs%23Host%23Config%23IExtensionConfigProvider%23Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskExtension.cs/#L152">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_Microsoft_Azure_WebJobs_Host_Config_ExtensionConfigContext_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">IExtensionConfigProvider.Initialize(ExtensionConfigContext)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext</span></td>
+        <td><span class="parametername">context</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="implements">Implements</h5>
+      <div><span class="xref">Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)</span></div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_IAsyncConverter_System_Net_Http_HttpRequestMessage_System_Net_Http_HttpResponseMessage__ConvertAsync_System_Net_Http_HttpRequestMessage_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft%23Azure%23WebJobs%23IAsyncConverter%7BSystem%23Net%23Http%23HttpRequestMessage%2CSystem%23Net%23Http%23HttpResponseMessage%7D%23ConvertAsync(System.Net.Http.HttpRequestMessage%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskExtension.cs/#L474">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_IAsyncConverter_System_Net_Http_HttpRequestMessage_System_Net_Http_HttpResponseMessage__ConvertAsync_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_IAsyncConverter_System_Net_Http_HttpRequestMessage_System_Net_Http_HttpResponseMessage__ConvertAsync_System_Net_Http_HttpRequestMessage_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">IAsyncConverter&lt;HttpRequestMessage, HttpResponseMessage&gt;.ConvertAsync(HttpRequestMessage, CancellationToken)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">Task&lt;HttpResponseMessage&gt; IAsyncConverter&lt;HttpRequestMessage, HttpResponseMessage&gt;.ConvertAsync(HttpRequestMessage request, CancellationToken cancellationToken)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Net.Http.HttpRequestMessage</span></td>
+        <td><span class="parametername">request</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
+        <td><span class="parametername">cancellationToken</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Net.Http.HttpResponseMessage</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="implements">Implements</h5>
+      <div><span class="xref">Microsoft.Azure.WebJobs.IAsyncConverter&lt;TInput, TOutput&gt;.ConvertAsync(TInput, System.Threading.CancellationToken)</span></div>
 </article>
           </div>
           

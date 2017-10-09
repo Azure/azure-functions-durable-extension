@@ -100,11 +100,11 @@ references:
   commentId: T:Microsoft.Azure.WebJobs.DurableOrchestrationClient
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient
   nameWithType: DurableOrchestrationClient
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage,System.String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)
   name: CreateCheckStatusResponse(HttpRequestMessage, String)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_CreateCheckStatusResponse_HttpRequestMessage_System_String_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage,System.String)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, System.String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_CreateCheckStatusResponse_System_Net_Http_HttpRequestMessage_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage, System.String)
   nameWithType: DurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, String)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse*
   name: CreateCheckStatusResponse
@@ -280,11 +280,11 @@ references:
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew
   nameWithType: DurableOrchestrationContext.ContinueAsNew
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(DateTime,CancellationToken)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)
   name: CreateTimer(DateTime, CancellationToken)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_DateTime_CancellationToken_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(DateTime,CancellationToken)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(DateTime, CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime, System.Threading.CancellationToken)
   nameWithType: DurableOrchestrationContext.CreateTimer(DateTime, CancellationToken)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*
   name: CreateTimer
@@ -292,13 +292,13 @@ references:
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer
   nameWithType: DurableOrchestrationContext.CreateTimer
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(DateTime,``0,CancellationToken)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)
   name: CreateTimer<T>(DateTime, T, CancellationToken)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_DateTime___0_CancellationToken_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(DateTime,``0,CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)
   name.vb: CreateTimer(Of T)(DateTime, T, CancellationToken)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer<T>(DateTime, T, CancellationToken)
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(Of T)(DateTime, T, CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer<T>(System.DateTime, T, System.Threading.CancellationToken)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(Of T)(System.DateTime, T, System.Threading.CancellationToken)
   nameWithType: DurableOrchestrationContext.CreateTimer<T>(DateTime, T, CancellationToken)
   nameWithType.vb: DurableOrchestrationContext.CreateTimer(Of T)(DateTime, T, CancellationToken)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime
@@ -541,6 +541,72 @@ references:
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
   nameWithType: DurableTaskExtension.DisableHttpManagementApis
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})
+  name: INameVersionObjectManager<TaskActivity>.Add(ObjectCreator<TaskActivity>)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskActivity__
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add(ObjectCreator(Of TaskActivity))
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add(DurableTask.Core.ObjectCreator<DurableTask.Core.TaskActivity>)
+  fullName.vb: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add(DurableTask.Core.ObjectCreator(Of DurableTask.Core.TaskActivity))
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskActivity>.Add(ObjectCreator<TaskActivity>)
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add(ObjectCreator(Of TaskActivity))
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add*
+  name: INameVersionObjectManager<TaskActivity>.Add
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskActivity>.Add
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject(System.String,System.String)
+  name: INameVersionObjectManager<TaskActivity>.GetObject(String, String)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__GetObject_System_String_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject(System.String,System.String)
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject(String, String)
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject(System.String, System.String)
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskActivity>.GetObject(String, String)
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject(String, String)
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject*
+  name: INameVersionObjectManager<TaskActivity>.GetObject
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__GetObject_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskActivity>.GetObject
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskOrchestration})
+  name: INameVersionObjectManager<TaskOrchestration>.Add(ObjectCreator<TaskOrchestration>)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskOrchestration__
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskOrchestration})
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add(ObjectCreator(Of TaskOrchestration))
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add(DurableTask.Core.ObjectCreator<DurableTask.Core.TaskOrchestration>)
+  fullName.vb: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add(DurableTask.Core.ObjectCreator(Of DurableTask.Core.TaskOrchestration))
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskOrchestration>.Add(ObjectCreator<TaskOrchestration>)
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add(ObjectCreator(Of TaskOrchestration))
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add*
+  name: INameVersionObjectManager<TaskOrchestration>.Add
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__Add_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskOrchestration>.Add
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject(System.String,System.String)
+  name: INameVersionObjectManager<TaskOrchestration>.GetObject(String, String)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__GetObject_System_String_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject(System.String,System.String)
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject(String, String)
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject(System.String, System.String)
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskOrchestration>.GetObject(String, String)
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject(String, String)
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject*
+  name: INameVersionObjectManager<TaskOrchestration>.GetObject
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__GetObject_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject
+  name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject
+  nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskOrchestration>.GetObject
+  nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName
   name: HubName
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_HubName
@@ -577,6 +643,40 @@ references:
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
   nameWithType: DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)
+  name: IExtensionConfigProvider.Initialize(ExtensionConfigContext)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_Microsoft_Azure_WebJobs_Host_Config_ExtensionConfigContext_
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)
+  name.vb: Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize(ExtensionConfigContext)
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)
+  nameWithType: DurableTaskExtension.IExtensionConfigProvider.Initialize(ExtensionConfigContext)
+  nameWithType.vb: DurableTaskExtension.Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize(ExtensionConfigContext)
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize*
+  name: IExtensionConfigProvider.Initialize
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize
+  name.vb: Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize
+  nameWithType: DurableTaskExtension.IExtensionConfigProvider.Initialize
+  nameWithType.vb: DurableTaskExtension.Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)
+  name: IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(HttpRequestMessage, CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_IAsyncConverter_System_Net_Http_HttpRequestMessage_System_Net_Http_HttpResponseMessage__ConvertAsync_System_Net_Http_HttpRequestMessage_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)
+  name.vb: Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync(HttpRequestMessage, CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage, System.Net.Http.HttpResponseMessage>.ConvertAsync(System.Net.Http.HttpRequestMessage, System.Threading.CancellationToken)
+  fullName.vb: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync(System.Net.Http.HttpRequestMessage, System.Threading.CancellationToken)
+  nameWithType: DurableTaskExtension.IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(HttpRequestMessage, CancellationToken)
+  nameWithType.vb: DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync(HttpRequestMessage, CancellationToken)
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync*
+  name: IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_IAsyncConverter_System_Net_Http_HttpRequestMessage_System_Net_Http_HttpResponseMessage__ConvertAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync
+  name.vb: Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage, System.Net.Http.HttpResponseMessage>.ConvertAsync
+  fullName.vb: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync
+  nameWithType: DurableTaskExtension.IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync
+  nameWithType.vb: DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NotificationUrl
   name: NotificationUrl
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_NotificationUrl
@@ -619,11 +719,11 @@ references:
   commentId: T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions
   nameWithType: DurableTaskJobHostConfigurationExtensions
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)
   name: UseDurableTask(JobHostConfiguration, DurableTaskExtension)
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_UseDurableTask_JobHostConfiguration_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_
-  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(JobHostConfiguration, Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_UseDurableTask_Microsoft_Azure_WebJobs_JobHostConfiguration_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration, Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)
   nameWithType: DurableTaskJobHostConfigurationExtensions.UseDurableTask(JobHostConfiguration, DurableTaskExtension)
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask*
   name: UseDurableTask
@@ -727,11 +827,11 @@ references:
   commentId: T:Microsoft.Azure.WebJobs.RetryOptions
   fullName: Microsoft.Azure.WebJobs.RetryOptions
   nameWithType: RetryOptions
-- uid: Microsoft.Azure.WebJobs.RetryOptions.#ctor(TimeSpan,System.Int32)
+- uid: Microsoft.Azure.WebJobs.RetryOptions.#ctor(System.TimeSpan,System.Int32)
   name: RetryOptions(TimeSpan, Int32)
-  href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions__ctor_TimeSpan_System_Int32_
-  commentId: M:Microsoft.Azure.WebJobs.RetryOptions.#ctor(TimeSpan,System.Int32)
-  fullName: Microsoft.Azure.WebJobs.RetryOptions.RetryOptions(TimeSpan, System.Int32)
+  href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions__ctor_System_TimeSpan_System_Int32_
+  commentId: M:Microsoft.Azure.WebJobs.RetryOptions.#ctor(System.TimeSpan,System.Int32)
+  fullName: Microsoft.Azure.WebJobs.RetryOptions.RetryOptions(System.TimeSpan, System.Int32)
   nameWithType: RetryOptions.RetryOptions(TimeSpan, Int32)
 - uid: Microsoft.Azure.WebJobs.RetryOptions.#ctor*
   name: RetryOptions

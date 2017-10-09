@@ -129,7 +129,7 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationConte
 <pre><code class="lang-json" name="Main">{
   &quot;bindings&quot;: [
     {
-      &quot;name&quot;: &quot;helloContext&quot;,
+      &quot;name&quot;: &quot;name&quot;,
       &quot;type&quot;: &quot;activityTrigger&quot;,
       &quot;direction&quot;: &quot;in&quot;
     }
@@ -139,11 +139,8 @@ public static async Task&lt;List&lt;string&gt;&gt; Run(DurableOrchestrationConte
 </code></pre><div class="NOTE"><h5>Note</h5><p>Any function called by an orchestration function must use the <code>activityTrigger</code> binding.</p>
 </div>
 <p>The implementation of <strong>E1_SayHello</strong> is a relatively trivial string formatting operation.</p>
-<pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
-
-public static string Run(DurableActivityContext helloContext)
+<pre><code class="lang-csharp" name="Main">public static string Run(string name)
 {
-    string name = helloContext.GetInput&lt;string&gt;();
     return $&quot;Hello {name}!&quot;;
 }
 </code></pre><p>Note that this function has a corresponding <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a>, which it uses to get to input that was passed to it by the orchestrator function&#39;s call to <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_">CallActivityAsync</a>.</p>

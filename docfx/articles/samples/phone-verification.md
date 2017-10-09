@@ -44,8 +44,8 @@ The first thing you you will need is a Twilio account. You can create one free a
 
 | App Setting Name | Value Description |
 | - | - |
-| **TwilioAccountSid**  | The SID for your Twilio account |
-| **TwilioAuthToken**   | The Auth token for your Twilio account |
+| **AzureWebJobsTwilioAccountSid**  | The SID for your Twilio account |
+| **AzureWebJobsTwilioAuthToken**   | The Auth token for your Twilio account |
 | **TwilioPhoneNumber** | The phone number associated with your Twilio account. This is used to send SMS messages. |
 
 ## The SMS verification orchestration

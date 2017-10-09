@@ -113,11 +113,11 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>TwilioAccountSid</strong></td>
+<td><strong>AzureWebJobsTwilioAccountSid</strong></td>
 <td>The SID for your Twilio account</td>
 </tr>
 <tr>
-<td><strong>TwilioAuthToken</strong></td>
+<td><strong>AzureWebJobsTwilioAuthToken</strong></td>
 <td>The Auth token for your Twilio account</td>
 </tr>
 <tr>
@@ -213,7 +213,7 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
 <pre><code class="lang-json" name="Main">{
   &quot;bindings&quot;: [
     {
-      &quot;name&quot;: &quot;sendChallengeContext&quot;,
+      &quot;name&quot;: &quot;phoneNumber&quot;,
       &quot;type&quot;: &quot;activityTrigger&quot;,
       &quot;direction&quot;: &quot;in&quot;
     },
@@ -230,6 +230,7 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
 }
 </code></pre><p>And here is the code which generates the 4-digit challenge code and sends the SMS message:</p>
 <pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
+#r &quot;Microsoft.Azure.WebJobs.Extensions.Twilio&quot;
 #r &quot;Newtonsoft.Json&quot;
 #r &quot;Twilio&quot;
 
@@ -237,12 +238,10 @@ using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
 public static int Run(
-    DurableActivityContext sendChallengeContext,
+    string phoneNumber,
     TraceWriter log,
     out CreateMessageOptions message)
 {
-    string phoneNumber = sendChallengeContext.GetInput&lt;string&gt;();
-
     // Get a random number generator with a random seed (not time-based)
     var rand = new Random(Guid.NewGuid().GetHashCode());
     int challengeCode = rand.Next(10000);

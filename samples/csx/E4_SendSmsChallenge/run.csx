@@ -1,4 +1,5 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+#r "Microsoft.Azure.WebJobs.Extensions.Twilio"
 #r "Newtonsoft.Json"
 #r "Twilio"
 
@@ -6,12 +7,10 @@ using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
 public static int Run(
-    DurableActivityContext sendChallengeContext,
+    string phoneNumber,
     TraceWriter log,
     out CreateMessageOptions message)
 {
-    string phoneNumber = sendChallengeContext.GetInput<string>();
-
     // Get a random number generator with a random seed (not time-based)
     var rand = new Random(Guid.NewGuid().GetHashCode());
     int challengeCode = rand.Next(10000);
