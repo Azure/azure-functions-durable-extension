@@ -15,6 +15,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
+        public static object Echo([ActivityTrigger] DurableActivityContext ctx)
+        {
+            object obj = ctx.GetInput<object>();
+            return obj;
+        }
+
         public static long Multiply([ActivityTrigger] DurableActivityContext ctx)
         {
             long[] values = ctx.GetInput<long[]>();

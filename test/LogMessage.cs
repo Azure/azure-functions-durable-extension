@@ -16,5 +16,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public string FormattedMessage { get; set; }
 
         public string Category { get; set; }
+
+        public override string ToString()
+        {
+            return this.FormattedMessage;
+        }
     }
 }

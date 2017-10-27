@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -477,6 +479,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs.
+        /// </summary>
+        [Fact]
+        public async Task SubOrchestration_ComplexType()
+        {
+            const string TaskHub = nameof(SubOrchestration_ComplexType);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, TaskHub))
+            {
+                await host.StartAsync();
+
+                var complexTypeDataInput = new ComplexType
+                {
+                    A = -42,
+                    B = new List<DateTime> { DateTime.UtcNow, DateTime.UtcNow.AddYears(1) },
+                    C = ComplexType.CustomEnum.Value2,
+                    D = new ComplexType.ComplexInnerType
+                    {
+                        E = Guid.NewGuid().ToString(),
+                        F = TimeSpan.FromHours(1.5),
+                    },
+                };
+
+                var input = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.CallActivity),
+                    Input = new StartOrchestrationArgs
+                    {
+                        FunctionName = nameof(TestActivities.Echo),
+                        Input = complexTypeDataInput,
+                    },
+                };
+
+                string parentOrchestrator = nameof(TestOrchestrations.CallOrchestrator);
+
+                var client = await host.StartFunctionAsync(parentOrchestrator, input, this.output);
+                var status = await client.WaitForCompletionAsync(
+                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
+                    this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal("Completed", status.RuntimeStatus);
+                Assert.Equal(client.InstanceId, status.InstanceId);
+
+                Assert.NotNull(status.Output);
+                ComplexType complextTypeDataOutput = status.Output.ToObject<ComplexType>();
+                Assert.NotNull(complextTypeDataOutput);
+                Assert.Equal(complexTypeDataInput.A, complextTypeDataOutput.A);
+                Assert.Equal(complexTypeDataInput.B[0], complextTypeDataOutput.B[0]);
+                Assert.Equal(complexTypeDataInput.B[1], complextTypeDataOutput.B[1]);
+                Assert.NotNull(complextTypeDataOutput.D);
+                Assert.Equal(complexTypeDataInput.D.E, complextTypeDataOutput.D.E);
+                Assert.Equal(complexTypeDataInput.D.F, complextTypeDataOutput.D.F);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the retries of unhandled exceptions generated from orchestrator functions.
         /// </summary>
         [Fact]
@@ -693,7 +753,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which runs a orchestrator function that calls another orchestrator function.
+        /// End-to-end test which runs an orchestrator function that calls another orchestrator function.
         /// </summary>
         [Fact]
         public async Task Orchestration_OnValidOrchestrator()
@@ -716,7 +776,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var startArgs = new StartOrchestrationArgs
                 {
                     FunctionName = orchestratorFunctionNames[1],
-                    Input = input
+                    Input = inputJson
                 };
 
                 // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
@@ -729,7 +789,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(client.InstanceId, status.InstanceId);
                 Assert.Equal(validOrchestratorName, statusInput["FunctionName"].ToString());
                 Assert.Contains(greetingName, statusInput["Input"].ToString());
-                Assert.Equal($"Hello, [{inputJson}]!", status.Output.ToString());
+                Assert.Equal($"Hello, {inputJson}!", status.Output.ToString());
 
                 await host.StopAsync();
 
@@ -802,6 +862,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_OnUnregisteredOrchestrator",
                     orchestratorFunctionNames);
+            }
+        }
+
+        [DataContract]
+        class ComplexType
+        {
+            [DataMember]
+            public int A { get; set; }
+
+            [DataMember]
+            public List<DateTime> B { get; set; }
+
+            [DataMember]
+            public CustomEnum C { get; set; }
+
+            [DataMember]
+            public ComplexInnerType D { get; set; }
+
+            [DataContract]
+            public class ComplexInnerType
+            {
+                [DataMember]
+                public string E { get; set; }
+
+                [DataMember]
+                public TimeSpan F { get; set; }
+            }
+
+            [DataContract]
+            public enum CustomEnum
+            {
+                [EnumMember]
+                Value1,
+                [EnumMember]
+                Value2
             }
         }
     }
