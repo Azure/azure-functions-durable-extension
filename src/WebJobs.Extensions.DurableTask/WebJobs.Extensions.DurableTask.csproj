@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <Version>1.0.0-beta</Version>
+    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.1-beta</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
