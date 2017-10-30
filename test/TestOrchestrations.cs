@@ -225,5 +225,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DateTime fireAt = ctx.GetInput<DateTime>();
             await ctx.CreateTimer(fireAt, CancellationToken.None);
         }
+
+        public static string BigReturnValue([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            int stringLength = ctx.GetInput<int>();
+            return new string('*', stringLength);
+        }
     }
 }

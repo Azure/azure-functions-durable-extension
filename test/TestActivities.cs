@@ -47,6 +47,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new Exception(message);
         }
 
+        public static string BigReturnValue([ActivityTrigger] int stringLength)
+        {
+            return new string('*', stringLength);
+        }
+
         public static bool BindToJObject([ActivityTrigger] JObject jObj)
         {
             return string.Equals((string)jObj["Foo"], "Bar", StringComparison.Ordinal);
