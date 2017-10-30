@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Serializing;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,11 +20,6 @@ namespace Microsoft.Azure.WebJobs
     {
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
-
-        // The default JsonDataConverter for DTFx includes type information in JSON objects. This blows up when using Functions 
-        // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
-        // configure the JsonDataConverter with default serializer settings, which don't include CLR type information.
-        internal static readonly JsonDataConverter SharedJsonConverter = new JsonDataConverter(new JsonSerializerSettings());
 
         private readonly Dictionary<string, object> pendingExternalEvents = 
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -144,7 +138,7 @@ namespace Microsoft.Azure.WebJobs
                 return default(T);
             }
 
-            return SharedJsonConverter.Deserialize<T>(this.serializedInput);
+            return MessagePayloadDataConverter.Default.Deserialize<T>(this.serializedInput);
         }
 
         internal void SetInput(OrchestrationContext frameworkContext, string rawInput)
@@ -178,7 +172,7 @@ namespace Microsoft.Azure.WebJobs
                 }
                 else
                 {
-                    this.serializedOutput = SharedJsonConverter.Serialize(output);
+                    this.serializedOutput = MessagePayloadDataConverter.Default.Serialize(output);
                 }
             }
             else
@@ -603,7 +597,7 @@ namespace Microsoft.Azure.WebJobs
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
-                    object deserializedObject = SharedJsonConverter.Deserialize(input, genericTypeArgument);
+                    object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
                     trySetResult.Invoke(tcs, new[] { deserializedObject });
                 }
