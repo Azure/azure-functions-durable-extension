@@ -19,9 +19,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta3" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta3-11076" />
   </ItemGroup>
-
+  
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
     <Title>Azure Functions Durable Task Extension</Title>
