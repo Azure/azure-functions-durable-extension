@@ -13,7 +13,12 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{Activity} ({Version})")]
+#if NETSTANDARD2_0
+    [Binding(TriggerHandlesReturnValue = true)]
+#else
     [Binding]
+#endif
+
     public sealed class ActivityTriggerAttribute : Attribute
     {
         /// <summary>
