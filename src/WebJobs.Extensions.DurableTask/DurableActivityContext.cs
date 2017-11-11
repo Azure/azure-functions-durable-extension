@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using DurableTask.Core.Serializing;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -14,8 +13,6 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     public class DurableActivityContext
     {
-        private static readonly JsonDataConverter SharedJsonConverter = DurableOrchestrationContext.SharedJsonConverter;
-
         private readonly string instanceId;
         private readonly string serializedInput;
 
@@ -95,7 +92,7 @@ namespace Microsoft.Azure.WebJobs
             }
 
             string serializedValue = jToken.ToString(Formatting.None);
-            return SharedJsonConverter.Deserialize<T>(serializedValue);
+            return MessagePayloadDataConverter.Default.Deserialize<T>(serializedValue);
         }
 
         internal string GetSerializedOutput()
@@ -128,7 +125,7 @@ namespace Microsoft.Azure.WebJobs
                 }
                 else
                 {
-                    this.serializedOutput = SharedJsonConverter.Serialize(output);
+                    this.serializedOutput = MessagePayloadDataConverter.Default.Serialize(output);
                 }
             }
             else

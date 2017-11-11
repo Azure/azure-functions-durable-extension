@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="External Events ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -71,7 +71,7 @@
 <h1 id="external-events">External Events</h1>
 
 <p>Orchestrator functions have the ability to wait and listen for external events, which is often useful for handling human interaction or other external triggers.</p>
-<p>The following samples make use of external events. Feel free to reference these as possible use-cases:</p>
+<p>The following samples make use of external events. Feel free to reference these as example use-cases:</p>
 <ul>
 <li><a href="../samples/counter.html">Stateful Actor - Counter</a></li>
 <li><a href="../samples/phone-verification.html">Human Interaction &amp; Timeouts - Phone Verification</a></li>
@@ -129,14 +129,15 @@ public static async Task Run(
     // all three departments must grant approval before a permit can be issued
     await Task.WhenAll(gate1, gate2, gate3);
 
-    await context.CallFunctionAsync(&quot;IssueBuildingPermit&quot;, applicationId);
+    await context.CallActivityAsync(&quot;IssueBuildingPermit&quot;, applicationId);
 }
 </code></pre><p><a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> waits indefinitely for some input and the function app can be safely unloaded while waiting. If and when an event arrives for this orchestration instance, it will be woken up automatically and will immediately process the event.</p>
 <div class="NOTE"><h5>Note</h5><p>No billing charges are incurred if an orchestrator function is awaiting on a task from <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>, no matter how long it waits.</p>
 </div>
-<p>If they event payload cannot be converted into the expected type <code>T</code>, an exception will be thrown.</p>
+<p>If the event payload cannot be converted into the expected type <code>T</code>, an exception will be thrown.</p>
 <h2 id="sending-events">Sending Events</h2>
 <p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> method of the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class is used to send events that resume orchestrator functions that are waiting using <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a>. <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_">RaiseEventAsync</a> takes an <em>event name</em> and an <em>event payload</em> as data types. The event payload must be JSON-serializable.</p>
+<p>Below is an example queue-triggered function which sends an &quot;Approval&quot; event to an existing orchestrator function instance. The orchestration instance ID comes from the body of the queue message.</p>
 <pre><code class="lang-csharp">[FunctionName(&quot;ApprovalQueueProcessor&quot;)]
 public static async Task Run(
     [QueueTrigger(&quot;approval-queue&quot;)] string instanceId,

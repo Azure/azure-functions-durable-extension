@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Instance Management ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -72,7 +72,7 @@
 
 <p>Durable Function orchestration instances can be started, terminated, queried, and sent notification events. All instance management is done using the orchestration client binding. More details on this binding can be found in the <a href="bindings.html">Bindings</a> topic. This article goes into the details of each of the instance management operations.</p>
 <h2 id="starting-instances">Starting instances</h2>
-<p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a> method on the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class can be used to start a new instances of an orchestrator function. Instances of this class can be acquired using the <code>orchestrationClient</code> binding. Internally, this method will enqueue a message into the control queue, which will then trigger the start of a function with the specified name which uses the <code>orchestrationTrigger</code> trigger binding.</p>
+<p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a> method on the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class can be used to start a new instances of an orchestrator function. Instances of this class can be acquired using the <code>orchestrationClient</code> binding. Internally, this method will enqueue a message into the control queue, which will then trigger the start of a function with the specified name that uses the <code>orchestrationTrigger</code> trigger binding.</p>
 <p>The supported parameters are as follows:</p>
 <ul>
 <li><strong>Name</strong>: The name of the orchestrator function to schedule.</li>
@@ -102,7 +102,7 @@ public static Task Run(
 
     context.done(null);
 };
-</code></pre><div class="NOTE"><h5>Note</h5><p>It is generally recommended that you use a random identifier for the instance ID. This will help ensure an equal load distribution when scaling orchestrator functions across multiple VMs.</p>
+</code></pre><div class="NOTE"><h5>Note</h5><p>It is generally recommended that you use a random identifier for the instance ID. This will help ensure an equal load distribution when scaling orchestrator functions across multiple VMs. The proper time to use non-random instance IDs is when the ID must come from an external source or when implementing the <a href="singletons.html">singleton orchestrator</a> pattern.</p>
 </div>
 <h2 id="querying-instances">Querying instances</h2>
 <p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_">GetStatusAsync</a> method on the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class can be used to query the status of an orchestration instance. It takes an <code>instanceId</code> as a parameter and returns an object with the following properties:</p>

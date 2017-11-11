@@ -1,1 +1,676 @@
-{"homepages":[],"source_base_path":"C:/Code/GitHub/azure-functions-durable-extension/docfx","xrefmap":"xrefmap.yml","files":[{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskConfiguration.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskConfiguration.html","hash":"41oocgwX+IR5BgtDVyiTXg=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html","hash":"Np0qSN04qJqfhCDF5Dxv0w=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html","hash":"Wqu17I9vN9lJRF/5JMkVwQ=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html","hash":"vYptumVxFt7wswr91XLHxw=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/instance-management.md","output":{".html":{"relative_path":"articles/topics/instance-management.html","hash":"U5TXk3vHa0X6IJyBxi0YHQ=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/timers.md","output":{".html":{"relative_path":"articles/topics/timers.html","hash":"PNnbv+i9jNGOK27AH3Um7A=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/bindings.md","output":{".html":{"relative_path":"articles/topics/bindings.html","hash":"GTxa7k2mMuhF1YaJ8zHFaA=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/external-events.md","output":{".html":{"relative_path":"articles/topics/external-events.html","hash":"IjD4aIA6VFfblc6joU3FUg=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/versioning.md","output":{".html":{"relative_path":"articles/topics/versioning.html","hash":"OigvqbiIRzR1DOH3iMciFA=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/samples/cloud-backup.md","output":{".html":{"relative_path":"articles/samples/cloud-backup.html","hash":"eH7fkRa6RMs8B4Xi8rWWwQ=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/samples/sequence.md","output":{".html":{"relative_path":"articles/samples/sequence.html","hash":"FbDkzvXYseqWxIh00jNPiw=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/checkpointing-and-replay.md","output":{".html":{"relative_path":"articles/topics/checkpointing-and-replay.html","hash":"k0BC6Na8lft1Ij9t3ZgwsA=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html","hash":"pcx9I6YElIXubVvkLc4lUg=="}},"is_incremental":false,"version":""},{"type":"Toc","source_relative_path":"toc.yml","output":{".html":{"relative_path":"toc.html","hash":"WwAlGXrSzEUb0n/fagDJ+w=="}},"is_incremental":false,"version":""},{"type":"Toc","source_relative_path":"articles/toc.md","output":{".html":{"relative_path":"articles/toc.html","hash":"V4uSZSiDxWDEK+KMsm8kSw=="}},"is_incremental":false,"version":""},{"type":"Toc","source_relative_path":"api/toc.yml","output":{".html":{"relative_path":"api/toc.html","hash":"jazgNdJW5/iao/R9xoNbjA=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/overview.md","output":{".html":{"relative_path":"articles/overview.html","hash":"2VpNe+ZvFWl65kbh1RaqGQ=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"index.md","output":{".html":{"relative_path":"index.html","hash":"7qLoSksCl1qz25xc09Xurw=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/samples/counter.md","output":{".html":{"relative_path":"articles/samples/counter.html","hash":"8kno9AFEw5D282exW+dYJA=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/diagnostics.md","output":{".html":{"relative_path":"articles/topics/diagnostics.html","hash":"22LyZtX5Q8u+xItgxZOiqQ=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/known-issues.md","output":{".html":{"relative_path":"articles/known-issues.html","hash":"5fi7XZhDmtGx3donJ78Cyg=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/samples/phone-verification.md","output":{".html":{"relative_path":"articles/samples/phone-verification.html","hash":"oW587xOQUvgdWlbqgDTWMQ=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/error-handling.md","output":{".html":{"relative_path":"articles/topics/error-handling.html","hash":"7aoNIob4Ps3Q11a3XorB1Q=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/eternal-orchestrations.md","output":{".html":{"relative_path":"articles/topics/eternal-orchestrations.html","hash":"JEtuxKE6dM62rT701JgzVg=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/topics/perf-and-scale.md","output":{".html":{"relative_path":"articles/topics/perf-and-scale.html","hash":"DYDyafLIpNOukDRHSslFhw=="}},"is_incremental":false,"version":""},{"type":"Conceptual","source_relative_path":"articles/installation.md","output":{".html":{"relative_path":"articles/installation.html","hash":"EwaYjSmuaUbjc0iF0+kN1A=="}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"files/DFSampleApp.zip","output":{"resource":{"relative_path":"files/DFSampleApp.zip"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"files/VSDFSampleApp.zip","output":{"resource":{"relative_path":"files/VSDFSampleApp.zip"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/fan-out-fan-in.png","output":{"resource":{"relative_path":"images/fan-out-fan-in.png"}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.Extensions.DurableTask.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.Extensions.DurableTask.html","hash":"NVkmEK04s9ulmSptX7M3Xw=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html","hash":"49av6kJmi0hzAiJLCRQF4Q=="}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/scale-diagram.png","output":{"resource":{"relative_path":"images/scale-diagram.png"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/storage-explorer.png","output":{"resource":{"relative_path":"images/storage-explorer.png"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/approval.png","output":{"resource":{"relative_path":"images/approval.png"}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.DurableActivityContext.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.DurableActivityContext.html","hash":"8ATuZ+uneEZoLrdorEKGpw=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html","hash":"1d3O5sPXfW+0bxlKbPthoA=="}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/stateful-singleton.png","output":{"resource":{"relative_path":"images/stateful-singleton.png"}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.html","hash":"93r5qdQyCmZGgxujoO5BlA=="}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html","hash":"CMmDX7eMziJKDG6ZsH7SJQ=="}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/favicon.ico","output":{"resource":{"relative_path":"images/favicon.ico"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/function-chaining.png","output":{"resource":{"relative_path":"images/function-chaining.png"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"files/DurableFunctionsBinding.zip","output":{"resource":{"relative_path":"files/DurableFunctionsBinding.zip"}},"is_incremental":false,"version":""},{"type":"Resource","source_relative_path":"images/async-http-api.png","output":{"resource":{"relative_path":"images/async-http-api.png"}},"is_incremental":false,"version":""},{"type":"ManagedReference","source_relative_path":"api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.yml","output":{".html":{"relative_path":"api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html","hash":"EUvYDJld9pArh1q2J22Sug=="}},"is_incremental":false,"version":""}],"incremental_info":[{"status":{"can_incremental":false,"details":"Disable incremental build by force rebuild option.","incrementalPhase":"build"},"processors":{"RestApiDocumentProcessor":{"can_incremental":false,"details":"Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.","incrementalPhase":"build"},"TocDocumentProcessor":{"can_incremental":false,"details":"Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.","incrementalPhase":"build"},"ResourceDocumentProcessor":{"can_incremental":false,"details":"Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.","incrementalPhase":"build"},"ConceptualDocumentProcessor":{"can_incremental":false,"incrementalPhase":"build"},"ManagedReferenceDocumentProcessor":{"can_incremental":false,"incrementalPhase":"build"}}},{"status":{"can_incremental":false,"details":"Cannot support incremental post processing, the reason is: it's disabled.","incrementalPhase":"postProcessing"},"processors":{}}],"version_info":{}}
+{
+  "homepages": [],
+  "source_base_path": "C:/Code/GitHub/azure-functions-durable-extension/docfx",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html",
+          "hash": "zkeWfemBLENX4sU6xn3kgQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.DurableActivityContext.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.DurableActivityContext.html",
+          "hash": "/DmErQtc83Wysz/UekfidQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html",
+          "hash": "7G/A7VfP1E5ycU1psi7GHQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html",
+          "hash": "5dnzZ+mPLF1sQMPmTTkECg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html",
+          "hash": "aPb2cit8d+wuZPFNPLShtg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html",
+          "hash": "5oyS4TIHiIQgBrpcMuNAew=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html",
+          "hash": "3S8/PAyUxg2fvqdHegpyWQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.html",
+          "hash": "e5/vvu3vJZ2ScLsIZQkXjQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html",
+          "hash": "DdGpXVEs2NGzpPgMdJlqww=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html",
+          "hash": "w63Hatak5xOjbTxUJJd+Wg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.RetryOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.RetryOptions.html",
+          "hash": "EiRBtGVAnlt4XtxDRyKdUw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html",
+          "hash": "GuvidJrZzbNlCgU2bj4YyA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.html",
+          "hash": "Q3Y86eBahu2LDW1p6BNQSQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "api/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/toc.html",
+          "hash": "+EyMjKLV5QbD7j0x+qoHlw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/installation.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/installation.html",
+          "hash": "S7gky9kVTD/VWcVuBQgEVQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/known-issues.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/known-issues.html",
+          "hash": "hlfbdwbPYzz29BhdRcj72A=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/overview.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/overview.html",
+          "hash": "AUSMKQKSvLRXVMzQSl5zDQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/samples/cloud-backup.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/samples/cloud-backup.html",
+          "hash": "dQiGQG7CBW+NhRMt1dhp9g=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/samples/counter.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/samples/counter.html",
+          "hash": "BbkRWW0mjgd889wpTz0M1Q=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/samples/phone-verification.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/samples/phone-verification.html",
+          "hash": "rN2/amvYiuI34QT1dTK/Ww=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/samples/sequence.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/samples/sequence.html",
+          "hash": "OzcWfHgbWc+q7rFgXQitJw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/toc.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/toc.html",
+          "hash": "tUmhhr9XrzCeOH5c1Jo/7w=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/bindings.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/bindings.html",
+          "hash": "qZ7B/CBdOGEk/mwnaS2yIw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/checkpointing-and-replay.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/checkpointing-and-replay.html",
+          "hash": "UIuLLag0WW2qhajKlAA9Jw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/diagnostics.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/diagnostics.html",
+          "hash": "udjC+VrqasayO166VlUaLw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/error-handling.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/error-handling.html",
+          "hash": "YZUELsFX28NyY9yP6Xa3Kw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/eternal-orchestrations.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/eternal-orchestrations.html",
+          "hash": "LBHvG93Lv7RS3UJentA+Sw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/external-events.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/external-events.html",
+          "hash": "dDP/MTc5QH6kSosnQRQFTw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/http-api.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/http-api.html",
+          "hash": "PAsieVGpjoSPZrZ7Da3LWQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/instance-management.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/instance-management.html",
+          "hash": "IoDeUePrZQYHngbiZO7yoA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/perf-and-scale.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/perf-and-scale.html",
+          "hash": "ObKmdod++wBoV7/6a3aLeA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/singletons.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/singletons.html",
+          "hash": "wj6MltXlXk/khvLNbBLvEQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/sub-orchestrations.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/sub-orchestrations.html",
+          "hash": "Qn/Hmesj2ArSbjxm8/XvRw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/task-hubs.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/task-hubs.html",
+          "hash": "7f/ePZQ0FIYbqSE1/eSrUw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/timers.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/timers.html",
+          "hash": "3Cy2Jxg8Jb4Qs33J9KDJpQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/topics/versioning.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/topics/versioning.html",
+          "hash": "Tvrw7vLD0QStTf0i+2t5gA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "files/DFSampleApp.zip",
+      "output": {
+        "resource": {
+          "relative_path": "files/DFSampleApp.zip"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "files/VSDFSampleApp.zip",
+      "output": {
+        "resource": {
+          "relative_path": "files/VSDFSampleApp.zip"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/app-insights-1.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/app-insights-1.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/app-insights-2.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/app-insights-2.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/app-insights-single-instance-query.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/app-insights-single-instance-query.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/app-insights-single-summary-query.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/app-insights-single-summary-query.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/approval.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/approval.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/async-http-api.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/async-http-api.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/durable-functions-templates.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/durable-functions-templates.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/fan-out-fan-in.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/fan-out-fan-in.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/favicon.ico",
+      "output": {
+        "resource": {
+          "relative_path": "images/favicon.ico"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/function-chaining.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/function-chaining.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/scale-diagram.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/scale-diagram.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/stateful-singleton.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/stateful-singleton.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/storage-explorer.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/storage-explorer.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html",
+          "hash": "br5Axx+Zft/hjIwwl/VECw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html",
+          "hash": "cF7c2BFDJey42Oh7Nf8Lrw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    }
+  ],
+  "incremental_info": [
+    {
+      "status": {
+        "can_incremental": false,
+        "details": "Disable incremental build by force rebuild option.",
+        "incrementalPhase": "build"
+      },
+      "processors": {
+        "ResourceDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
+        "ConceptualDocumentProcessor": {
+          "can_incremental": false,
+          "incrementalPhase": "build"
+        },
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": false,
+          "incrementalPhase": "build"
+        },
+        "TocDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
+        "RestApiDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        }
+      }
+    },
+    {
+      "status": {
+        "can_incremental": false,
+        "details": "Cannot support incremental post processing, the reason is: it's disabled.",
+        "incrementalPhase": "postProcessing"
+      },
+      "processors": {}
+    }
+  ],
+  "version_info": {},
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}

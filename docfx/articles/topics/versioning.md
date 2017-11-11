@@ -1,14 +1,11 @@
 # Versioning
 It is inevitable that functions will need to be added, removed, or change over the lifetime of an application. Durable functions allows chaining function together in ways that was not previously possible, and this has significant implications on versioning.
 
-> [!WARNING]
-> Versioning is not yet fully supported in the current build of Durable Functions. Until a better solution is in place, it is recommended that you implement breaking changes by creating entirely new functions rather than making changes to existing functions.
-
 ## Breaking Changes
 There are several examples of breaking changes to be aware of. The most common ones are discussed below. The main theme behind all of them is that both new and existing function orchestrations are immediately impacted by changes to function code.
 
 ### Changing activity function signatures
-A signature change refers to a change in the name, input, or output of a function. If this kind of change is made to an activity function, it could potentially break the orchestrator function which depends on it. Furthermore, it is often not possible to simply update the orchestrator function because those updates could break existing in-flight instances. 
+A signature change refers to a change in the name, input, or output of a function. If this kind of change is made to an activity function, it could potentially break the orchestrator function which depends on it. Furthermore, it is often not possible to simply update the orchestrator function to accommodate this change, because updating the logic of an orchestrator function could break existing in-flight instances. 
 
 As an example, suppose we have the following function.
 
@@ -16,8 +13,8 @@ As an example, suppose we have the following function.
 [FunctionName("FooBar")]
 public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
-    bool result = await context.CallFunctionAsync<bool>("Foo");
-    await context.CallFunctionAsync("Bar", result);
+    bool result = await context.CallActivityAsync<bool>("Foo");
+    await context.CallActivityAsync("Bar", result);
 }
 ```
 
@@ -27,12 +24,12 @@ This simplistic function takes the results of **Foo** and passes it to **Bar**. 
 [FunctionName("FooBar")]
 public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
-    int result = await context.CallFunctionAsync<int>("Foo");
-    await context.CallFunctionAsync("Bar", result);
+    int result = await context.CallActivityAsync<int>("Foo");
+    await context.CallActivityAsync("Bar", result);
 }
 ```
 
-This change works fine for all new instances of the orchestrator function but will break any in-flight instances. For example, consider the case where an orchestration instance calls **Foo**, gets back a boolean value and then checkpoints. If the signature change is deployed at this point, the checkpointed instance will fail immediately when it resumes and replays the call to `context.CallFunctionAsync<int>("Foo")`. This is because the result in the history table is `bool` but the new code tries to deserialize it into `int`.
+This change works fine for all new instances of the orchestrator function but will break any in-flight instances. For example, consider the case where an orchestration instance calls **Foo**, gets back a boolean value and then checkpoints. If the signature change is deployed at this point, the checkpointed instance will fail immediately when it resumes and replays the call to `context.CallActivityAsync<int>("Foo")`. This is because the result in the history table is `bool` but the new code tries to deserialize it into `int`.
 
 This is just one of many different ways that a signature change can break existing instances. In general, if an orchestrator needs to change the way it calls a function, then the change is very likely to be problematic.
 
@@ -45,8 +42,8 @@ Consider the following orchestrator function:
 [FunctionName("FooBar")]
 public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
-    bool result = await context.CallFunctionAsync<bool>("Foo");
-    await context.CallFunctionAsync("Bar", result);
+    bool result = await context.CallActivityAsync<bool>("Foo");
+    await context.CallActivityAsync("Bar", result);
 }
 ```
 
@@ -56,13 +53,13 @@ Now let's assume you want to make a seemingly innocent change to add another fun
 [FunctionName("FooBar")]
 public static Task Run([OrchestrationTrigger] DurableOrchestrationContext context)
 {
-    bool result = await context.CallFunctionAsync<bool>("Foo");
+    bool result = await context.CallActivityAsync<bool>("Foo");
     if (result)
     {
-        await context.CallFunctionAsync("SendNotification");
+        await context.CallActivityAsync("SendNotification");
     }
 
-    await context.CallFunctionAsync("Bar", result);
+    await context.CallActivityAsync("Bar", result);
 }
 ```
 
@@ -87,3 +84,21 @@ The most fail-proof way to ensure that breaking changes can be deployed safely i
 
 * Deploy all the updates as entirely new functions (new names).
 * Deploy all the updates as a new function app with a different storage account.
+* Deploy a new copy of the function app but with an updated `TaskHub` name.
+
+Of all the options above, the recommended option is to deploy a new version of the function app with a different `TaskHub` name. The task hub can be configured in the **host.json** as follows:
+
+```json
+{
+    "durableTask": {
+        "HubName": "MyTaskHubV2"
+    }
+}
+```
+
+By default this value is `DurableFunctionsHub` and all Azure Storage entities are named based on the `HubName` configuration value. By giving the task hub a new name, you ensure that separate queues and history table are created for the new version of your application.
+
+To ensure that existing instances can continue to run using old logic while new instances use the new logic, it is recommended to deploy the new version of the function app to a new [Deployment Slot](https://blogs.msdn.microsoft.com/appserviceteam/2017/06/13/deployment-slots-preview-for-azure-functions/). Deployment slots allow you to run multiple copies of your function app side-by-side with exactly one of them as the active *production* slot. When you are ready to expose the new orchestration logic to your existing infrastructure, it can be as simple as a swapping the new version into the production slot.
+
+> [!NOTE]
+> This strategy works best when using HTTP triggers and/or webhooks to trigger and interact with orchestrator functions. When using non-HTTP triggers (e.g. queues or Event Hubs), you will want to have the trigger definition derive from an app setting which gets updated as part of the swap operation.

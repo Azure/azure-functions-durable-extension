@@ -1,9 +1,17 @@
-## IMPORTANT
-This is an early iteration of Durable Functions and does not yet have the quality of a proper public preview. The current bits should be considered "evaluation" quality intended primarily to gather early feedback. Bugs, performance issues, poor monitoring, and breaking changes should be expected until it gets into a "Beta" status. That said, if you run into issues or have ideas for improvements, now is a great time to provide feedback in the GitHub [issues](https://github.com/Azure/azure-functions-durable-extension/issues) list.
+## Durable Functions
+
+**Durable Functions** is an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs) that allows writing *long-running*, *stateful* function orchestrations in code in a serverless environment.
+
+This extension enables a new type of function called the *orchestrator function* that allows you to do several new things that differentiates it from an ordinary, stateless function:
+* They are stateful workflows **authored in code**. No JSON schemas or designers.
+* They can *synchronously* and *asynchronously* **call other functions** and **save output to local variables**.
+* They **automatically checkpoint** their progress whenever the function awaits so that local state is never lost if the process recycles or the VM reboots.
+
+The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package that can be referenced by an Azure Functions Visual Studio project. The project is currently in a public preview "beta" status.
 
 ## Documentation
 
-See [the documentation](https://azure.github.io/azure-functions-durable-extension/)
+See [the documentation](https://azure.github.io/azure-functions-durable-extension/) for in-depth information about Durable Functions, including samples, walkthroughs, and setup instructions.
 
 ## License
 

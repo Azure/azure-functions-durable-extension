@@ -1,13 +1,11 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
-using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace VSSample
 {
@@ -20,17 +18,17 @@ namespace VSSample
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                rootDirectory = Environment.CurrentDirectory;
+                rootDirectory = Directory.GetParent(typeof(BackupSiteContent).Assembly.Location).FullName;
             }
 
-            string[] files = await backupContext.CallFunctionAsync<string[]>(
+            string[] files = await backupContext.CallActivityAsync<string[]>(
                 "E2_GetFileList",
                 rootDirectory);
 
             var tasks = new Task<long>[files.Length];
             for (int i = 0; i < files.Length; i++)
             {
-                tasks[i] = backupContext.CallFunctionAsync<long>(
+                tasks[i] = backupContext.CallActivityAsync<long>(
                     "E2_CopyFileToBlob",
                     files[i]);
             }
@@ -71,8 +69,8 @@ namespace VSSample
 
             // copy the file contents into a blob
             using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (Stream destination = await binder.BindAsync<CloudBlobStream>(
-                new BlobAttribute(outputLocation)))
+            using (Stream destination = await binder.BindAsync<Stream>(
+                new BlobAttribute(outputLocation, FileAccess.Write)))
             {
                 await source.CopyToAsync(destination);
             }

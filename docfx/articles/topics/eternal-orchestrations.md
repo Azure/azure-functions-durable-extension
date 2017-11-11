@@ -21,7 +21,7 @@ One potential use case is code that needs to do periodic work indefinitely.
 public static async Task Run(
     [OrchestrationTrigger] DurableOrchestrationContext context)
 {
-    await context.CallFunctionAsync("DoCleanup");
+    await context.CallActivityAsync("DoCleanup");
 
     // sleep for one hour between cleanups
     DateTime nextCleanup = context.CurrentUtcDateTime.AddHours(1);

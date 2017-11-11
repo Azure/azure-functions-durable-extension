@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Durable Timers ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -72,9 +72,9 @@
 
 <p>Durable timers can be used in orchestrator functions to delay for specific durations of time or to implement timeouts on other supported async actions. Durable timers should be used in orchestrator functions instead of <code>Thread.Sleep</code> or <code>Task.Delay</code>.</p>
 <h2 id="remarks">Remarks</h2>
-<p>A durable timer can be created using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a> API. The API returns a task which will be resumed on the specified deadline (i.e. a <code>DateTime</code>).</p>
+<p>A durable timer can be created using the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a> API. The API returns a task that will be resumed on the specified deadline (i.e. a <code>DateTime</code>).</p>
 <p>These timers are &quot;durable&quot; because they are internally backed by scheduled messages in Azure Storage. For example, if you create a timer that will expire at 4:30pm, the underlying Durable Task Framework will enqueue a message which becomes visible only at 4:30pm. When running in the Azure Functions consumption plan, the newly visible timer message will ensure that the function app gets activated on an appropriate VM.</p>
-<div class="WARNING"><h5>Warning</h5><p>Durable timers cannot last longer than 7 days due to limitations in Azure Storage.
+<div class="NOTE"><h5>Note</h5><p>Durable timers cannot last longer than 7 days due to limitations in Azure Storage.
 <a href="https://github.com/Azure/azure-functions-durable-extension/issues/14">This GitHub issue</a> tracks extending timers beyond 7 days.</p>
 </div>
 <div class="WARNING"><h5>Warning</h5><p>Always make sure to use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> instead of <code>DateTime.UtcNow</code> as shown in the examples below when computing a relative deadline of a durable timer.</p>
@@ -89,7 +89,7 @@ public static async Task Run(
     {
         DateTime deadline = context.CurrentUtcDateTime.Add(TimeSpan.FromDays(1));
         await context.CreateTimer(deadline, CancellationToken.None);
-        await context.CallFunctionAsync(&quot;SendBillingEvent&quot;);
+        await context.CallActivityAsync(&quot;SendBillingEvent&quot;);
     }
 }
 </code></pre><div class="WARNING"><h5>Warning</h5><p>Infinite loops have the potential to create significant performance problems for orchestrator functions and should be avoided. See the <a href="eternal-orchestrations.html">Eternal Orchestrations</a> topic for details on how to safely and efficiently implement infinite loops.</p>
@@ -105,7 +105,7 @@ public static async Task&lt;bool&gt; Run(
 
     using (var cts = new CancellationTokenSource())
     {
-        Task activityTask = context.CallFunctionAsync(&quot;GetQuote&quot;);
+        Task activityTask = context.CallActivityAsync(&quot;GetQuote&quot;);
         Task timeoutTask = context.CreateTimer(deadline, cts.Token);
 
         Task winner = await Task.WhenAny(activityTask, timeoutTask);

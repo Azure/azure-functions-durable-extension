@@ -1,14 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26621.2
+VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSSample", "VSSample.csproj", "{26A3BC30-C372-4545-9B82-F0D73A144254}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B821107E-03E7-4071-A4E8-BA10C5D8D5EE}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSample", "VSSample.csproj", "{26A3BC30-C372-4545-9B82-F0D73A144254}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -7,7 +7,7 @@ The orchestration trigger enables you to author durable orchestrator functions. 
 
 When using the Visual Studio tools for Azure Functions, the orchestration trigger is configured using the <xref:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute> .NET attribute.
 
-When authoring orchestrator functions in the Azure management portal, the orchestration trigger is defined by the following JSON object in the `bindings` array of function.json:
+When authoring orchestrator functions in scripting languages (e.g. in the Azure management portal), the orchestration trigger is defined by the following JSON object in the `bindings` array of function.json:
 
 ```json
 {
@@ -26,11 +26,11 @@ Note the following:
 Internally this trigger binding polls a series of queues in the default storage account for the function app. These queues are internal implementation details of the extension, which is why they are not explicitly configured in the binding properties.
 
 > [!NOTE]
-> Setting values for `orchestration` or `version` properties is not recommended at this time. These are advanced settings and are generally not needed except in versioning scenarios, which have not yet received much testing.
+> Setting values for `orchestration` or `version` properties is not recommended at this time.
 
 ### Trigger behavior
 Note the following behaviors of the orchestration trigger:
-* **single-threading** - a single dispatcher thread is used for all orchestrator function execution. For this reason, it is important to ensure that orchestrator function code is efficient and doesn't perform any I/O. It is also important that this thread does not do any async work except when awaiting on Durable Functions-specific task types.
+* **single-threading** - a single dispatcher thread is used for all orchestrator function execution on a single host instance. For this reason, it is important to ensure that orchestrator function code is efficient and doesn't perform any I/O. It is also important that this thread does not do any async work except when awaiting on Durable Functions-specific task types.
 * **Poising-message handling** - there is no poison message support in orchestration triggers.
 * **Message visibility** - orchestration trigger messages are dequeued and kept invisible for a configurable duration. The visibility of these messages is renewed automatically as long as the function app is running and healthy.
 * **Return values** - return values are serialized to JSON and persisted to the orchestration history table in Azure Table storage. These return values can be queried by the orchestration client binding, described later.
@@ -41,11 +41,11 @@ Note the following behaviors of the orchestration trigger:
 ### Trigger usage
 The orchestration trigger binding supports both inputs and outputs. Here are some things to know about input and output handling:
 
-* **inputs** - orchestration functions only support using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext> as a parameter type. Deserialization inputs directly in the function signature is not yet supported. Code must use the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput*> method to fetch orchestrator function inputs. These inputs must be JSON-serializable types.
+* **inputs** - orchestration functions only support using <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext> as a parameter type. Deserialization inputs directly in the function signature is not supported. Code must use the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput*> method to fetch orchestrator function inputs. These inputs must be JSON-serializable types.
 * **outputs** - Orchestration triggers support output values as well as inputs. The return value of the function is used to assign the output value and must be JSON-serializable. If a function returns `Task` or `void` then a `null` value will be saved as the output.
 
 > [!NOTE]
-> Orchestration triggers are not currently supported in Node.js functions.
+> Orchestration triggers are only supported in C# at this time.
 
 ### Trigger sample
 The following is an example of what the simplest "Hello World" C# orchestrator function might look like:
@@ -67,7 +67,7 @@ public static async Task<string> Run(
     [OrchestrationTrigger] DurableOrchestrationContext context)
 {
     string name = await context.GetInput<string>();
-    string result = await context.CallFunctionAsync<string>("SayHello", name);
+    string result = await context.CallActivityAsync<string>("SayHello", name);
     return result;
 }
 ```
@@ -96,7 +96,7 @@ Note the following:
 Internally this trigger binding polls a queue in the default storage account for the function app. This queue is an internal implementation detail of the extension, which is why it is not explicitly configured in the binding properties.
 
 > [!NOTE]
-> Setting values for `activity` or `version` properties is not recommended at this time. These are advanced settings and are generally not needed except in versioning scenarios, which have not yet received much testing.
+> Setting values for `activity` or `version` properties is not recommended at this time.
 
 ### Trigger behavior
 Note the following behaviors of the activity trigger:
@@ -111,7 +111,7 @@ Note the following behaviors of the activity trigger:
 ### Trigger usage
 The activity trigger binding supports both inputs and outputs, just like the orchestration trigger. Here are some things to know about input and output handling:
 
-* **inputs** - activity functions natively use <xref:Microsoft.Azure.WebJobs.DurableActivityContext> as a parameter type. Alternatively, an activity function can be declared with any parameter type that is JSON-serializable. When using `DurableActivityContext`, code can use <xref:Microsoft.Azure.WebJobs.DurableActivityContext.GetInput``1> to fetch and deserialize the activity function input.
+* **inputs** - activity functions natively use <xref:Microsoft.Azure.WebJobs.DurableActivityContext> as a parameter type. Alternatively, an activity function can be declared with any parameter type that is JSON-serializable. When using `DurableActivityContext`, code can use <xref:Microsoft.Azure.WebJobs.DurableActivityContext.GetInput*> to fetch and deserialize the activity function input.
 * **outputs** - activity triggers support output values as well as inputs. The return value of the function is used to assign the output value and must be JSON-serializable. If a function returns `Task` or `void` then a `null` value will be saved as the output.
 * **metadata** - activity functions can also bind to a `string instanceId` parameter to get the instance ID of the parent orchestration.
 
@@ -145,7 +145,7 @@ The orchestration client binding enables you to write functions which interact w
 
 When using the Visual Studio tools for Azure Functions, the orchestration client can be bound to using the <xref:Microsoft.Azure.WebJobs.OrchestrationClientAttribute> .NET attribute.
 
-When using the Azure Portal for development, the orchestration trigger is defined by the following JSON object in the `bindings` array of function.json:
+When using scripting languages (e.g. .csx files) for development, the orchestration trigger is defined by the following JSON object in the `bindings` array of function.json:
 
 ```json
 {

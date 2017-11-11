@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Human Interaction &amp; Timeouts ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -78,7 +78,6 @@
 <p>All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:</p>
 <h3 id="for-visual-studio-development-windows-only">For Visual Studio Development (Windows Only)</h3>
 <ol>
-<li>Follow the <a href="../installation.html">installation instructions</a> to configure Durable Functions for Visual Studio development.</li>
 <li>Download the <a href="../../files/VSDFSampleApp.zip">VSDFSampleApp.zip</a> package, unzip the contents, and open in Visual Studio 2017 (version 15.3).</li>
 <li>Install and run the <a href="https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator">Azure Storage Emulator</a>. Alternatively, you can update the <code>local.appsettings.json</code> file with real Azure Storage connection strings.</li>
 <li>The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud (note that you&#39;ll need to manually replicate your local Twilio app settings to Azure).</li>
@@ -100,7 +99,7 @@
 </div>
 <h2 id="scenario-overview">Scenario overview</h2>
 <p>Phone verification is an important technique used to 1) verify that end users of your application are not spammers and 2) to verify that users of your application are who they say they are. Multi-factor authentication is a common use case for protecting user accounts from hackers. The challenge with implementing your own phone verification is that it requires a <strong>stateful interaction</strong> with a human being. An end user is typically provided some code (e.g. a 4-digit number) and is expected to respond back to the system <strong>in a reasonable amount of time</strong> to complete the operation.</p>
-<p>Ordinary Azure Functions are stateless (as are many other cloud endpoints on other platforms), so these types of interactions will involve managing state externally in a database or some other persistent store. In addition, the interaction must be broken up into multiple functions that can be coordinated together. For example, you need at least one function for deciding on a code, persisting it somewhere, and sending it to the user&#39;s phone. Additionally, you need at least one other function to receive a response from the user and somehow map it back to the original function call in order to do the code validation. A timeout is also an important aspect to ensure security. You can imagine that this can get fairly complex pretty quickly!</p>
+<p>Ordinary Azure Functions are stateless (as are many other cloud endpoints on other platforms), so these types of interactions will involve explicitly managing state externally in a database or some other persistent store. In addition, the interaction must be broken up into multiple functions that can be coordinated together. For example, you need at least one function for deciding on a code, persisting it somewhere, and sending it to the user&#39;s phone. Additionally, you need at least one other function to receive a response from the user and somehow map it back to the original function call in order to do the code validation. A timeout is also an important aspect to ensure security. You can imagine that this can get fairly complex pretty quickly!</p>
 <p>The complexity of this scenario is greatly reduced when using Durable Functions. As you will see in this sample, an orchestrator function can manage the stateful interaction very easily and without involving any external data stores. Because orchestrator functions are <em>durable</em>, these interactive flows are also highly reliable.</p>
 <h2 id="configuring-twilio-integration">Configuring Twilio integration</h2>
 <p>This sample involves using the <a href="https://www.twilio.com/">Twilio</a> service to send SMS messages to a mobile phone. Azure Functions already has support for Twilio via the <a href="https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-twilio">Twilio binding</a>, and we&#39;ll make use of that here.</p>
@@ -114,11 +113,11 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>TwilioAccountSid</strong></td>
+<td><strong>AzureWebJobsTwilioAccountSid</strong></td>
 <td>The SID for your Twilio account</td>
 </tr>
 <tr>
-<td><strong>TwilioAuthToken</strong></td>
+<td><strong>AzureWebJobsTwilioAuthToken</strong></td>
 <td>The Auth token for your Twilio account</td>
 </tr>
 <tr>
@@ -154,7 +153,7 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
             &quot;A phone number input is required.&quot;);
     }
 
-    int challengeCode = await context.CallFunctionAsync&lt;int&gt;(
+    int challengeCode = await context.CallActivityAsync&lt;int&gt;(
         &quot;E4_SendSmsChallenge&quot;,
         phoneNumber);
 
@@ -206,7 +205,7 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
 <p>At this point, the user should have received an SMS message with a four digit code. They have 90 seconds to send that same 4-digit code back to the orchestrator function instance to complete the verification process. If they submit the wrong code, they get an additional three tries to get it right (within the same 90 second window).</p>
 <div class="NOTE"><h5>Note</h5><p>It may not be obvious at first, but this orchestrator function is completely deterministic. This is because the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime">CurrentUtcDateTime</a> property is used to calculate the timer expiration time, and this property returns the same value on every replay at this point in the orchestrator code. This is important to ensure we get the same <code>winner</code> result in every repeated call to <code>Task.WhenAny</code>.</p>
 </div>
-<div class="WARNING"><h5>Warning</h5><p>It&#39;s very important to cancel timers using a <code>CancellationTokenSource</code> if we no longer need them to expire, like we do in the examle above when a challenge response is accepted.</p>
+<div class="WARNING"><h5>Warning</h5><p>It&#39;s very important to cancel timers using a <code>CancellationTokenSource</code> if we no longer need them to expire, like we do in the example above when a challenge response is accepted.</p>
 </div>
 <p>For more information on timers, see the <a href="../topics/timers.html">Durable Timers</a> topic.</p>
 <h2 id="sending-the-sms-message">Sending the SMS message</h2>
@@ -214,7 +213,7 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
 <pre><code class="lang-json" name="Main">{
   &quot;bindings&quot;: [
     {
-      &quot;name&quot;: &quot;sendChallengeContext&quot;,
+      &quot;name&quot;: &quot;phoneNumber&quot;,
       &quot;type&quot;: &quot;activityTrigger&quot;,
       &quot;direction&quot;: &quot;in&quot;
     },
@@ -222,8 +221,8 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
       &quot;type&quot;: &quot;twilioSms&quot;,
       &quot;name&quot;: &quot;message&quot;,
       &quot;from&quot;: &quot;%TwilioPhoneNumber%&quot;,
-      &quot;accountSid&quot;: &quot;TwilioAccountSid&quot;,
-      &quot;authToken&quot;: &quot;TwilioAuthToken&quot;,
+      &quot;accountSidSetting&quot;: &quot;TwilioAccountSid&quot;,
+      &quot;authTokenSetting&quot;: &quot;TwilioAuthToken&quot;,
       &quot;direction&quot;: &quot;out&quot;
     }
   ],
@@ -231,26 +230,25 @@ public static async Task&lt;bool&gt; Run(DurableOrchestrationContext context)
 }
 </code></pre><p>And here is the code which generates the 4-digit challenge code and sends the SMS message:</p>
 <pre><code class="lang-csharp" name="Main">#r &quot;Microsoft.Azure.WebJobs.Extensions.DurableTask&quot;
+#r &quot;Microsoft.Azure.WebJobs.Extensions.Twilio&quot;
 #r &quot;Newtonsoft.Json&quot;
-#r &quot;Twilio.Api&quot;
+#r &quot;Twilio&quot;
 
-using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
 
 public static int Run(
-    DurableActivityContext sendChallengeContext,
+    string phoneNumber,
     TraceWriter log,
-    out SMSMessage message)
+    out CreateMessageOptions message)
 {
-    string phoneNumber = sendChallengeContext.GetInput&lt;string&gt;();
-
     // Get a random number generator with a random seed (not time-based)
     var rand = new Random(Guid.NewGuid().GetHashCode());
     int challengeCode = rand.Next(10000);
 
     log.Info($&quot;Sending verification code {challengeCode} to {phoneNumber}.&quot;);
 
-    message = new SMSMessage();
-    message.To = phoneNumber;
+    message = new CreateMessageOptions(new PhoneNumber(phoneNumber));
     message.Body = $&quot;Your verification code is {challengeCode:0000}&quot;;
 
     return challengeCode;
@@ -262,7 +260,7 @@ public static int Run(
 Content-Length: 14
 Content-Type: application/json
 
-&quot;+1425466XXXX&quot;
+&quot;+1425XXXXXXX&quot;
 </code></pre><pre><code class="lang-plaintext">HTTP/1.1 202 Accepted
 Content-Length: 695
 Content-Type: application/json; charset=utf-8
@@ -282,13 +280,13 @@ Content-Type: application/json
 Content-Length: 144
 Content-Type: application/json; charset=utf-8
 
-{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425466XXXX&quot;,&quot;output&quot;:true,&quot;createdTime&quot;:&quot;2017-06-29T19:10:49Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T19:12:23Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425XXXXXXX&quot;,&quot;output&quot;:true,&quot;createdTime&quot;:&quot;2017-06-29T19:10:49Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T19:12:23Z&quot;}
 </code></pre><p>Alternately, if you let the timer expire (willingly or unwillingly), or if you entered the wrong code four times, you should be able to query for the status and see a <code>false</code> orchestration function output, indicating that phone verification failed.</p>
 <pre><code class="lang-plaintext">HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
 Content-Length: 145
 
-{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425466XXXX&quot;,&quot;output&quot;:false,&quot;createdTime&quot;:&quot;2017-06-29T19:20:49Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T19:22:23Z&quot;}
+{&quot;runtimeStatus&quot;:&quot;Completed&quot;,&quot;input&quot;:&quot;+1425XXXXXXX&quot;,&quot;output&quot;:false,&quot;createdTime&quot;:&quot;2017-06-29T19:20:49Z&quot;,&quot;lastUpdatedTime&quot;:&quot;2017-06-29T19:22:23Z&quot;}
 </code></pre><h2 id="wrapping-up">Wrapping up</h2>
 <p>At this point, you should have a better understanding of some of the advanced capabilities of Durable Functions, notably <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_">WaitForExternalEvent</a> and <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_">CreateTimer</a>, and how these can be combined with <code>Task.WaitAny</code> to implement a reliable timeout system (which is often useful when doing any interaction with real people).</p>
 <h2 id="full-sample-code">Full Sample Code</h2>
@@ -301,7 +299,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
+#if NETSTANDARD2_0
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
+#else
 using Twilio;
+#endif
 
 namespace VSSample
 {
@@ -319,7 +322,7 @@ namespace VSSample
                     &quot;A phone number input is required.&quot;);
             }
 
-            int challengeCode = await context.CallFunctionAsync&lt;int&gt;(
+            int challengeCode = await context.CallActivityAsync&lt;int&gt;(
                 &quot;E4_SendSmsChallenge&quot;,
                 phoneNumber);
 
@@ -366,7 +369,12 @@ namespace VSSample
         public static int SendSmsChallenge(
             [ActivityTrigger] string phoneNumber,
             TraceWriter log,
-            [TwilioSms(AccountSidSetting = &quot;TwilioAccountSid&quot;, AuthTokenSetting = &quot;TwilioAuthToken&quot;, From = &quot;%TwilioPhoneNumber%&quot;)] out SMSMessage message)
+            [TwilioSms(AccountSidSetting = &quot;TwilioAccountSid&quot;, AuthTokenSetting = &quot;TwilioAuthToken&quot;, From = &quot;%TwilioPhoneNumber%&quot;)]
+#if NETSTANDARD2_0
+                out CreateMessageOptions message)
+#else
+                out SMSMessage message)
+#endif
         {
             // Get a random number generator with a random seed (not time-based)
             var rand = new Random(Guid.NewGuid().GetHashCode());
@@ -374,8 +382,11 @@ namespace VSSample
 
             log.Info($&quot;Sending verification code {challengeCode} to {phoneNumber}.&quot;);
 
-            message = new SMSMessage();
-            message.To = phoneNumber;
+#if NETSTANDARD2_0
+            message = new CreateMessageOptions(new PhoneNumber(phoneNumber));
+#else
+            message = new SMSMessage { To = phoneNumber };
+#endif
             message.Body = $&quot;Your verification code is {challengeCode:0000}&quot;;
 
             return challengeCode;

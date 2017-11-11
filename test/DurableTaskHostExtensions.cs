@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public static class DurableTaskHostExtensions
     {
-        public static async Task<TestOrchestratorClient> StartFunctionAsync(
+        public static async Task<TestOrchestratorClient> StartOrchestratorAsync(
             this JobHost host,
             string functionName,
             object input,

@@ -80,7 +80,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 timeStamp = GetTimerTimestamp(logMessages[3].FormattedMessage);
             }
-            else if (testName.Equals("Orchestration_OnValidOrchestrator", StringComparison.InvariantCultureIgnoreCase))
+            else if (testName.Equals("Orchestration_OnValidOrchestrator", StringComparison.InvariantCultureIgnoreCase) ||
+                     testName.Equals("Orchestration_Activity", StringComparison.InvariantCultureIgnoreCase))
             {
                 messageIds.Add(GetMessageId(logMessages[4].FormattedMessage));
             }
@@ -122,8 +123,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "Orchestration_OnUnregisteredActivity":
                     messages = GetLogs_Orchestration_OnUnregisteredActivity(messageIds[0], orchestratorFunctionNames);
                     break;
+                case "Orchestration_OnUnregisteredOrchestrator":
+                    messages = GetLogs_Orchestration_OnUnregisteredOrchestrator(messageIds[0], orchestratorFunctionNames);
+                    break;
                 case "Orchestration_OnValidOrchestrator":
                     messages = GetLogs_Orchestration_OnValidOrchestrator(messageIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
+                    break;
+                case "Orchestration_Activity":
+                    messages = GetLogs_Orchestration_Activity(messageIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
                     break;
                 default:
                     break;
@@ -242,12 +249,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: OrchestratorThrow. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: Throw. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: OrchestratorThrow. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: Throw. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: DurableTask.Core.Exceptions.TaskFailedException",
             };
 
@@ -297,7 +304,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: System.ArgumentException: The function 'UnregisteredActivity' doesn't exist, is disabled, or is not an activity or orchestrator function.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: System.ArgumentException: The function 'UnregisteredActivity' doesn't exist, is disabled, or is not an activity function.",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_Orchestration_OnUnregisteredOrchestrator(string messageId, string[] orchestratorFunctionNames)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: System.ArgumentException: The function 'UnregisteredOrchestrator' doesn't exist, is disabled, or is not an orchestrator function.",
             };
 
             return list;
@@ -309,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: CallActivity. IsReplay: False.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: CallOrchestrator. IsReplay: False.",
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False.",
                 $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: SayHelloWithActivity. IsReplay: False.",
@@ -320,8 +339,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: SayHelloWithActivity. IsReplay: True.",
                 $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello,",
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: CallActivity. IsReplay: True.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: CallOrchestrator. IsReplay: True.",
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello,",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_Orchestration_Activity(string[] messageIds, string[] orchestratorFunctionNames, string activityFunctionName)
+        {
+            var list = new List<string>()
+            {
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: OrchestratorGreeting. IsReplay: False.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False.",
+                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: SayHelloWithActivity. IsReplay: False.",
+                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
+                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False.",
+                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, ",
+                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True.",
+                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: SayHelloWithActivity. IsReplay: True.",
+                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello,",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: OrchestratorGreeting. IsReplay: True.",
+                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)",
             };
 
             return list;

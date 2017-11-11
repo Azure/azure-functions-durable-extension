@@ -266,18 +266,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
         {
-            var appDomain = (AppDomain)sender;
-            string assemblyName = appDomain.ApplyPolicy(args.Name);
-
-            // Fallback.
-            var shortName = new AssemblyName(assemblyName).Name;
-            foreach (var assembly in appDomain.GetAssemblies())
+            if (args.Name.StartsWith("DurableTask.Core"))
             {
-                if (string.Equals(assembly.GetName().Name, shortName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly;
-                }
+                return typeof(TaskOrchestration).Assembly;
             }
+            else if (args.Name.StartsWith("DurableTask.AzureStorage"))
+            {
+                return typeof(AzureStorageOrchestrationService).Assembly;
+            }
+            else if (args.Name.StartsWith("Microsoft.Azure.WebJobs.DurableTask"))
+            {
+                return typeof(DurableTaskExtension).Assembly;
+            }
+
             return null;
         }
 
@@ -364,22 +365,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal FunctionType GetFunctionType(string name, string version)
+        internal FunctionType ThrowIfInvalidFunctionType(string name, FunctionType functionType, string version)
         {
             var functionName = new FunctionName(name, version);
 
-            if (this.registeredActivities.ContainsKey(functionName))
+            if (functionType == FunctionType.Activity)
             {
-                return FunctionType.Activity;
+                if (this.registeredActivities.ContainsKey(functionName))
+                {
+                    return FunctionType.Activity;
+                }
+
+                throw new ArgumentException(
+                        string.Format(
+                            "The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: '{1}'",
+                            functionName,
+                            string.Join(", ", this.registeredActivities.Keys)));
             }
 
-            if (this.registeredOrchestrators.ContainsKey(functionName))
+            if (functionType == FunctionType.Orchestrator)
             {
-                return FunctionType.Orchestrator;
+                if (this.registeredOrchestrators.ContainsKey(functionName))
+                {
+                    return FunctionType.Orchestrator;
+                }
+
+                throw new ArgumentException(
+                    string.Format(
+                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: '{1}'",
+                        functionName,
+                        string.Join(", ", this.registeredOrchestrators.Keys)));
             }
 
             throw new ArgumentException(
-                string.Format("The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
+                string.Format(
+                    "The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
                     functionName,
                     string.Join(", ", this.registeredActivities.Keys),
                     string.Join(", ", this.registeredOrchestrators.Keys)));
@@ -461,6 +481,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return this.httpApiHandler.HandleRequestAsync(request);
+        }
+
+        internal static string ValidatePayloadSize(string payload)
+        {
+            // The payload gets written to Azure Table Storage and to Azure Queues, which have
+            // strict storage limitations (64 KB). Until we support large messages, we need to block them.
+            // https://github.com/Azure/azure-functions-durable-extension/issues/79
+            // We limit to 60 KB to leave room for metadata.
+            if (Encoding.UTF8.GetByteCount(payload) > 60 * 1024)
+            {
+                throw new ArgumentException("The size of the JSON-serialized payload must not exceed 60 KB.");
+            }
+
+            return payload;
         }
     }
 }

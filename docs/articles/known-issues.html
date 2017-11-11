@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Known-Issues / FAQ ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../images/favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -70,33 +70,7 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="known-issues--faq">Known-Issues / FAQ</h1>
 
-<p>In general, all known issues should be tracked in the <a href="https://github.com/Azure/azure-functions-durable-extension/issues">GitHub issues</a> list. If you run into an issue and are looking for a resolution, search here first. Make sure to check both active and closed issues since it&#39;s possible that the issue has been fixed in a more recent version of the extension or sample app.</p>
-<p>If you can&#39;t find the issue mentioned in the existing list of issues, feel free to open a new issue. Even if you simply want to ask a question, feel free to open a GitHub issue and tag it as a question. We&#39;ll add common questions to this page.</p>
-<h2 id="host-startup-errors">Host Startup Errors</h2>
-<p>If you&#39;re trying to run durable functions and the host is failing to start, check the host logs to see if it contains hints about the problem. A few examples:</p>
-<blockquote><p>error CS0006: Metadata file &#39;Microsoft.Azure.WebJobs.Extensions.DurableTask&#39; could not be found</p>
-</blockquote>
-<p>This means the <strong>Durable Task</strong> extension has not been properly installed. See the <a href="installation.html">installation guide</a> for instructions on how to do the extension setup.</p>
-<h2 id="http-500-responses-from-the-httpstart-sample-trigger">HTTP 500 responses from the &quot;HttpStart&quot; sample trigger</h2>
-<p>This likely means that the <code>HttpStart</code> sample function failed to deserialize the payload of the request. It can be caused by one of the following problems:</p>
-<ol>
-<li>There is content in the POST body but the request does not have a <code>Content-Type: application/json</code> header.</li>
-<li>The POST body is not properly formatted/encoded JSON.</li>
-</ol>
-<h2 id="objectdisposedexception-when-starting-a-durable-function">ObjectDisposedException when starting a durable function</h2>
-<p>When attempting to start a new durable function, it may fail to run and the following error may appear in your logs:</p>
-<pre><code>Microsoft.Azure.WebJobs.Host.FunctionInvocationException : Exception while executing function: Functions.MyDurableFunction ---&gt; System.InvalidOperationException : Exception binding parameter &#39;log&#39; ---&gt; System.ObjectDisposedException : Cannot access a disposed object.
-Object name: &#39;LoggerFactory&#39;.
-   at Microsoft.Extensions.Logging.LoggerFactory.CreateLogger(String categoryName)
-   at Microsoft.Azure.WebJobs.Host.Bindings.TraceWriterBinding.BindAsync(BindingContext context)
-   at async Microsoft.Azure.WebJobs.Host.Triggers.TriggeredFunctionBinding`1.BindCoreAsync[TTriggerValue](ValueBindingContext context,Object value,IDictionary`2 parameters) 
-   End of inner exception
-   at Microsoft.Azure.WebJobs.Host.Executors.DelayedException.Throw()
-   at async Microsoft.Azure.WebJobs.Host.Executors.FunctionExecutor.ExecuteWithWatchersAsync(IFunctionInstance instance,IReadOnlyDictionary`2 parameters,TraceWriter traceWriter,ILogger logger,CancellationTokenSource functionCancellationTokenSource)
-   at async Microsoft.Azure.WebJobs.Host.Executors.FunctionExecutor.ExecuteWithLoggingAsync(??)
-   at async Microsoft.Azure.WebJobs.Host.Executors.FunctionExecutor.ExecuteWithLoggingAsync(??) 
-   End of inner exception
-</code></pre><p>This is believed to be a bug in the core Azure Functions runtime, currently tracked <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/1690">here</a>. The workaround is to set the <code>FUNCTIONS_EXTENSION_VERSION</code> app setting to <code>1.0.11015</code> and restart the function app.</p>
+<p>In general, all known issues should be tracked in the <a href="https://github.com/Azure/azure-functions-durable-extension/issues">GitHub issues</a> list. If you are running into a problem and can&#39;t find the issue in GitHub, please open a new issue and include a detailed description of the problem. Even if you simply want to ask a question, feel free to open a GitHub issue and tag it as a question.</p>
 </article>
           </div>
           

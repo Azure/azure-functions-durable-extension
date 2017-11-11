@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.Input = new { Foo = "Bar" };
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 // The function checks to see if there is a property called "Foo" which is set to a value
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.Input = input;
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 // The function echos back the 'Foo' input property value
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.Input = 3.14;
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 // The function echos back the input value

@@ -8,9 +8,14 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// The name of a durable function, which includes its version (if any).
     /// </summary>
-    public struct FunctionName : IEquatable<FunctionName>
+    internal struct FunctionName : IEquatable<FunctionName>
     {
-        internal FunctionName(string name, string version)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FunctionName"/> struct.
+        /// </summary>
+        /// <param name="name">The name of the function.</param>
+        /// <param name="version">The version of the function.</param>
+        public FunctionName(string name, string version)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Version = version ?? string.Empty;

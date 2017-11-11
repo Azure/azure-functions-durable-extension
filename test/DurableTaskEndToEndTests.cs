@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -71,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], "World", this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -104,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], "World", this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -131,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Factorial), 10, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Factorial), 10, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.DiskUsage), Environment.CurrentDirectory, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.DiskUsage), Environment.CurrentDirectory, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(90), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -185,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 int initialValue = 0;
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Counter), initialValue,
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue,
                     this.output);
 
                 // Need to wait for the instance to start before sending events to it.
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // TODO: Sleeping to avoid a race condition where multiple ContinueAsNew messages
                 //       are processed by the same instance at the same time, resulting in a corrupt
                 //       storage failure in DTFx.
-                // BUG: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/38
+                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
                 await Task.Delay(2000);
                 await client.RaiseEventAsync("operation", "incr");
                 await Task.Delay(2000);
@@ -252,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 // Using the counter orchestration because it will wait indefinitely for input.
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], 0, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], 0, this.output);
 
                 // Need to wait for the instance to start before we can terminate it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -292,7 +294,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var timeout = TimeSpan.FromSeconds(10);
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], timeout, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
 
                 // Need to wait for the instance to start before sending events to it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -328,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var timeout = TimeSpan.FromSeconds(10);
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], timeout, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
 
                 // Need to wait for the instance to start before sending events to it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -363,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Func<Task> orchestrationStarter = async delegate()
                 {
                     var timeout = TimeSpan.FromSeconds(10);
-                    var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
+                    var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
                     await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
 
                     // Don't send any notification - let the internal timeout expire
@@ -376,9 +378,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     tasks[i] = orchestrationStarter();
                 }
 
-                // The 100 orchestrations above (which each delay for 10 seconds) should all complete in less than 40 seconds.
+                // The 100 orchestrations above (which each delay for 10 seconds) should all complete in less than 70 seconds.
                 Task parallelOrchestrations = Task.WhenAll(tasks);
-                Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(40));
+                Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(70));
 
                 Task winner = await Task.WhenAny(parallelOrchestrations, timeoutTask);
                 Assert.Equal(parallelOrchestrations, winner);
@@ -398,7 +400,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 // Empty string input should result in ArgumentNullException in the orchestration code.
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
                 Assert.Equal("Completed", status?.RuntimeStatus);
@@ -416,7 +418,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.OrchestratorThrow)
+                nameof(TestOrchestrations.Throw)
             };
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(UnhandledOrchestrationException)))
@@ -424,12 +426,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 // Null input should result in ArgumentNullException in the orchestration code.
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
-
-                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
                 Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
 
                 await host.StopAsync();
@@ -439,6 +439,100 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 TestHelpers.AssertLogMessageSequence(loggerProvider, "UnhandledOrchestrationException",
                     orchestratorFunctionNames);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates calling an orchestrator function.
+        /// </summary>
+        [Fact]
+        public async Task Orchestration_Activity()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.OrchestratorGreeting),
+                nameof(TestOrchestrations.SayHelloWithActivity)
+            };
+
+            string activityFunctionName = nameof(TestActivities.Hello);
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(Orchestration_Activity)))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal("Completed", status.RuntimeStatus);
+                Assert.Equal(client.InstanceId, status.InstanceId);
+                Assert.Equal(orchestratorFunctionNames[0], status?.Name);
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_Activity",
+                    orchestratorFunctionNames, activityFunctionName);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs.
+        /// </summary>
+        [Fact]
+        public async Task SubOrchestration_ComplexType()
+        {
+            const string TaskHub = nameof(SubOrchestration_ComplexType);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, TaskHub))
+            {
+                await host.StartAsync();
+
+                var complexTypeDataInput = new ComplexType
+                {
+                    A = -42,
+                    B = new List<DateTime> { DateTime.UtcNow, DateTime.UtcNow.AddYears(1) },
+                    C = ComplexType.CustomEnum.Value2,
+                    D = new ComplexType.ComplexInnerType
+                    {
+                        E = Guid.NewGuid().ToString(),
+                        F = TimeSpan.FromHours(1.5),
+                    },
+                };
+
+                var input = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.CallActivity),
+                    Input = new StartOrchestrationArgs
+                    {
+                        FunctionName = nameof(TestActivities.Echo),
+                        Input = complexTypeDataInput,
+                    },
+                };
+
+                string parentOrchestrator = nameof(TestOrchestrations.CallOrchestrator);
+
+                var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
+                var status = await client.WaitForCompletionAsync(
+                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
+                    this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal("Completed", status.RuntimeStatus);
+                Assert.Equal(client.InstanceId, status.InstanceId);
+
+                Assert.NotNull(status.Output);
+                ComplexType complextTypeDataOutput = status.Output.ToObject<ComplexType>();
+                Assert.NotNull(complextTypeDataOutput);
+                Assert.Equal(complexTypeDataInput.A, complextTypeDataOutput.A);
+                Assert.Equal(complexTypeDataInput.B[0], complextTypeDataOutput.B[0]);
+                Assert.Equal(complexTypeDataInput.B[1], complextTypeDataOutput.B[1]);
+                Assert.NotNull(complextTypeDataOutput.D);
+                Assert.Equal(complexTypeDataInput.D.E, complextTypeDataOutput.D.E);
+                Assert.Equal(complexTypeDataInput.D.F, complextTypeDataOutput.D.F);
+
+                await host.StopAsync();
             }
         }
 
@@ -459,12 +553,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 // Null input should result in ArgumentNullException in the orchestration code.
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
-
-                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
                 Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
 
                 await host.StopAsync();
@@ -488,19 +580,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.OrchestratorWithRetry_NullRetryOptions)
             };
 
-            using (JobHost host =
-                TestHelpers.GetJobHost(loggerFactory, nameof(OrchestrationWithRetry_NullRetryOptions)))
+            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(OrchestrationWithRetry_NullRetryOptions)))
             {
                 await host.StartAsync();
 
                 // Null input should result in ArgumentNullException in the orchestration code.
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], null, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
-
-                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
-                Assert.True(status?.Output.ToString().Contains("Value cannot be null.\r\nParameter name: retryOptions"));
+                Assert.True(status?.Output.ToString().Contains("Value cannot be null."));
+                Assert.True(status?.Output.ToString().Contains("Parameter name: retryOptions"));
 
                 await host.StopAsync();
             }
@@ -514,7 +604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.OrchestratorThrow)
+                nameof(TestOrchestrations.Throw)
             };
             string activityFunctionName = nameof(TestActivities.Throw);
 
@@ -523,7 +613,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string message = "Kah-BOOOOM!!!";
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -558,7 +648,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string message = "Kah-BOOOOM!!!";
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -582,24 +672,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityWithRetry_NullRetryOptions()
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.ActivityWithRetry_NullRetryOptions)
-            };
-            string activityFunctionName = nameof(TestActivities.Throw);
-
             using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityWithRetry_NullRetryOptions)))
             {
                 await host.StartAsync();
 
                 string message = "Kah-BOOOOM!!!";
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], message, this.output);
+                string orchestratorFunctionName = nameof(TestOrchestrations.ActivityWithRetry_NullRetryOptions);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionName, message, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
-
-                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
-                Assert.True(status?.Output.ToString().Contains("Value cannot be null.\r\nParameter name: retryOptions"));
+                Assert.True(status?.Output.ToString().Contains("Value cannot be null."));
+                Assert.True(status?.Output.ToString().Contains("Parameter name: retryOptions"));
 
                 await host.StopAsync();
             }
@@ -618,7 +702,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                Exception ex = await Assert.ThrowsAsync<FunctionInvocationException>(async () => await host.StartFunctionAsync("UnregisteredOrchestrator", "Unregistered", this.output));
+                Exception ex = await Assert.ThrowsAsync<FunctionInvocationException>(async () => await host.StartOrchestratorAsync("UnregisteredOrchestrator", "Unregistered", this.output));
                 
                 Assert.NotNull(ex.InnerException);
                 Assert.Contains(errorMessage, ex.InnerException?.ToString());
@@ -638,7 +722,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.CallActivity)
             };
             const string activityFunctionName = "UnregisteredActivity";
-            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity or orchestrator function";
+            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity function";
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(Orchestration_OnUnregisteredActivity)))
             {
@@ -650,7 +734,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Input = new {Foo = "Bar"}
                 };
 
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], startArgs, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal("Failed", status?.RuntimeStatus);
@@ -669,7 +753,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which runs a orchestrator function that calls another orchestrator function.
+        /// End-to-end test which runs an orchestrator function that calls another orchestrator function.
         /// </summary>
         [Fact]
         public async Task Orchestration_OnValidOrchestrator()
@@ -678,7 +762,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string validOrchestratorName = "SayHelloWithActivity";
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.CallActivity),
+                nameof(TestOrchestrations.CallOrchestrator),
                 validOrchestratorName
             };
             string activityFunctionName = nameof(TestActivities.Hello);
@@ -691,12 +775,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var startArgs = new StartOrchestrationArgs
                 {
-                    FunctionName = nameof(TestOrchestrations.SayHelloWithActivity),
-                    Input = input
+                    FunctionName = orchestratorFunctionNames[1],
+                    Input = inputJson
                 };
 
                 // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
-                var client = await host.StartFunctionAsync(orchestratorFunctionNames[0], startArgs, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
 
@@ -705,7 +789,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(client.InstanceId, status.InstanceId);
                 Assert.Equal(validOrchestratorName, statusInput["FunctionName"].ToString());
                 Assert.Contains(greetingName, statusInput["Input"].ToString());
-                Assert.Equal($"Hello, [{inputJson}]!", status.Output.ToString());
+                Assert.Equal($"Hello, {inputJson}!", status.Output.ToString());
 
                 await host.StopAsync();
 
@@ -727,7 +811,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Right now, the limit for timers is 6 days. In the future, we'll extend this and update this test.
                 // https://github.com/Azure/azure-functions-durable-extension/issues/14
                 DateTime fireAt = DateTime.UtcNow.AddDays(7);
-                var client = await host.StartFunctionAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.NotNull(status);
@@ -735,6 +819,143 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status.Output.ToString().Contains("fireAt"));
 
                 await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
+        /// </summary>
+        [Fact]
+        public async Task Orchestration_OnUnregisteredOrchestrator()
+        {
+            const string unregisteredOrchestrator = "UnregisteredOrchestrator";
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.CallOrchestrator),
+                unregisteredOrchestrator
+            };
+            
+            string errorMessage = $"The function '{unregisteredOrchestrator}' doesn't exist, is disabled, or is not an orchestrator function";
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(Orchestration_OnUnregisteredActivity)))
+            {
+                await host.StartAsync();
+
+                var startArgs = new StartOrchestrationArgs
+                {
+                    FunctionName = unregisteredOrchestrator,
+                    Input = new { Foo = "Bar" }
+                };
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // There aren't any exception details in the output: https://github.com/Azure/azure-webjobs-sdk-script-pr/issues/36
+                Assert.True(status?.Output.ToString().Contains(errorMessage));
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(loggerProvider, "Orchestration_OnUnregisteredOrchestrator",
+                    orchestratorFunctionNames);
+            }
+        }
+
+        [Fact]
+        public async Task BigReturnValue_Orchestrator()
+        {
+            string taskHub = nameof(BigReturnValue_Orchestrator);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, taskHub))
+            {
+                await host.StartAsync();
+
+                var orchestrator = nameof(TestOrchestrations.BigReturnValue);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+
+                // The expected maximum payload size is 60 KB.
+                // Strings in Azure Storage are encoded in UTF-32, which is 4 bytes per character.
+                int stringLength = (61 * 1024) / 4;
+
+                var client = await host.StartOrchestratorAsync(orchestrator, stringLength, this.output);
+                var status = await client.WaitForCompletionAsync(timeout, this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+                Assert.True(status?.Output.ToString().Contains("The UTF-32 size of the JSON-serialized payload must not exceed 60 KB"));
+
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        public async Task BigReturnValue_Activity()
+        {
+            string taskHub = nameof(BigReturnValue_Activity);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, taskHub))
+            {
+                await host.StartAsync();
+
+                var orchestrator = nameof(TestOrchestrations.CallActivity);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+
+                // The expected maximum payload size is 60 KB.
+                // Strings in Azure Storage are encoded in UTF-32, which is 4 bytes per character.
+                int stringLength = (61 * 1024) / 4;
+                var input = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestActivities.BigReturnValue),
+                    Input = stringLength
+                };
+
+                var client = await host.StartOrchestratorAsync(orchestrator, input, this.output);
+                var status = await client.WaitForCompletionAsync(timeout, this.output);
+
+                Assert.Equal("Failed", status?.RuntimeStatus);
+
+                // Activity function exception details are not captured in the orchestrator output:
+                // https://github.com/Azure/azure-functions-durable-extension/issues/84
+                ////Assert.True(status?.Output.ToString().Contains("The UTF-32 size of the JSON-serialized payload must not exceed 60 KB"));
+                Assert.True(status?.Output.ToString().Contains(nameof(TestActivities.BigReturnValue)));
+
+                await host.StopAsync();
+            }
+        }
+
+        [DataContract]
+        class ComplexType
+        {
+            [DataMember]
+            public int A { get; set; }
+
+            [DataMember]
+            public List<DateTime> B { get; set; }
+
+            [DataMember]
+            public CustomEnum C { get; set; }
+
+            [DataMember]
+            public ComplexInnerType D { get; set; }
+
+            [DataContract]
+            public class ComplexInnerType
+            {
+                [DataMember]
+                public string E { get; set; }
+
+                [DataMember]
+                public TimeSpan F { get; set; }
+            }
+
+            [DataContract]
+            public enum CustomEnum
+            {
+                [EnumMember]
+                Value1,
+                [EnumMember]
+                Value2
             }
         }
     }

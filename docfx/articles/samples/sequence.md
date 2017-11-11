@@ -7,10 +7,9 @@ If you haven't done so already, make sure to read the [overview](~/articles/over
 All samples are combined into a single function app package. To get started with the samples, follow the setup steps below that are relevant for your development environment:
 
 ### For Visual Studio Development (Windows Only)
-1. Follow the [installation instructions](~/articles/installation.md) to configure Durable Functions for Visual Studio development.
-2. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
-3. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
-4. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
+1. Download the [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip) package, unzip the contents, and open in Visual Studio 2017 (version 15.3).
+2. Install and run the [Azure Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/storage-use-emulator) (Version 5.2 or later is required). Alternatively, you can update the `local.appsettings.json` file with real Azure Storage connection strings.
+3. The sample can now be run locally via F5. It can also be published directly to Azure and run in the cloud.
 
 ### For Azure Portal Development
 1. Create a new function app at https://functions.azure.com/signin.
@@ -41,10 +40,7 @@ Here is the source code:
 
 [!code-csharp[Main](~/../samples/csx/E1_HelloSequence/run.csx)]
 
-All C# orchestration functions must have a **DurableOrchestrationContext** parameter, which exists in the **Microsoft.Azure.WebJobs.Extensions.DurableTask** assembly that can be referenced using the `#r` notation. This context object allows calling other *activity* functions and passing input parameters using its <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync*> method.
-
-> [!WARNING]
-> Make sure to spell the name of the function your are calling correctly. There is currently no active validation of function names, so trying to call a function that doesn't exist will result in a silent failure.
+All C# orchestration functions must have a **DurableOrchestrationContext** parameter, which exists in the **Microsoft.Azure.WebJobs.Extensions.DurableTask** assembly. If authoring the function using C# scripting syntax, it can be referenced using the `#r` notation. This context object allows calling other *activity* functions and passing input parameters using its <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*> method.
 
 The code is very simple in that it calls **E1_SayHello** three times in a sequence with different parameter values. The return value of each call is added to the `outputs` list, which is returned at the end of the function.
 
@@ -55,11 +51,11 @@ The function.json for **E1_SayHello** is similar to to that of **E1_HelloSequenc
 > [!NOTE]
 Any function called by an orchestration function must use the `activityTrigger` binding.
 
-The implementation of **E1_SayHello** is relatively trivial string formatting operation.
+The implementation of **E1_SayHello** is a relatively trivial string formatting operation.
 
 [!code-csharp[Main](~/../samples/csx/E1_SayHello/run.csx)]
 
-Note that this function has a corresponding <xref:Microsoft.Azure.WebJobs.DurableActivityContext>, which it uses to get to input that was passed to it by the orchestrator's call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync*>.
+Note that this function has a corresponding <xref:Microsoft.Azure.WebJobs.DurableActivityContext>, which it uses to get to input that was passed to it by the orchestrator function's call to <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*>.
 
 ## Running the orchestration
 The simplest way to execute the **E1_HelloSequence** orchestration is to make the following HTTP call.
@@ -97,9 +93,9 @@ Content-Type: application/json; charset=utf-8
 As you can see, the `runtimeStatus` of the instance is *Completed* and the `output` contains the JSON-serialized result of the orchestrator function execution.
 
 > [!NOTE]
-> The HTTP POST endpoint which started the orchestrator function is implemented in the sample app as an HTTP trigger function. You may find that you want to implement similar starter logic for other trigger types, like `queueTrigger`, `eventHubTrigger`, or `timerTrigger`.
+> The HTTP POST endpoint which started the orchestrator function is implemented in the sample app as an HTTP trigger function named "HttpStart". You may find that you want to implement similar starter logic for other trigger types, like `queueTrigger`, `eventHubTrigger`, or `timerTrigger`.
 
-Also, be sure to take a look at the function execution logs. You should notice that **E1_HelloSequence** was started multiple times (due to the replay behavior) and completed exactly once. Similarly, you should see exactly three executions of **E1_SayHello** since those function executions do not get replayed.
+Also, be sure to take a look at the function execution logs. You should notice that **E1_HelloSequence** started and completed multiple times due to the replay behavior described in the [overview](~/articles/overview.md). On the other hand, you should see exactly three executions of **E1_SayHello** since those function executions do not get replayed.
 
 ## Wrapping up
 At this point, you should have a basic understanding of the core mechanics for Durable Functions. This sample was quite trivial and only showed a small number of features available. Subsequent samples, however, are more "real world" and will display a greater breadth of functionality.

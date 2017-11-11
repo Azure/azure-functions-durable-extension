@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class DurableOrchestrationContext
    ">
-    <meta name="generator" content="docfx 2.19.1.0">
+    <meta name="generator" content="docfx 2.24.0.0">
     
     <link rel="shortcut icon" href="../images/favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -85,16 +85,10 @@
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
     <div>
-      <span class="xref">System.Object.ToString()</span>
-    </div>
-    <div>
       <span class="xref">System.Object.Equals(System.Object)</span>
     </div>
     <div>
       <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
-    </div>
-    <div>
-      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
     </div>
     <div>
       <span class="xref">System.Object.GetHashCode()</span>
@@ -104,6 +98,12 @@
     </div>
     <div>
       <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
     </div>
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.html">Microsoft.Azure.WebJobs</a></h6>
@@ -119,7 +119,7 @@
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L82">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L74">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">CurrentUtcDateTime</h4>
@@ -155,7 +155,7 @@ at specific points in the orchestrator function code, making it deterministic an
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_InstanceId.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L65">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L64">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_InstanceId_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_InstanceId" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId">InstanceId</h4>
@@ -191,7 +191,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_IsReplaying.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L103">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L88">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_IsReplaying_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_IsReplaying" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying">IsReplaying</h4>
@@ -228,19 +228,19 @@ being replayed and then issue the log statements when this value is <code>false<
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_System_String_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync(System.String%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_System_String_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L211">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L210">View Source</a>
   </span>
-  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_System_String_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync(System.String,System.Object[])">CallFunctionAsync(String, Object[])</h4>
-  <div class="markdown level1 summary"><p>Schedules an activity function named <span class="paramref">functionName</span> for execution.</p>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_System_String_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object[])">CallActivityAsync(String, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an activity function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public Task CallFunctionAsync(string functionName, params object[] parameters)</code></pre>
+    <pre><code class="lang-csharp hljs">public Task CallActivityAsync(string functionName, params object[] parameters)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -282,21 +282,47 @@ being replayed and then issue the log statements when this value is <code>false<
       </tr>
     </tbody>
   </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync__1_System_String_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync%60%601(System.String%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync__1_System_String_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync%60%601(System.String%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L223">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L309">View Source</a>
   </span>
-  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallFunctionAsync__1_System_String_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallFunctionAsync``1(System.String,System.Object[])">CallFunctionAsync&lt;TResult&gt;(String, Object[])</h4>
-  <div class="markdown level1 summary"><p>Schedules an activity function named <span class="paramref">functionName</span> for execution.</p>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync__1_System_String_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object[])">CallActivityAsync&lt;TResult&gt;(String, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an activity function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public Task&lt;TResult&gt; CallFunctionAsync&lt;TResult&gt;(string functionName, params object[] parameters)</code></pre>
+    <pre><code class="lang-csharp hljs">public Task&lt;TResult&gt; CallActivityAsync&lt;TResult&gt;(string functionName, params object[] parameters)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -354,12 +380,622 @@ being replayed and then issue the log statements when this value is <code>false<
       </tr>
     </tbody>
   </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L234">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])">CallActivityWithRetryAsync(String, RetryOptions, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an activity function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution with retry options.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">functionName</span></td>
+        <td><p>The name of the activity function to call.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Microsoft.Azure.WebJobs.RetryOptions.html">RetryOptions</a></td>
+        <td><span class="parametername">retryOptions</span></td>
+        <td><p>The retry option for the activity function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span>[]</td>
+        <td><span class="parametername">parameters</span></td>
+        <td><p>The JSON-serializeable parameters to pass as input to the function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync%60%601(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L334">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])">CallActivityWithRetryAsync&lt;TResult&gt;(String, RetryOptions, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an activity function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution with retry options.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task&lt;TResult&gt; CallActivityWithRetryAsync&lt;TResult&gt;(string functionName, RetryOptions retryOptions, params object[] parameters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">functionName</span></td>
+        <td><p>The name of the activity function to call.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Microsoft.Azure.WebJobs.RetryOptions.html">RetryOptions</a></td>
+        <td><span class="parametername">retryOptions</span></td>
+        <td><p>The retry option for the activity function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span>[]</td>
+        <td><span class="parametername">parameters</span></td>
+        <td><p>The JSON-serializeable parameters to pass as input to the function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
+        <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">TResult</span></td>
+        <td><p>The return type of the scheduled activity function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L259">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object[])">CallSubOrchestratorAsync(String, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an orchestrator function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task CallSubOrchestratorAsync(string functionName, params object[] parameters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">functionName</span></td>
+        <td><p>The name of the orchestrator function to call.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span>[]</td>
+        <td><span class="parametername">parameters</span></td>
+        <td><p>The JSON-serializeable parameters to pass as input to the function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync%60%601(System.String%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L360">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object[])">CallSubOrchestratorAsync&lt;TResult&gt;(String, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an orchestration function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task&lt;TResult&gt; CallSubOrchestratorAsync&lt;TResult&gt;(string functionName, params object[] parameters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">functionName</span></td>
+        <td><p>The name of the orchestrator function to call.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span>[]</td>
+        <td><span class="parametername">parameters</span></td>
+        <td><p>The JSON-serializeable parameters to pass as input to the function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
+        <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">TResult</span></td>
+        <td><p>The return type of the scheduled orchestrator function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L283">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])">CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an orchestrator function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution with retry options.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, params object[] parameters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">functionName</span></td>
+        <td><p>The name of the orchestrator function to call.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Microsoft.Azure.WebJobs.RetryOptions.html">RetryOptions</a></td>
+        <td><span class="parametername">retryOptions</span></td>
+        <td><p>The retry option for the orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span>[]</td>
+        <td><span class="parametername">parameters</span></td>
+        <td><p>The JSON-serializeable parameters to pass as input to the function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync%60%601(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object%5B%5D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L385">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])">CallSubOrchestratorWithRetryAsync&lt;TResult&gt;(String, RetryOptions, Object[])</h4>
+  <div class="markdown level1 summary"><p>Schedules an orchestrator function named <code data-dev-comment-type="paramref" class="paramref">functionName</code> for execution with retry options.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task&lt;TResult&gt; CallSubOrchestratorWithRetryAsync&lt;TResult&gt;(string functionName, RetryOptions retryOptions, params object[] parameters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">functionName</span></td>
+        <td><p>The name of the orchestrator function to call.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Microsoft.Azure.WebJobs.RetryOptions.html">RetryOptions</a></td>
+        <td><span class="parametername">retryOptions</span></td>
+        <td><p>The retry option for the orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span>[]</td>
+        <td><span class="parametername">parameters</span></td>
+        <td><p>The JSON-serializeable parameters to pass as input to the function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;TResult&gt;</td>
+        <td><p>A durable task that completes when the called function completes or fails.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">TResult</span></td>
+        <td><p>The return type of the scheduled orchestrator function.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ArgumentNullException</span></td>
+        <td><p>The retry option object is null.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.ArgumentException</span></td>
+        <td><p>The specified function does not exist, is disabled, or is not an orchestrator function.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.InvalidOperationException</span></td>
+        <td><p>The current thread is different than the thread which started the orchestrator execution.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">DurableTask.Core.Exceptions.TaskFailedException</span></td>
+        <td><p>The activity function failed with an unhandled exception.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L369">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L484">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">ContinueAsNew(Object)</h4>
@@ -393,7 +1029,7 @@ being replayed and then issue the log statements when this value is <code>false<
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L298">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L406">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)">CreateTimer(DateTime, CancellationToken)</h4>
@@ -446,7 +1082,7 @@ being replayed and then issue the log statements when this value is <code>false<
   </table>
   <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken__remarks">Remarks</h5>
   <div class="markdown level1 remarks"><p>All durable timers created using this method must either expire or be cancelled 
-using the <span class="paramref">cancelToken</span> before the orchestrator function completes.
+using the <code data-dev-comment-type="paramref" class="paramref">cancelToken</code> before the orchestrator function completes.
 Otherwise the underlying framework will keep the instance alive until the timer expires.</p>
 </div>
   <span class="small pull-right mobile-hide">
@@ -454,7 +1090,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer%60%601(System.DateTime%2C%60%600%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L316">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L424">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">CreateTimer&lt;T&gt;(DateTime, T, CancellationToken)</h4>
@@ -522,14 +1158,14 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     <tbody>
       <tr>
         <td><span class="parametername">T</span></td>
-        <td><p>The type of <span class="paramref">state</span>.</p>
+        <td><p>The type of <code data-dev-comment-type="paramref" class="paramref">state</code>.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken__remarks">Remarks</h5>
   <div class="markdown level1 remarks"><p>All durable timers created using this method must either expire or be cancelled 
-using the <span class="paramref">cancelToken</span> before the orchestrator function completes.
+using the <code data-dev-comment-type="paramref" class="paramref">cancelToken</code> before the orchestrator function completes.
 Otherwise the underlying framework will keep the instance alive until the timer expires.</p>
 </div>
   <span class="small pull-right mobile-hide">
@@ -537,7 +1173,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInput__1.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput%60%601%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L151">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L136">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInput_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInput__1" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput``1">GetInput&lt;T&gt;()</h4>
@@ -585,7 +1221,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInputAsJson.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L140">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L125">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInputAsJson_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInputAsJson" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson">GetInputAsJson()</h4>
@@ -617,7 +1253,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetRawInput.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L128">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L113">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetRawInput_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetRawInput" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput">GetRawInput()</h4>
@@ -646,51 +1282,14 @@ Otherwise the underlying framework will keep the instance alive until the timer 
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetOutput_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L178">View Source</a>
-  </span>
-  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetOutput_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetOutput_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)">SetOutput(Object)</h4>
-  <div class="markdown level1 summary"><p>Sets the JSON-serializeable output of the current orchestrator function.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public void SetOutput(object output)</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">System.Object</span></td>
-        <td><span class="parametername">output</span></td>
-        <td><p>The JSON-serializeable value to use as the orchestrator function output.</p>
-</td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetOutput_System_Object__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>If this method is not called explicitly, the return value of the orchestrator function is used as the output.</p>
-</div>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent__1_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent%60%601(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L339">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContext.cs/#L454">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent__1_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)">WaitForExternalEvent&lt;T&gt;(String)</h4>
-  <div class="markdown level1 summary"><p>Waits asynchronously for an event to be raised with name <span class="paramref">name</span> and returns the event data.</p>
+  <div class="markdown level1 summary"><p>Waits asynchronously for an event to be raised with name <code data-dev-comment-type="paramref" class="paramref">name</code> and returns the event data.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>

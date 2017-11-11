@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "name": "copyFileContext",
+      "name": "filePath",
       "type": "activityTrigger",
       "direction": "in"
     }

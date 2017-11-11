@@ -5,17 +5,17 @@ public static async Task<long> Run(DurableOrchestrationContext backupContext)
     string rootDirectory = backupContext.GetInput<string>();
     if (string.IsNullOrEmpty(rootDirectory))
     {
-        rootDirectory = Environment.CurrentDirectory;
+        rootDirectory = Environment.ExpandEnvironmentVariables(@"%HOME%\site\wwwroot");
     }
 
-    string[] files = await backupContext.CallFunctionAsync<string[]>(
+    string[] files = await backupContext.CallActivityAsync<string[]>(
         "E2_GetFileList",
         rootDirectory);
 
     var tasks = new Task<long>[files.Length];
     for (int i = 0; i < files.Length; i++)
     {
-        tasks[i] = backupContext.CallFunctionAsync<long>(
+        tasks[i] = backupContext.CallActivityAsync<long>(
             "E2_CopyFileToBlob",
             files[i]);
     }

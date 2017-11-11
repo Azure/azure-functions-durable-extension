@@ -2,11 +2,11 @@
 Durable timers can be used in orchestrator functions to delay for specific durations of time or to implement timeouts on other supported async actions. Durable timers should be used in orchestrator functions instead of `Thread.Sleep` or `Task.Delay`.
 
 ## Remarks
-A durable timer can be created using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*> API. The API returns a task which will be resumed on the specified deadline (i.e. a `DateTime`).
+A durable timer can be created using the <xref:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*> API. The API returns a task that will be resumed on the specified deadline (i.e. a `DateTime`).
 
 These timers are "durable" because they are internally backed by scheduled messages in Azure Storage. For example, if you create a timer that will expire at 4:30pm, the underlying Durable Task Framework will enqueue a message which becomes visible only at 4:30pm. When running in the Azure Functions consumption plan, the newly visible timer message will ensure that the function app gets activated on an appropriate VM.
 
-> [!WARNING]
+> [!NOTE]
 > Durable timers cannot last longer than 7 days due to limitations in Azure Storage.
 > [This GitHub issue](https://github.com/Azure/azure-functions-durable-extension/issues/14) tracks extending timers beyond 7 days.
 
@@ -25,7 +25,7 @@ public static async Task Run(
     {
         DateTime deadline = context.CurrentUtcDateTime.Add(TimeSpan.FromDays(1));
         await context.CreateTimer(deadline, CancellationToken.None);
-        await context.CallFunctionAsync("SendBillingEvent");
+        await context.CallActivityAsync("SendBillingEvent");
     }
 }
 ```
@@ -46,7 +46,7 @@ public static async Task<bool> Run(
 
     using (var cts = new CancellationTokenSource())
     {
-        Task activityTask = context.CallFunctionAsync("GetQuote");
+        Task activityTask = context.CallActivityAsync("GetQuote");
         Task timeoutTask = context.CreateTimer(deadline, cts.Token);
 
         Task winner = await Task.WhenAny(activityTask, timeoutTask);

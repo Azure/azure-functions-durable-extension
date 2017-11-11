@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Task Hubs </title>
+    <!-- Prevent search engine web crawlers from indexing or crawling this page -->
+    <meta name="robots" content="none">
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Task Hubs ">
+    <meta name="generator" content="docfx 2.24.0.0">
+    
+    <link rel="shortcut icon" href="../../images/favicon.ico">
+    <link rel="stylesheet" href="../../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../../styles/docfx.css">
+    <link rel="stylesheet" href="../../styles/main.css">
+    <meta property="docfx:navrel" content="../../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../../index.html">
+                <img id="logo" class="svg" src="../../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="task-hubs">Task Hubs</h1>
+
+<p>A task hub is a logical container for durable task orchestrations and activities within the context of a single Azure storage account. Multiple functions and even function apps can exist in the same task hub, and the task hub often serves as an application container.</p>
+<p>Task hubs do not need to be created explicitly. Rather, they are declared by name in <strong>host.json</strong> and initialized automatically by the runtime. Each task hub has its own set of storage queues, tables, and blobs within a single storage account, and all function apps which run in a given task hub will share the same storage resources. Orchestrator and activity functions can only interact with each other when they belong to the same task hub.</p>
+<h2 id="configuring-a-task-hub-in-hostjson">Configuring a Task Hub in host.json</h2>
+<p>A task hub name can be configured in the <strong>host.json</strong> file of a function app.</p>
+<pre><code class="lang-json">{
+  &quot;durableTask&quot;: {
+    &quot;HubName&quot;: &quot;MyTaskHub&quot;
+  }
+}
+</code></pre><p>Task hub names must start with a letter and consist of only letters and numbers. If not specified, the default task hub name for a function app is <strong>DurableFunctionsHub</strong>.</p>
+<div class="NOTE"><h5>Note</h5><p>If you have multiple function apps which share a storage account, it is recommended to configure a different task hub name for each function app. This ensures that each function app is properly isolated from each other.</p>
+</div>
+<h2 id="azure-storage-resources">Azure Storage resources</h2>
+<p>A task hub consists of several Azure Storage resources:</p>
+<ul>
+<li>One or more control queues.</li>
+<li>One work-item queue.</li>
+<li>One history table.</li>
+<li>One storage container containing one or more lease blobs.</li>
+</ul>
+<p>All of these resources are created automatically in the default Azure Storage account when orchestrator or activity functions run or are scheduled to run.</p>
+<div class="NOTE"><h5>Note</h5><p>For more information on how task hub storage resources are used to scale out durable functions, see the <a href="perf-and-scale.html">Performance &amp; Scale</a> topic.</p>
+</div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/task-hubs.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright © .NET Foundation
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../../styles/docfx.js"></script>
+    <script type="text/javascript" src="../../styles/main.js"></script>
+  </body>
+</html>
