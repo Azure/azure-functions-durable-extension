@@ -482,5 +482,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return this.httpApiHandler.HandleRequestAsync(request);
         }
+
+        internal static string ValidatePayloadSize(string payload)
+        {
+            // The payload gets written to Azure Table Storage and to Azure Queues, which have
+            // strict storage limitations (64 KB). Until we support large messages, we need to block them.
+            // https://github.com/Azure/azure-functions-durable-extension/issues/79
+            // We limit to 60 KB to leave room for metadata.
+            if (Encoding.UTF8.GetByteCount(payload) > 60 * 1024)
+            {
+                throw new ArgumentException("The size of the JSON-serialized payload must not exceed 60 KB.");
+            }
+
+            return payload;
+        }
     }
 }

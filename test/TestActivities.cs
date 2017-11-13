@@ -15,6 +15,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
+        public static object Echo([ActivityTrigger] DurableActivityContext ctx)
+        {
+            object obj = ctx.GetInput<object>();
+            return obj;
+        }
+
         public static long Multiply([ActivityTrigger] DurableActivityContext ctx)
         {
             long[] values = ctx.GetInput<long[]>();
@@ -39,6 +45,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string message = ctx.GetInput<string>();
             throw new Exception(message);
+        }
+
+        public static string BigReturnValue([ActivityTrigger] int stringLength)
+        {
+            return new string('*', stringLength);
         }
 
         public static bool BindToJObject([ActivityTrigger] JObject jObj)
