@@ -146,6 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 case OrchestrationStatus.Running:
                 case OrchestrationStatus.Pending:
+                case OrchestrationStatus.ContinuedAsNew:
                     statusCode = HttpStatusCode.Accepted;
                     location = request.RequestUri;
                     break;
