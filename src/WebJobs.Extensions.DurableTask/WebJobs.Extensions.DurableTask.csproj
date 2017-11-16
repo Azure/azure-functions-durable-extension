@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta3-11076" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta3-11077" />
   </ItemGroup>
   
   <!-- NuGet Publishing Metadata -->
