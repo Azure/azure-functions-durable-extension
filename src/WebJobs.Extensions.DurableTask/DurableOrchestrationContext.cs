@@ -203,7 +203,7 @@ namespace Microsoft.Azure.WebJobs
         /// </exception>
         public Task CallActivityAsync(string functionName, object input)
         {
-            return this.CallActivityAsync<string>(functionName, input);
+            return this.CallActivityAsync<object>(functionName, input);
         }
 
         /// <summary>
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.WebJobs
                 throw new ArgumentNullException(nameof(retryOptions));    
             }
 
-            return this.CallActivityWithRetryAsync<string>(functionName, retryOptions, input);
+            return this.CallActivityWithRetryAsync<object>(functionName, retryOptions, input);
         }
 
         /// <summary>
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.WebJobs
         /// </exception>
         public Task CallSubOrchestratorAsync(string functionName, object input)
         {
-            return this.CallSubOrchestratorAsync<string>(functionName, input);
+            return this.CallSubOrchestratorAsync<object>(functionName, input);
         }
 
         /// <summary>
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.WebJobs
                 throw new ArgumentNullException(nameof(retryOptions));
             }
 
-            return this.CallSubOrchestratorWithRetryAsync<string>(functionName, retryOptions, input);
+            return this.CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, input);
         }
 
         /// <summary>
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A durable task that completes when the durable timer expires.</returns>
         public Task CreateTimer(DateTime fireAt, CancellationToken cancelToken)
         {
-            return this.CreateTimer<string>(fireAt, null, cancelToken);
+            return this.CreateTimer<object>(fireAt, null, cancelToken);
         }
 
         /// <summary>
