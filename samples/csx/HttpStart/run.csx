@@ -2,6 +2,7 @@
 #r "Newtonsoft.Json"
 
 using System.Net;
+using System.Net.Http.Headers;
 
 public static async Task<HttpResponseMessage> Run(
     HttpRequestMessage req,
@@ -15,5 +16,7 @@ public static async Task<HttpResponseMessage> Run(
     
     log.Info($"Started orchestration with ID = '{instanceId}'.");
     
-    return starter.CreateCheckStatusResponse(req, instanceId);
+    var res = starter.CreateCheckStatusResponse(req, instanceId);
+    res.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
+    return res;
 }
