@@ -288,3 +288,6 @@ __pycache__/
 
 # DocFX
 /docfx/api
+
+# Functions Click
+functions-extensions/

@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs
                 InstanceId = state.OrchestrationInstance.InstanceId,
                 CreatedTime = state.CreatedTime,
                 LastUpdatedTime = state.LastUpdatedTime,
-                OrchestrationStatus = state.OrchestrationStatus,
+                RuntimeStatus = (OrchestrationRuntimeStatus)state.OrchestrationStatus,
                 Input = ParseToJToken(state.Input),
                 Output = ParseToJToken(state.Output)
             };

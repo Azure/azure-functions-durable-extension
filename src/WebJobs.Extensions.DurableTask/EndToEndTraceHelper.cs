@@ -211,5 +211,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.appTraceWriter.Info(
                 $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' received a '{eventName}' event. State: {FunctionState.ExternalEventRaised}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}.");
         }
+
+        public void TimerExpired(
+            string hubName,
+            string functionName,
+            string version,
+            string instanceId,
+            DateTime expirationTime,
+            bool isReplay)
+        {
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            string expirationTimeString = expirationTime.ToString("o");
+
+            EtwEventSource.Instance.TimerExpired(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                version,
+                instanceId,
+                expirationTimeString,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: isReplay);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', version '{version}' was resumed by a timer scheduled for '{expirationTime}'. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                instanceId, functionName, functionType, version, expirationTimeString, isReplay, FunctionState.TimerExpired,
+                hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+            this.appTraceWriter.Info(
+                $"{instanceId}: Function '{functionName} ({functionType})', version '{version}' was resumed by a timer scheduled for '{expirationTimeString}'. IsReplay: {isReplay}. State: {FunctionState.TimerExpired}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}.");
+        }
     }
 }

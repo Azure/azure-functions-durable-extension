@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // The function checks to see if there is a property called "Foo" which is set to a value
                 // called "Bar" and returns true if this is the case. Otherwise returns false.
-                Assert.Equal("Completed", status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(true, status?.Output);
 
                 await host.StopAsync();
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 // The function echos back the 'Foo' input property value
-                Assert.Equal("Completed", status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(input.Foo, status?.Output);
 
                 await host.StopAsync();
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 // The function echos back the input value
-                Assert.Equal("Completed", status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal((double)startArgs.Input, status?.Output);
 
                 await host.StopAsync();
