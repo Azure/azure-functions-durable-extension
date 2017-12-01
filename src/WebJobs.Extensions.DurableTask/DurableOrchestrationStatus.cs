@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using DurableTask.Core;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs
@@ -70,11 +69,6 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
         /// </value>
-        public string RuntimeStatus
-        {
-            get { return this.OrchestrationStatus.ToString(); }
-        }
-
-        internal OrchestrationStatus OrchestrationStatus { get; set; }
+        public OrchestrationRuntimeStatus RuntimeStatus { get; internal set; }
     }
 }

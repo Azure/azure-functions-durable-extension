@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await ctx.CallActivityAsync(nameof(TestActivities.Throw), "Kah-BOOOOOM!!!");
                 }
-                catch
+                catch (FunctionFailedException)
                 {
                     catchCount++;
                 }
@@ -216,7 +216,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             // Using StartOrchestrationArgs to start an orchestrator function because it's easier than creating a new type.
             var startArgs = ctx.GetInput<StartOrchestrationArgs>();
-            var result = await ctx.CallSubOrchestratorAsync<object>(startArgs.FunctionName, startArgs.Input);
+            var result = await ctx.CallSubOrchestratorAsync<object>(
+                startArgs.FunctionName,
+                startArgs.InstanceId,
+                startArgs.Input);
             return result;
         }
 

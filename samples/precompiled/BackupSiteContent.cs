@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace VSSample
 {
@@ -69,7 +70,7 @@ namespace VSSample
 
             // copy the file contents into a blob
             using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (Stream destination = await binder.BindAsync<Stream>(
+            using (Stream destination = await binder.BindAsync<CloudBlobStream>(
                 new BlobAttribute(outputLocation, FileAccess.Write)))
             {
                 await source.CopyToAsync(destination);

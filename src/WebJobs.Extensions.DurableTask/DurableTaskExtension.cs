@@ -453,7 +453,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return "(" + Encoding.UTF8.GetByteCount(rawInputOutputData) + " bytes)";
+                // Azure Storage uses UTF-32 encoding for string payloads
+                return "(" + Encoding.UTF32.GetByteCount(rawInputOutputData) + " bytes)";
             }
         }
 
@@ -488,10 +489,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The payload gets written to Azure Table Storage and to Azure Queues, which have
             // strict storage limitations (64 KB). Until we support large messages, we need to block them.
             // https://github.com/Azure/azure-functions-durable-extension/issues/79
-            // We limit to 60 KB to leave room for metadata.
-            if (Encoding.UTF8.GetByteCount(payload) > 60 * 1024)
+            // We limit to 60 KB (UTF-32 encoding) to leave room for metadata.
+            if (Encoding.UTF32.GetByteCount(payload) > 60 * 1024)
             {
-                throw new ArgumentException("The size of the JSON-serialized payload must not exceed 60 KB.");
+                throw new ArgumentException("The size of the JSON-serialized payload must not exceed 60 KB of UTF-32 encoded text.");
             }
 
             return payload;

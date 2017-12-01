@@ -32,6 +32,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public string InstanceId => this.instanceId;
 
+        internal DurableOrchestrationClient InnerClient => this.innerClient;
+
         public async Task<DurableOrchestrationStatus> GetStatusAsync()
         {
             DurableOrchestrationStatus status = await this.innerClient.GetStatusAsync(this.instanceId);
@@ -86,9 +88,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             do
             {
                 DurableOrchestrationStatus status = await this.GetStatusAsync();
-                if (status?.RuntimeStatus == "Completed" ||
-                    status?.RuntimeStatus == "Failed" ||
-                    status?.RuntimeStatus == "Terminated")
+                if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                 {
                     output.WriteLine($"{status.Name} (ID = {status.InstanceId}) completed after ~{sw.ElapsedMilliseconds}ms. Status = {status.RuntimeStatus}. Output = {status.Output}.");
                     return status;

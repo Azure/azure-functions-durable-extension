@@ -2,12 +2,10 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -71,7 +69,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri = sendEventPostUri,
                     terminatePostUri = terminatePostUri
                 });
+
+            // Implement the async HTTP 202 pattern.
             response.Headers.Location = new Uri(statusQueryGetUri);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
         }
 
@@ -142,26 +143,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpStatusCode statusCode;
             Uri location;
 
-            switch (status.OrchestrationStatus)
+            switch (status.RuntimeStatus)
             {
-                case OrchestrationStatus.Running:
-                case OrchestrationStatus.Pending:
-                case OrchestrationStatus.ContinuedAsNew:
+                // The orchestration is running - return 202 w/Location header
+                case OrchestrationRuntimeStatus.Running:
+                case OrchestrationRuntimeStatus.Pending:
+                case OrchestrationRuntimeStatus.ContinuedAsNew:
                     statusCode = HttpStatusCode.Accepted;
                     location = request.RequestUri;
                     break;
-                case OrchestrationStatus.Failed:
-                case OrchestrationStatus.Canceled:
-                case OrchestrationStatus.Terminated:
-                    statusCode = HttpStatusCode.BadRequest;
-                    location = null;
-                    break;
-                case OrchestrationStatus.Completed:
+                // The orchestration is not running - return 202 w/out Location header
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
                     statusCode = HttpStatusCode.OK;
                     location = null;
                     break;
                 default:
-                    this.traceWriter.Error($"Unknown runtime state '{status.OrchestrationStatus}'.");
+                    this.traceWriter.Error($"Unknown runtime state '{status.RuntimeStatus}'.");
                     statusCode = HttpStatusCode.InternalServerError;
                     location = null;
                     break;
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 statusCode,
                 new
                 {
-                    runtimeStatus = status.RuntimeStatus,
+                    runtimeStatus = status.RuntimeStatus.ToString(),
                     input = status.Input,
                     output = status.Output,
                     createdTime = status.CreatedTime.ToString("s") + "Z",
@@ -183,6 +183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 response.Headers.Location = location;
             }
 
+            // Ask for 5 seconds before retry. Some clients will otherwise retry in a tight loop.
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
             return response;
         }
 
@@ -198,12 +200,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.OrchestrationStatus)
+            switch (status.RuntimeStatus)
             {
-                case OrchestrationStatus.Failed:
-                case OrchestrationStatus.Canceled:
-                case OrchestrationStatus.Terminated:
-                case OrchestrationStatus.Completed:
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
             
@@ -227,12 +229,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.OrchestrationStatus)
+            switch (status.RuntimeStatus)
             {
-                case OrchestrationStatus.Failed:
-                case OrchestrationStatus.Canceled:
-                case OrchestrationStatus.Terminated:
-                case OrchestrationStatus.Completed:
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
 

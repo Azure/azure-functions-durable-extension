@@ -145,5 +145,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.WriteEvent(208, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
+
+        [Event(209, Level = EventLevel.Informational)]
+        public void TimerExpired(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string Version,
+            string InstanceId,
+            string Reason,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(209, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
+        }
     }
 }
