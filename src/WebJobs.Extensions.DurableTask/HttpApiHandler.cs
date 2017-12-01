@@ -183,8 +183,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 response.Headers.Location = location;
             }
 
-            // Ask for 5 seconds before retry. Some clients will otherwise retry in a tight loop.
-            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
+            if (statusCode == HttpStatusCode.Accepted)
+            {
+                // Ask for 5 seconds before retry. Some clients will otherwise retry in a tight loop.
+                response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
+            }
+
             return response;
         }
 
