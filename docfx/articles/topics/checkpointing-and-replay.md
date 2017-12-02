@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay).
+
 # Orchestrator Checkpointing and Replay
 One of the key attributes of Durable Functions is **reliable execution**. Orchestrator functions and activity functions may be running on different VMs within a particular data center, and those VMs or the underlying networking infrastructure is not guaranteed to be 100% reliable.
 

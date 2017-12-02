@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-versioning).
+
 # Versioning
 It is inevitable that functions will need to be added, removed, or change over the lifetime of an application. Durable functions allows chaining function together in ways that was not previously possible, and this has significant implications on versioning.
 

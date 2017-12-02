@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sequence).
+
 # Function Chaining - Hello Sequence
 The simplest use case for Durable Functions is function chaining. Function chaining means calling one function after another, and may or may not involve passing state between them. This is an extremely simple and trivial example intended to show a very small slice of the features supported by Durable Functions.
 

@@ -30,8 +30,8 @@ Here are some samples you can study and/or reference. These will help you 1) lea
 * [Human Interaction & Timeouts - Phone Verification](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification)
 
 Also, you can download all the samples as a single function app, which you can download from one of these two links:
-* C# Scripts: [DFSampleApp.zip](~/files/DFSampleApp.zip)
-* Visual Studio Project: [VSDFSampleApp.zip](~/files/VSDFSampleApp.zip)
+* C# Scripts: [DFSampleApp.zip](../../raw/master/docfx/files/DFSampleApp.zip)
+* Visual Studio Project: [VSDFSampleApp.zip](../../raw/master/docfx/files/VSDFSampleApp.zip)
 
 Using one of the sample projects is a great way to get up and running quickly and is the recommended way to get started. See the sample / walkthrough links above for specific instructions.
 

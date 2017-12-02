@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. You can find the updated index in the GitHub [README](https://github.com/Azure/azure-functions-durable-extension#documentation).
+
 # Durable Functions
 Durable Functions is an Azure Functions extension for building long-running, stateful function orchestrations in code using C# in a serverless environment.
 

@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sub-orchestrations).
+
 # Sub-Orchestrations
 In addition to calling activity functions, orchestrator functions can also call other orchestrator functions. This is useful when you have a library of orchestrator functions and want to build a larger orchestration around them. This is also useful if you need to run multiple instances of an orchestrator function in parallel.
 

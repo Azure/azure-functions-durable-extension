@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-eternal-orchestrations).
+
 # Eternal Orchestrations
 Most functions have an explicit start and an end. *Eternal orchestrations*, however, are examples of orchestrator functions which never end. These are useful for various types of scenarios, including implementing aggregators or infinite loops.
 

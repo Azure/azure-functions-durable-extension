@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-external-events).
+
 # External Events
 Orchestrator functions have the ability to wait and listen for external events, which is often useful for handling human interaction or other external triggers.
 

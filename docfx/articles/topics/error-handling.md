@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-error-handling).
+
 # Error Handling & Compensation
 Durable Function orchestrations are implemented in pure code and therefore leverage the error handling capabilities of the orchestrator function's programming language. With this in mind, there really aren't any new concepts you need to learn about when incorporating error handling and compensation into your orchestrations. However, there are still a few important behaviors to be aware of when planning for error handling.
 

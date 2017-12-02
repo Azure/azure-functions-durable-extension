@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-instance-management).
+
 # Instance Management
 Durable Function orchestration instances can be started, terminated, queried, and sent notification events. All instance management is done using the orchestration client binding. More details on this binding can be found in the [Bindings](./bindings.md) topic. This article goes into the details of each of the instance management operations.
 

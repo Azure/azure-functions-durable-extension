@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-perf-and-scale).
+
 # Performance and Scale
 Durable Functions has unique scaling characteristics that are important to understand to get the best performance and scalability for your application. In order to understand the scale behavior, it's useful to first understand some of the details of the underlying Azure Storage provider used by Durable Functions.
 

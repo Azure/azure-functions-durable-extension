@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-install).
+
 # Installing Durable Functions
 Durable Functions is an extension of Azure Functions which uses a brand new binding extensibility model. Binding extensions can be added to a function app project using a simple NuGet package reference. The details of how to install this NuGet reference depends on how you are developing your function app.
 

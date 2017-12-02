@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-counter).
+
 # Stateful Singleton - Counter
 Stateful singletons are long-running (potentially eternal) orchestrator functions which store state and can be invoked and queried by other functions in your application. Stateful singletons are similar in spirit to the [Actor model](https://en.wikipedia.org/wiki/Actor_model) in distributed computing.
 

@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-cloud-backup).
+
 # Fan-In/Fan-Out - Cloud Backup
 Fan-in/fan-out is a more advanced use-case which demonstrates how to write an orchestrator function that calls multiple functions concurrently and then performs some aggregation on the results. In particular, this sample demonstrates how the pattern can be used to create a durable function that backs up all or some of an app's site content into Azure Storage.
 

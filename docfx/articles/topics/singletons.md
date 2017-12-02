@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-singletons).
+
 # Singleton Orchestrators
 It's often the case when building background jobs or actor-style orchestrations that you need to ensure you have exactly one instance of a particular orchestrator running at any given time. This can be done by assigning a specific instance ID to an orchestrator when creating it.
 

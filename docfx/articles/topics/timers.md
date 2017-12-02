@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-timers).
+
 # Durable Timers
 Durable timers can be used in orchestrator functions to delay for specific durations of time or to implement timeouts on other supported async actions. Durable timers should be used in orchestrator functions instead of `Thread.Sleep` or `Task.Delay`.
 

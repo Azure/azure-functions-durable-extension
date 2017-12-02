@@ -9,7 +9,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html",
-          "hash": "zkeWfemBLENX4sU6xn3kgQ=="
+          "hash": "DpBBbIAvs3Lqj4H4bqakjw=="
         }
       },
       "is_incremental": false,
@@ -21,7 +21,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableActivityContext.html",
-          "hash": "/DmErQtc83Wysz/UekfidQ=="
+          "hash": "/HQoZg7Rc8G7/MgoqxTK7w=="
         }
       },
       "is_incremental": false,
@@ -33,7 +33,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html",
-          "hash": "7G/A7VfP1E5ycU1psi7GHQ=="
+          "hash": "AeZ5QbPZ4C1j9RGOMj25kw=="
         }
       },
       "is_incremental": false,
@@ -45,7 +45,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html",
-          "hash": "5dnzZ+mPLF1sQMPmTTkECg=="
+          "hash": "ZcNr6RNdSTxBLiEZckT/9g=="
         }
       },
       "is_incremental": false,
@@ -57,7 +57,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html",
-          "hash": "aPb2cit8d+wuZPFNPLShtg=="
+          "hash": "1fw39/iBAFjtnFbuSk+l3g=="
         }
       },
       "is_incremental": false,
@@ -69,7 +69,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html",
-          "hash": "5oyS4TIHiIQgBrpcMuNAew=="
+          "hash": "Ewa4RHExtrGRtl3bFjPz2A=="
         }
       },
       "is_incremental": false,
@@ -81,7 +81,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html",
-          "hash": "3S8/PAyUxg2fvqdHegpyWQ=="
+          "hash": "5lR4K9xp48BmbGkuX0jw2Q=="
         }
       },
       "is_incremental": false,
@@ -93,7 +93,19 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.html",
-          "hash": "e5/vvu3vJZ2ScLsIZQkXjQ=="
+          "hash": "93VFGoUnkfsgPz6pj3FwOg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.FunctionFailedException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.FunctionFailedException.html",
+          "hash": "aZ1co9lwVyPW/aAUlD28uQ=="
         }
       },
       "is_incremental": false,
@@ -105,7 +117,19 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html",
-          "hash": "DdGpXVEs2NGzpPgMdJlqww=="
+          "hash": "KjjlGxL9bGmaU7evurET+Q=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html",
+          "hash": "/Ybk+no/h7RQnttbAXzQ0Q=="
         }
       },
       "is_incremental": false,
@@ -117,7 +141,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html",
-          "hash": "w63Hatak5xOjbTxUJJd+Wg=="
+          "hash": "2X5i63TZIppyzYG3SjytKw=="
         }
       },
       "is_incremental": false,
@@ -129,7 +153,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.RetryOptions.html",
-          "hash": "EiRBtGVAnlt4XtxDRyKdUw=="
+          "hash": "mjeAD9UEOupREn2F+nKr9g=="
         }
       },
       "is_incremental": false,
@@ -141,7 +165,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html",
-          "hash": "GuvidJrZzbNlCgU2bj4YyA=="
+          "hash": "Qe5qbcEJ3diMMCK7CFEUYg=="
         }
       },
       "is_incremental": false,
@@ -153,7 +177,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.html",
-          "hash": "Q3Y86eBahu2LDW1p6BNQSQ=="
+          "hash": "vEu7RMvUl7hnjVR6jVy6vQ=="
         }
       },
       "is_incremental": false,
@@ -165,7 +189,7 @@
       "output": {
         ".html": {
           "relative_path": "api/toc.html",
-          "hash": "+EyMjKLV5QbD7j0x+qoHlw=="
+          "hash": "rcYAOllksbe4Df4BzXbnzA=="
         }
       },
       "is_incremental": false,
@@ -177,7 +201,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/installation.html",
-          "hash": "S7gky9kVTD/VWcVuBQgEVQ=="
+          "hash": "uBmXsP1+7EY4O6u+bk3umw=="
         }
       },
       "is_incremental": false,
@@ -189,7 +213,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/known-issues.html",
-          "hash": "hlfbdwbPYzz29BhdRcj72A=="
+          "hash": "A4HrHTfsHQMp0LWOWj5agQ=="
         }
       },
       "is_incremental": false,
@@ -201,7 +225,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/overview.html",
-          "hash": "AUSMKQKSvLRXVMzQSl5zDQ=="
+          "hash": "1OoI0JHrBaxbHpRr/MEj6g=="
         }
       },
       "is_incremental": false,
@@ -213,7 +237,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/cloud-backup.html",
-          "hash": "dQiGQG7CBW+NhRMt1dhp9g=="
+          "hash": "ymvhKhPgGhwun9qq/zwU7g=="
         }
       },
       "is_incremental": false,
@@ -225,7 +249,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/counter.html",
-          "hash": "BbkRWW0mjgd889wpTz0M1Q=="
+          "hash": "FlORxui262FO1bOrYbcYnA=="
         }
       },
       "is_incremental": false,
@@ -237,7 +261,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/phone-verification.html",
-          "hash": "rN2/amvYiuI34QT1dTK/Ww=="
+          "hash": "a4rso++XhWFSs+zdVp+LtA=="
         }
       },
       "is_incremental": false,
@@ -249,7 +273,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/samples/sequence.html",
-          "hash": "OzcWfHgbWc+q7rFgXQitJw=="
+          "hash": "U8vN75L7c9NCB/IHY2/5qQ=="
         }
       },
       "is_incremental": false,
@@ -261,7 +285,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/toc.html",
-          "hash": "tUmhhr9XrzCeOH5c1Jo/7w=="
+          "hash": "4IyCi5IMg5cTkCjbPYv6Bw=="
         }
       },
       "is_incremental": false,
@@ -273,7 +297,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/bindings.html",
-          "hash": "qZ7B/CBdOGEk/mwnaS2yIw=="
+          "hash": "SSx102b9cuA/+jqc01vsKw=="
         }
       },
       "is_incremental": false,
@@ -285,7 +309,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/checkpointing-and-replay.html",
-          "hash": "UIuLLag0WW2qhajKlAA9Jw=="
+          "hash": "BPaEbiVMaMiD/eXdAcGYfg=="
         }
       },
       "is_incremental": false,
@@ -297,7 +321,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/diagnostics.html",
-          "hash": "udjC+VrqasayO166VlUaLw=="
+          "hash": "oG35jliMlVYIiffm1N6A/w=="
         }
       },
       "is_incremental": false,
@@ -309,7 +333,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/error-handling.html",
-          "hash": "YZUELsFX28NyY9yP6Xa3Kw=="
+          "hash": "BwulKNdISEc8Y31F3n4Swg=="
         }
       },
       "is_incremental": false,
@@ -321,7 +345,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/eternal-orchestrations.html",
-          "hash": "LBHvG93Lv7RS3UJentA+Sw=="
+          "hash": "+kanz/clyTkU1dQ7C8AEYw=="
         }
       },
       "is_incremental": false,
@@ -333,7 +357,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/external-events.html",
-          "hash": "dDP/MTc5QH6kSosnQRQFTw=="
+          "hash": "iaboT6xppLVXOdNQAa2BcQ=="
         }
       },
       "is_incremental": false,
@@ -345,7 +369,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/http-api.html",
-          "hash": "PAsieVGpjoSPZrZ7Da3LWQ=="
+          "hash": "3Xk5uKn/1ougKrqksfXUtQ=="
         }
       },
       "is_incremental": false,
@@ -357,7 +381,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/instance-management.html",
-          "hash": "IoDeUePrZQYHngbiZO7yoA=="
+          "hash": "2tbU3dVbjVk3aE7G6wKc7w=="
         }
       },
       "is_incremental": false,
@@ -369,7 +393,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/perf-and-scale.html",
-          "hash": "ObKmdod++wBoV7/6a3aLeA=="
+          "hash": "e61LuoXHlejfsVkuPRRkVA=="
         }
       },
       "is_incremental": false,
@@ -381,7 +405,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/singletons.html",
-          "hash": "wj6MltXlXk/khvLNbBLvEQ=="
+          "hash": "ym1+dbvd3T0FCEu81LmAeg=="
         }
       },
       "is_incremental": false,
@@ -393,7 +417,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/sub-orchestrations.html",
-          "hash": "Qn/Hmesj2ArSbjxm8/XvRw=="
+          "hash": "al43P3y9N2qEX+a0olEOIw=="
         }
       },
       "is_incremental": false,
@@ -405,7 +429,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/task-hubs.html",
-          "hash": "7f/ePZQ0FIYbqSE1/eSrUw=="
+          "hash": "/8sujOvhnGL9IvcCS548OQ=="
         }
       },
       "is_incremental": false,
@@ -417,7 +441,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/timers.html",
-          "hash": "3Cy2Jxg8Jb4Qs33J9KDJpQ=="
+          "hash": "EvjSg4mut46wotbPeBetQw=="
         }
       },
       "is_incremental": false,
@@ -429,7 +453,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/topics/versioning.html",
-          "hash": "Tvrw7vLD0QStTf0i+2t5gA=="
+          "hash": "P2zRGxdghEW57MQRaIKKZA=="
         }
       },
       "is_incremental": false,
@@ -606,7 +630,7 @@
       "output": {
         ".html": {
           "relative_path": "index.html",
-          "hash": "br5Axx+Zft/hjIwwl/VECw=="
+          "hash": "1iU9P9VuzoIK9UseBmVfjw=="
         }
       },
       "is_incremental": false,
@@ -618,7 +642,7 @@
       "output": {
         ".html": {
           "relative_path": "toc.html",
-          "hash": "cF7c2BFDJey42Oh7Nf8Lrw=="
+          "hash": "xc/d5D8jhkVD5sUkDZzcKw=="
         }
       },
       "is_incremental": false,
@@ -633,6 +657,11 @@
         "incrementalPhase": "build"
       },
       "processors": {
+        "TocDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
         "ResourceDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
@@ -644,16 +673,6 @@
         },
         "ManagedReferenceDocumentProcessor": {
           "can_incremental": false,
-          "incrementalPhase": "build"
-        },
-        "TocDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
-          "incrementalPhase": "build"
-        },
-        "RestApiDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         }
       }

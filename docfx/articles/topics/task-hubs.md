@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-task-hubs).
+
 # Task Hubs
 A task hub is a logical container for durable task orchestrations and activities within the context of a single Azure storage account. Multiple functions and even function apps can exist in the same task hub, and the task hub often serves as an application container.
 

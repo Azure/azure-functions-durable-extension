@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification).
+
 # Human Interaction & Timeouts
 ## Phone Verification
 This sample demonstrates how to build a function orchestration that involves human interaction. Whenever a real person is involved in an automated process, the process must be able to send notifications to the person, receive responses back asynchronously from the person, and account for the person being unavailable (and this last part is where timeouts become important).

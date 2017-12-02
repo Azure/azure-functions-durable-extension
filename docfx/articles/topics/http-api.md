@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-http-api).
+
 # HTTP APIs
 The Durable Task Extension exposes a set of HTTP APIs that can be used to perform the following tasks.
 

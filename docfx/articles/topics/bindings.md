@@ -1,3 +1,6 @@
+> [!WARNING]
+> This documentation is out of date and will be deleted. The official documentation has been moved [here](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-bindings).
+
 # Bindings
 ## Overview
 The Durable Functions extension introduces two new trigger bindings which control the execution of orchestrator and activity functions. It also introduces an output binding which acts as a client into the Durable Functions runtime.

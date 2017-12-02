@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Error Handling &amp; Compensation ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="error-handling--compensation">Error Handling &amp; Compensation</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-error-handling">here</a>.</p>
+</div>
+<h1 id="error-handling--compensation">Error Handling &amp; Compensation</h1>
 <p>Durable Function orchestrations are implemented in pure code and therefore leverage the error handling capabilities of the orchestrator function&#39;s programming language. With this in mind, there really aren&#39;t any new concepts you need to learn about when incorporating error handling and compensation into your orchestrations. However, there are still a few important behaviors to be aware of when planning for error handling.</p>
 <h2 id="errors-in-activity-functions">Errors in activity functions</h2>
 <p>Any exception that is thrown in an activity function is marshalled back to the orchestrator function and thrown as a <code>TaskFailedException</code>. Users can write the appropriate error handling and compensation code that suits their needs around this.</p>
@@ -168,7 +170,7 @@ public static async Task Run(DurableOrchestrationContext context)
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/docfx/articles/topics/error-handling.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/readme-fix/docfx/articles/topics/error-handling.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>
