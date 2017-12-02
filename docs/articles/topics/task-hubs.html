@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Task Hubs ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="task-hubs">Task Hubs</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-task-hubs">here</a>.</p>
+</div>
+<h1 id="task-hubs">Task Hubs</h1>
 <p>A task hub is a logical container for durable task orchestrations and activities within the context of a single Azure storage account. Multiple functions and even function apps can exist in the same task hub, and the task hub often serves as an application container.</p>
 <p>Task hubs do not need to be created explicitly. Rather, they are declared by name in <strong>host.json</strong> and initialized automatically by the runtime. Each task hub has its own set of storage queues, tables, and blobs within a single storage account, and all function apps which run in a given task hub will share the same storage resources. Orchestrator and activity functions can only interact with each other when they belong to the same task hub.</p>
 <h2 id="configuring-a-task-hub-in-hostjson">Configuring a Task Hub in host.json</h2>

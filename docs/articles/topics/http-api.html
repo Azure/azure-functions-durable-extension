@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="HTTP APIs ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="http-apis">HTTP APIs</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-http-api">here</a>.</p>
+</div>
+<h1 id="http-apis">HTTP APIs</h1>
 <p>The Durable Task Extension exposes a set of HTTP APIs that can be used to perform the following tasks.</p>
 <ul>
 <li>Fetch the status of an orchestration instance.</li>
@@ -85,6 +87,7 @@
 #r &quot;Newtonsoft.Json&quot;
 
 using System.Net;
+using System.Net.Http.Headers;
 
 public static async Task&lt;HttpResponseMessage&gt; Run(
     HttpRequestMessage req,
@@ -98,7 +101,9 @@ public static async Task&lt;HttpResponseMessage&gt; Run(
     
     log.Info($&quot;Started orchestration with ID = &#39;{instanceId}&#39;.&quot;);
     
-    return starter.CreateCheckStatusResponse(req, instanceId);
+    var res = starter.CreateCheckStatusResponse(req, instanceId);
+    res.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
+    return res;
 }
 </code></pre><p>The HTTP response of this example function produces the following JSON response data:</p>
 <table>
@@ -266,7 +271,7 @@ Location: https://{host}/webhookextensions/handler/DurableTaskExtension/instance
 </code></pre><p>The <strong>HTTP 202</strong> response also includes a <strong>Location</strong> response header which references the same URL has the <code>statusQueryGetUri</code> field mentioned previously.</p>
 <h3 id="raise-event">Raise Event</h3>
 <p>Sends an event notification message to a running orchestration instance.</p>
-<h4 id="request">Request</h4>
+<h4 id="request-1">Request</h4>
 <p>For Functions 1.0, the request format is as follows:</p>
 <pre><code class="lang-http">POST /admin/extensions/DurableTaskExtension/instances/{instanceId}/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&amp;connection={connection}&amp;code={systemKey}
 </code></pre><p>The Functions 2.0 format has all the same parameters, but has a slightly different URL prefix:</p>
@@ -296,7 +301,7 @@ Location: https://{host}/webhookextensions/handler/DurableTaskExtension/instance
 </tr>
 </tbody>
 </table>
-<h4 id="response">Response</h4>
+<h4 id="response-1">Response</h4>
 <p>Several possible status code values can be returned.</p>
 <ul>
 <li><strong>HTTP 202 (Accepted)</strong>: The raised event was accepted for processing.</li>
@@ -313,7 +318,7 @@ Content-Length: 6
 </code></pre><p>The responses for this API do not contain any content.</p>
 <h3 id="terminate-instance">Terminate Instance</h3>
 <p>Terminates a running orchestration instance.</p>
-<h4 id="request">Request</h4>
+<h4 id="request-2">Request</h4>
 <p>For Functions 1.0, the request format is as follows:</p>
 <pre><code class="lang-http">DELETE /admin/extensions/DurableTaskExtension/instances/{instanceId}/terminate?reason={reason}&amp;taskHub={taskHub}&amp;connection={connection}&amp;code={systemKey}
 </code></pre><p>The Functions 2.0 format has all the same parameters, but has a slightly different URL prefix:</p>
@@ -337,7 +342,7 @@ Content-Length: 6
 </tr>
 </tbody>
 </table>
-<h4 id="response">Response</h4>
+<h4 id="response-2">Response</h4>
 <p>Several possible status code values can be returned.</p>
 <ul>
 <li><strong>HTTP 202 (Accepted)</strong>: The terminate request was accepted for processing.</li>

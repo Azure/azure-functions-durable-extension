@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Stateful Singleton - Counter ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="stateful-singleton---counter">Stateful Singleton - Counter</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-counter">here</a>.</p>
+</div>
+<h1 id="stateful-singleton---counter">Stateful Singleton - Counter</h1>
 <p>Stateful singletons are long-running (potentially eternal) orchestrator functions which store state and can be invoked and queried by other functions in your application. Stateful singletons are similar in spirit to the <a href="https://en.wikipedia.org/wiki/Actor_model">Actor model</a> in distributed computing.</p>
 <p>While not a proper &quot;actor&quot; implementation, orchestrator functions have many of the same runtime characteristics (stateful, reliable, single-threaded, location transparent, globally addressable, etc.) that make real actor implementations especially useful, but without the need for a separate framework. The below example is a simple <em>counter</em> singleton object which supports <em>increment</em> and <em>decrement</em> operations and updates its internal state accordingly.</p>
 <h2 id="before-you-begin">Before you begin</h2>

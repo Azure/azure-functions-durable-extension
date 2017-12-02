@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Instance Management ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="instance-management">Instance Management</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-instance-management">here</a>.</p>
+</div>
+<h1 id="instance-management">Instance Management</h1>
 <p>Durable Function orchestration instances can be started, terminated, queried, and sent notification events. All instance management is done using the orchestration client binding. More details on this binding can be found in the <a href="bindings.html">Bindings</a> topic. This article goes into the details of each of the instance management operations.</p>
 <h2 id="starting-instances">Starting instances</h2>
 <p>The <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_">StartNewAsync</a> method on the <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html">DurableOrchestrationClient</a> class can be used to start a new instances of an orchestrator function. Instances of this class can be acquired using the <code>orchestrationClient</code> binding. Internally, this method will enqueue a message into the control queue, which will then trigger the start of a function with the specified name that uses the <code>orchestrationTrigger</code> trigger binding.</p>
