@@ -60,30 +60,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute,
             int totalTimeout,
-            int iterationTimeout)
+            int retryTimeout)
         {
             GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri,
                 out var terminatePostUri);
 
-            if (totalTimeout < iterationTimeout)
+            if (totalTimeout < retryTimeout)
             {
-                // check what type of exception we need to throw
-                throw new InvalidOperationException($"Total timeout {totalTimeout} should be bigger than {iterationTimeout}");
+                throw new InvalidOperationException($"Total timeout {totalTimeout} should be bigger than {retryTimeout}");
             }
 
-            var iterationCount = totalTimeout / iterationTimeout;
+            var iterationCount = totalTimeout / retryTimeout;
             JToken durableFunctionOutput = null;
-            using (var httpClient = new HttpClient())
+
+            var client = GetClient(request);
+            var status = await client.GetStatusAsync(instanceId);
+            for (var i = 0; i < iterationCount; i++)
             {
-                for (var i = 0; i < iterationCount; i++)
+                Thread.Sleep(retryTimeout);
+                if (status != null && status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
                 {
-                    Thread.Sleep(iterationTimeout);
-                    var statusCheck = await httpClient.GetStringAsync(statusQueryGetUri);
-                    var status = JsonConvert.DeserializeObject<DurableOrchestrationStatus>(statusCheck);
-                    if (status.RuntimeStatus != OrchestrationRuntimeStatus.Completed) { continue; }
                     durableFunctionOutput = status.Output;
                     break;
                 }
+                status = await client.GetStatusAsync(instanceId);
             }
 
             if (durableFunctionOutput == null)
