@@ -472,6 +472,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
 
+        // Get a response that will wait for response from the durable function for predefined period of time before 
+        // pointing to our webhook handler. 
+        internal async Task<HttpResponseMessage> CreateCheckStatusResponse(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute, 
+            int totalTimeout,
+            int iterationTimeout)
+        {
+            if (DisableHttpManagementApis)
+            {
+                throw new InvalidOperationException("HTTP instance management APIs are disabled.");
+            }
+
+            return await httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, totalTimeout, iterationTimeout);
+        }
+
         Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
