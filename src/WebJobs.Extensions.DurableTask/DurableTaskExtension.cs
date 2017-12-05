@@ -479,15 +479,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             OrchestrationClientAttribute attribute,
-            int totalTimeout,
-            int retryTimeout)
+            TimeSpan timeout,
+            TimeSpan retryInterval)
         {
             if (DisableHttpManagementApis)
             {
                 throw new InvalidOperationException("HTTP instance management APIs are disabled.");
             }
 
-            return await httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, totalTimeout, retryTimeout);
+            return await this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, timeout, retryInterval);
         }
 
         Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(

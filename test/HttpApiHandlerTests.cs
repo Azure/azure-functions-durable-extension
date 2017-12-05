@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Security.Authentication;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -36,10 +33,10 @@ namespace WebJobs.Extensions.DurableTask.Tests
         public async  Task CreateCheckStatusResponse_Throws_Exception_When_Bad_Timeout_Request()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() {NotificationUrl = new Uri(NotificationUrl) }, null);
-            const int totalTimeout = 0;
-            const int retryTimeout = 100;
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(){RequestUri = new Uri(RequestUri) }, InstanceId, new OrchestrationClientAttribute(){ TaskHub = TaskHub, ConnectionName = ConnectionName}, totalTimeout, retryTimeout));
-            Assert.Equal($"Total timeout {totalTimeout} should be bigger than retry timeout {retryTimeout}", ex.Message);
+            var totalTimeout = TimeSpan.FromSeconds(0);
+            var retryTimeout = TimeSpan.FromSeconds(100);
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(){RequestUri = new Uri(RequestUri) }, InstanceId, new OrchestrationClientAttribute(){ TaskHub = TaskHub, ConnectionName = ConnectionName}, totalTimeout, retryTimeout));
+            Assert.Equal($"Total timeout {totalTimeout.TotalSeconds} should be bigger than retry timeout {retryTimeout.TotalSeconds}", ex.Message);
         }
 
         [Fact]
@@ -61,7 +58,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         public async Task CreateCheckStatusResponse_Returns_HTTP_202_Response_After_Timeout()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, RandomInstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, 1000, 10);
+            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, RandomInstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(1000), TimeSpan.FromSeconds(10));
             Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.Accepted);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
@@ -75,7 +72,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         public async Task CreateCheckStatusResponse_Returns_HTTP_200_Response()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, InstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, 1000, 10);
+            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, InstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(1000), TimeSpan.FromSeconds(10));
             Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.OK);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
@@ -87,12 +84,15 @@ namespace WebJobs.Extensions.DurableTask.Tests
         public async Task CreateCheckStatusResponse_Returns_HTTP_200_Response_After_Few_Iterations()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, InstanceIdIterations, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, 1000, 10);
+            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, InstanceIdIterations, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(8));
             Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.OK);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
             Assert.Equal(value, "Hello Tokyo!");
         }
+
+        // TBD : Add tests for covering the Cancel, Failed and Terminated cases
+        // TBD : Add tests checking the new way of pausing the execution 
 
 
     }

@@ -35,9 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri,
-                out var terminatePostUri);
-            return CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+            return this.CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
         }
 
 
@@ -45,36 +44,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             OrchestrationClientAttribute attribute,
-            int totalTimeout,
-            int retryTimeout)
+            TimeSpan timeout,
+            TimeSpan retryInterval)
         {
-            GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri,
-                out var terminatePostUri);
-
-            if (totalTimeout < retryTimeout)
+            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+            if (TimeSpan.Compare(timeout, retryInterval) != 1)
             {
-                throw new InvalidOperationException($"Total timeout {totalTimeout} should be bigger than retry timeout {retryTimeout}");
+                throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
-
-            var iterationCount = totalTimeout / retryTimeout;
+            this.GetRetryValues(timeout, retryInterval, out var iterationCount, out var leftOverInterval);
             JToken durableFunctionOutput = null;
 
-            var client = GetClient(request);
+            var client = this.GetClient(request);
             var status = await client.GetStatusAsync(instanceId);
             for (var i = 0; i < iterationCount; i++)
             {
-                Thread.Sleep(retryTimeout);
+                await this.DelayExecution(i, iterationCount, retryInterval, leftOverInterval);
                 if (status != null && status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
                 {
                     durableFunctionOutput = status.Output;
                     break;
                 }
-                status = await client.GetStatusAsync(instanceId);
+                else
+                {
+                    if (status != null && (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled || status.RuntimeStatus == OrchestrationRuntimeStatus.Failed || status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        status = await client.GetStatusAsync(instanceId);
+                    }
+                }
             }
 
             if (durableFunctionOutput == null)
             {
-                return CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Running)
+                {
+                    return this.CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+                }
+                else
+                {
+                    return request.CreateErrorResponse(HttpStatusCode.InternalServerError, $"The durable function's runtime status is {status.RuntimeStatus}");
+                }
             }
             var response = request.CreateResponse(HttpStatusCode.OK, durableFunctionOutput);
             return response;
@@ -352,6 +365,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             response.Headers.Location = new Uri(statusQueryGetUri);
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
+        }
+
+        private void GetRetryValues(TimeSpan timeout, TimeSpan retryInterval, out int iterationCount, out int leftOverInterval)
+        {
+            iterationCount = (int)(timeout.TotalSeconds / retryInterval.TotalSeconds);
+            leftOverInterval = (int)(timeout.TotalSeconds % retryInterval.TotalSeconds);
+            if (leftOverInterval > 0) { iterationCount++; }
+        }
+
+        private async Task DelayExecution(int counter, int iterationCount, TimeSpan retryInterval, int leftOverInterval)
+        {
+            if (counter < iterationCount - 1)
+            {
+                await Task.Delay((int)retryInterval.TotalSeconds);
+            }
+            else
+            {
+                if (leftOverInterval > 0)
+                {
+                    await Task.Delay((int)leftOverInterval);
+                }
+                else
+                {
+                    await Task.Delay((int)retryInterval.TotalSeconds);
+                }
+            }
         }
     }
 }

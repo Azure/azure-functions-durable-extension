@@ -42,26 +42,25 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <returns>An HTTP response which may include a 202 and locaton header.</returns>
+        /// <returns>An HTTP response which may include a 202 and location header.</returns>
         public HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
         }
-
 
         /// <summary>
         /// Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well. 
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <param name="totalTimeout">Total allowed timeout for output from the durable function</param>
-        /// <param name="retryTimeout">Timeout between checks for output from the durable function</param>
-        /// <returns>Task of <see cref="HttpResponseMessage"/></returns>
-        public async Task<HttpResponseMessage> CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, int totalTimeout, int retryTimeout)
+        /// <param name="timeout ">Total allowed timeout for output from the durable function.</param>
+        /// <param name="timeout">Total allowed timeout for output from the durable function.</param>
+        /// <param name="retryInterval">Timeout between checks for output from the durable function.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        public async Task<HttpResponseMessage> CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, TimeSpan timeout, TimeSpan? retryInterval)
         {
-            return await config.CreateCheckStatusResponse(request, instanceId, this.attribute, totalTimeout, retryTimeout);
+            return await this.config.CreateCheckStatusResponse(request, instanceId, this.attribute, timeout, retryInterval ?? TimeSpan.FromSeconds(5));
         }
-
 
         /// <summary>
         /// Starts a new execution of the specified orchestrator function.
