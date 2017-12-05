@@ -164,7 +164,8 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        // To be discussed if this is an acceptable approach 
+        public virtual async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
             if (state == null)

@@ -37,21 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri,
                 out var terminatePostUri);
-
-            var response = request.CreateResponse(
-                HttpStatusCode.Accepted,
-                new
-                {
-                    id = instanceId,
-                    statusQueryGetUri,
-                    sendEventPostUri,
-                    terminatePostUri
-                });
-
-            // Implement the async HTTP 202 pattern.
-            response.Headers.Location = new Uri(statusQueryGetUri);
-            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
-            return response;
+            return CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
         }
 
 
@@ -67,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (totalTimeout < retryTimeout)
             {
-                throw new InvalidOperationException($"Total timeout {totalTimeout} should be bigger than {retryTimeout}");
+                throw new InvalidOperationException($"Total timeout {totalTimeout} should be bigger than retry timeout {retryTimeout}");
             }
 
             var iterationCount = totalTimeout / retryTimeout;
@@ -88,28 +74,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (durableFunctionOutput == null)
             {
-                var response = request.CreateResponse(
-                    HttpStatusCode.Accepted,
-                    new
-                    {
-                        id = instanceId,
-                        statusQueryGetUri,
-                        sendEventPostUri,
-                        terminatePostUri
-                    });
-
-                // Implement the async HTTP 202 pattern.
-                response.Headers.Location = new Uri(statusQueryGetUri);
-                response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
-                return response;
+                return CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
             }
-            else
-            {
-                var response = request.CreateResponse(
-                    HttpStatusCode.OK, durableFunctionOutput);
-                return response;
-
-            }
+            var response = request.CreateResponse(HttpStatusCode.OK, durableFunctionOutput);
+            return response;
         }
 
 
@@ -341,7 +309,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            out string sendEventPostUri,
            out string terminatePostUri)
         {
-            if (config.NotificationUrl == null)
+            if (this.config.NotificationUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }
@@ -366,6 +334,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             statusQueryGetUri = instancePrefix + "?" + querySuffix;
             sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
             terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
+        }
+
+        private HttpResponseMessage CreateResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
+        {
+            var response = request.CreateResponse(
+                HttpStatusCode.Accepted,
+                new
+                {
+                    id = instanceId,
+                    statusQueryGetUri,
+                    sendEventPostUri,
+                    terminatePostUri
+                });
+
+            // Implement the async HTTP 202 pattern.
+            response.Headers.Location = new Uri(statusQueryGetUri);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
+            return response;
         }
     }
 }

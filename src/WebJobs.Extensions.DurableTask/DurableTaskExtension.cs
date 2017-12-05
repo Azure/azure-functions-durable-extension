@@ -282,7 +282,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        internal DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        // To be discussed if this is an acceptable approach 
+        internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,
