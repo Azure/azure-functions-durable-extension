@@ -282,7 +282,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        internal DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        // To be discussed if this is an acceptable approach 
+        internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -470,6 +471,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+        }
+
+        // Get a response that will wait for response from the durable function for predefined period of time before 
+        // pointing to our webhook handler. 
+        internal async Task<HttpResponseMessage> CreateCheckStatusResponse(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
+        {
+            if (DisableHttpManagementApis)
+            {
+                throw new InvalidOperationException("HTTP instance management APIs are disabled.");
+            }
+
+            return await this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, timeout, retryInterval);
         }
 
         Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(
