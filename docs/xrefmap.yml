@@ -172,102 +172,120 @@ references:
   commentId: T:Microsoft.Azure.WebJobs.DurableOrchestrationContext
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext
   nameWithType: DurableOrchestrationContext
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object[])
-  name: CallActivityAsync(String, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_System_String_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object[])
-  name.vb: CallActivityAsync(String, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String, System.Object())
-  nameWithType: DurableOrchestrationContext.CallActivityAsync(String, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallActivityAsync(String, Object())
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object)
+  name: CallActivityAsync(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallActivityAsync(String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*
   name: CallActivityAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync
   nameWithType: DurableOrchestrationContext.CallActivityAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object[])
-  name: CallActivityAsync<TResult>(String, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync__1_System_String_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object[])
-  name.vb: CallActivityAsync(Of TResult)(String, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync<TResult>(System.String, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(Of TResult)(System.String, System.Object())
-  nameWithType: DurableOrchestrationContext.CallActivityAsync<TResult>(String, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallActivityAsync(Of TResult)(String, Object())
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name: CallActivityWithRetryAsync(String, RetryOptions, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name.vb: CallActivityWithRetryAsync(String, RetryOptions, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object())
-  nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync(String, RetryOptions, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallActivityWithRetryAsync(String, RetryOptions, Object())
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)
+  name: CallActivityAsync<TResult>(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync__1_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)
+  name.vb: CallActivityAsync(Of TResult)(String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync<TResult>(System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(Of TResult)(System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallActivityAsync<TResult>(String, Object)
+  nameWithType.vb: DurableOrchestrationContext.CallActivityAsync(Of TResult)(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallActivityWithRetryAsync(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync(String, RetryOptions, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync*
   name: CallActivityWithRetryAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync
   nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name: CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name.vb: CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object())
-  nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object())
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object[])
-  name: CallSubOrchestratorAsync(String, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object[])
-  name.vb: CallSubOrchestratorAsync(String, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String, System.Object())
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync(String, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorAsync(String, Object())
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name.vb: CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object)
+  nameWithType.vb: DurableOrchestrationContext.CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object)
+  name: CallSubOrchestratorAsync(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.String,System.Object)
+  name: CallSubOrchestratorAsync(String, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String, System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync(String, String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync*
   name: CallSubOrchestratorAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync
   nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object[])
-  name: CallSubOrchestratorAsync<TResult>(String, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object[])
-  name.vb: CallSubOrchestratorAsync(Of TResult)(String, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(System.String, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(System.String, System.Object())
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(String, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(String, Object())
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name.vb: CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object())
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object())
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object)
+  name: CallSubOrchestratorAsync<TResult>(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object)
+  name.vb: CallSubOrchestratorAsync(Of TResult)(String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(String, Object)
+  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)
+  name: CallSubOrchestratorAsync<TResult>(String, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)
+  name.vb: CallSubOrchestratorAsync(Of TResult)(String, String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(System.String, System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(System.String, System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(String, String, Object)
+  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(String, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync*
   name: CallSubOrchestratorWithRetryAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync
   nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object[])
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object___
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object[])
-  name.vb: CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object())
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object[])
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object())
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object[])
-  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object())
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name.vb: CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object)
+  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  name.vb: CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
+  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, String, Object)
+  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)
   name: ContinueAsNew(Object)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_System_Object_
@@ -731,6 +749,12 @@ references:
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask
   nameWithType: DurableTaskJobHostConfigurationExtensions.UseDurableTask
+- uid: Microsoft.Azure.WebJobs.FunctionFailedException
+  name: FunctionFailedException
+  href: api/Microsoft.Azure.WebJobs.FunctionFailedException.html
+  commentId: T:Microsoft.Azure.WebJobs.FunctionFailedException
+  fullName: Microsoft.Azure.WebJobs.FunctionFailedException
+  nameWithType: FunctionFailedException
 - uid: Microsoft.Azure.WebJobs.OrchestrationClientAttribute
   name: OrchestrationClientAttribute
   href: api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html
@@ -791,6 +815,54 @@ references:
   commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub
   fullName: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub
   nameWithType: OrchestrationClientAttribute.TaskHub
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus
+  name: OrchestrationRuntimeStatus
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html
+  commentId: T:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus
+  nameWithType: OrchestrationRuntimeStatus
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Canceled
+  name: Canceled
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Canceled
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Canceled
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Canceled
+  nameWithType: OrchestrationRuntimeStatus.Canceled
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Completed
+  name: Completed
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Completed
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Completed
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Completed
+  nameWithType: OrchestrationRuntimeStatus.Completed
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.ContinuedAsNew
+  name: ContinuedAsNew
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_ContinuedAsNew
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.ContinuedAsNew
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.ContinuedAsNew
+  nameWithType: OrchestrationRuntimeStatus.ContinuedAsNew
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Failed
+  name: Failed
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Failed
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Failed
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Failed
+  nameWithType: OrchestrationRuntimeStatus.Failed
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Pending
+  name: Pending
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Pending
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Pending
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Pending
+  nameWithType: OrchestrationRuntimeStatus.Pending
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Running
+  name: Running
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Running
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Running
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Running
+  nameWithType: OrchestrationRuntimeStatus.Running
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Terminated
+  name: Terminated
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Terminated
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Terminated
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Terminated
+  nameWithType: OrchestrationRuntimeStatus.Terminated
 - uid: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute
   name: OrchestrationTriggerAttribute
   href: api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html
