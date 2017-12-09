@@ -282,8 +282,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        // To be discussed if this is an acceptable approach 
-        internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+
+        protected internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan timeout,
             TimeSpan retryInterval)
         {
-            if (DisableHttpManagementApis)
+            if (this.DisableHttpManagementApis)
             {
                 throw new InvalidOperationException("HTTP instance management APIs are disabled.");
             }

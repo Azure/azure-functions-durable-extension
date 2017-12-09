@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <param name="timeout ">Total allowed timeout for output from the durable function.</param>
         /// <param name="timeout">Total allowed timeout for output from the durable function.</param>
-        /// <param name="retryInterval">Timeout between checks for output from the durable function.</param>
+        /// <param name="retryInterval">Timeout between checks for output from the durable function. The default value is 5 seconds.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         public async Task<HttpResponseMessage> CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, TimeSpan timeout, TimeSpan? retryInterval)
         {
@@ -163,7 +163,6 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        // To be discussed if this is an acceptable approach 
         public virtual async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationClientAttribute attribute)
         {
             this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
-            return this.CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+            return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
         }
 
 
@@ -48,46 +49,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan retryInterval)
         {
             this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
-            if (TimeSpan.Compare(timeout, retryInterval) != 1)
+            if (retryInterval > timeout)
             {
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
-            this.GetRetryValues(timeout, retryInterval, out var iterationCount, out var leftOverInterval);
-            JToken durableFunctionOutput = null;
 
+            JToken durableFunctionOutput = null;
+            DurableOrchestrationStatus status;
             var client = this.GetClient(request);
-            var status = await client.GetStatusAsync(instanceId);
-            for (var i = 0; i < iterationCount; i++)
+            var stopwatch = Stopwatch.StartNew();
+            while (true)
             {
-                await this.DelayExecution(i, iterationCount, retryInterval, leftOverInterval);
+                status = await client.GetStatusAsync(instanceId);
                 if (status != null && status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
                 {
                     durableFunctionOutput = status.Output;
                     break;
                 }
+                if (status != null && (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled || status.RuntimeStatus == OrchestrationRuntimeStatus.Failed || status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
+                {
+                    break;
+                }
+                
+                var elapsed = stopwatch.Elapsed;
+                if (elapsed < timeout)
+                {
+                    var remainingTime = timeout.Subtract(elapsed);
+                    await Task.Delay(remainingTime > retryInterval ? retryInterval : remainingTime);
+                }
                 else
                 {
-                    if (status != null && (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled || status.RuntimeStatus == OrchestrationRuntimeStatus.Failed || status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        status = await client.GetStatusAsync(instanceId);
-                    }
+                    break;
                 }
             }
-
+            
             if (durableFunctionOutput == null)
             {
-                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Running)
+                if (status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Running)
                 {
-                    return this.CreateResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+                    return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
                 }
-                else
-                {
-                    return request.CreateErrorResponse(HttpStatusCode.InternalServerError, $"The durable function's runtime status is {status.RuntimeStatus}");
-                }
+                var httpResponseMessage = await HandleGetStatusRequestAsync(request, instanceId);
+                httpResponseMessage.StatusCode = HttpStatusCode.InternalServerError;
+                return httpResponseMessage;
             }
             var response = request.CreateResponse(HttpStatusCode.OK, durableFunctionOutput);
             return response;
@@ -260,14 +264,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
 
-            string mediaType = request.Content.Headers.ContentType?.MediaType;
-            if (!string.IsNullOrEmpty(mediaType) &&
-                !string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+            var mediaType = request.Content.Headers.ContentType?.MediaType;
+            if (!string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
             }
 
-            string stringData = await request.Content.ReadAsStringAsync();
+            var stringData = await request.Content.ReadAsStringAsync();
 
             object eventData;
             try
@@ -349,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
         }
 
-        private HttpResponseMessage CreateResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
+        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
         {
             var response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -365,32 +368,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             response.Headers.Location = new Uri(statusQueryGetUri);
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
-        }
-
-        private void GetRetryValues(TimeSpan timeout, TimeSpan retryInterval, out int iterationCount, out int leftOverInterval)
-        {
-            iterationCount = (int)(timeout.TotalSeconds / retryInterval.TotalSeconds);
-            leftOverInterval = (int)(timeout.TotalSeconds % retryInterval.TotalSeconds);
-            if (leftOverInterval > 0) { iterationCount++; }
-        }
-
-        private async Task DelayExecution(int counter, int iterationCount, TimeSpan retryInterval, int leftOverInterval)
-        {
-            if (counter < iterationCount - 1)
-            {
-                await Task.Delay((int)retryInterval.TotalSeconds);
-            }
-            else
-            {
-                if (leftOverInterval > 0)
-                {
-                    await Task.Delay((int)leftOverInterval);
-                }
-                else
-                {
-                    await Task.Delay((int)retryInterval.TotalSeconds);
-                }
-            }
         }
     }
 }

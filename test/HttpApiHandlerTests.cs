@@ -58,7 +58,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         public async Task CreateCheckStatusResponse_Returns_HTTP_202_Response_After_Timeout()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, RandomInstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(1000), TimeSpan.FromSeconds(10));
+            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, RandomInstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(100), TimeSpan.FromSeconds(10));
             Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.Accepted);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
@@ -72,7 +72,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         public async Task CreateCheckStatusResponse_Returns_HTTP_200_Response()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, InstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(1000), TimeSpan.FromSeconds(10));
+            var httpResponseMessage = await httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage() { RequestUri = new Uri(RequestUri) }, InstanceId, new OrchestrationClientAttribute() { TaskHub = TaskHub, ConnectionName = ConnectionName }, TimeSpan.FromSeconds(100), TimeSpan.FromSeconds(10));
             Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.OK);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
