@@ -82,6 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     break;
                 }
             }
+            stopwatch.Stop();
             
             if (durableFunctionOutput == null)
             {
@@ -89,9 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
                 }
-                var httpResponseMessage = await HandleGetStatusRequestAsync(request, instanceId);
-                httpResponseMessage.StatusCode = HttpStatusCode.InternalServerError;
-                return httpResponseMessage;
+                return await this.HandleGetStatusRequestAsync(request, instanceId);
             }
             var response = request.CreateResponse(HttpStatusCode.OK, durableFunctionOutput);
             return response;

@@ -11,8 +11,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
     public class DurableOrchestrationClientMock : DurableOrchestrationClient
     {
 
-        private const string IntanceIdFactComplete = "7b59154ae666471993659902ed0ba742";
-        private const string InstanceIdIterations = "7b59154ae666471993659902ed0ba749";
+
 
         internal DurableOrchestrationClientMock(IOrchestrationServiceClient serviceClient, DurableTaskExtension config, OrchestrationClientAttribute attribute, EndToEndTraceHelper traceHelper) : base(serviceClient, config, attribute, traceHelper)
         {
@@ -23,19 +22,33 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
         public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
-            var runtimeStatus = OrchestrationRuntimeStatus.Running;
-            if (instanceId == IntanceIdFactComplete)
-                runtimeStatus = OrchestrationRuntimeStatus.Completed;
-            else if (instanceId == InstanceIdIterations)
+            var runtimeStatus = OrchestrationRuntimeStatus.Running; ;
+            switch (instanceId)
             {
-                if (Counter < 3)
-                {
-                    Counter++;
-                }
-                else
-                {
+                case TestConstants.IntanceIdFactComplete:
                     runtimeStatus = OrchestrationRuntimeStatus.Completed;
-                }
+                    break;
+                case TestConstants.InstanceIdIterations:
+                    if (Counter < 3)
+                    {
+                        Counter++;
+                    }
+                    else
+                    {
+                        runtimeStatus = OrchestrationRuntimeStatus.Completed;
+                    }
+                    break;
+
+                case TestConstants.InstanceIdFailed:
+                    runtimeStatus = OrchestrationRuntimeStatus.Failed;
+                    break;
+
+                case TestConstants.InstanceIdTerminated:
+                    runtimeStatus = OrchestrationRuntimeStatus.Terminated;
+                    break;
+                case TestConstants.InstanceIdCanceled:
+                    runtimeStatus = OrchestrationRuntimeStatus.Canceled;
+                    break;
             }
             return new DurableOrchestrationStatus
             {
