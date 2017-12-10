@@ -8,7 +8,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Extensions;
+
 namespace WebJobs.Extensions.DurableTask.Tests
 {
     public class HttpApiHandlerTests
@@ -119,10 +119,5 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var response = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
         }
-
-        // TBD : Add tests for covering the Cancel, Failed and Terminated cases
-        // TBD : Add tests checking the new way of pausing the execution 
-
-
     }
 }
