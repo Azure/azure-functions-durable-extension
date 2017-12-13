@@ -1,28 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Newtonsoft.Json;
 
 namespace WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableOrchestrationClientMock : DurableOrchestrationClient
     {
-
-
-
         internal DurableOrchestrationClientMock(IOrchestrationServiceClient serviceClient, DurableTaskExtension config, OrchestrationClientAttribute attribute, EndToEndTraceHelper traceHelper) : base(serviceClient, config, attribute, traceHelper)
         {
         }
 
         public int Counter { get; set; }
 
-
         public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
-            var runtimeStatus = OrchestrationRuntimeStatus.Running; ;
+            var runtimeStatus = OrchestrationRuntimeStatus.Running;
             switch (instanceId)
             {
                 case TestConstants.IntanceIdFactComplete:

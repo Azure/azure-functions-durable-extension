@@ -54,21 +54,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            JToken durableFunctionOutput = null;
-            DurableOrchestrationStatus status;
             var client = this.GetClient(request);
             var stopwatch = Stopwatch.StartNew();
             while (true)
             {
-                status = await client.GetStatusAsync(instanceId);
+                var status = await client.GetStatusAsync(instanceId);
                 if (status != null && status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
                 {
-                    durableFunctionOutput = status.Output;
-                    break;
+                    return request.CreateResponse(HttpStatusCode.OK, status.Output);
                 }
                 if (status != null && (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled || status.RuntimeStatus == OrchestrationRuntimeStatus.Failed || status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
                 {
-                    break;
+                    return await this.HandleGetStatusRequestAsync(request, instanceId);
                 }
                 
                 var elapsed = stopwatch.Elapsed;
@@ -79,21 +76,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    break;
-                }
-            }
-            stopwatch.Stop();
-            
-            if (durableFunctionOutput == null)
-            {
-                if (status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Running)
-                {
                     return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
                 }
-                return await this.HandleGetStatusRequestAsync(request, instanceId);
             }
-            var response = request.CreateResponse(HttpStatusCode.OK, durableFunctionOutput);
-            return response;
         }
 
 
