@@ -16,9 +16,7 @@ public static async Task<HttpResponseMessage> Run(
     
     log.Info($"Started orchestration with ID = '{instanceId}'.");
     
-    return await starter.CreateCheckStatusResponse(
-                req,
-                instanceId,
-                TimeSpan.FromSeconds(2),
-                TimeSpan.FromMilliseconds(50));
+    return await starter.WaitForCompletionOrCreateCheckStatusResponseAsync(
+        req,
+        instanceId);
 }

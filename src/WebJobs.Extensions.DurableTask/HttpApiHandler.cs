@@ -21,6 +21,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
+        private const string TimeoutParameter = "timeout";
+        private const string RetryIntervalParameter = "retryInterval";
+
+        private const int DefaultTimeoutSeconds = 10;
+        private const int DefaultRetryIntervalSeconds = 1;
 
         private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
@@ -41,14 +46,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 
-        internal async Task<HttpResponseMessage> CreateCheckStatusResponse(
+        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
-            OrchestrationClientAttribute attribute,
-            TimeSpan timeout,
-            TimeSpan retryInterval)
+            OrchestrationClientAttribute attribute)
         {
             this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+            request.GetQueryParameters(TimeoutParameter, out var timeoutStringValue, RetryIntervalParameter, out var retryIntervalStringValue);
+            this.GetTimeoutDetails(timeoutStringValue, out var timeout, retryIntervalStringValue, out var retryInterval);
             if (retryInterval > timeout)
             {
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
@@ -272,25 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private DurableOrchestrationClient GetClient(HttpRequestMessage request)
         {
-            string taskHub = null;
-            string connectionName = null;
-
-            var pairs = request.GetQueryNameValuePairs();
-            foreach (var key in pairs.AllKeys)
-            {
-                if (taskHub == null
-                    && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(pairs[key]))
-                {
-                    taskHub = pairs[key];
-                }
-                else if (connectionName == null
-                    && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(pairs[key]))
-                {
-                    connectionName = pairs[key];
-                }
-            }
+            request.GetQueryParameters(TaskHubParameter, out var taskHub, ConnectionParameter, out var connectionName);
 
             var attribute = new OrchestrationClientAttribute
             {
@@ -352,6 +339,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             response.Headers.Location = new Uri(statusQueryGetUri);
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
+        }
+
+
+        private void GetTimeoutDetails(
+            string timeoutStringValue,
+            out TimeSpan timeout,
+            string retryIntervalStringValue,
+            out TimeSpan retryInterval)
+        {
+            timeout = TimeSpan.FromSeconds(DefaultTimeoutSeconds);
+            retryInterval = TimeSpan.FromSeconds(DefaultRetryIntervalSeconds);
+            if (timeoutStringValue != null && double.TryParse(timeoutStringValue, out var timeoutValue))
+            {
+                timeout = TimeSpan.FromSeconds(timeoutValue);
+            }
+            if (retryIntervalStringValue != null && double.TryParse(retryIntervalStringValue, out var retryIntervalValue))
+            {
+                retryInterval = TimeSpan.FromSeconds(retryIntervalValue);
+            }
         }
     }
 }

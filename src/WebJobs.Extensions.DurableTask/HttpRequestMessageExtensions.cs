@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public static NameValueCollection GetQueryNameValuePairs(this HttpRequestMessage request)
         {
             var values = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
-            var s = request.RequestUri.Query;
+            var s = request.RequestUri.Query.Replace("?", string.Empty);
             var separator = '&';
 
             int l = (s != null) ? s.Length : 0;
@@ -120,6 +120,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             
             return values;
+        }
+
+        /// <summary>
+        /// Retrieves two query string parameter values.
+        /// </summary>
+        /// <param name="request">HTTP request message.</param>
+        /// <param name="firstParameter">First parameter name.</param>
+        /// <param name="firstParameterValue">Output value for the first parameter.</param>
+        /// <param name="secondParameter">Second parameter name.</param>
+        /// <param name="secondParameterValue">Output value for the second parameter.</param>
+        public static void GetQueryParameters(
+            this HttpRequestMessage request, 
+            string firstParameter, 
+            out string firstParameterValue, 
+            string secondParameter, 
+            out string secondParameterValue)
+        {
+            firstParameterValue = null;
+            secondParameterValue = null;
+
+            var pairs = request.GetQueryNameValuePairs();
+            foreach (var key in pairs.AllKeys)
+            {
+                if (firstParameterValue == null
+                    && key.Equals(firstParameter, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(pairs[key]))
+                {
+                    firstParameterValue = pairs[key];
+                }
+                else if (secondParameterValue == null
+                         && key.Equals(secondParameter, StringComparison.OrdinalIgnoreCase)
+                         && !string.IsNullOrWhiteSpace(pairs[key]))
+                {
+                    secondParameterValue = pairs[key];
+                }
+            }
         }
     }
 }

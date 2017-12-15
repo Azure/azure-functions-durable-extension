@@ -53,12 +53,10 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <param name="timeout">Total allowed timeout for output from the durable function.</param>
-        /// <param name="retryInterval">Timeout between checks for output from the durable function. The default value is 5 seconds.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        public async Task<HttpResponseMessage> CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, TimeSpan timeout, TimeSpan? retryInterval)
+        public async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId)
         {
-            return await this.config.CreateCheckStatusResponse(request, instanceId, this.attribute, timeout, retryInterval ?? TimeSpan.FromSeconds(5));
+            return await this.config.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, this.attribute);
         }
 
         /// <summary>

@@ -5,7 +5,7 @@
       "name": "req",
       "type": "httpTrigger",
       "direction": "in",
-      "route": "syncorchestrators/{functionName}",
+      "route": "orchestrators/{functionName}/wait",
       "methods": ["post"]
     },
     {

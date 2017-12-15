@@ -12,7 +12,7 @@ namespace VSSample
         [FunctionName("HttpSyncStart")]
         public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(
-            AuthorizationLevel.Function, methods: "post", Route = "syncorchestrators/{functionName}")]
+            AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
             HttpRequestMessage req,
             [OrchestrationClient] DurableOrchestrationClient starter,
             string functionName,
@@ -24,11 +24,11 @@ namespace VSSample
 
             log.Info($"Started orchestration with ID = '{instanceId}'.");
 
-            return await starter.CreateCheckStatusResponse(
+            return await starter.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 req,
-                instanceId,
-                TimeSpan.FromSeconds(2),
-                TimeSpan.FromMilliseconds(50));
+                instanceId);
+
+
         }
     }
 }
