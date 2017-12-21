@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
@@ -21,11 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
-        private const string TimeoutParameter = "timeout";
-        private const string RetryIntervalParameter = "retryInterval";
-
-        private const int DefaultTimeoutSeconds = 10;
-        private const int DefaultRetryIntervalSeconds = 1;
 
         private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
@@ -47,11 +41,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
-            string instanceId,
-            OrchestrationClientAttribute attribute,
-            TimeSpan timeout,
-            TimeSpan retryInterval)
+             HttpRequestMessage request,
+             string instanceId,
+             OrchestrationClientAttribute attribute,
+             TimeSpan timeout,
+             TimeSpan retryInterval)
         {
             if (retryInterval > timeout)
             {
@@ -260,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
             }
 
-            var stringData = await request.Content.ReadAsStringAsync();
+            string stringData = await request.Content.ReadAsStringAsync();
 
             object eventData;
             try
@@ -278,25 +272,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private DurableOrchestrationClient GetClient(HttpRequestMessage request)
         {
-            string taskHub = null; 
+            string taskHub = null;
             string connectionName = null;
 
             var pairs = request.GetQueryNameValuePairs();
             foreach (var key in pairs.AllKeys)
             {
-              if (taskHub == null 
+                if (taskHub == null
                     && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     taskHub = pairs[key];
                 }
                 else if (connectionName == null
-                    && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(pairs[key]))
+                         && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
+                         && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     connectionName = pairs[key];
                 }
-             }
+            }
 
             var attribute = new OrchestrationClientAttribute
             {
@@ -308,12 +302,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         private void GetClientResponseLinks(
-           HttpRequestMessage request,
-           string instanceId,
-           OrchestrationClientAttribute attribute,
-           out string statusQueryGetUri,
-           out string sendEventPostUri,
-           out string terminatePostUri)
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            out string statusQueryGetUri,
+            out string sendEventPostUri,
+            out string terminatePostUri)
         {
             if (this.config.NotificationUrl == null)
             {
