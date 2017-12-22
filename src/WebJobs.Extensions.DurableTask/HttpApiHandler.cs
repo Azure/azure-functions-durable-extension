@@ -41,11 +41,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-             HttpRequestMessage request,
-             string instanceId,
-             OrchestrationClientAttribute attribute,
-             TimeSpan timeout,
-             TimeSpan retryInterval)
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
         {
             if (retryInterval > timeout)
             {
