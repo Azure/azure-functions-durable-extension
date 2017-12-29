@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class EndToEndTraceHelper
+    public class EndToEndTraceHelper
     {
         private const string CategoryName = "Host.Triggers.DurableTask";
         private static string appName;

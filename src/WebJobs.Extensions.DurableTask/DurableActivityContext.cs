@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs
 
         private string serializedOutput;
 
-        internal DurableActivityContext(string instanceId, string serializedInput)
+        protected internal DurableActivityContext(string instanceId, string serializedInput)
         {
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The ID of the current orchestration instance.
         /// </value>
-        public string InstanceId => this.instanceId;
+        public virtual string InstanceId => this.instanceId;
 
         /// <summary>
         /// Returns the input of the task activity in its raw JSON string value.
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The raw JSON-formatted activity input as a string value.
         /// </returns>
-        public string GetRawInput()
+        public virtual string GetRawInput()
         {
             return this.serializedInput;
         }
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The parsed <c>JToken</c> representation of the activity input.
         /// </returns>
-        public JToken GetInputAsJson()
+        public virtual JToken GetInputAsJson()
         {
             if (this.serializedInput == null)
             {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
         /// <returns>The deserialized input value.</returns>
-        public T GetInput<T>()
+        public virtual T GetInput<T>()
         {
             if (this.serializedInput == null)
             {

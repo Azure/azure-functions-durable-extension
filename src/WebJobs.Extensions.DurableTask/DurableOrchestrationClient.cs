@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs
         private readonly DurableTaskExtension config;
         private readonly OrchestrationClientAttribute attribute; // for rehydrating a Client after a webhook
 
-        internal DurableOrchestrationClient(
+        protected internal DurableOrchestrationClient(
             IOrchestrationServiceClient serviceClient,
             DurableTaskExtension config,
             OrchestrationClientAttribute attribute,
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <returns>An HTTP response which may include a 202 and locaton header.</returns>
-        public HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
+        public virtual HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
         }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        public Task<string> StartNewAsync(string orchestratorFunctionName, object input)
+        public virtual Task<string> StartNewAsync(string orchestratorFunctionName, object input)
         {
             return this.StartNewAsync(orchestratorFunctionName, string.Empty, input);
         }
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        public async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
+        public virtual async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
         {
             this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
 
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
-        public async Task RaiseEventAsync(string instanceId, string eventName, object eventData)
+        public virtual async Task RaiseEventAsync(string instanceId, string eventName, object eventData)
         {
             if (string.IsNullOrEmpty(eventName))
             {
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance to terminate.</param>
         /// <param name="reason">The reason for terminating the orchestration instance.</param>
         /// <returns>A task that completes when the terminate message is enqueued.</returns>
-        public async Task TerminateAsync(string instanceId, string reason)
+        public virtual async Task TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
             if (state.OrchestrationStatus == OrchestrationStatus.Running ||
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        public virtual async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
             if (state == null)

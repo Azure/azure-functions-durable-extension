@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// The type of a function.
     /// </summary>
-    internal enum FunctionType
+    public enum FunctionType
     {
         Activity,
         Orchestrator
