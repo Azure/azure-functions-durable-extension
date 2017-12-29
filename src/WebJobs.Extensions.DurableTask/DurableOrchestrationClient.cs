@@ -42,10 +42,23 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <returns>An HTTP response which may include a 202 and locaton header.</returns>
+        /// <returns>An HTTP response which may include a 202 and location header.</returns>
         public HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
+        }
+
+        /// <summary>
+        /// Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well. 
+        /// </summary>
+        /// <param name="request">The HTTP request that triggered the current function.</param>
+        /// <param name="instanceId">The unique ID of the instance to check.</param>
+        /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>		
+        /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        public async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
+        {
+            return await this.config.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, this.attribute, timeout ?? TimeSpan.FromSeconds(10), retryInterval ?? TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
@@ -85,7 +98,7 @@ namespace Microsoft.Azure.WebJobs
                 DefaultVersion,
                 instance.InstanceId,
                 reason: "NewInstance",
-                functionType: FunctionType.Orchestrator, 
+                functionType: FunctionType.Orchestrator,
                 isReplay: false);
 
             return instance.InstanceId;
@@ -149,7 +162,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        public virtual async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
             if (state == null)
