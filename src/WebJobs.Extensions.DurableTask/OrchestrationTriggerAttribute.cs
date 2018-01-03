@@ -1,9 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.Azure.WebJobs.Description;
 using System;
 using System.Diagnostics;
-using Microsoft.Azure.WebJobs.Description;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -12,7 +12,11 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{Orchestration} ({Version})")]
+#if NETSTANDARD2_0
+    [Binding(TriggerHandlesReturnValue = false)]
+#else
     [Binding]
+#endif
     public sealed class OrchestrationTriggerAttribute : Attribute
     {
         /// <summary>
