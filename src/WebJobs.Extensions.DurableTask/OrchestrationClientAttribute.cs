@@ -12,11 +12,7 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("TaskHub={TaskHub}, ConnectionName={ConnectionName}")]
-#if NETSTANDARD2_0
-    [Binding(TriggerHandlesReturnValue = false)]
-#else
     [Binding]
-#endif
     public sealed class OrchestrationClientAttribute : Attribute, IEquatable<OrchestrationClientAttribute>
     {
         /// <summary>
