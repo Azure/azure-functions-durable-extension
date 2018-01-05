@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
 {

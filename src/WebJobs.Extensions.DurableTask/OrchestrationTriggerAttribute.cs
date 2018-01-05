@@ -12,7 +12,11 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{Orchestration} ({Version})")]
+#if NETSTANDARD2_0
+    [Binding(TriggerHandlesReturnValue = true)]
+#else
     [Binding]
+#endif
     public sealed class OrchestrationTriggerAttribute : Attribute
     {
         /// <summary>
