@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -34,47 +35,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            if (this.config.NotificationUrl == null)
-            {
-                throw new InvalidOperationException("Webhooks are not configured");
-            }
-
-            Uri notificationUri = this.config.NotificationUrl;
-
-            // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
-            string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
-            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
-
-            string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);
-            string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
-
-            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
-            if (!string.IsNullOrEmpty(notificationUri.Query))
-            {
-                // This is expected to include the auto-generated system key for this extension.
-                querySuffix += "&" + notificationUri.Query.TrimStart('?');
-            }
-
-            string statusQueryGetUri = instancePrefix + "?" + querySuffix;
-            string sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
-            string terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
-
-            HttpResponseMessage response = request.CreateResponse(
-                HttpStatusCode.Accepted,
-                new
-                {
-                    id = instanceId,
-                    statusQueryGetUri = statusQueryGetUri,
-                    sendEventPostUri = sendEventPostUri,
-                    terminatePostUri = terminatePostUri
-                });
-
-            // Implement the async HTTP 202 pattern.
-            response.Headers.Location = new Uri(statusQueryGetUri);
-            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
-            return response;
+            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+            return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
         }
+
+
+        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
+        {
+            if (retryInterval > timeout)
+            {
+                throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
+            }
+
+            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+
+            var client = this.GetClient(request);
+            var stopwatch = Stopwatch.StartNew();
+            while (true)
+            {
+                var status = await client.GetStatusAsync(instanceId);
+                if (status != null && status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
+                {
+                    return request.CreateResponse(HttpStatusCode.OK, status.Output);
+                }
+                if (status != null && (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled || status.RuntimeStatus == OrchestrationRuntimeStatus.Failed || status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
+                {
+                    return await this.HandleGetStatusRequestAsync(request, instanceId);
+                }
+                
+                var elapsed = stopwatch.Elapsed;
+                if (elapsed < timeout)
+                {
+                    var remainingTime = timeout.Subtract(elapsed);
+                    await Task.Delay(remainingTime > retryInterval ? retryInterval : remainingTime);
+                }
+                else
+                {
+                    return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+                }
+            }
+        }
+
 
         public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
         {
@@ -212,7 +218,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case OrchestrationRuntimeStatus.Completed:
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
-            
+
             string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.TerminateAsync(instanceId, reason);
@@ -242,9 +248,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
 
-            string mediaType = request.Content.Headers.ContentType?.MediaType;
-            if (!string.IsNullOrEmpty(mediaType) && 
-                !string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+            var mediaType = request.Content.Headers.ContentType?.MediaType;
+            if (!string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
             }
@@ -273,15 +278,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var pairs = request.GetQueryNameValuePairs();
             foreach (var key in pairs.AllKeys)
             {
-                if (taskHub == null 
+                if (taskHub == null
                     && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     taskHub = pairs[key];
                 }
-                else if (connectionName == null 
-                    && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(pairs[key]))
+                else if (connectionName == null
+                         && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
+                         && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     connectionName = pairs[key];
                 }
@@ -294,6 +299,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
 
             return this.config.GetClient(attribute);
+        }
+
+        private void GetClientResponseLinks(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            out string statusQueryGetUri,
+            out string sendEventPostUri,
+            out string terminatePostUri)
+        {
+            if (this.config.NotificationUrl == null)
+            {
+                throw new InvalidOperationException("Webhooks are not configured");
+            }
+
+            var notificationUri = this.config.NotificationUrl;
+
+            // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
+            var hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
+            var baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
+            var instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
+
+            var taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);
+            var connection = WebUtility.UrlEncode(attribute.ConnectionName ?? config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
+
+            var querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
+            if (!string.IsNullOrEmpty(notificationUri.Query))
+            {
+                // This is expected to include the auto-generated system key for this extension.
+                querySuffix += "&" + notificationUri.Query.TrimStart('?');
+            }
+
+            statusQueryGetUri = instancePrefix + "?" + querySuffix;
+            sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
+            terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
+        }
+
+        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
+        {
+            var response = request.CreateResponse(
+                HttpStatusCode.Accepted,
+                new
+                {
+                    id = instanceId,
+                    statusQueryGetUri,
+                    sendEventPostUri,
+                    terminatePostUri
+                });
+
+            // Implement the async HTTP 202 pattern.
+            response.Headers.Location = new Uri(statusQueryGetUri);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
+            return response;
         }
     }
 }

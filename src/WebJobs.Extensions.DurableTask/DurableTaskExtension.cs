@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-    public class DurableTaskExtension : 
+    public class DurableTaskExtension :
         IExtensionConfigProvider,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient> cachedClients =
             new ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient>();
 
-        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredOrchestrators = 
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredOrchestrators =
             new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
-        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities = 
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities =
             new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             rule.BindToInput<DurableOrchestrationClient>(GetClient);
-                
+
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.traceHelper));
 
@@ -282,7 +282,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        internal DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+
+        protected internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -428,7 +429,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
-                if (!this.isTaskHubWorkerStarted && 
+                if (!this.isTaskHubWorkerStarted &&
                     this.registeredOrchestrators.Count == 0 &&
                     this.registeredActivities.Count == 0)
                 {
@@ -470,6 +471,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+        }
+
+        // Get a response that will wait for response from the durable function for predefined period of time before 
+        // pointing to our webhook handler. 
+        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
+        {
+            if (this.DisableHttpManagementApis)
+            {
+                throw new InvalidOperationException("HTTP instance management APIs are disabled.");
+            }
+
+            return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, attribute, timeout, retryInterval);
         }
 
         Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(
