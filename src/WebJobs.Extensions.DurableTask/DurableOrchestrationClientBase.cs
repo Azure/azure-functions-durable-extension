@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        public Task<string> StartNewAsync(string orchestratorFunctionName, object input)
+        public virtual Task<string> StartNewAsync(string orchestratorFunctionName, object input)
         {
             return this.StartNewAsync(orchestratorFunctionName, string.Empty, input);
         }
