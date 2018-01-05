@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public static class DurableTaskHostExtensions
+    internal static class DurableTaskHostExtensions
     {
         public static async Task<TestOrchestratorClient> StartOrchestratorAsync(
             this JobHost host,
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        class ExplicitTypeLocator : ITypeLocator
+        private class ExplicitTypeLocator : ITypeLocator
         {
             private readonly IReadOnlyList<Type> types;
 

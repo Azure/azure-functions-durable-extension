@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, object> pendingExternalEvents = 
+        private readonly Dictionary<string, object> pendingExternalEvents =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the current date/time in a way that is safe for use by orchestrator functions.
         /// </summary>
         /// <remarks>
-        /// This date/time value is derived from the orchestration history. It always returns the same value 
+        /// This date/time value is derived from the orchestration history. It always returns the same value
         /// at specific points in the orchestrator function code, making it deterministic and safe for replay.
         /// </remarks>
         /// <value>The orchestration's current date/time in UTC.</value>
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.WebJobs
         /// Creates a durable timer which expires at a specified time.
         /// </summary>
         /// <remarks>
-        /// All durable timers created using this method must either expire or be cancelled 
+        /// All durable timers created using this method must either expire or be cancelled
         /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
         /// Otherwise the underlying framework will keep the instance alive until the timer expires.
         /// </remarks>
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.WebJobs
         /// Creates a durable timer which expires at a specified time.
         /// </summary>
         /// <remarks>
-        /// All durable timers created using this method must either expire or be cancelled 
+        /// All durable timers created using this method must either expire or be cancelled
         /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
         /// Otherwise the underlying framework will keep the instance alive until the timer expires.
         /// </remarks>
@@ -603,9 +603,13 @@ namespace Microsoft.Azure.WebJobs
                     }
                     else
                     {
-                        callTask = this.innerContext.ScheduleWithRetry<TResult>(functionName, version,
-                            retryOptions.GetRetryOptions(), input);
+                        callTask = this.innerContext.ScheduleWithRetry<TResult>(
+                            functionName,
+                            version,
+                            retryOptions.GetRetryOptions(),
+                            input);
                     }
+
                     break;
                 case FunctionType.Orchestrator:
                     if (retryOptions == null)
@@ -625,6 +629,7 @@ namespace Microsoft.Azure.WebJobs
                             retryOptions.GetRetryOptions(),
                             input);
                     }
+
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected function type '{functionType}'.");
@@ -668,7 +673,7 @@ namespace Microsoft.Azure.WebJobs
             {
                 if (exception != null && this.innerContext.IsReplaying)
                 {
-                    // If this were not a replay, then the activity function trigger would have already 
+                    // If this were not a replay, then the activity function trigger would have already
                     // emitted a FunctionFailed trace with the full exception details.
                     this.config.TraceHelper.FunctionFailed(
                         this.config.HubName,
@@ -683,7 +688,7 @@ namespace Microsoft.Azure.WebJobs
 
             if (this.innerContext.IsReplaying)
             {
-                // If this were not a replay, then the activity function trigger would have already 
+                // If this were not a replay, then the activity function trigger would have already
                 // emitted a FunctionCompleted trace with the actual output details.
                 this.config.TraceHelper.FunctionCompleted(
                     this.config.HubName,
@@ -698,7 +703,6 @@ namespace Microsoft.Azure.WebJobs
 
             return output;
         }
-
 
         internal void RaiseEvent(string name, string input)
         {
@@ -724,8 +728,8 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The inner context has not been initialized.");
             }
 
-            // TODO: This should be considered best effort because it's possible that async work 
-            // was scheduled and the CLR decided to run it on the same thread. The only guaranteed 
+            // TODO: This should be considered best effort because it's possible that async work
+            // was scheduled and the CLR decided to run it on the same thread. The only guaranteed
             // way to detect cross-thread access is to do it in the Durable Task Framework directly.
             if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
             {

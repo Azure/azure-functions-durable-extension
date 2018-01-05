@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Diagnostics;
@@ -21,15 +21,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public BindingTests(ITestOutputHelper output)
         {
             this.output = output;
-            loggerProvider = new TestLoggerProvider();
-            loggerFactory = new LoggerFactory();
-            loggerFactory.AddProvider(loggerProvider);
+            this.loggerProvider = new TestLoggerProvider();
+            this.loggerFactory = new LoggerFactory();
+            this.loggerFactory.AddProvider(this.loggerProvider);
         }
 
         [Fact]
         public async Task ActivityTriggerAsJObject()
         {
-            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityTriggerAsJObject)))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsJObject)))
             {
                 await host.StartAsync();
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityTriggerAsPOCO()
         {
-            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityTriggerAsPOCO)))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsPOCO)))
             {
                 await host.StartAsync();
 
@@ -77,11 +77,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
         [Fact]
         public async Task ActivityTriggerAsNumber()
         {
-            using (JobHost host = TestHelpers.GetJobHost(loggerFactory, nameof(ActivityTriggerAsNumber)))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsNumber)))
             {
                 await host.StartAsync();
 

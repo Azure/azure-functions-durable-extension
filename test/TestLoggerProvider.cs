@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -10,27 +10,27 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Host.TestCommon
 {
-    public class TestLoggerProvider : ILoggerProvider
+    internal class TestLoggerProvider : ILoggerProvider
     {
         private readonly Func<string, LogLevel, bool> filter;
-
-        public IList<TestLogger> CreatedLoggers = new List<TestLogger>();
 
         public TestLoggerProvider(Func<string, LogLevel, bool> filter = null)
         {
             this.filter = filter ?? new LogCategoryFilter().Filter;
         }
 
+        public IList<TestLogger> CreatedLoggers { get; } = new List<TestLogger>();
+
         public ILogger CreateLogger(string categoryName)
         {
-            var logger = new TestLogger(categoryName, filter);
-            CreatedLoggers.Add(logger);
+            var logger = new TestLogger(categoryName, this.filter);
+            this.CreatedLoggers.Add(logger);
             return logger;
         }
 
         public IEnumerable<LogMessage> GetAllLogMessages()
         {
-            return CreatedLoggers.SelectMany(l => l.LogMessages);
+            return this.CreatedLoggers.SelectMany(l => l.LogMessages);
         }
 
         public void Dispose()
