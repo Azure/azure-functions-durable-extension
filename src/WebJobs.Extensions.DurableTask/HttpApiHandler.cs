@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Diagnostics;
@@ -39,7 +39,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
         }
 
-
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
@@ -54,24 +53,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
 
-            var client = this.GetClient(request);
-            var stopwatch = Stopwatch.StartNew();
+            DurableOrchestrationClient client = this.GetClient(request);
+            Stopwatch stopwatch = Stopwatch.StartNew();
             while (true)
             {
-                var status = await client.GetStatusAsync(instanceId);
-                if (status != null && status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
+                DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
+                if (status != null)
                 {
-                    return request.CreateResponse(HttpStatusCode.OK, status.Output);
+                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
+                    {
+                        return request.CreateResponse(HttpStatusCode.OK, status.Output);
+                    }
+
+                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
+                    {
+                        return await this.HandleGetStatusRequestAsync(request, instanceId);
+                    }
                 }
-                if (status != null && (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled || status.RuntimeStatus == OrchestrationRuntimeStatus.Failed || status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
-                {
-                    return await this.HandleGetStatusRequestAsync(request, instanceId);
-                }
-                
-                var elapsed = stopwatch.Elapsed;
+
+                TimeSpan elapsed = stopwatch.Elapsed;
                 if (elapsed < timeout)
                 {
-                    var remainingTime = timeout.Subtract(elapsed);
+                    TimeSpan remainingTime = timeout.Subtract(elapsed);
                     await Task.Delay(remainingTime > retryInterval ? retryInterval : remainingTime);
                 }
                 else
@@ -80,7 +85,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
         }
-
 
         public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
         {
@@ -99,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string instanceId = path.Substring(i);
                 if (request.Method == HttpMethod.Get)
                 {
-                    return await HandleGetStatusRequestAsync(request, instanceId);
+                    return await this.HandleGetStatusRequestAsync(request, instanceId);
                 }
             }
             else if (request.Method == HttpMethod.Post)
@@ -112,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     string operation = path.Substring(i);
                     if (string.Equals(operation, TerminateOperation, StringComparison.OrdinalIgnoreCase))
                     {
-                        return await HandleTerminateInstanceRequestAsync(request, instanceId);
+                        return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
                     }
                 }
                 else
@@ -125,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         if (nextSlash < 0)
                         {
                             string eventName = path.Substring(i);
-                            return await HandleRaiseEventRequestAsync(request, instanceId, eventName);
+                            return await this.HandleRaiseEventRequestAsync(request, instanceId, eventName);
                         }
                     }
                 }
@@ -158,6 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     statusCode = HttpStatusCode.Accepted;
                     location = request.RequestUri;
                     break;
+
                 // The orchestration is not running - return 202 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
                 case OrchestrationRuntimeStatus.Canceled:
@@ -248,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
 
-            var mediaType = request.Content.Headers.ContentType?.MediaType;
+            string mediaType = request.Content.Headers.ContentType?.MediaType;
             if (!string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
@@ -285,8 +290,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     taskHub = pairs[key];
                 }
                 else if (connectionName == null
-                         && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
-                         && !string.IsNullOrWhiteSpace(pairs[key]))
+                    && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     connectionName = pairs[key];
                 }
@@ -314,17 +319,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            var notificationUri = this.config.NotificationUrl;
+            Uri notificationUri = this.config.NotificationUrl;
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
-            var hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
-            var baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            var instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
+            string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
+            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
+            string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
-            var taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? config.HubName);
-            var connection = WebUtility.UrlEncode(attribute.ConnectionName ?? config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
+            string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? this.config.HubName);
+            string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
 
-            var querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
+            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
             if (!string.IsNullOrEmpty(notificationUri.Query))
             {
                 // This is expected to include the auto-generated system key for this extension.
@@ -345,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     id = instanceId,
                     statusQueryGetUri,
                     sendEventPostUri,
-                    terminatePostUri
+                    terminatePostUri,
                 });
 
             // Implement the async HTTP 202 pattern.

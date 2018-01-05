@@ -1,10 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -96,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<ITriggerData>(triggerData);
             }
 
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "The caller is responsible for disposing")]
             public Task<IListener> CreateListenerAsync(ListenerFactoryContext context)
             {
                 if (context == null)
