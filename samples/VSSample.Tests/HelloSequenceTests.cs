@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs;
 using Moq;
 using Xunit;
 
