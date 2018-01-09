@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="DurableTask.AzureStorage" Version="1.1.1-beta" />
+    <PackageReference Include="FluentAssertions" Version="4.19.4" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta4" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.0-beta3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.1" />
