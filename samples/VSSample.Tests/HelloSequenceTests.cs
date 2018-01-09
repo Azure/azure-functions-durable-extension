@@ -1,21 +1,20 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Xunit;
 
 namespace VSSample.Tests
 {
-    [TestClass]
     public class HelloSequenceTests
     {
-        [TestMethod]
+        [Fact]
         public void SayHello_returns_greeting()
         {
             var result = HelloSequence.SayHello("John");
-            Assert.AreEqual(result, "Hello John!");
+            Assert.Equal("Hello John!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task Run_retuns_multiple_greetings()
         {
             var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
@@ -25,10 +24,10 @@ namespace VSSample.Tests
 
             var result = await HelloSequence.Run(durableOrchestrationContextMock.Object);
 
-            Assert.AreEqual(result.Count, 3);
-            Assert.AreEqual(result[0], "Hello Tokyo!");
-            Assert.AreEqual(result[1], "Hello Seattle!");
-            Assert.AreEqual(result[2], "Hello London!");
+            Assert.Equal(3, result.Count);
+            Assert.Equal("Hello Tokyo!", result[0]);
+            Assert.Equal("Hello Seattle!", result[1]);
+            Assert.Equal("Hello London!", result[2]);
         }
     }
 }
