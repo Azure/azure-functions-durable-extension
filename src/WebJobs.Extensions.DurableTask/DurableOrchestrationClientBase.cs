@@ -1,8 +1,11 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
+namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
     /// Abstract class for <see cref="DurableOrchestrationClient"/>
@@ -14,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <returns>An HTTP response which may include a 202 and locaton header.</returns>
+        /// <returns>An HTTP response which may include a 202 and location header.</returns>
         public abstract HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
 
         /// <summary>
