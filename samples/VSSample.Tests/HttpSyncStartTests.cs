@@ -1,0 +1,77 @@
+﻿using System;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using Xunit;
+using Moq;
+using FluentAssertions;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Host;
+using Newtonsoft.Json;
+
+namespace VSSample.Tests
+{
+    public class HttpSyncStartTests
+    {
+        private const string FuncitonName = "SampleFunction";
+        private const string EventData = "EventData";
+        private const string InstanceId = "7E467BDB-213F-407A-B86A-1954053D3C24";
+
+        [Fact]
+        public async Task Run_uses_default_values_when_query_parameters_missing()
+        {
+            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/", null, null);
+        }
+
+        [Fact]
+        public async Task Run_uses_default_value_for_timeout()
+        {
+            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/?retryInterval=2", null, TimeSpan.FromSeconds(2));
+        }
+
+        [Fact]
+        public async Task Run_uses_default_value_for_retryInterval()
+        {
+            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/?timeout=6", TimeSpan.FromSeconds(6), null);
+        }
+
+        [Fact]
+        public async Task Run_uses_query_parameters()
+        {
+            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/?timeout=6&retryInterval=2", TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(2));
+        }
+
+        private static async Task Check_behavior_based_on_query_parameters(string url, TimeSpan? timeout, TimeSpan? retryInterval)
+        {
+            var name = new Name { First = "John", Last = "Smith" };
+            var request = new HttpRequestMessage
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(name), Encoding.UTF8, "application/json"),
+                RequestUri = new Uri(url)
+            };
+            var traceWriterMock = new Mock<TraceWriter>(TraceLevel.Info);
+            var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase> { CallBase = true };
+            durableOrchestrationClientBaseMock.
+                Setup(x => x.StartNewAsync(FuncitonName, It.IsAny<object>())).
+                ReturnsAsync(InstanceId);
+            durableOrchestrationClientBaseMock
+                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(request, InstanceId, timeout, retryInterval))
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(EventData)
+                });
+            var result = await HttpSyncStart.Run(request, durableOrchestrationClientBaseMock.Object, FuncitonName, traceWriterMock.Object);
+            result.StatusCode.Should().Be(HttpStatusCode.OK);
+            (await result.Content.ReadAsStringAsync()).Should().Be(EventData);
+        }
+    }
+
+    public class Name
+    {
+        public string First { get; set; }
+        public string Last { get; set; }
+    }
+}
