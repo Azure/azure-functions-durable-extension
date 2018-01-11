@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Diagnostics;
@@ -31,13 +31,13 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var ex = await Assert.ThrowsAsync<ArgumentException>(() => httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
-                    RequestUri = new Uri(TestConstants.RequestUri)
-                }, 
-                TestConstants.InstanceId, 
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.InstanceId,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
-                    ConnectionName = TestConstants.ConnectionName
+                    ConnectionName = TestConstants.ConnectionName,
                 },
                 TimeSpan.FromSeconds(0),
                 TimeSpan.FromSeconds(100)));
@@ -51,23 +51,26 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var httpResponseMessage = httpApiHandler.CreateCheckStatusResponse(
                 new HttpRequestMessage
                 {
-                    RequestUri = new Uri(TestConstants.RequestUri)
-                }, 
-                TestConstants.InstanceId, 
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.InstanceId,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
-                    ConnectionName = TestConstants.ConnectionName
+                    ConnectionName = TestConstants.ConnectionName,
                 });
             Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.Accepted);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.InstanceId);
-            Assert.Equal(status["statusQueryGetUri"], 
+            Assert.Equal(
+                status["statusQueryGetUri"],
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey");
-            Assert.Equal(status["sendEventPostUri"], 
+            Assert.Equal(
+                status["sendEventPostUri"],
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey");
-            Assert.Equal(status["terminatePostUri"], 
+            Assert.Equal(
+                status["terminatePostUri"],
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey");
         }
 
@@ -80,13 +83,13 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
-                    RequestUri = new Uri(TestConstants.RequestUri)
-                }, 
-                TestConstants.RandomInstanceId, 
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.RandomInstanceId,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
-                    ConnectionName = TestConstants.ConnectionName
+                    ConnectionName = TestConstants.ConnectionName,
                 },
                 TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10));
@@ -95,11 +98,14 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.RandomInstanceId);
-            Assert.Equal(status["statusQueryGetUri"], 
+            Assert.Equal(
+                status["statusQueryGetUri"],
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey");
-            Assert.Equal(status["sendEventPostUri"], 
+            Assert.Equal(
+                status["sendEventPostUri"],
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey");
-            Assert.Equal(status["terminatePostUri"], 
+            Assert.Equal(
+                status["terminatePostUri"],
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey");
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
         }
@@ -111,13 +117,13 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
-                    RequestUri = new Uri(TestConstants.RequestUri)
-                }, 
-                TestConstants.IntanceIdFactComplete, 
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.IntanceIdFactComplete,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
-                    ConnectionName = TestConstants.ConnectionName
+                    ConnectionName = TestConstants.ConnectionName,
                 },
                 TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10));
@@ -127,7 +133,6 @@ namespace WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(value, "Hello Tokyo!");
         }
 
-
         [Fact]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response_After_Few_Iterations()
         {
@@ -136,13 +141,13 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
-                    RequestUri = new Uri(TestConstants.RequestUri)
-                }, 
-                TestConstants.InstanceIdIterations, 
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.InstanceIdIterations,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
-                    ConnectionName = TestConstants.ConnectionName
+                    ConnectionName = TestConstants.ConnectionName,
                 },
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));
@@ -157,19 +162,19 @@ namespace WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Failed()
         {
-            await CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed);
+            await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed);
         }
 
         [Fact]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Terminated()
         {
-            await CheckRuntimeStatus(TestConstants.InstanceIdTerminated, OrchestrationRuntimeStatus.Terminated);
+            await this.CheckRuntimeStatus(TestConstants.InstanceIdTerminated, OrchestrationRuntimeStatus.Terminated);
         }
 
         [Fact]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Canceled()
         {
-            await CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
+            await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
         }
 
         private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus)
@@ -178,13 +183,13 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
-                    RequestUri = new Uri(TestConstants.RequestUri)
-                }, 
-                instanceId, 
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                instanceId,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
-                    ConnectionName = TestConstants.ConnectionName
+                    ConnectionName = TestConstants.ConnectionName,
                 },
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));

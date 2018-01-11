@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -106,7 +106,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     // Try using the converter manager
+#pragma warning disable CS0618 // Type or member is obsolete
                     IConverterManager cm = this.parent.extensionContext.Config.ConverterManager;
+#pragma warning restore CS0618 // Type or member is obsolete
                     MethodInfo getConverterMethod = cm.GetType().GetMethod(nameof(cm.GetConverter));
                     getConverterMethod = getConverterMethod.MakeGenericMethod(
                         typeof(DurableActivityContext),
@@ -134,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 var inputValueProvider = new ObjectValueProvider(
-                    convertedValue, 
+                    convertedValue,
                     this.parameterInfo.ParameterType);
 
                 var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
@@ -172,7 +174,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public static void RegisterBindingRules(JobHostConfiguration hostConfig)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 IConverterManager cm = hostConfig.ConverterManager;
+#pragma warning restore CS0618 // Type or member is obsolete
                 cm.AddConverter<DurableActivityContext, string>(ActivityContextToString);
                 cm.AddConverter<DurableActivityContext, JObject>(ActivityContextToJObject);
             }

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using DurableTaskCore = DurableTask.Core;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs
         /// </exception>
         public RetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
         {
-            retryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
+            this.retryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
         }
 
         /// <summary>
@@ -49,7 +49,6 @@ namespace Microsoft.Azure.WebJobs
             get { return this.retryOptions.MaxRetryInterval; }
             set { this.retryOptions.MaxRetryInterval = value; }
         }
-
 
         /// <summary>
         /// Gets or sets the backoff coefficient
