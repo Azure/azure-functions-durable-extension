@@ -15,7 +15,7 @@ namespace VSSample.Tests
 {
     public class HttpSyncStartTests
     {
-        private const string FuncitonName = "SampleFunction";
+        private const string FunctionName = "SampleFunction";
         private const string EventData = "EventData";
         private const string InstanceId = "7E467BDB-213F-407A-B86A-1954053D3C24";
 
@@ -54,7 +54,7 @@ namespace VSSample.Tests
             var traceWriterMock = new Mock<TraceWriter>(TraceLevel.Info);
             var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase> { CallBase = true };
             durableOrchestrationClientBaseMock.
-                Setup(x => x.StartNewAsync(FuncitonName, It.IsAny<object>())).
+                Setup(x => x.StartNewAsync(FunctionName, It.IsAny<object>())).
                 ReturnsAsync(InstanceId);
             durableOrchestrationClientBaseMock
                 .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(request, InstanceId, timeout, retryInterval))
@@ -63,7 +63,7 @@ namespace VSSample.Tests
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent(EventData)
                 });
-            var result = await HttpSyncStart.Run(request, durableOrchestrationClientBaseMock.Object, FuncitonName, traceWriterMock.Object);
+            var result = await HttpSyncStart.Run(request, durableOrchestrationClientBaseMock.Object, FunctionName, traceWriterMock.Object);
             result.StatusCode.Should().Be(HttpStatusCode.OK);
             (await result.Content.ReadAsStringAsync()).Should().Be(EventData);
         }

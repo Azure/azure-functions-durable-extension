@@ -493,7 +493,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 
         // Get a response that will point to our webhook handler. 
-        protected internal virtual HttpResponseMessage CreateCheckStatusResponse(
+        internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
             OrchestrationClientAttribute attribute)
@@ -508,7 +508,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // Get a response that will wait for response from the durable function for predefined period of time before 
         // pointing to our webhook handler. 
-        protected internal virtual async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
             OrchestrationClientAttribute attribute,
