@@ -190,7 +190,6 @@ namespace Microsoft.Azure.WebJobs
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, instanceId, retryOptions, input);
         }
 
-
         /// <inheritdoc />
         public override async Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {

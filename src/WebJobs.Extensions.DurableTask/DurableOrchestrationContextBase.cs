@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the current date/time in a way that is safe for use by orchestrator functions.
         /// </summary>
         /// <remarks>
-        /// This date/time value is derived from the orchestration history. It always returns the same value 
+        /// This date/time value is derived from the orchestration history. It always returns the same value
         /// at specific points in the orchestrator function code, making it deterministic and safe for replay.
         /// </remarks>
         /// <value>The orchestration's current date/time in UTC.</value>
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.WebJobs
         /// Creates a durable timer which expires at a specified time.
         /// </summary>
         /// <remarks>
-        /// All durable timers created using this method must either expire or be cancelled 
+        /// All durable timers created using this method must either expire or be cancelled
         /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
         /// Otherwise the underlying framework will keep the instance alive until the timer expires.
         /// </remarks>
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.WebJobs
         /// Creates a durable timer which expires at a specified time.
         /// </summary>
         /// <remarks>
-        /// All durable timers created using this method must either expire or be cancelled 
+        /// All durable timers created using this method must either expire or be cancelled
         /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
         /// Otherwise the underlying framework will keep the instance alive until the timer expires.
         /// </remarks>

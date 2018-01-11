@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs
     public abstract class DurableOrchestrationClientBase
     {
         /// <summary>
-        /// Creates an HTTP response for checking the status of the specified instance. 
+        /// Creates an HTTP response for checking the status of the specified instance.
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.WebJobs
         public abstract HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
 
         /// <summary>
-        /// Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well. 
+        /// Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well.
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>		
+        /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         public abstract Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval);
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="eventName">The name of the event.</param>
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
         public abstract Task RaiseEventAsync(string instanceId, string eventName, object eventData);
 
         /// <summary>

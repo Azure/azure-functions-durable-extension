@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
         public override async Task RaiseEventAsync(string instanceId, string eventName, object eventData)
         {
             if (string.IsNullOrEmpty(eventName))

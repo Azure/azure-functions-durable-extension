@@ -491,8 +491,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-
-        // Get a response that will point to our webhook handler. 
+        // Get a response that will point to our webhook handler.
         internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
@@ -506,8 +505,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
 
-        // Get a response that will wait for response from the durable function for predefined period of time before 
-        // pointing to our webhook handler. 
+        // Get a response that will wait for response from the durable function for predefined period of time before
+        // pointing to our webhook handler.
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
