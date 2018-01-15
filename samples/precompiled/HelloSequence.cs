@@ -11,7 +11,7 @@ namespace VSSample
     {
         [FunctionName("E1_HelloSequence")]
         public static async Task<List<string>> Run(
-            [OrchestrationTrigger] DurableOrchestrationContext context)
+            [OrchestrationTrigger] DurableOrchestrationContextBase context)
         {
             var outputs = new List<string>();
 

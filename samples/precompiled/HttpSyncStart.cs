@@ -19,7 +19,7 @@ namespace VSSample
             [HttpTrigger(
             AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
             HttpRequestMessage req,
-            [OrchestrationClient] DurableOrchestrationClient starter,
+            [OrchestrationClient] DurableOrchestrationClientBase starter,
             string functionName,
             TraceWriter log)
         {

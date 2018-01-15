@@ -263,6 +263,29 @@
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
+            <summary>
+            Abstract class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <summary>
             Creates an HTTP response for checking the status of the specified instance.
             </summary>
@@ -270,7 +293,7 @@
             <param name="instanceId">The unique ID of the instance to check.</param>
             <returns>An HTTP response which may include a 202 and location header.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
             <summary>
             Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well.
             </summary>
@@ -280,7 +303,7 @@
             <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.Object)">
             <summary>
             Starts a new execution of the specified orchestrator function.
             </summary>
@@ -291,7 +314,7 @@
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object)">
             <summary>
             Starts a new execution of the specified orchestrator function.
             </summary>
@@ -303,7 +326,7 @@
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.Object)">
             <summary>
             Sends an event notification message to a running orchestration instance.
             </summary>
@@ -312,7 +335,7 @@
             <param name="eventData">The JSON-serializeable data associated with the event.</param>
             <returns>A task that completes when the event notification message has been enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String,System.String)">
             <summary>
             Terminates a running orchestration instance.
             </summary>
@@ -320,7 +343,7 @@
             <param name="reason">The reason for terminating the orchestration instance.</param>
             <returns>A task that completes when the terminate message is enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">
             <summary>
             Gets the status of the specified orchestration instance.
             </summary>
@@ -333,40 +356,13 @@
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId">
-            <summary>
-            Gets the instance ID of the currently executing orchestration.
-            </summary>
-            <remarks>
-            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
-            </remarks>
-            <value>
-            The ID of the current orchestration instance.
-            </value>
+            <inheritdoc />
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
-            <summary>
-            Gets the current date/time in a way that is safe for use by orchestrator functions.
-            </summary>
-            <remarks>
-            This date/time value is derived from the orchestration history. It always returns the same value
-            at specific points in the orchestrator function code, making it deterministic and safe for replay.
-            </remarks>
-            <value>The orchestration's current date/time in UTC.</value>
+            <inheritdoc />
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying">
-            <summary>
-            Gets a value indicating whether the orchestrator function is currently replaying itself.
-            </summary>
-            <remarks>
-            This property is useful when there is logic that needs to run only when the orchestrator function
-            is *not* replaying. For example, certain types of application logging may become too noisy when duplicated
-            as part of orchestrator function replay. The orchestrator code could check to see whether the function is
-            being replayed and then issue the log statements when this value is <c>false</c>.
-            </remarks>
-            <value>
-            <c>true</c> if the orchestrator function is currently being replayed; otherwise <c>false</c>.
-            </value>
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput">
             <summary>
@@ -385,11 +381,7 @@
             </returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput``1">
-            <summary>
-            Gets the input of the current orchestrator function as a deserialized value.
-            </summary>
-            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
-            <returns>The deserialized input value.</returns>
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)">
             <summary>
@@ -400,7 +392,76 @@
             </remarks>
             <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
+            <summary>
+            Abstract class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId">
+            <summary>
+            Gets the instance ID of the currently executing orchestration.
+            </summary>
+            <remarks>
+            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+            </remarks>
+            <value>
+            The ID of the current orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime">
+            <summary>
+            Gets the current date/time in a way that is safe for use by orchestrator functions.
+            </summary>
+            <remarks>
+            This date/time value is derived from the orchestration history. It always returns the same value
+            at specific points in the orchestrator function code, making it deterministic and safe for replay.
+            </remarks>
+            <value>The orchestration's current date/time in UTC.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying">
+            <summary>
+            Gets a value indicating whether the orchestrator function is currently replaying itself.
+            </summary>
+            <remarks>
+            This property is useful when there is logic that needs to run only when the orchestrator function
+            is *not* replaying. For example, certain types of application logging may become too noisy when duplicated
+            as part of orchestrator function replay. The orchestrator code could check to see whether the function is
+            being replayed and then issue the log statements when this value is <c>false</c>.
+            </remarks>
+            <value>
+            <c>true</c> if the orchestrator function is currently being replayed; otherwise <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput``1">
+            <summary>
+            Gets the input of the current orchestrator function as a deserialized value.
+            </summary>
+            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
+            <returns>The deserialized input value.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution.
             </summary>
@@ -417,7 +478,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -438,7 +499,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync``1(System.String,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution.
             </summary>
@@ -456,7 +517,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -478,7 +539,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution.
             </summary>
@@ -495,7 +556,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.String,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution.
             </summary>
@@ -513,7 +574,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.Object)">
             <summary>
             Schedules an orchestration function named <paramref name="functionName"/> for execution.
             </summary>
@@ -531,7 +592,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
             <summary>
             Schedules an orchestration function named <paramref name="functionName"/> for execution.
             </summary>
@@ -550,7 +611,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -571,7 +632,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -593,7 +654,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -615,7 +676,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -638,7 +699,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime,System.Threading.CancellationToken)">
             <summary>
             Creates a durable timer which expires at a specified time.
             </summary>
@@ -651,7 +712,7 @@
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
             <returns>A durable task that completes when the durable timer expires.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
             <summary>
             Creates a durable timer which expires at a specified time.
             </summary>
@@ -666,7 +727,7 @@
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
             <returns>A durable task that completes when the durable timer expires.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
             </summary>
@@ -674,7 +735,7 @@
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)">
             <summary>
             Restarts the orchestration and its history.
             </summary>
