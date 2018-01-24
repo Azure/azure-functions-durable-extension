@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryInputOutput = false)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
             if (state == null)
@@ -120,16 +120,7 @@ namespace Microsoft.Azure.WebJobs
                 return null;
             }
 
-            return new DurableOrchestrationStatus
-            {
-                Name = state.Name,
-                InstanceId = state.OrchestrationInstance.InstanceId,
-                CreatedTime = state.CreatedTime,
-                LastUpdatedTime = state.LastUpdatedTime,
-                RuntimeStatus = (OrchestrationRuntimeStatus)state.OrchestrationStatus,
-                Input = ParseToJToken(state.Input),
-                Output = ParseToJToken(state.Output),
-            };
+            return await this.GetDurableOrchestrationStatusAsync(state, showHistory, showHistoryInputOutput);
         }
 
         private static JToken ParseToJToken(string value)
@@ -171,6 +162,28 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return state;
+        }
+
+        private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, bool showHistory, bool showHistoryInputOutput)
+        {
+            var history = string.Empty;
+            if (showHistory)
+            {
+                // TBD - parsing and processing of content
+                history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
+            }
+
+            return new DurableOrchestrationStatus
+            {
+                Name = orchestrationState.Name,
+                InstanceId = orchestrationState.OrchestrationInstance.InstanceId,
+                CreatedTime = orchestrationState.CreatedTime,
+                LastUpdatedTime = orchestrationState.LastUpdatedTime,
+                RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
+                Input = ParseToJToken(orchestrationState.Input),
+                Output = ParseToJToken(orchestrationState.Output),
+                History = ParseToJToken(history),
+            };
         }
     }
 }

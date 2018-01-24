@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
+        private const string ShowHistoryParameter = "showHistory";
+        private const string ShowHistoryInputOutputParameter = "showHistoryInputOutput";
 
         private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
@@ -144,7 +147,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableOrchestrationClient client = this.GetClient(request);
 
-            var status = await client.GetStatusAsync(instanceId);
+            var showHistory = GetQueryParameterValue(request, ShowHistoryParameter);
+            var showHistoryInputOutput = GetQueryParameterValue(request, ShowHistoryInputOutputParameter);
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryInputOutput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -178,7 +183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     break;
             }
 
-            var response = request.CreateResponse(
+            var response = status.History != null ?
+                request.CreateResponse(
                 statusCode,
                 new
                 {
@@ -187,7 +193,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     output = status.Output,
                     createdTime = status.CreatedTime.ToString("s") + "Z",
                     lastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
-                });
+                    historyEvents = status.History,
+                }) :
+                request.CreateResponse(
+                statusCode,
+                new
+                {
+                    runtimeStatus = status.RuntimeStatus.ToString(),
+                    input = status.Input,
+                    output = status.Output,
+                    createdTime = status.CreatedTime.ToString("s") + "Z",
+                    lastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
+                 });
 
             if (location != null)
             {
@@ -201,6 +218,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return response;
+        }
+
+        private static bool GetQueryParameterValue(HttpRequestMessage request, string queryParameterName)
+        {
+            if (!request.GetQueryNameValuePairs().AllKeys.Contains(queryParameterName))
+            {
+                return false;
+            }
+
+            var value = request.GetQueryNameValuePairs()[queryParameterName];
+            return !string.IsNullOrEmpty(value) && bool.Parse(value);
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(

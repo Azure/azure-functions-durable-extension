@@ -277,7 +277,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
@@ -343,11 +343,13 @@
             <param name="reason">The reason for terminating the orchestration instance.</param>
             <returns>A task that completes when the terminate message is enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
             <summary>
             Gets the status of the specified orchestration instance.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <param name="showHistoryInputOutput">Boolean marker for including input and output in the execution history response.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
@@ -804,6 +806,14 @@
             </summary>
             <value>
             Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History">
+            <summary>
+            Gets the execution history of the queried orchestrator function instance.
+            </summary>
+            <value>
+            The output as a <c>JToken</c> object or <c>null</c>.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.FunctionFailedException">
