@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// Response for Orchestration Status Query.
     /// </summary>
     [DataContract]
-    public class StatusResponsePayload
+    internal class StatusResponsePayload
     {
         /// <summary>
         /// Runtime status.
@@ -46,6 +46,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// JSON object representing history for an orchestration execution.
         /// </summary>
         [DataMember(Name = "historyEvents", EmitDefaultValue = false)]
-        public JToken HistoryEvents { get; set; }
+        public JArray HistoryEvents { get; set; }
     }
 }

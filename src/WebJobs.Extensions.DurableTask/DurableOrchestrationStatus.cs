@@ -75,8 +75,8 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the execution history of the queried orchestrator function instance.
         /// </summary>
         /// <value>
-        /// The output as a <c>JToken</c> object or <c>null</c>.
+        /// The output as a <c>JArray</c> object or <c>null</c>.
         /// </value>
-        public JToken History { get; internal set; }
+        public JArray History { get; internal set; }
     }
 }
