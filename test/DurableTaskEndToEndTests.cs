@@ -248,8 +248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                int initialValue = 0;
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActor), initialValue, this.output);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActor), null, this.output);
 
                 // Need to wait for the instance to start before sending events to it.
                 // TODO: This requirement may not be ideal and should be revisited.
@@ -274,13 +273,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 await host.StopAsync();
-            }
-
-            if (this.useTestLogger)
-            {
-                var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
-                var logMessages = logger.LogMessages.ToList();
-                Assert.Equal(38, logMessages.Count);
             }
         }
 
