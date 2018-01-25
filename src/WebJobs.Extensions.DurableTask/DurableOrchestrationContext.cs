@@ -397,6 +397,10 @@ namespace Microsoft.Azure.WebJobs
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
+                    // If we're going to raise an event we should remove it from the pending collection
+                    // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
+                    this.pendingExternalEvents.Remove(name);
+
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
                     trySetResult.Invoke(tcs, new[] { deserializedObject });
