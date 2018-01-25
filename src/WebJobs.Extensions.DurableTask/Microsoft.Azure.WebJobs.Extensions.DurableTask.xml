@@ -206,6 +206,41 @@
             Task orchestration implementation which delegates the orchestration implementation to a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload">
+            <summary>
+            Response for Orchestration Status Query.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.RuntimeStatus">
+            <summary>
+            Runtime status.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.Input">
+            <summary>
+            Input.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.Output">
+            <summary>
+            Output.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.CreatedTime">
+            <summary>
+            Created time value.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.LastUpdatedTime">
+            <summary>
+            Last updated time.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.HistoryEvents">
+            <summary>
+            JSON object representing history for an orchestration execution.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableActivityContext">
             <summary>
             Parameter data for activity bindings that are scheduled by their parent orchestrations.
