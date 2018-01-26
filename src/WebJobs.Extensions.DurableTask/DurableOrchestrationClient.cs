@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
                 Input = ParseToJToken(orchestrationState.Input),
                 Output = ParseToJToken(orchestrationState.Output),
-                History = JArray.FromObject(history),
+                History = string.IsNullOrEmpty(history) ? null : JArray.Parse(history),
             };
         }
     }
