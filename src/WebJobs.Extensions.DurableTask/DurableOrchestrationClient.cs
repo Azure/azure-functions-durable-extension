@@ -2,9 +2,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -166,12 +169,56 @@ namespace Microsoft.Azure.WebJobs
 
         private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, bool showHistory, bool showHistoryInputOutput)
         {
-            var history = string.Empty;
+            JArray historyArray = null;
             if (showHistory)
             {
-                // TBD - parsing and processing of content
-                history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
+                var history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
+                if (!string.IsNullOrEmpty(history))
+                {
+                    historyArray = JArray.Parse(history);
+
+                    var eventMapper = new Dictionary<string, EventIndexDateMapping>();
+                    var indexList = new List<int>();
+
+                    for (var i = 0; i < historyArray.Count; i++)
+                    {
+                        if (Enum.TryParse(historyArray[i]["EventType"].Value<string>(), out EventType eventType))
+                        {
+                            historyArray[i]["EventType"] = eventType.ToString();
+                            switch (eventType)
+                            {
+                                case EventType.TaskScheduled:
+                                    eventMapper.Add($"{eventType}_{historyArray[i]["EventId"]}", new EventIndexDateMapping { Index = i,  Date = DateTime.Parse(historyArray[i]["Timestamp"].ToString()) });
+                                    break;
+                                case EventType.TaskCompleted:
+                                case EventType.TaskFailed:
+                                    var taskScheduledData = eventMapper[$"TaskScheduled_{historyArray[i]["TaskScheduledId"]}"];
+                                    historyArray[i]["StartTime"] = taskScheduledData.Date;
+                                    indexList.Add(taskScheduledData.Index);
+                                    break;
+                                case EventType.SubOrchestrationInstanceCreated:
+                                    eventMapper.Add($"{eventType}_{historyArray[i]["EventId"]}", new EventIndexDateMapping { Index = i, Date = DateTime.Parse(historyArray[i]["Timestamp"].ToString()) });
+                                    break;
+                                case EventType.SubOrchestrationInstanceCompleted:
+                                case EventType.SubOrchestrationInstanceFailed:
+                                    var subOrchestrationCreatedData = eventMapper[$"SubOrchestrationInstanceCreated_{historyArray[i]["TaskScheduledId"]}"];
+                                    historyArray[i]["StartTime"] = subOrchestrationCreatedData.Date;
+                                    indexList.Add(subOrchestrationCreatedData.Index);
+                                    break;
+                            }
+                        }
+                    }
+
+                    var counter = 0;
+                    foreach (var indexValue in indexList)
+                    {
+                        historyArray.RemoveAt(indexValue - counter);
+                        counter++;
+                    }
+                }
             }
+
+            this.RemoveProperties(ref historyArray, showHistoryInputOutput);
 
             return new DurableOrchestrationStatus
             {
@@ -182,8 +229,46 @@ namespace Microsoft.Azure.WebJobs
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
                 Input = ParseToJToken(orchestrationState.Input),
                 Output = ParseToJToken(orchestrationState.Output),
-                History = string.IsNullOrEmpty(history) ? null : JArray.Parse(history),
+                History = historyArray,
             };
+        }
+
+        // TBD - duplication to be removed
+        private void RemoveProperties(ref JArray jsonArray, bool showHistoryInputOutput)
+        {
+            if (jsonArray == null)
+            {
+                return;
+            }
+
+            if (!showHistoryInputOutput)
+            {
+                jsonArray.Descendants()
+                    .OfType<JProperty>()
+                    .Where(attr =>
+                        attr.Name.StartsWith("Input") ||
+                        attr.Name.StartsWith("Result") ||
+                        attr.Name.StartsWith("Version") ||
+                        attr.Name.StartsWith("TaskScheduledId") ||
+                        attr.Name.StartsWith("IsPlayed") ||
+                        attr.Name.StartsWith("OrchestrationInstance") ||
+                        attr.Name.StartsWith("ParentInstance"))
+                    .ToList()
+                    .ForEach(attr => attr.Remove());
+            }
+            else
+            {
+                jsonArray.Descendants()
+                    .OfType<JProperty>()
+                    .Where(attr =>
+                        attr.Name.StartsWith("Version") ||
+                        attr.Name.StartsWith("TaskScheduledId") ||
+                        attr.Name.StartsWith("IsPlayed") ||
+                        attr.Name.StartsWith("OrchestrationInstance") ||
+                        attr.Name.StartsWith("ParentInstance"))
+                    .ToList()
+                    .ForEach(attr => attr.Remove());
+            }
         }
     }
 }
