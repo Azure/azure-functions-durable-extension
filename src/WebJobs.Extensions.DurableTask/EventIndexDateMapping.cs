@@ -10,5 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int Index { get; set; }
 
         public DateTime Date { get; set; }
+
+        public string Name { get; set; }
     }
 }
