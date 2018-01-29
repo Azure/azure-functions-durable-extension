@@ -11,7 +11,27 @@ using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json.Linq;
 using Twilio;
 
-// To run this sample, you'll need a Weather Underground API key. Sign-up and documentation here: https://www.wunderground.com/weather/api/d/docs
+/* This sample demonstrates the Monitor workflow. In this pattern, the orchestrator function is
+ * used to periodically check something's status and take action as appropriate. While a
+ * Timer-triggered function can perform similar polling action, the Monitor has additional
+ * capabilities:
+ *
+ *   - manual termination (via request to the orchestrator termination endpoint)
+ *   - termination when some condition is met
+ *   - monitoring of multiple arbitrary subjects
+ *
+ * To run this sample, you'll need to define the following app settings:
+ *
+ *   - TwilioAccountSid: your Twilio account's SID
+ *   - TwilioAuthToken: your Twilio account's auth token
+ *   - TwilioPhoneNumber: an SMS-capable Twilio number
+ *   - WeatherUndergroundApiKey: a WeatherUnderground API key
+ *
+ * For Twilio trial accounts, you also need to verify the phone number in your MonitorRequest.
+ *
+ * Twilio: https://www.twilio.com
+ * WeatherUnderground API: https://www.wunderground.com/weather/api/d/docs
+ */
 namespace VSSample
 {
     public static class Monitor
@@ -20,26 +40,39 @@ namespace VSSample
         public static async Task Run([OrchestrationTrigger] DurableOrchestrationContext monitorContext, TraceWriter log)
         {
             MonitorRequest input = monitorContext.GetInput<MonitorRequest>();
+            if (!monitorContext.IsReplaying) { log.Info($"Received monitor request. Location: {input.Location}. Phone: {input.Phone}."); }
+
             VerifyRequest(input);
 
             DateTime endTime = monitorContext.CurrentUtcDateTime.AddHours(6);
+            if (!monitorContext.IsReplaying) { log.Info($"Instantiating monitor for {input.Location}. Expires: {endTime}."); }
 
             while (monitorContext.CurrentUtcDateTime < endTime)
             {
                 // Check the weather
+                if (!monitorContext.IsReplaying) { log.Info($"Checking current weather conditions for {input.Location} at {monitorContext.CurrentUtcDateTime}."); }
+
                 bool isClear = await monitorContext.CallActivityAsync<bool>("E3_GetIsClear", input.Location);
 
                 if (isClear)
                 {
                     // It's not raining! Or snowing. Or misting. Tell our user to take advantage of it.
+                    if (!monitorContext.IsReplaying) { log.Info($"Detected clear weather for {input.Location}. Notifying {input.Phone}."); }
+
                     await monitorContext.CallActivityAsync("E3_SendGoodWeatherAlert", input.Phone);
                     break;
                 }
+                else
+                {
+                    // Wait for the next checkpoint
+                    var nextCheckpoint = monitorContext.CurrentUtcDateTime.AddMinutes(30);
+                    if (!monitorContext.IsReplaying) { log.Info($"Next check for {input.Location} at {nextCheckpoint}."); }
 
-                // Wait for the next checkpoint
-                var nextCheckpoint = monitorContext.CurrentUtcDateTime.AddMinutes(30);
-                await monitorContext.CreateTimer(nextCheckpoint, CancellationToken.None);
+                    await monitorContext.CreateTimer(nextCheckpoint, CancellationToken.None);
+                }
             }
+
+            log.Info($"Monitor expiring.");
         }
 
         [FunctionName("E3_GetIsClear")]
@@ -99,6 +132,8 @@ namespace VSSample
         public string State { get; set; }
 
         public string City { get; set; }
+
+        public override string ToString() => $"{City}, {State}";
     }
 
     public enum WeatherCondition
@@ -107,10 +142,10 @@ namespace VSSample
         Clear,
         Precipitation,
     }
-    
+
     internal class WeatherUnderground
     {
-        private static HttpClient httpClient = new HttpClient();
+        private static readonly HttpClient httpClient = new HttpClient();
         private static IReadOnlyDictionary<string, WeatherCondition> weatherMapping = new Dictionary<string, WeatherCondition>()
         {
             { "Clear", WeatherCondition.Clear },
@@ -139,7 +174,16 @@ namespace VSSample
             JToken currentObservation;
             if (!conditions.TryGetValue("current_observation", out currentObservation))
             {
-                throw new ArgumentException("Could not find weather for this location. Try being more specific.");
+                JToken error = conditions.SelectToken("response.error");
+
+                if (error != null)
+                {
+                    throw new InvalidOperationException($"API returned an error: {error}.");
+                }
+                else
+                {
+                    throw new ArgumentException("Could not find weather for this location. Try being more specific.");
+                }
             }
 
             return MapToWeatherCondition((string)(currentObservation as JObject).GetValue("weather"));
