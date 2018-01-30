@@ -189,24 +189,29 @@ namespace Microsoft.Azure.WebJobs
                             {
                                 case EventType.TaskScheduled:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, ref eventMapper);
-                                    RemoveProperties(ref historyItem, "Version", !showHistoryInputOutput);
+                                    UpdateProperties(ref historyItem, "Version", !showHistoryInputOutput);
+                                    ConvertInputOutputToJToken(ref historyItem, "Input", showHistoryInputOutput);
                                     break;
                                 case EventType.TaskCompleted:
                                 case EventType.TaskFailed:
                                     AddScheduledEventDataAndAggreagate(eventMapper, "TaskScheduled", historyItem, ref indexList, showHistoryInputOutput);
-                                    RemoveProperties(ref historyItem, "TaskScheduledId", hideResult: !showHistoryInputOutput && eventType == EventType.TaskCompleted);
+                                    UpdateProperties(ref historyItem, "TaskScheduledId", hideResult: !showHistoryInputOutput && eventType == EventType.TaskCompleted);
+                                    ConvertInputOutputToJToken(ref historyItem, "Result", showHistoryInputOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, ref eventMapper);
-                                    RemoveProperties(ref historyItem, "Version", !showHistoryInputOutput);
+                                    UpdateProperties(ref historyItem, "Version", !showHistoryInputOutput);
+                                    ConvertInputOutputToJToken(ref historyItem, "Input", showHistoryInputOutput);
                                     break;
                                 case EventType.SubOrchestrationInstanceCompleted:
                                 case EventType.SubOrchestrationInstanceFailed:
                                     AddScheduledEventDataAndAggreagate(eventMapper, "SubOrchestrationInstanceCreated", historyItem, ref indexList, showHistoryInputOutput);
-                                    RemoveProperties(ref historyItem, "TaskScheduledId", hideResult: !showHistoryInputOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
+                                    UpdateProperties(ref historyItem, "TaskScheduledId", hideResult: !showHistoryInputOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
+                                    ConvertInputOutputToJToken(ref historyItem, "Result", showHistoryInputOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
                                     break;
                                 case EventType.ExecutionStarted:
-                                    RemoveProperties(ref historyItem, new List<string> { "OrchestrationInstance", "ParentInstance", "Version", "Tags" }, !showHistoryInputOutput);
+                                    UpdateProperties(ref historyItem, new List<string> { "OrchestrationInstance", "ParentInstance", "Version", "Tags" }, !showHistoryInputOutput);
+                                    ConvertInputOutputToJToken(ref historyItem, "Input", showHistoryInputOutput);
                                     break;
                                 case EventType.ExecutionCompleted:
                                     if (Enum.TryParse(historyItem["OrchestrationStatus"].Value<string>(), out OrchestrationStatus orchestrationStatus))
@@ -214,20 +219,22 @@ namespace Microsoft.Azure.WebJobs
                                         historyItem["OrchestrationStatus"] = orchestrationStatus.ToString();
                                     }
 
-                                    RemoveProperties(ref historyItem, string.Empty, hideResult: !showHistoryInputOutput);
+                                    UpdateProperties(ref historyItem, string.Empty, hideResult: !showHistoryInputOutput);
+                                    ConvertInputOutputToJToken(ref historyItem, "Result", showHistoryInputOutput);
                                     break;
                                 case EventType.ExecutionTerminated:
-                                    RemoveProperties(ref historyItem, string.Empty, !showHistoryInputOutput);
+                                    UpdateProperties(ref historyItem, string.Empty, !showHistoryInputOutput);
+                                    ConvertInputOutputToJToken(ref historyItem, "Input", showHistoryInputOutput);
                                     break;
                                 case EventType.TimerFired:
-                                    RemoveProperties(ref historyItem, "TimerId");
+                                    UpdateProperties(ref historyItem, "TimerId");
                                     break;
                                 case EventType.EventRaised:
-                                    RemoveProperties(ref historyItem, string.Empty, !showHistoryInputOutput);
+                                    UpdateProperties(ref historyItem, string.Empty, !showHistoryInputOutput);
                                     break;
                             }
 
-                            RemoveProperties(ref historyItem, new List<string> { "EventId", "IsPlayed" });
+                            UpdateProperties(ref historyItem, new List<string> { "EventId", "IsPlayed" });
                         }
                     }
 
@@ -253,7 +260,7 @@ namespace Microsoft.Azure.WebJobs
             };
         }
 
-        private static void RemoveProperties(ref JToken jsonToken, List<string> propertyNames, bool hideInput = false, bool hideResult = false)
+        private static void UpdateProperties(ref JToken jsonToken, List<string> propertyNames, bool hideInput = false, bool hideResult = false)
         {
             if (jsonToken == null)
             {
@@ -277,11 +284,11 @@ namespace Microsoft.Azure.WebJobs
 
             foreach (var propertyName in propertyNames)
             {
-                jsonToken[propertyName]?.Parent?.Remove();
+                UpdateProperties(ref jsonToken, propertyName);
             }
         }
 
-        private static void RemoveProperties(ref JToken jsonToken, string properyName, bool hideInput = false, bool hideResult = false)
+        private static void UpdateProperties(ref JToken jsonToken, string properyName, bool hideInput = false, bool hideResult = false)
         {
             if (jsonToken == null)
             {
@@ -320,6 +327,21 @@ namespace Microsoft.Azure.WebJobs
             }
 
             indexList.Add(taskScheduledData.Index);
+        }
+
+        private static void ConvertInputOutputToJToken(ref JToken jsonToken, string propertyName, bool showHistoryInputOutput)
+        {
+            if (!showHistoryInputOutput)
+            {
+                return;
+            }
+
+            if (jsonToken == null)
+            {
+                return;
+            }
+
+            jsonToken[propertyName] = ParseToJToken(jsonToken[propertyName]?.ToString());
         }
     }
 }
