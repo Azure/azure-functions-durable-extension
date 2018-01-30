@@ -12,6 +12,7 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -95,6 +96,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task HelloWorldOrchestration_Activity()
         {
+            await this.HelloWorldOrchestration_Activity_Main_Logic();
+        }
+
+        [Fact]
+        public async Task HelloWorldOrchestration_Activity_History()
+        {
+            await this.HelloWorldOrchestration_Activity_Main_Logic(true);
+        }
+
+        [Fact]
+        public async Task HelloWorldOrchestration_Activity_HistoryInputOutput()
+        {
+            await this.HelloWorldOrchestration_Activity_Main_Logic(true, true);
+        }
+
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool showHistory = false, bool showHistoryInputOutput = false)
+        {
             string[] orchestratorFunctionNames =
             {
                 nameof(TestOrchestrations.SayHelloWithActivity),
@@ -107,11 +125,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output, showHistory, showHistoryInputOutput);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
+                if (!showHistory)
+                {
+                    Assert.Equal(null, status?.History);
+                }
+                else
+                {
+                    Assert.Equal(7, status?.History.Count);
+                    Assert.Equal<string>("OrchestratorStarted", status?.History[0]["EventType"].ToString());
+                    Assert.Equal<string>("ExecutionStarted", status?.History[1]["EventType"].ToString());
+                    Assert.Equal<string>("SayHelloWithActivity", status?.History[1]["Name"].ToString());
+                    Assert.Equal<string>("OrchestratorCompleted", status?.History[2]["EventType"].ToString());
+                    Assert.Equal<string>("OrchestratorStarted", status?.History[3]["EventType"].ToString());
+                    Assert.Equal<string>("TaskCompleted", status?.History[4]["EventType"].ToString());
+                    Assert.Equal<string>("Hello", status?.History[4]["SchedulerName"].ToString());
+                    if (DateTime.TryParse(status?.History[4]["Timestamp"].ToString(), out DateTime timestamp) &&
+                        DateTime.TryParse(status?.History[4]["ScheduledTime"].ToString(), out DateTime scheduledTime))
+                    {
+                        Assert.True(timestamp > scheduledTime);
+                    }
+
+                    Assert.Equal<string>("ExecutionCompleted", status?.History[5]["EventType"].ToString());
+                    Assert.Equal<string>("Completed", status?.History[5]["OrchestrationStatus"].ToString());
+                    Assert.Equal<string>("OrchestratorCompleted", status?.History[6]["EventType"].ToString());
+
+                    if (showHistoryInputOutput)
+                    {
+                        Assert.NotNull(status?.History[1]["Input"]);
+                        Assert.Equal<string>("World", status.History[1]["Input"].ToString());
+                        Assert.NotNull(status.History[4]["Input"]);
+                        Assert.Equal<string>("", status.History[4]["Input"].ToString());
+                        Assert.NotNull(status.History[4]["Result"]);
+                        Assert.Equal<string>("Hello, World!", status.History[4]["Result"].ToString());
+                        Assert.NotNull(status.History[5]["Result"]);
+                        Assert.Equal<string>("Hello, World!", status.History[5]["Result"].ToString());
+                    }
+                    else
+                    {
+                        Assert.Null(status?.History[1]["Input"]);
+                        Assert.Null(status?.History[4]["Input"]);
+                        Assert.Null(status?.History[4]["Result"]);
+                        Assert.Null(status?.History[5]["Result"]);
+                    }
+
+                    Assert.NotNull(status?.History);
+                }
 
                 await host.StopAsync();
             }
