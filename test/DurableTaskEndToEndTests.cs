@@ -12,7 +12,6 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -99,12 +98,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.HelloWorldOrchestration_Activity_Main_Logic();
         }
 
+        /// <summary>
+        ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information is provided.
+        /// </summary>
         [Fact]
         public async Task HelloWorldOrchestration_Activity_History()
         {
             await this.HelloWorldOrchestration_Activity_Main_Logic(true);
         }
 
+        /// <summary>
+        ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information with input and result date is provided.
+        /// </summary>
         [Fact]
         public async Task HelloWorldOrchestration_Activity_HistoryInputOutput()
         {
@@ -549,6 +554,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task SubOrchestration_ComplexType()
         {
+            await this.SubOrchestration_ComplexType_Main_Logic();
+        }
+
+        /// <summary>
+        /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs and history information is provided.
+        /// </summary>
+        [Fact]
+        public async Task SubOrchestration_ComplexType_History()
+        {
+            await this.SubOrchestration_ComplexType_Main_Logic(true);
+        }
+
+        /// <summary>
+        /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs and history information with input and result data is provided.
+        /// </summary>
+        [Fact]
+        public async Task SubOrchestration_ComplexType_HistoryInputOutput()
+        {
+            await this.SubOrchestration_ComplexType_Main_Logic(true, true);
+        }
+
+        private async Task SubOrchestration_ComplexType_Main_Logic(bool showHistory = false, bool showHistoryInputOutput = false)
+        {
             const string TaskHub = nameof(this.SubOrchestration_ComplexType);
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, TaskHub))
             {
@@ -581,7 +609,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
                 var status = await client.WaitForCompletionAsync(
                     Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
-                    this.output);
+                    this.output,
+                    showHistory,
+                    showHistoryInputOutput);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -589,16 +619,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(status.Output);
                 ComplexType complextTypeDataOutput = status.Output.ToObject<ComplexType>();
-                Assert.NotNull(complextTypeDataOutput);
-                Assert.Equal(complexTypeDataInput.A, complextTypeDataOutput.A);
-                Assert.Equal(complexTypeDataInput.B[0], complextTypeDataOutput.B[0]);
-                Assert.Equal(complexTypeDataInput.B[1], complextTypeDataOutput.B[1]);
-                Assert.NotNull(complextTypeDataOutput.D);
-                Assert.Equal(complexTypeDataInput.D.E, complextTypeDataOutput.D.E);
-                Assert.Equal(complexTypeDataInput.D.F, complextTypeDataOutput.D.F);
+                CompareTwoComplexTypeObjects(complexTypeDataInput, complextTypeDataOutput);
+
+                if (!showHistory)
+                {
+                    Assert.Equal(null, status.History);
+                }
+                else
+                {
+                    Assert.Equal(7, status?.History.Count);
+                    Assert.Equal<string>("OrchestratorStarted", status.History[0]["EventType"].ToString());
+                    Assert.Equal<string>("ExecutionStarted", status.History[1]["EventType"].ToString());
+                    Assert.Equal<string>("CallOrchestrator", status.History[1]["Name"].ToString());
+                    Assert.Equal<string>("OrchestratorCompleted", status.History[2]["EventType"].ToString());
+                    Assert.Equal<string>("OrchestratorStarted", status.History[3]["EventType"].ToString());
+                    Assert.Equal<string>("SubOrchestrationInstanceCompleted", status.History[4]["EventType"].ToString());
+                    Assert.Equal<string>("CallActivity", status.History[4]["SchedulerName"].ToString());
+                    if (DateTime.TryParse(status?.History[4]["Timestamp"].ToString(), out DateTime timestamp) &&
+                        DateTime.TryParse(status?.History[4]["ScheduledTime"].ToString(), out DateTime scheduledTime))
+                    {
+                        Assert.True(timestamp > scheduledTime);
+                    }
+
+                    Assert.Equal<string>("ExecutionCompleted", status.History[5]["EventType"].ToString());
+                    Assert.Equal<string>("Completed", status.History[5]["OrchestrationStatus"].ToString());
+                    Assert.Equal<string>("OrchestratorCompleted", status.History[6]["EventType"].ToString());
+
+                    if (showHistoryInputOutput)
+                    {
+                        var inputValueJToken = status.History[1]["Input"]["Input"]["Input"];
+                        Assert.NotNull(inputValueJToken);
+                        var intputExecutionStarted = JsonConvert.DeserializeObject<ComplexType>(inputValueJToken.ToString());
+                        CompareTwoComplexTypeObjects(complexTypeDataInput, intputExecutionStarted);
+                        Assert.NotNull(status.History[4]["Input"]);
+                        Assert.Equal<string>("", status.History[4]["Input"].ToString());
+                        Assert.NotNull(status.History[4]["Result"]);
+                        var resultSubOrchestrationInstanceCompleted = JsonConvert.DeserializeObject<ComplexType>(status.History[4]["Result"].ToString());
+                        CompareTwoComplexTypeObjects(complexTypeDataInput, resultSubOrchestrationInstanceCompleted);
+                        Assert.NotNull(status.History[5]["Result"]);
+                        var resultExecutionCompleted = JsonConvert.DeserializeObject<ComplexType>(status.History[5]["Result"].ToString());
+                        CompareTwoComplexTypeObjects(complexTypeDataInput, resultExecutionCompleted);
+                    }
+                    else
+                    {
+                        Assert.Null(status.History[1]["Input"]);
+                        Assert.Null(status.History[4]["Input"]);
+                        Assert.Null(status.History[4]["Result"]);
+                        Assert.Null(status.History[5]["Result"]);
+                    }
+
+                    Assert.NotNull(status.History);
+                }
 
                 await host.StopAsync();
             }
+        }
+
+        private static void CompareTwoComplexTypeObjects(ComplexType firstObject, ComplexType secondObject)
+        {
+            Assert.NotNull(secondObject);
+            Assert.Equal(firstObject.A, secondObject.A);
+            Assert.Equal(firstObject.B[0], secondObject.B[0]);
+            Assert.Equal(firstObject.B[1], secondObject.B[1]);
+            Assert.NotNull(secondObject.D);
+            Assert.Equal(firstObject.D.E, secondObject.D.E);
+            Assert.Equal(firstObject.D.F, secondObject.D.F);
         }
 
         /// <summary>
