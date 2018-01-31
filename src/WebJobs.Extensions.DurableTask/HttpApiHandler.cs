@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
         private const string ShowHistoryParameter = "showHistory";
-        private const string ShowHistoryInputOutputParameter = "showHistoryInputOutput";
+        private const string ShowHistoryOutputParameter = "showHistoryOutput";
 
         private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
@@ -149,8 +149,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter);
-            var showHistoryInputOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryInputOutputParameter);
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryInputOutput);
+            var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter);
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
