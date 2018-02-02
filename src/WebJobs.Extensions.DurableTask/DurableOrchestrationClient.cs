@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs
             }
 
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
-            if (state == null || state.OrchestrationInstance == null)
+            if (state?.OrchestrationInstance == null)
             {
                 throw new ArgumentException($"No instance with ID '{instanceId}' was found.", nameof(instanceId));
             }
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.WebJobs
             JArray historyArray = null;
             if (showHistory)
             {
-                var history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
+                string history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
                 if (!string.IsNullOrEmpty(history))
                 {
                     historyArray = JArray.Parse(history);
@@ -181,35 +181,54 @@ namespace Microsoft.Azure.WebJobs
 
                     for (var i = 0; i < historyArray.Count; i++)
                     {
-                        var historyItem = historyArray[i];
+                        JObject historyItem = (JObject)historyArray[i];
                         if (Enum.TryParse(historyItem["EventType"].Value<string>(), out EventType eventType))
                         {
+                           // Changing the value of EventType from integer to string for better understanding in the history output
                             historyItem["EventType"] = eventType.ToString();
                             switch (eventType)
                             {
                                 case EventType.TaskScheduled:
-                                    TrackNameAndScheduledTime(historyItem, eventType, i, ref eventMapper);
-                                    UpdateProperties(ref historyItem, "Version", true);
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
+                                    historyItem.Remove("Version");
+                                    historyItem.Remove("Input");
                                     break;
                                 case EventType.TaskCompleted:
                                 case EventType.TaskFailed:
-                                    AddScheduledEventDataAndAggreagate(eventMapper, "TaskScheduled", historyItem, ref indexList);
-                                    UpdateProperties(ref historyItem, "TaskScheduledId", hideResult: !showHistoryOutput && eventType == EventType.TaskCompleted);
-                                    ConvertOutputToJToken(ref historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "TaskScheduled", historyItem, indexList);
+                                    historyItem["TaskScheduledId"]?.Parent.Remove();
+                                    if (!showHistoryOutput && eventType == EventType.TaskCompleted)
+                                    {
+                                        historyItem.Remove("Result");
+                                    }
+
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
-                                    TrackNameAndScheduledTime(historyItem, eventType, i, ref eventMapper);
-                                    UpdateProperties(ref historyItem, "Version", true);
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
+                                    historyItem.Remove("Version");
+                                    historyItem.Remove("Input");
                                     break;
                                 case EventType.SubOrchestrationInstanceCompleted:
                                 case EventType.SubOrchestrationInstanceFailed:
-                                    AddScheduledEventDataAndAggreagate(eventMapper, "SubOrchestrationInstanceCreated", historyItem, ref indexList);
-                                    UpdateProperties(ref historyItem, "TaskScheduledId", hideResult: !showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
-                                    ConvertOutputToJToken(ref historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "SubOrchestrationInstanceCreated", historyItem, indexList);
+                                    historyItem.Remove("TaskScheduledId");
+                                    if (!showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted)
+                                    {
+                                        historyItem.Remove("Result");
+                                    }
+
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
                                     break;
                                 case EventType.ExecutionStarted:
-                                    ChangePrpertyName(ref historyItem, "Name", "FunctionName");
-                                    UpdateProperties(ref historyItem, new List<string> { "OrchestrationInstance", "ParentInstance", "Version", "Tags" }, true);
+                                    var functionName = historyItem["Name"];
+                                    historyItem.Remove("Name");
+                                    historyItem["FunctionName"] = functionName;
+                                    historyItem.Remove("OrchestrationInstance");
+                                    historyItem.Remove("ParentInstance");
+                                    historyItem.Remove("Version");
+                                    historyItem.Remove("Tags");
+                                    historyItem.Remove("Input");
                                     break;
                                 case EventType.ExecutionCompleted:
                                     if (Enum.TryParse(historyItem["OrchestrationStatus"].Value<string>(), out OrchestrationStatus orchestrationStatus))
@@ -217,17 +236,21 @@ namespace Microsoft.Azure.WebJobs
                                         historyItem["OrchestrationStatus"] = orchestrationStatus.ToString();
                                     }
 
-                                    UpdateProperties(ref historyItem, string.Empty, hideResult: !showHistoryOutput);
-                                    ConvertOutputToJToken(ref historyItem, showHistoryOutput);
+                                    if (!showHistoryOutput)
+                                    {
+                                        historyItem.Remove("Result");
+                                    }
+
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput);
                                     break;
                                 case EventType.ExecutionTerminated:
-                                    UpdateProperties(ref historyItem, string.Empty, true);
+                                    historyItem.Remove("Input");
                                     break;
                                 case EventType.TimerFired:
-                                    UpdateProperties(ref historyItem, "TimerId");
+                                    historyItem.Remove("TimerId");
                                     break;
                                 case EventType.EventRaised:
-                                    UpdateProperties(ref historyItem, string.Empty, true);
+                                    historyItem.Remove("Input");
                                     break;
                                 case EventType.OrchestratorStarted:
                                 case EventType.OrchestratorCompleted:
@@ -235,7 +258,8 @@ namespace Microsoft.Azure.WebJobs
                                     break;
                             }
 
-                            UpdateProperties(ref historyItem, new List<string> { "EventId", "IsPlayed" });
+                            historyItem.Remove("EventId");
+                            historyItem.Remove("IsPlayed");
                         }
                     }
 
@@ -262,93 +286,49 @@ namespace Microsoft.Azure.WebJobs
             };
         }
 
-        private static void UpdateProperties(ref JToken jsonToken, List<string> propertyNames, bool hideInput = false, bool hideResult = false)
+        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            if (jsonToken == null)
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"] });
+        }
+
+        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList)
+        {
+            if (!eventMapper.ContainsKey($"{prefix}_{historyItem["TaskScheduledId"]}"))
             {
                 return;
             }
 
-            if ((hideInput || hideResult) && propertyNames == null)
-            {
-                propertyNames = new List<string>();
-            }
-
-            if (hideInput)
-            {
-                propertyNames.Add("Input");
-            }
-
-            if (hideResult)
-            {
-                propertyNames.Add("Result");
-            }
-
-            foreach (var propertyName in propertyNames)
-            {
-                UpdateProperties(ref jsonToken, propertyName);
-            }
-        }
-
-        private static void UpdateProperties(ref JToken jsonToken, string properyName, bool hideInput = false, bool hideResult = false)
-        {
-            if (jsonToken == null)
-            {
-                return;
-            }
-
-            if (hideInput)
-            {
-                jsonToken["Input"]?.Parent?.Remove();
-            }
-
-            if (hideResult)
-            {
-                jsonToken["Result"]?.Parent?.Remove();
-            }
-
-            if (!string.IsNullOrEmpty(properyName))
-            {
-                jsonToken[properyName]?.Parent?.Remove();
-            }
-        }
-
-        private static void TrackNameAndScheduledTime(JToken historyItem, EventType eventType, int index, ref Dictionary<string, EventIndexDateMapping> eventMapper)
-        {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = historyItem["Name"].ToString(), Input = historyItem["Input"]?.ToString(), Date = (DateTime)historyItem["Timestamp"] });
-        }
-
-        private static void AddScheduledEventDataAndAggreagate(IReadOnlyDictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, ref List<int> indexList)
-        {
             var taskScheduledData = eventMapper[$"{prefix}_{historyItem["TaskScheduledId"]}"];
-            historyItem["ScheduledTime"] = taskScheduledData.Date;
-            historyItem["FunctionName"] = taskScheduledData.Name;
-            indexList.Add(taskScheduledData.Index);
+            historyItem["ScheduledTime"] = taskScheduledData?.Date;
+            historyItem["FunctionName"] = taskScheduledData?.Name;
+            if (taskScheduledData != null)
+            {
+                indexList.Add(taskScheduledData.Index);
+            }
         }
 
-        private static void ConvertOutputToJToken(ref JToken jsonToken, bool showHistoryOutput)
+        private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
         {
             if (!showHistoryOutput)
             {
                 return;
             }
 
-            if (jsonToken == null)
+            if (jsonObject == null)
             {
                 return;
             }
 
-            jsonToken["Result"] = ParseToJToken(jsonToken["Result"]?.ToString());
+            jsonObject["Result"] = ParseToJToken((string)jsonObject["Result"]);
         }
 
-        private static void ChangePrpertyName(ref JToken jsonToken, string currentPropertyName, string newPropertyName)
+        private class EventIndexDateMapping
         {
-            var value = jsonToken?[currentPropertyName];
-            jsonToken?[currentPropertyName]?.Parent.Remove();
-            if (jsonToken != null)
-            {
-                jsonToken[newPropertyName] = value;
-            }
+            public int Index { get; set; }
+
+            public DateTime Date { get; set; }
+
+            public string Name { get; set; }
         }
     }
 }

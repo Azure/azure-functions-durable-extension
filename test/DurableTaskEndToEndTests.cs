@@ -130,47 +130,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output, showHistory, showHistoryOutput);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output, showHistory, showHistoryOutput);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
                 if (!showHistory)
                 {
-                    Assert.Equal(null, status?.History);
+                    Assert.Equal(null, status.History);
                 }
                 else
                 {
-                    Assert.Equal(3, status?.History.Count);
-                    Assert.Equal<string>("ExecutionStarted", status?.History[0]["EventType"].ToString());
-                    Assert.Equal<string>("SayHelloWithActivity", status?.History[0]["FunctionName"].ToString());
-                    Assert.Equal<string>("TaskCompleted", status?.History[1]["EventType"].ToString());
-                    Assert.Equal<string>("Hello", status?.History[1]["FunctionName"].ToString());
-                    if (DateTime.TryParse(status?.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
-                        DateTime.TryParse(status?.History[1]["ScheduledTime"].ToString(), out DateTime scheduledTime))
+                    Assert.Equal(3, status.History.Count);
+                    Assert.Equal<string>("ExecutionStarted", status.History[0]["EventType"].ToString());
+                    Assert.Equal<string>("SayHelloWithActivity", status.History[0]["FunctionName"].ToString());
+                    Assert.Equal<string>("TaskCompleted", status.History[1]["EventType"].ToString());
+                    Assert.Equal<string>("Hello", status.History[1]["FunctionName"].ToString());
+                    if (DateTime.TryParse(status.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
+                        DateTime.TryParse(status.History[1]["ScheduledTime"].ToString(), out DateTime scheduledTime))
                     {
                         Assert.True(timestamp > scheduledTime);
                     }
 
-                    Assert.Equal<string>("ExecutionCompleted", status?.History[2]["EventType"].ToString());
-                    Assert.Equal<string>("Completed", status?.History[2]["OrchestrationStatus"].ToString());
+                    Assert.Equal<string>("ExecutionCompleted", status.History[2]["EventType"].ToString());
+                    Assert.Equal<string>("Completed", status.History[2]["OrchestrationStatus"].ToString());
 
                     if (showHistoryOutput)
                     {
-                        Assert.Null(status?.History[0]["Input"]);
-                        Assert.NotNull(status?.History[1]["Result"]);
+                        Assert.Null(status.History[0]["Input"]);
+                        Assert.NotNull(status.History[1]["Result"]);
                         Assert.Equal<string>("Hello, World!", status.History[1]["Result"].ToString());
                         Assert.NotNull(status.History[2]["Result"]);
                         Assert.Equal<string>("Hello, World!", status.History[2]["Result"].ToString());
                     }
                     else
                     {
-                        Assert.Null(status?.History[0]["Input"]);
-                        Assert.Null(status?.History[1]["Result"]);
-                        Assert.Null(status?.History[2]["Result"]);
+                        Assert.Null(status.History[0]["Input"]);
+                        Assert.Null(status.History[1]["Result"]);
+                        Assert.Null(status.History[2]["Result"]);
                     }
 
-                    Assert.NotNull(status?.History);
+                    Assert.NotNull(status.History);
                 }
 
                 await host.StopAsync();
@@ -619,13 +620,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
                 else
                 {
-                    Assert.Equal(3, status?.History.Count);
+                    Assert.Equal(3, status.History.Count);
                     Assert.Equal<string>("ExecutionStarted", status.History[0]["EventType"].ToString());
                     Assert.Equal<string>("CallOrchestrator", status.History[0]["FunctionName"].ToString());
                     Assert.Equal<string>("SubOrchestrationInstanceCompleted", status.History[1]["EventType"].ToString());
                     Assert.Equal<string>("CallActivity", status.History[1]["FunctionName"].ToString());
-                    if (DateTime.TryParse(status?.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
-                        DateTime.TryParse(status?.History[1]["FunctionName"].ToString(), out DateTime scheduledTime))
+                    if (DateTime.TryParse(status.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
+                        DateTime.TryParse(status.History[1]["FunctionName"].ToString(), out DateTime scheduledTime))
                     {
                         Assert.True(timestamp > scheduledTime);
                     }
