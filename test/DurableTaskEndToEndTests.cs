@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     if (DateTime.TryParse(status.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
                         DateTime.TryParse(status.History[1]["ScheduledTime"].ToString(), out DateTime scheduledTime))
                     {
-                        Assert.True(timestamp > scheduledTime);
+                        Assert.True(timestamp >= scheduledTime);
                     }
 
                     Assert.Equal<string>("ExecutionCompleted", status.History[2]["EventType"].ToString());
