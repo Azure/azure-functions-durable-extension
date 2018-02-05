@@ -52,6 +52,12 @@
             </summary>
             <value>A positive integer configured by the host. The default value is <c>20</c>.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount">
+            <summary>
+            Gets or sets the partition count for the control queue.
+            </summary>
+            <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueVisibilityTimeout">
             <summary>
             Gets or sets the visibility timeout of dequeued control queue messages.

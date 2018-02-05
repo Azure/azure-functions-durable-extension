@@ -71,6 +71,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ControlQueueBatchSize { get; set; } = 20;
 
         /// <summary>
+        /// Gets or sets the partition count for the control queue.
+        /// </summary>
+        /// <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
+        public int PartitionCount { get; set; } = 4;
+
+        /// <summary>
         /// Gets or sets the visibility timeout of dequeued control queue messages.
         /// </summary>
         /// <value>
@@ -352,6 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 StorageConnectionString = resolvedStorageConnectionString,
                 TaskHubName = taskHubNameOverride ?? this.HubName,
+                PartitionCount = this.PartitionCount,
                 ControlQueueVisibilityTimeout = this.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.WorkItemQueueVisibilityTimeout,
                 MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentTaskOrchestrationWorkItems,
