@@ -293,16 +293,10 @@ namespace Microsoft.Azure.WebJobs
 
         private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList)
         {
-            if (!eventMapper.ContainsKey($"{prefix}_{historyItem["TaskScheduledId"]}"))
+            if (eventMapper.TryGetValue($"{prefix}_{historyItem["TaskScheduledId"]}", out EventIndexDateMapping taskScheduledData))
             {
-                return;
-            }
-
-            var taskScheduledData = eventMapper[$"{prefix}_{historyItem["TaskScheduledId"]}"];
-            historyItem["ScheduledTime"] = taskScheduledData?.Date;
-            historyItem["FunctionName"] = taskScheduledData?.Name;
-            if (taskScheduledData != null)
-            {
+                historyItem["ScheduledTime"] = taskScheduledData.Date;
+                historyItem["FunctionName"] = taskScheduledData.Name;
                 indexList.Add(taskScheduledData.Index);
             }
         }
@@ -310,11 +304,6 @@ namespace Microsoft.Azure.WebJobs
         private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
         {
             if (!showHistoryOutput)
-            {
-                return;
-            }
-
-            if (jsonObject == null)
             {
                 return;
             }
