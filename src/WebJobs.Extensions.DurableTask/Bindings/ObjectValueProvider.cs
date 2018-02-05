@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string ToInvokeString()
         {
-            return (this.value != null) ? this.value.ToString() : null;
+            return this.value?.ToString();
         }
     }
 }
