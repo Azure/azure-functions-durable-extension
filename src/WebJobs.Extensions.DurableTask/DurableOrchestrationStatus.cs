@@ -70,5 +70,13 @@ namespace Microsoft.Azure.WebJobs
         /// Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
         /// </value>
         public OrchestrationRuntimeStatus RuntimeStatus { get; internal set; }
+
+        /// <summary>
+        /// Gets the execution history of the queried orchestrator function instance.
+        /// </summary>
+        /// <value>
+        /// The output as a <c>JArray</c> object or <c>null</c>.
+        /// </value>
+        public JArray History { get; internal set; }
     }
 }

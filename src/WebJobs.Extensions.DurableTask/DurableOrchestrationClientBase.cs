@@ -78,7 +78,9 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the status of the specified orchestration instance.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
+        /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
+        /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId);
+        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false);
     }
 }

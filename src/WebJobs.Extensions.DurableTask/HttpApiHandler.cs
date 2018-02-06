@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
+        private const string ShowHistoryParameter = "showHistory";
+        private const string ShowHistoryOutputParameter = "showHistoryOutput";
 
         private readonly DurableTaskExtension config;
         private readonly TraceWriter traceWriter;
@@ -144,7 +147,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableOrchestrationClient client = this.GetClient(request);
 
-            var status = await client.GetStatusAsync(instanceId);
+            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter);
+            var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter);
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -178,15 +184,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     break;
             }
 
-            var response = request.CreateResponse(
+            var response =
+                request.CreateResponse(
                 statusCode,
-                new
+                new StatusResponsePayload
                 {
-                    runtimeStatus = status.RuntimeStatus.ToString(),
-                    input = status.Input,
-                    output = status.Output,
-                    createdTime = status.CreatedTime.ToString("s") + "Z",
-                    lastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
+                    RuntimeStatus = status.RuntimeStatus.ToString(),
+                    Input = status.Input,
+                    Output = status.Output,
+                    CreatedTime = status.CreatedTime.ToString("s") + "Z",
+                    LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
+                    HistoryEvents = status.History,
                 });
 
             if (location != null)
@@ -201,6 +209,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return response;
+        }
+
+        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var value = queryStringNameValueCollection[queryParameterName];
+            return bool.TryParse(value, out bool parsedValue) && parsedValue;
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
