@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Diagnostics;
@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class TestOrchestratorClient
+    internal class TestOrchestratorClient
     {
         private readonly DurableOrchestrationClient innerClient;
         private readonly string functionName;
@@ -52,15 +52,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return status;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
         public async Task RaiseEventAsync(string eventName, object eventData)
         {
-            await this.innerClient.RaiseEventAsync(instanceId, eventName, eventData);
+            await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
         }
 
         public async Task TerminateAsync(string reason)
         {
-            await this.innerClient.TerminateAsync(instanceId, reason);
+            await this.innerClient.TerminateAsync(this.instanceId, reason);
         }
 
         public async Task<DurableOrchestrationStatus> WaitForStartupAsync(TimeSpan timeout, ITestOutputHelper output)
@@ -76,8 +75,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
-
-            } while (sw.Elapsed < timeout);
+            }
+            while (sw.Elapsed < timeout);
 
             throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to start.");
         }
@@ -97,8 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
-
-            } while (sw.Elapsed < timeout);
+            }
+            while (sw.Elapsed < timeout);
 
             throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to complete.");
         }

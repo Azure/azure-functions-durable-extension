@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -17,12 +17,12 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Parameter data for orchestration bindings that can be used to schedule function-based activities.
     /// </summary>
-    public sealed class DurableOrchestrationContext
+    public sealed class DurableOrchestrationContext : DurableOrchestrationContextBase
     {
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, object> pendingExternalEvents = 
+        private readonly Dictionary<string, object> pendingExternalEvents =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
@@ -46,41 +46,14 @@ namespace Microsoft.Azure.WebJobs
             this.owningThreadId = -1;
         }
 
-        /// <summary>
-        /// Gets the instance ID of the currently executing orchestration.
-        /// </summary>
-        /// <remarks>
-        /// The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
-        /// auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
-        /// </remarks>
-        /// <value>
-        /// The ID of the current orchestration instance.
-        /// </value>
-        public string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
+        /// <inheritdoc />
+        public override string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
 
-        /// <summary>
-        /// Gets the current date/time in a way that is safe for use by orchestrator functions.
-        /// </summary>
-        /// <remarks>
-        /// This date/time value is derived from the orchestration history. It always returns the same value 
-        /// at specific points in the orchestrator function code, making it deterministic and safe for replay.
-        /// </remarks>
-        /// <value>The orchestration's current date/time in UTC.</value>
-        public DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
+        /// <inheritdoc />
+        public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
 
-        /// <summary>
-        /// Gets a value indicating whether the orchestrator function is currently replaying itself.
-        /// </summary>
-        /// <remarks>
-        /// This property is useful when there is logic that needs to run only when the orchestrator function
-        /// is *not* replaying. For example, certain types of application logging may become too noisy when duplicated
-        /// as part of orchestrator function replay. The orchestrator code could check to see whether the function is
-        /// being replayed and then issue the log statements when this value is <c>false</c>.
-        /// </remarks>
-        /// <value>
-        /// <c>true</c> if the orchestrator function is currently being replayed; otherwise <c>false</c>.
-        /// </value>
-        public bool IsReplaying => this.innerContext.IsReplaying;
+        /// <inheritdoc />
+        public override bool IsReplaying => this.innerContext.IsReplaying;
 
         internal bool ContinuedAsNew { get; private set; }
 
@@ -123,12 +96,8 @@ namespace Microsoft.Azure.WebJobs
             return this.serializedInput != null ? JToken.Parse(this.serializedInput) : null;
         }
 
-        /// <summary>
-        /// Gets the input of the current orchestrator function as a deserialized value.
-        /// </summary>
-        /// <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
-        /// <returns>The deserialized input value.</returns>
-        public T GetInput<T>()
+        /// <inheritdoc />
+        public override T GetInput<T>()
         {
             this.ThrowIfInvalidAccess();
 
@@ -187,92 +156,14 @@ namespace Microsoft.Azure.WebJobs
             return this.serializedOutput;
         }
 
-        /// <summary>
-        /// Schedules an activity function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <param name="functionName">The name of the activity function to call.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
-        /// <returns>A durable task that completes when the called function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task CallActivityAsync(string functionName, object input)
-        {
-            return this.CallActivityAsync<object>(functionName, input);
-        }
-
-        /// <summary>
-        /// Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
-        /// </summary>
-        /// <param name="functionName">The name of the activity function to call.</param>
-        /// <param name="retryOptions">The retry option for the activity function.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
-        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// The retry option object is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
-        {
-            return this.CallActivityWithRetryAsync<object>(functionName, retryOptions, input);
-        }
-
-        /// <summary>
-        /// Schedules an activity function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
-        /// <param name="functionName">The name of the activity function to call.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
-        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task<TResult> CallActivityAsync<TResult>(string functionName, object input)
+        /// <inheritdoc />
+        public override Task<TResult> CallActivityAsync<TResult>(string functionName, object input)
         {
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, null, null, input);
         }
 
-        /// <summary>
-        /// Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
-        /// <param name="functionName">The name of the activity function to call.</param>
-        /// <param name="retryOptions">The retry option for the activity function.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
-        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// The retry option object is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task<TResult> CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
+        /// <inheritdoc />
+        public override Task<TResult> CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
         {
             if (retryOptions == null)
             {
@@ -282,186 +173,14 @@ namespace Microsoft.Azure.WebJobs
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, null, retryOptions, input);
         }
 
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task CallSubOrchestratorAsync(string functionName, object input)
-        {
-            return this.CallSubOrchestratorAsync<object>(functionName, input);
-        }
-
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task CallSubOrchestratorAsync(string functionName, string instanceId, object input)
-        {
-            return this.CallSubOrchestratorAsync<object>(functionName, instanceId, input);
-        }
-
-        /// <summary>
-        /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, object input)
-        {
-            return this.CallSubOrchestratorAsync<TResult>(functionName, null, input);
-        }
-
-        /// <summary>
-        /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
+        /// <inheritdoc />
+        public override Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, instanceId, null, input);
         }
 
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-        /// </summary>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// The retry option object is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
-        {
-            return this.CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, null, input);
-        }
-
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-        /// </summary>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
-        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// The retry option object is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, string instanceId, object input)
-        {
-            return this.CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, instanceId, input);
-        }
-
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// The retry option object is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
-        {
-            return this.CallSubOrchestratorWithRetryAsync<TResult>(functionName, retryOptions, null, input);
-        }
-
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
-        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// The retry option object is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        public Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input)
+        /// <inheritdoc />
+        public override Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input)
         {
             if (retryOptions == null)
             {
@@ -471,36 +190,8 @@ namespace Microsoft.Azure.WebJobs
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, instanceId, retryOptions, input);
         }
 
-        /// <summary>
-        /// Creates a durable timer which expires at a specified time.
-        /// </summary>
-        /// <remarks>
-        /// All durable timers created using this method must either expire or be cancelled 
-        /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
-        /// Otherwise the underlying framework will keep the instance alive until the timer expires.
-        /// </remarks>
-        /// <param name="fireAt">The time at which the timer should expire.</param>
-        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
-        /// <returns>A durable task that completes when the durable timer expires.</returns>
-        public Task CreateTimer(DateTime fireAt, CancellationToken cancelToken)
-        {
-            return this.CreateTimer<object>(fireAt, null, cancelToken);
-        }
-
-        /// <summary>
-        /// Creates a durable timer which expires at a specified time.
-        /// </summary>
-        /// <remarks>
-        /// All durable timers created using this method must either expire or be cancelled 
-        /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
-        /// Otherwise the underlying framework will keep the instance alive until the timer expires.
-        /// </remarks>
-        /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
-        /// <param name="fireAt">The time at which the timer should expire.</param>
-        /// <param name="state">Any state to be preserved by the timer.</param>
-        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
-        /// <returns>A durable task that completes when the durable timer expires.</returns>
-        public async Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
+        /// <inheritdoc />
+        public override async Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
 
@@ -534,13 +225,8 @@ namespace Microsoft.Azure.WebJobs
             return result;
         }
 
-        /// <summary>
-        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
-        /// </summary>
-        /// <param name="name">The name of the event to wait for.</param>
-        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
-        /// <returns>A durable task that completes when the external event is received.</returns>
-        public Task<T> WaitForExternalEvent<T>(string name)
+        /// <inheritdoc />
+        public override Task<T> WaitForExternalEvent<T>(string name)
         {
             this.ThrowIfInvalidAccess();
 
@@ -566,11 +252,8 @@ namespace Microsoft.Azure.WebJobs
             }
         }
 
-        /// <summary>
-        /// Restarts the orchestration and its history.
-        /// </summary>
-        /// <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
-        public void ContinueAsNew(object input)
+        /// <inheritdoc />
+        public override void ContinueAsNew(object input)
         {
             this.ThrowIfInvalidAccess();
 
@@ -603,9 +286,13 @@ namespace Microsoft.Azure.WebJobs
                     }
                     else
                     {
-                        callTask = this.innerContext.ScheduleWithRetry<TResult>(functionName, version,
-                            retryOptions.GetRetryOptions(), input);
+                        callTask = this.innerContext.ScheduleWithRetry<TResult>(
+                            functionName,
+                            version,
+                            retryOptions.GetRetryOptions(),
+                            input);
                     }
+
                     break;
                 case FunctionType.Orchestrator:
                     if (retryOptions == null)
@@ -625,6 +312,7 @@ namespace Microsoft.Azure.WebJobs
                             retryOptions.GetRetryOptions(),
                             input);
                     }
+
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected function type '{functionType}'.");
@@ -668,7 +356,7 @@ namespace Microsoft.Azure.WebJobs
             {
                 if (exception != null && this.innerContext.IsReplaying)
                 {
-                    // If this were not a replay, then the activity function trigger would have already 
+                    // If this were not a replay, then the activity function trigger would have already
                     // emitted a FunctionFailed trace with the full exception details.
                     this.config.TraceHelper.FunctionFailed(
                         this.config.HubName,
@@ -683,7 +371,7 @@ namespace Microsoft.Azure.WebJobs
 
             if (this.innerContext.IsReplaying)
             {
-                // If this were not a replay, then the activity function trigger would have already 
+                // If this were not a replay, then the activity function trigger would have already
                 // emitted a FunctionCompleted trace with the actual output details.
                 this.config.TraceHelper.FunctionCompleted(
                     this.config.HubName,
@@ -698,7 +386,6 @@ namespace Microsoft.Azure.WebJobs
 
             return output;
         }
-
 
         internal void RaiseEvent(string name, string input)
         {
@@ -724,8 +411,8 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The inner context has not been initialized.");
             }
 
-            // TODO: This should be considered best effort because it's possible that async work 
-            // was scheduled and the CLR decided to run it on the same thread. The only guaranteed 
+            // TODO: This should be considered best effort because it's possible that async work
+            // was scheduled and the CLR decided to run it on the same thread. The only guaranteed
             // way to detect cross-thread access is to do it in the Durable Task Framework directly.
             if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
             {

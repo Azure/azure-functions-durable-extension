@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Specialized;
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new HttpResponseMessage
             {
                 RequestMessage = request,
-                StatusCode = statusCode
+                StatusCode = statusCode,
             };
         }
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json"),
                 RequestMessage = request,
-                StatusCode = statusCode
+                StatusCode = statusCode,
             };
         }
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Content = new StringContent(JsonConvert.SerializeObject(error), Encoding.UTF8, "application/json"),
                 RequestMessage = request,
-                StatusCode = statusCode
+                StatusCode = statusCode,
             };
         }
 
@@ -50,14 +50,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Message = message,
                 ExceptionMessage = e.Message,
                 ExceptionType = e.GetType().FullName,
-                StackTrace = e.StackTrace
+                StackTrace = e.StackTrace,
             };
 
             return new HttpResponseMessage
             {
                 Content = new StringContent(JsonConvert.SerializeObject(error), Encoding.UTF8, "application/json"),
                 RequestMessage = request,
-                StatusCode = statusCode
+                StatusCode = statusCode,
             };
         }
 
@@ -83,7 +83,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (ch == '=')
                     {
                         if (ti < 0)
+                        {
                             ti = i;
+                        }
                     }
                     else if (ch == separator) // e.g. '&' or ';'
                     {
@@ -94,8 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 // extract the name / value pair
-                String name = null;
-                String value = null;
+                string name = null;
+                string value = null;
 
                 if (ti >= 0)
                 {
@@ -114,11 +116,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // trailing '&'
                 if (i == l - 1 && s[i] == separator)
-                    values.Add(null, String.Empty);
+                {
+                    values.Add(null, string.Empty);
+                }
 
                 i++;
             }
-            
+
             return values;
         }
     }

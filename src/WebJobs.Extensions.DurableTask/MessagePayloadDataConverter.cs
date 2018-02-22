@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Text;
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // We limit to 60 KB to leave room for metadata.
         private const int MaxPayloadSizeInKB = 60;
 
-        // The default JsonDataConverter for DTFx includes type information in JSON objects. This blows up when using Functions 
+        // The default JsonDataConverter for DTFx includes type information in JSON objects. This blows up when using Functions
         // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
         // configure the JsonDataConverter with default serializer settings, which don't include CLR type information.
         private static readonly JsonSerializerSettings SharedSettings = new JsonSerializerSettings();

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Net.Http;
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Client for starting, querying, terminating, and raising events to new or existing orchestration instances.
     /// </summary>
-    public class DurableOrchestrationClient
+    public class DurableOrchestrationClient : DurableOrchestrationClientBase
     {
         private const string DefaultVersion = "";
 
@@ -37,42 +37,20 @@ namespace Microsoft.Azure.WebJobs
             this.attribute = attribute;
         }
 
-        /// <summary>
-        /// Creates an HTTP response for checking the status of the specified instance. 
-        /// </summary>
-        /// <param name="request">The HTTP request that triggered the current function.</param>
-        /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <returns>An HTTP response which may include a 202 and locaton header.</returns>
-        public HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
+        /// <inheritdoc />
+        public override HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
         }
 
-        /// <summary>
-        /// Starts a new execution of the specified orchestrator function.
-        /// </summary>
-        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-        /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <returns>A task that completes when the start message is enqueued.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        public Task<string> StartNewAsync(string orchestratorFunctionName, object input)
+        /// <inheritdoc />
+        public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
         {
-            return this.StartNewAsync(orchestratorFunctionName, string.Empty, input);
+            return await this.config.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, this.attribute, timeout ?? TimeSpan.FromSeconds(10), retryInterval ?? TimeSpan.FromSeconds(1));
         }
 
-        /// <summary>
-        /// Starts a new execution of the specified orchestrator function.
-        /// </summary>
-        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-        /// <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
-        /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <returns>A task that completes when the start message is enqueued.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        public async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
+        /// <inheritdoc />
+        public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
         {
             this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
 
@@ -85,21 +63,15 @@ namespace Microsoft.Azure.WebJobs
                 DefaultVersion,
                 instance.InstanceId,
                 reason: "NewInstance",
-                functionType: FunctionType.Orchestrator, 
+                functionType: FunctionType.Orchestrator,
                 isReplay: false);
 
             return instance.InstanceId;
         }
 
-        /// <summary>
-        /// Sends an event notification message to a running orchestration instance.
-        /// </summary>
-        /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
-        /// <param name="eventName">The name of the event.</param>
-        /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
-        /// <returns>A task that completes when the event notification message has been enqueued.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
-        public async Task RaiseEventAsync(string instanceId, string eventName, object eventData)
+        /// <inheritdoc />
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public override async Task RaiseEventAsync(string instanceId, string eventName, object eventData)
         {
             if (string.IsNullOrEmpty(eventName))
             {
@@ -125,13 +97,8 @@ namespace Microsoft.Azure.WebJobs
             }
         }
 
-        /// <summary>
-        /// Terminates a running orchestration instance.
-        /// </summary>
-        /// <param name="instanceId">The ID of the orchestration instance to terminate.</param>
-        /// <param name="reason">The reason for terminating the orchestration instance.</param>
-        /// <returns>A task that completes when the terminate message is enqueued.</returns>
-        public async Task TerminateAsync(string instanceId, string reason)
+        /// <inheritdoc />
+        public override async Task TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
             if (state.OrchestrationStatus == OrchestrationStatus.Running ||
@@ -144,12 +111,8 @@ namespace Microsoft.Azure.WebJobs
             }
         }
 
-        /// <summary>
-        /// Gets the status of the specified orchestration instance.
-        /// </summary>
-        /// <param name="instanceId">The ID of the orchestration instance to query.</param>
-        /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        /// <inheritdoc />
+        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
             if (state == null)
@@ -165,7 +128,7 @@ namespace Microsoft.Azure.WebJobs
                 LastUpdatedTime = state.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)state.OrchestrationStatus,
                 Input = ParseToJToken(state.Input),
-                Output = ParseToJToken(state.Output)
+                Output = ParseToJToken(state.Output),
             };
         }
 

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -7,19 +7,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class TestLogger : ILogger
+    internal class TestLogger : ILogger
     {
         private readonly Func<string, LogLevel, bool> filter;
 
-        public string Category { get; private set; }
-
-        public IList<LogMessage> LogMessages = new List<LogMessage>();
-
         public TestLogger(string category, Func<string, LogLevel, bool> filter = null)
         {
-            Category = category;
+            this.Category = category;
             this.filter = filter;
         }
+
+        public string Category { get; private set; }
+
+        public IList<LogMessage> LogMessages { get; } = new List<LogMessage>();
 
         public IDisposable BeginScope<TState>(TState state)
         {
@@ -28,24 +28,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return filter?.Invoke(Category, logLevel) ?? true;
+            return this.filter?.Invoke(this.Category, logLevel) ?? true;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            if (!IsEnabled(logLevel))
+            if (!this.IsEnabled(logLevel))
             {
                 return;
             }
 
-            LogMessages.Add(new LogMessage
+            this.LogMessages.Add(new LogMessage
             {
                 Level = logLevel,
                 EventId = eventId,
                 State = state as IEnumerable<KeyValuePair<string, object>>,
                 Exception = exception,
                 FormattedMessage = formatter(state, exception),
-                Category = Category
+                Category = this.Category,
             });
         }
     }
