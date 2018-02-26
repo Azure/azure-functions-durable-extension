@@ -1,9 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {

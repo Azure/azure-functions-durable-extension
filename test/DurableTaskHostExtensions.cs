@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -9,13 +9,14 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public static class DurableTaskHostExtensions
+    internal static class DurableTaskHostExtensions
     {
         public static async Task<TestOrchestratorClient> StartOrchestratorAsync(
             this JobHost host,
             string functionName,
             object input,
-            ITestOutputHelper output)
+            ITestOutputHelper output,
+            bool waitUntilOrchestrationStarts = false)
         {
             var startFunction = typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
             var clientRef = new TestOrchestratorClient[1];
@@ -24,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "functionName", functionName },
                 { "input", input },
                 { "clientRef", clientRef },
+                { "waitUntilOrchestrationStarts", waitUntilOrchestrationStarts },
             };
 
             await host.CallAsync(startFunction, args);
@@ -49,11 +51,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 [OrchestrationClient] DurableOrchestrationClient client,
                 string functionName,
                 object input,
-                TestOrchestratorClient[] clientRef)
+                TestOrchestratorClient[] clientRef,
+                bool waitUntilOrchestrationStarts = false)
             {
                 DateTime instanceCreationTime = DateTime.UtcNow;
 
-                string instanceId = await client.StartNewAsync(functionName, input);
+                string instanceId = await client.StartNewAsync(functionName, input, waitUntilOrchestrationStarts);
                 clientRef[0] = new TestOrchestratorClient(
                     client,
                     functionName,
@@ -62,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        class ExplicitTypeLocator : ITypeLocator
+        private class ExplicitTypeLocator : ITypeLocator
         {
             private readonly IReadOnlyList<Type> types;
 

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Diagnostics.Tracing;
 
@@ -11,11 +11,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [EventSource(Name = "WebJobs-Extensions-DurableTask")]
     internal sealed class EtwEventSource : EventSource
     {
-        public static EtwEventSource Instance = new EtwEventSource();
+        public static readonly EtwEventSource Instance = new EtwEventSource();
 
         // Private .ctor - callers should use the shared static instance.
         private EtwEventSource()
         { }
+
+#pragma warning disable SA1313 // Parameter names should begin with lower-case letter
 
         [Event(201, Level = EventLevel.Informational)]
         public void FunctionScheduled(
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string InstanceId,
             string Input,
             string FunctionType,
-            string ExtensionVersion, 
+            string ExtensionVersion,
             bool IsReplay)
         {
             this.WriteEvent(202, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Input ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Version,
             string InstanceId,
             string FunctionType,
-            string ExtensionVersion, 
+            string ExtensionVersion,
             bool IsReplay)
         {
             this.WriteEvent(203, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, FunctionType, ExtensionVersion, IsReplay);
@@ -161,5 +163,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.WriteEvent(209, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
+#pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

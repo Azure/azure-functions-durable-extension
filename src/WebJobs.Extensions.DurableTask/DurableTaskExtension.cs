@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Concurrent;
@@ -22,20 +22,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-    public class DurableTaskExtension : 
+    public class DurableTaskExtension :
         IExtensionConfigProvider,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
+        /// <summary>
+        /// The default task hub name to use when not explicitly configured.
+        /// </summary>
+        internal const string DefaultHubName = "DurableFunctionsHub";
+
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that OrchestrationClientAttribute defines a custom equality comparer.
         private readonly ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient> cachedClients =
             new ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient>();
 
-        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredOrchestrators = 
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredOrchestrators =
             new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
-        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities = 
+
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities =
             new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
@@ -48,16 +54,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private HttpApiHandler httpApiHandler;
 
         /// <summary>
-        /// The default task hub name to use when not explicitly configured.
-        /// </summary>
-        internal const string DefaultHubName = "DurableFunctionsHub";
-
-        /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
         /// </summary>
         /// <remarks>
-        /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate 
+        /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
@@ -111,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string AzureStorageConnectionStringName { get; set; }
 
         /// <summary>
-        /// The notification URL for polling status of instances. 
+        /// Gets or sets the notification URL for polling status of instances.
         /// </summary>
         /// <value>
         /// A URL pointing to the hosted function app that responds to status polling requests.
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <remarks>
         /// The default behavior when tracing function execution events is to include the number of bytes in the serialized
         /// inputs and outputs for function calls. This provides minimal information about what the inputs and outputs look
-        /// like without bloating the logs or inadvertently exposing sensitive information to the logs. Setting 
+        /// like without bloating the logs or inadvertently exposing sensitive information to the logs. Setting
         /// <see cref="TraceInputsAndOutputs"/> to <c>true</c> will instead cause the default function logging to log
         /// the entire contents of function inputs and outputs.
         /// </remarks>
@@ -149,6 +150,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
+        /// <summary>
+        /// Internal initialization call from the WebJobs host.
+        /// </summary>
+        /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
             ConfigureLoaderHooks();
@@ -167,7 +172,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // For 202 support
             if (this.NotificationUrl == null)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 this.NotificationUrl = context.GetWebhookHandler();
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             // Note that the order of the rules is important
@@ -175,8 +182,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
-            rule.BindToInput<DurableOrchestrationClient>(GetClient);
-                
+            rule.BindToInput<DurableOrchestrationClient>(this.GetClient);
+
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.traceHelper));
 
@@ -189,22 +196,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
 
+        /// <summary>
+        /// Called by the Durable Task Framework: Not used.
+        /// </summary>
+        /// <param name="creator">This parameter is not used.</param>
         void INameVersionObjectManager<TaskOrchestration>.Add(ObjectCreator<TaskOrchestration> creator)
         {
             throw new InvalidOperationException("Orchestrations should never be added explicitly.");
         }
 
+        /// <summary>
+        /// Called by the Durable Task Framework: Returns the specified <see cref="TaskOrchestration"/>.
+        /// </summary>
+        /// <param name="name">The name of the orchestration to return.</param>
+        /// <param name="version">The version of the orchestration to return.</param>
+        /// <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
         TaskOrchestration INameVersionObjectManager<TaskOrchestration>.GetObject(string name, string version)
         {
             var context = new DurableOrchestrationContext(this, name, version);
             return new TaskOrchestrationShim(this, context);
         }
 
+        /// <summary>
+        /// Called by the durable task framework: Not used.
+        /// </summary>
+        /// <param name="creator">This parameter is not used.</param>
         void INameVersionObjectManager<TaskActivity>.Add(ObjectCreator<TaskActivity> creator)
         {
             throw new InvalidOperationException("Activities should never be added explicitly.");
         }
 
+        /// <summary>
+        /// Called by the Durable Task Framework: Returns the specified <see cref="TaskActivity"/>.
+        /// </summary>
+        /// <param name="name">The name of the activity to return.</param>
+        /// <param name="version">The version of the activity to return.</param>
+        /// <returns>An activity shim that delegates execution to an activity function.</returns>
         TaskActivity INameVersionObjectManager<TaskActivity>.GetObject(string name, string version)
         {
             FunctionName activityFunction = new FunctionName(name, version);
@@ -243,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
                         return next();
-                    }
+                    },
                 },
                 CancellationToken.None);
 
@@ -258,7 +285,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        // This is temporary until script loading 
+        // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
@@ -282,7 +309,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        internal DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        /// <summary>
+        /// Gets a <see cref="DurableOrchestrationClient"/> using configuration from a <see cref="OrchestrationClientAttribute"/> instance.
+        /// </summary>
+        /// <param name="attribute">The attribute containing the client configuration parameters.</param>
+        /// <returns>Returns a <see cref="DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
+        protected internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -299,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal AzureStorageOrchestrationServiceSettings GetOrchestrationServiceSettings(
                 OrchestrationClientAttribute attribute)
         {
-            return GetOrchestrationServiceSettings(
+            return this.GetOrchestrationServiceSettings(
                 connectionNameOverride: attribute.ConnectionName,
                 taskHubNameOverride: attribute.TaskHub);
         }
@@ -359,7 +391,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.registeredOrchestrators.ContainsKey(functionName))
             {
                 throw new ArgumentException(
-                    string.Format("The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: {1}.",
+                    string.Format(
+                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: {1}.",
                         functionName,
                         string.Join(", ", this.registeredOrchestrators.Keys)));
             }
@@ -428,7 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
-                if (!this.isTaskHubWorkerStarted && 
+                if (!this.isTaskHubWorkerStarted &&
                     this.registeredOrchestrators.Count == 0 &&
                     this.registeredActivities.Count == 0)
                 {
@@ -458,7 +491,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        // Get a response that will point to our webhook handler. 
+        // Get a response that will point to our webhook handler.
         internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
@@ -472,6 +505,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
 
+        // Get a response that will wait for response from the durable function for predefined period of time before
+        // pointing to our webhook handler.
+        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
+        {
+            if (this.DisableHttpManagementApis)
+            {
+                throw new InvalidOperationException("HTTP instance management APIs are disabled.");
+            }
+
+            return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, attribute, timeout, retryInterval);
+        }
+
+        /// <inheritdoc/>
         Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
