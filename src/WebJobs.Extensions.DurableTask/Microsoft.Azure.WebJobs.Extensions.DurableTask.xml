@@ -268,7 +268,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object,System.Boolean)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
@@ -303,24 +303,26 @@
             <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.Object,System.Boolean)">
             <summary>
             Starts a new execution of the specified orchestrator function.
             </summary>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <param name="waitUntilOrchestrationStarts">If set to true, the method will wait (up to 10 seconds) until it can confirm that the orchestration instance has started.</param>
             <returns>A task that completes when the start message is enqueued.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object,System.Boolean)">
             <summary>
             Starts a new execution of the specified orchestrator function.
             </summary>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <param name="waitUntilOrchestrationStarts">If set to true, the method will wait (up to 10 seconds) until it can confirm that the orchestration instance has started.</param>
             <returns>A task that completes when the start message is enqueued.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.

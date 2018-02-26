@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
+        public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input, bool waitUntilOrchestrationStarts = false)
         {
             this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
 
@@ -65,6 +65,18 @@ namespace Microsoft.Azure.WebJobs
                 reason: "NewInstance",
                 functionType: FunctionType.Orchestrator,
                 isReplay: false);
+
+            if (waitUntilOrchestrationStarts)
+            {
+                DurableOrchestrationStatus status = await this.GetStatusAsync(instance.InstanceId);
+                int counter = 0;
+                while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && counter < 20)
+                {
+                    await Task.Delay(500);
+                    status = await this.GetStatusAsync(instanceId);
+                    counter++;
+                }
+            }
 
             return instance.InstanceId;
         }
