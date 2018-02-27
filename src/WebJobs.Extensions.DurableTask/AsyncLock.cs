@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
-        public async Task<IDisposable> AcquireAsync()
+        public async Task<Releaser> AcquireAsync()
         {
             await this.semaphore.WaitAsync();
             return new Releaser(this);
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.semaphore.Dispose();
         }
 
-        private sealed class Releaser : IDisposable
+        public struct Releaser : IDisposable
         {
             private readonly AsyncLock asyncLock;
 
@@ -42,7 +42,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public void Dispose()
             {
-                this.asyncLock.Release();
+                if (this.asyncLock != null)
+                {
+                    this.asyncLock.Release();
+                }
             }
         }
     }
