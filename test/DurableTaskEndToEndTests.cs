@@ -62,36 +62,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple orchestrator function which doesn't call any activity functions.
         /// </summary>
         [Fact]
-        public async Task HelloWorldOrchestration_StartNewAsync_Polling()
-        {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.SayHelloInline),
-            };
-
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.HelloWorldOrchestration_Inline)))
-            {
-                await host.StartAsync();
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                TestOrchestratorClient client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output, true);
-                TimeSpan second = stopwatch.Elapsed;
-                Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(20));
-                DurableOrchestrationStatus status = await client.InnerClient.GetStatusAsync(client.InstanceId);
-                Assert.NotNull(status);
-                Assert.True(status.RuntimeStatus != OrchestrationRuntimeStatus.Pending);
-                await host.StopAsync();
-            }
-
-            if (this.useTestLogger)
-            {
-                TestHelpers.AssertLogMessageSequence(this.loggerProvider, "HelloWorldOrchestration_Inline", orchestratorFunctionNames);
-            }
-        }
-
-        /// <summary>
-        /// End-to-end test which validates a simple orchestrator function which doesn't call any activity functions.
-        /// </summary>
-        [Fact]
         public async Task HelloWorldOrchestration_Inline()
         {
             string[] orchestratorFunctionNames =

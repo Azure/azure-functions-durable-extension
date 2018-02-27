@@ -35,14 +35,13 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <param name="waitUntilOrchestrationStarts">The method will wait (up to 10 seconds) until it can confirm that the orchestration instance has started.</param>
-        /// <returns>A task that completes when the start message is enqueued.</returns>
+        /// <returns>A task that completes when the orchestration is started.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        public virtual Task<string> StartNewAsync(string orchestratorFunctionName, object input, bool waitUntilOrchestrationStarts = true)
+        public virtual Task<string> StartNewAsync(string orchestratorFunctionName, object input)
         {
-            return this.StartNewAsync(orchestratorFunctionName, string.Empty, input, waitUntilOrchestrationStarts);
+            return this.StartNewAsync(orchestratorFunctionName, string.Empty, input);
         }
 
         /// <summary>
@@ -51,12 +50,11 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <param name="waitUntilOrchestrationStarts">The method will wait (up to 10 seconds) until it can confirm that the orchestration instance has started.</param>
-        /// <returns>A task that completes when the start message is enqueued.</returns>
+        /// <returns>A task that completes when the orchestration is started.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        public abstract Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input, bool waitUntilOrchestrationStarts = true);
+        public abstract Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input);
 
         /// <summary>
         /// Sends an event notification message to a running orchestration instance.

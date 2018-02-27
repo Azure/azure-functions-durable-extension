@@ -15,8 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this JobHost host,
             string functionName,
             object input,
-            ITestOutputHelper output,
-            bool waitUntilOrchestrationStarts = false)
+            ITestOutputHelper output)
         {
             var startFunction = typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
             var clientRef = new TestOrchestratorClient[1];
@@ -25,7 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "functionName", functionName },
                 { "input", input },
                 { "clientRef", clientRef },
-                { "waitUntilOrchestrationStarts", waitUntilOrchestrationStarts },
             };
 
             await host.CallAsync(startFunction, args);
@@ -51,12 +49,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 [OrchestrationClient] DurableOrchestrationClient client,
                 string functionName,
                 object input,
-                TestOrchestratorClient[] clientRef,
-                bool waitUntilOrchestrationStarts = false)
+                TestOrchestratorClient[] clientRef)
             {
                 DateTime instanceCreationTime = DateTime.UtcNow;
 
-                string instanceId = await client.StartNewAsync(functionName, input, waitUntilOrchestrationStarts);
+                string instanceId = await client.StartNewAsync(functionName, input);
                 clientRef[0] = new TestOrchestratorClient(
                     client,
                     functionName,
