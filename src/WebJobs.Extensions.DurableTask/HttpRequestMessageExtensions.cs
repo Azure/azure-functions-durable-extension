@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var separator = '&';
 
             int l = (s != null) ? s.Length : 0;
-            int i = 0;
+            int i = 1; // skip the leading '?' character
 
             while (i < l)
             {

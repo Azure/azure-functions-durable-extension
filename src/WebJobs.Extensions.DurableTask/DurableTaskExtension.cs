@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
-            rule.BindToInput<DurableOrchestrationClient>(this.GetClient);
+            rule.BindToInput<DurableOrchestrationClientBase>(this.GetClient);
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.traceHelper));
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="attribute">The attribute containing the client configuration parameters.</param>
         /// <returns>Returns a <see cref="DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
-        protected internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        protected internal virtual DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,

@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -197,6 +198,57 @@ namespace WebJobs.Extensions.DurableTask.Tests
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var response = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
+        }
+
+        [Fact]
+        public async Task TerminateInstance()
+        {
+            string testInstanceId = Guid.NewGuid().ToString("N");
+            string testReason = "TerminationReason" + Guid.NewGuid();
+
+            string actualInstanceId = null;
+            string actualReason = null;
+
+            // TODO: Find a simpler way of mocking the client behavior
+            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            clientMock
+                .Setup(x => x.TerminateAsync(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask)
+                .Callback((string instanceId, string reason) =>
+                {
+                    actualInstanceId = instanceId;
+                    actualReason = reason;
+                });
+
+            clientMock
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+                .Returns(Task.FromResult(
+                    new DurableOrchestrationStatus
+                    {
+                        InstanceId = testInstanceId,
+                        RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                    }));
+
+            var extensionMock = new Mock<DurableTaskExtension>();
+            extensionMock.Object.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+            extensionMock
+                .Setup(x => x.GetClient(It.IsAny<OrchestrationClientAttribute>()))
+                .Returns(clientMock.Object);
+
+            var terminateRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            terminateRequestUriBuilder.Path += $"/Instances/{testInstanceId}/terminate";
+            terminateRequestUriBuilder.Query = $"?reason={testReason}&{terminateRequestUriBuilder.Query.TrimStart('?')}";
+
+            var httpApiHandler = new HttpApiHandler(extensionMock.Object, null);
+            await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = terminateRequestUriBuilder.Uri,
+                });
+
+            Assert.Equal(testInstanceId, actualInstanceId);
+            Assert.Equal(testReason, actualReason);
         }
     }
 }
