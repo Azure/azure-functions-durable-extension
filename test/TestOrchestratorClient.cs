@@ -34,9 +34,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         internal DurableOrchestrationClient InnerClient => this.innerClient;
 
-        public async Task<DurableOrchestrationStatus> GetStatusAsync()
+        public async Task<DurableOrchestrationStatus> GetStatusAsync(bool showHistory = false, bool showHistoryOutput = false)
         {
-            DurableOrchestrationStatus status = await this.innerClient.GetStatusAsync(this.instanceId);
+            DurableOrchestrationStatus status = await this.innerClient.GetStatusAsync(this.instanceId, showHistory, showHistoryOutput);
 
             if (status != null)
             {
@@ -81,12 +81,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to start.");
         }
 
-        public async Task<DurableOrchestrationStatus> WaitForCompletionAsync(TimeSpan timeout, ITestOutputHelper output)
+        public async Task<DurableOrchestrationStatus> WaitForCompletionAsync(TimeSpan timeout, ITestOutputHelper output, bool showHistory = false, bool showHistoryOutput = false)
         {
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
-                DurableOrchestrationStatus status = await this.GetStatusAsync();
+                DurableOrchestrationStatus status = await this.GetStatusAsync(showHistory, showHistoryOutput);
                 if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)

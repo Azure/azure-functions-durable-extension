@@ -52,6 +52,12 @@
             </summary>
             <value>A positive integer configured by the host. The default value is <c>20</c>.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount">
+            <summary>
+            Gets or sets the partition count for the control queue.
+            </summary>
+            <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueVisibilityTimeout">
             <summary>
             Gets or sets the visibility timeout of dequeued control queue messages.
@@ -206,6 +212,41 @@
             Task orchestration implementation which delegates the orchestration implementation to a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload">
+            <summary>
+            Response for Orchestration Status Query.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.RuntimeStatus">
+            <summary>
+            Runtime status.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.Input">
+            <summary>
+            Input.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.Output">
+            <summary>
+            Output.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.CreatedTime">
+            <summary>
+            Created time value.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.LastUpdatedTime">
+            <summary>
+            Last updated time.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.HistoryEvents">
+            <summary>
+            JSON object representing history for an orchestration execution.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableActivityContext">
             <summary>
             Parameter data for activity bindings that are scheduled by their parent orchestrations.
@@ -277,7 +318,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
@@ -309,7 +350,7 @@
             </summary>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the start message is enqueued.</returns>
+            <returns>A task that completes when the orchestration is started.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
@@ -321,7 +362,7 @@
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the start message is enqueued.</returns>
+            <returns>A task that completes when the orchestration is started.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
@@ -343,11 +384,13 @@
             <param name="reason">The reason for terminating the orchestration instance.</param>
             <returns>A task that completes when the terminate message is enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
             <summary>
             Gets the status of the specified orchestration instance.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
@@ -804,6 +847,14 @@
             </summary>
             <value>
             Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History">
+            <summary>
+            Gets the execution history of the queried orchestrator function instance.
+            </summary>
+            <value>
+            The output as a <c>JArray</c> object or <c>null</c>.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.FunctionFailedException">

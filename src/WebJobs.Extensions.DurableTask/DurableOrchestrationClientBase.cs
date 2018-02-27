@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <returns>A task that completes when the start message is enqueued.</returns>
+        /// <returns>A task that completes when the orchestration is started.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <returns>A task that completes when the start message is enqueued.</returns>
+        /// <returns>A task that completes when the orchestration is started.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -78,7 +78,9 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the status of the specified orchestration instance.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
+        /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
+        /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId);
+        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false);
     }
 }

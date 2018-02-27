@@ -2,9 +2,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -66,6 +69,19 @@ namespace Microsoft.Azure.WebJobs
                 functionType: FunctionType.Orchestrator,
                 isReplay: false);
 
+            DurableOrchestrationStatus status = await this.GetStatusAsync(instance.InstanceId);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
+            {
+                await Task.Delay(200);
+                status = await this.GetStatusAsync(instance.InstanceId);
+            }
+
+            if (status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending)
+            {
+                throw new TimeoutException($"Timeout expired while waiting for the new instance to start. This can happen if the task hub is overloaded or if the orchestration host failed to process the start message. Please check the orchestration logs to see whether an internal failure may have occurred. Instance ID: {instance.InstanceId}");
+            }
+
             return instance.InstanceId;
         }
 
@@ -112,7 +128,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
             if (state == null)
@@ -120,16 +136,7 @@ namespace Microsoft.Azure.WebJobs
                 return null;
             }
 
-            return new DurableOrchestrationStatus
-            {
-                Name = state.Name,
-                InstanceId = state.OrchestrationInstance.InstanceId,
-                CreatedTime = state.CreatedTime,
-                LastUpdatedTime = state.LastUpdatedTime,
-                RuntimeStatus = (OrchestrationRuntimeStatus)state.OrchestrationStatus,
-                Input = ParseToJToken(state.Input),
-                Output = ParseToJToken(state.Output),
-            };
+            return await this.GetDurableOrchestrationStatusAsync(state, showHistory, showHistoryOutput);
         }
 
         private static JToken ParseToJToken(string value)
@@ -165,12 +172,166 @@ namespace Microsoft.Azure.WebJobs
             }
 
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
-            if (state == null || state.OrchestrationInstance == null)
+            if (state?.OrchestrationInstance == null)
             {
                 throw new ArgumentException($"No instance with ID '{instanceId}' was found.", nameof(instanceId));
             }
 
             return state;
+        }
+
+        private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, bool showHistory, bool showHistoryOutput)
+        {
+            JArray historyArray = null;
+            if (showHistory)
+            {
+                string history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
+                if (!string.IsNullOrEmpty(history))
+                {
+                    historyArray = JArray.Parse(history);
+
+                    var eventMapper = new Dictionary<string, EventIndexDateMapping>();
+                    var indexList = new List<int>();
+
+                    for (var i = 0; i < historyArray.Count; i++)
+                    {
+                        JObject historyItem = (JObject)historyArray[i];
+                        if (Enum.TryParse(historyItem["EventType"].Value<string>(), out EventType eventType))
+                        {
+                           // Changing the value of EventType from integer to string for better understanding in the history output
+                            historyItem["EventType"] = eventType.ToString();
+                            switch (eventType)
+                            {
+                                case EventType.TaskScheduled:
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
+                                    historyItem.Remove("Version");
+                                    historyItem.Remove("Input");
+                                    break;
+                                case EventType.TaskCompleted:
+                                case EventType.TaskFailed:
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "TaskScheduled", historyItem, indexList);
+                                    historyItem["TaskScheduledId"]?.Parent.Remove();
+                                    if (!showHistoryOutput && eventType == EventType.TaskCompleted)
+                                    {
+                                        historyItem.Remove("Result");
+                                    }
+
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
+                                    break;
+                                case EventType.SubOrchestrationInstanceCreated:
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
+                                    historyItem.Remove("Version");
+                                    historyItem.Remove("Input");
+                                    break;
+                                case EventType.SubOrchestrationInstanceCompleted:
+                                case EventType.SubOrchestrationInstanceFailed:
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "SubOrchestrationInstanceCreated", historyItem, indexList);
+                                    historyItem.Remove("TaskScheduledId");
+                                    if (!showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted)
+                                    {
+                                        historyItem.Remove("Result");
+                                    }
+
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
+                                    break;
+                                case EventType.ExecutionStarted:
+                                    var functionName = historyItem["Name"];
+                                    historyItem.Remove("Name");
+                                    historyItem["FunctionName"] = functionName;
+                                    historyItem.Remove("OrchestrationInstance");
+                                    historyItem.Remove("ParentInstance");
+                                    historyItem.Remove("Version");
+                                    historyItem.Remove("Tags");
+                                    historyItem.Remove("Input");
+                                    break;
+                                case EventType.ExecutionCompleted:
+                                    if (Enum.TryParse(historyItem["OrchestrationStatus"].Value<string>(), out OrchestrationStatus orchestrationStatus))
+                                    {
+                                        historyItem["OrchestrationStatus"] = orchestrationStatus.ToString();
+                                    }
+
+                                    if (!showHistoryOutput)
+                                    {
+                                        historyItem.Remove("Result");
+                                    }
+
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput);
+                                    break;
+                                case EventType.ExecutionTerminated:
+                                    historyItem.Remove("Input");
+                                    break;
+                                case EventType.TimerFired:
+                                    historyItem.Remove("TimerId");
+                                    break;
+                                case EventType.EventRaised:
+                                    historyItem.Remove("Input");
+                                    break;
+                                case EventType.OrchestratorStarted:
+                                case EventType.OrchestratorCompleted:
+                                    indexList.Add(i);
+                                    break;
+                            }
+
+                            historyItem.Remove("EventId");
+                            historyItem.Remove("IsPlayed");
+                        }
+                    }
+
+                    var counter = 0;
+                    indexList.Sort();
+                    foreach (var indexValue in indexList)
+                    {
+                        historyArray.RemoveAt(indexValue - counter);
+                        counter++;
+                    }
+                }
+            }
+
+            return new DurableOrchestrationStatus
+            {
+                Name = orchestrationState.Name,
+                InstanceId = orchestrationState.OrchestrationInstance.InstanceId,
+                CreatedTime = orchestrationState.CreatedTime,
+                LastUpdatedTime = orchestrationState.LastUpdatedTime,
+                RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
+                Input = ParseToJToken(orchestrationState.Input),
+                Output = ParseToJToken(orchestrationState.Output),
+                History = historyArray,
+            };
+        }
+
+        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
+        {
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"] });
+        }
+
+        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList)
+        {
+            if (eventMapper.TryGetValue($"{prefix}_{historyItem["TaskScheduledId"]}", out EventIndexDateMapping taskScheduledData))
+            {
+                historyItem["ScheduledTime"] = taskScheduledData.Date;
+                historyItem["FunctionName"] = taskScheduledData.Name;
+                indexList.Add(taskScheduledData.Index);
+            }
+        }
+
+        private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
+        {
+            if (!showHistoryOutput)
+            {
+                return;
+            }
+
+            jsonObject["Result"] = ParseToJToken((string)jsonObject["Result"]);
+        }
+
+        private class EventIndexDateMapping
+        {
+            public int Index { get; set; }
+
+            public DateTime Date { get; set; }
+
+            public string Name { get; set; }
         }
     }
 }
