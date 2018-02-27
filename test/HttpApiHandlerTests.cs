@@ -209,7 +209,6 @@ namespace WebJobs.Extensions.DurableTask.Tests
             string actualInstanceId = null;
             string actualReason = null;
 
-            // TODO: Find a simpler way of mocking the client behavior
             var clientMock = new Mock<DurableOrchestrationClientBase>();
             clientMock
                 .Setup(x => x.TerminateAsync(It.IsAny<string>(), It.IsAny<string>()))
@@ -229,17 +228,11 @@ namespace WebJobs.Extensions.DurableTask.Tests
                         RuntimeStatus = OrchestrationRuntimeStatus.Running,
                     }));
 
-            var extensionMock = new Mock<DurableTaskExtension>();
-            extensionMock.Object.NotificationUrl = new Uri(TestConstants.NotificationUrl);
-            extensionMock
-                .Setup(x => x.GetClient(It.IsAny<OrchestrationClientAttribute>()))
-                .Returns(clientMock.Object);
-
             var terminateRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             terminateRequestUriBuilder.Path += $"/Instances/{testInstanceId}/terminate";
             terminateRequestUriBuilder.Query = $"?reason={testReason}&{terminateRequestUriBuilder.Query.TrimStart('?')}";
 
-            var httpApiHandler = new HttpApiHandler(extensionMock.Object, null);
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
             await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage
                 {
@@ -249,6 +242,31 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal(testInstanceId, actualInstanceId);
             Assert.Equal(testReason, actualReason);
+        }
+
+        // Same as regular HTTP Api handler except you can specify a custom client object.
+        private class ExtendedHttpApiHandler : HttpApiHandler
+        {
+            private readonly DurableOrchestrationClientBase innerClient;
+
+            public ExtendedHttpApiHandler(DurableOrchestrationClientBase client)
+                : base(GetExtension(), null /* traceWriter */)
+            {
+                this.innerClient = client;
+            }
+
+            private static DurableTaskExtension GetExtension()
+            {
+                return new DurableTaskExtension
+                {
+                    NotificationUrl = new Uri(TestConstants.NotificationUrl),
+                };
+            }
+
+            protected override DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
+            {
+                return this.innerClient;
+            }
         }
     }
 }

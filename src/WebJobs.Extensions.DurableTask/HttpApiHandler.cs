@@ -317,6 +317,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ConnectionName = connectionName,
             };
 
+            return this.GetClient(attribute);
+        }
+
+        // protected virtual to allow mocking in unit tests.
+        protected virtual DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
+        {
             return this.config.GetClient(attribute);
         }
 

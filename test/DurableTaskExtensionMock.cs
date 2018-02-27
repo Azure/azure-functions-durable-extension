@@ -10,7 +10,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskExtensionMock : DurableTaskExtension
     {
-        protected internal override DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
+        protected internal override DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             return new DurableOrchestrationClientMock(orchestrationServiceClientMock.Object, this, null, null);
