@@ -350,7 +350,7 @@
             </summary>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the start message is enqueued.</returns>
+            <returns>A task that completes when the orchestration is started.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
@@ -362,7 +362,7 @@
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the start message is enqueued.</returns>
+            <returns>A task that completes when the orchestration is started.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
