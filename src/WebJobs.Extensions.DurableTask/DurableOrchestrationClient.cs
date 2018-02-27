@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input, bool waitUntilOrchestrationStarts = false)
+        public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input, bool waitUntilOrchestrationStarts = true)
         {
             this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
 
@@ -69,12 +70,11 @@ namespace Microsoft.Azure.WebJobs
             if (waitUntilOrchestrationStarts)
             {
                 DurableOrchestrationStatus status = await this.GetStatusAsync(instance.InstanceId);
-                int counter = 0;
-                while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && counter < 20)
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && stopwatch.Elapsed < TimeSpan.FromSeconds(10))
                 {
-                    await Task.Delay(500);
+                    await Task.Delay(200);
                     status = await this.GetStatusAsync(instanceId);
-                    counter++;
                 }
             }
 
