@@ -201,7 +201,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        public async Task TerminateInstance()
+        public async Task TerminateInstanceWebhook()
         {
             string testInstanceId = Guid.NewGuid().ToString("N");
             string testReason = "TerminationReason" + Guid.NewGuid();
@@ -230,7 +230,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
             var terminateRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             terminateRequestUriBuilder.Path += $"/Instances/{testInstanceId}/terminate";
-            terminateRequestUriBuilder.Query = $"?reason={testReason}&{terminateRequestUriBuilder.Query.TrimStart('?')}";
+            terminateRequestUriBuilder.Query = $"reason={testReason}&{terminateRequestUriBuilder.Query.TrimStart('?')}";
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
             await httpApiHandler.HandleRequestAsync(
