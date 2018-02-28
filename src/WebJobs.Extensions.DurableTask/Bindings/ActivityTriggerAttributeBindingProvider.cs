@@ -63,18 +63,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class ActivityTriggerBinding : ITriggerBinding
         {
-            private static readonly IReadOnlyDictionary<string, Type> StaticBindingContract =
-                new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
-                {
-                    // This binding supports return values of any type
-                    { "$return", typeof(object).MakeByRefType() },
-                    { nameof(DurableActivityContext.InstanceId), typeof(string) },
-                };
+            private const string DataBindingPropertyName = "data";
 
             private readonly ActivityTriggerAttributeBindingProvider parent;
             private readonly ParameterInfo parameterInfo;
             private readonly ActivityTriggerAttribute attribute;
             private readonly FunctionName activityName;
+            private readonly IReadOnlyDictionary<string, Type> contract;
 
             public ActivityTriggerBinding(
                 ActivityTriggerAttributeBindingProvider parent,
@@ -86,11 +81,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.parameterInfo = parameterInfo;
                 this.attribute = attribute;
                 this.activityName = activity;
+                this.contract = GetBindingDataContract(parameterInfo);
             }
 
             public Type TriggerValueType => typeof(DurableActivityContext);
 
-            public IReadOnlyDictionary<string, Type> BindingDataContract => StaticBindingContract;
+            public IReadOnlyDictionary<string, Type> BindingDataContract => this.contract;
+
+            private static IReadOnlyDictionary<string, Type> GetBindingDataContract(ParameterInfo parameterInfo)
+            {
+                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                    { nameof(DurableActivityContext.InstanceId), typeof(string) },
+                };
+
+                if (IsSimple(parameterInfo.ParameterType))
+                {
+                    // allow binding to the parameter name
+                    contract[parameterInfo.Name] = parameterInfo.ParameterType;
+                }
+
+                // allow binding directly to the JSON representation of the data.
+                contract[DataBindingPropertyName] = typeof(JValue);
+
+                return contract;
+            }
+
+            private static bool IsSimple(Type type)
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    // nullable type, check if the nested type is simple.
+                    return IsSimple(type.GetGenericArguments()[0]);
+                }
+
+                return type.IsPrimitive
+                    || type.IsEnum
+                    || type.Equals(typeof(string))
+                    || type.Equals(typeof(decimal));
+            }
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
@@ -142,7 +173,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
                 {
                     { nameof(DurableActivityContext.InstanceId), activityContext.InstanceId },
+                    { this.parameterInfo.Name, convertedValue },
                 };
+
+                // Allow binding to the JSON payload
+                bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
                 triggerData.ReturnValueProvider = new ActivityTriggerReturnValueBinder(
