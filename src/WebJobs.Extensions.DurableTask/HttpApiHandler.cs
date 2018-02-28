@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
 
-            DurableOrchestrationClient client = this.GetClient(request);
+            DurableOrchestrationClientBase client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
             while (true)
             {
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
         {
             string path = request.RequestUri.AbsolutePath.TrimEnd('/');
-            int i = path.IndexOf(InstancesControllerSegment);
+            int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId)
         {
-            DurableOrchestrationClient client = this.GetClient(request);
+            DurableOrchestrationClientBase client = this.GetClient(request);
 
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter);
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId)
         {
-            DurableOrchestrationClient client = this.GetClient(request);
+            DurableOrchestrationClientBase client = this.GetClient(request);
 
             var status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string eventName)
         {
-            DurableOrchestrationClient client = this.GetClient(request);
+            DurableOrchestrationClientBase client = this.GetClient(request);
 
             var status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        private DurableOrchestrationClient GetClient(HttpRequestMessage request)
+        private DurableOrchestrationClientBase GetClient(HttpRequestMessage request)
         {
             string taskHub = null;
             string connectionName = null;
@@ -317,6 +317,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ConnectionName = connectionName,
             };
 
+            return this.GetClient(attribute);
+        }
+
+        // protected virtual to allow mocking in unit tests.
+        protected virtual DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
+        {
             return this.config.GetClient(attribute);
         }
 

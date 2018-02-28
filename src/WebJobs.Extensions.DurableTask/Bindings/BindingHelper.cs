@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(OrchestrationClientAttribute clientAttribute)
         {
-            DurableOrchestrationClient client = this.config.GetClient(clientAttribute);
+            DurableOrchestrationClientBase client = this.config.GetClient(clientAttribute);
             return new OrchestrationClientAsyncCollector(client);
         }
 
@@ -31,9 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class OrchestrationClientAsyncCollector : IAsyncCollector<StartOrchestrationArgs>
         {
-            private readonly DurableOrchestrationClient client;
+            private readonly DurableOrchestrationClientBase client;
 
-            public OrchestrationClientAsyncCollector(DurableOrchestrationClient client)
+            public OrchestrationClientAsyncCollector(DurableOrchestrationClientBase client)
             {
                 this.client = client;
             }
