@@ -63,6 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class ActivityTriggerBinding : ITriggerBinding
         {
+            private const string InstanceIdBindingPropertyName = "instanceId";
             private const string DataBindingPropertyName = "data";
 
             private readonly ActivityTriggerAttributeBindingProvider parent;
@@ -94,33 +95,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // This binding supports return values of any type
                     { "$return", typeof(object).MakeByRefType() },
-                    { nameof(DurableActivityContext.InstanceId), typeof(string) },
+                    { InstanceIdBindingPropertyName, typeof(string) },
                 };
 
-                if (IsSimple(parameterInfo.ParameterType))
-                {
-                    // allow binding to the parameter name
-                    contract[parameterInfo.Name] = parameterInfo.ParameterType;
-                }
+                // allow binding to the parameter name
+                contract[parameterInfo.Name] = parameterInfo.ParameterType;
 
                 // allow binding directly to the JSON representation of the data.
                 contract[DataBindingPropertyName] = typeof(JValue);
 
                 return contract;
-            }
-
-            private static bool IsSimple(Type type)
-            {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                {
-                    // nullable type, check if the nested type is simple.
-                    return IsSimple(type.GetGenericArguments()[0]);
-                }
-
-                return type.IsPrimitive
-                    || type.IsEnum
-                    || type.Equals(typeof(string))
-                    || type.Equals(typeof(decimal));
             }
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
@@ -170,13 +154,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue,
                     this.parameterInfo.ParameterType);
 
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                {
-                    { nameof(DurableActivityContext.InstanceId), activityContext.InstanceId },
-                    { this.parameterInfo.Name, convertedValue },
-                };
-
-                // Allow binding to the JSON payload
+                // Note that there could be conflicts in thiese dictionary keys, in which case
+                // the order here determines which binding rule will win.
+                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                bindingData[InstanceIdBindingPropertyName] = activityContext.InstanceId;
+                bindingData[this.parameterInfo.Name] = convertedValue;
                 bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
