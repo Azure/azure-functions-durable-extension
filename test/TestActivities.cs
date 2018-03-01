@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -65,6 +66,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static double BindToDouble([ActivityTrigger] double value)
         {
             return value;
+        }
+
+        public static async Task BindToBlobViaParameterName(
+            [ActivityTrigger] string name,
+            [Blob("test/{name}", FileAccess.Read)] Stream input,
+            [Blob("test/{name}-archive", FileAccess.Write)] Stream output)
+        {
+            await input.CopyToAsync(output);
+        }
+
+        public static async Task BindToBlobViaJsonPayload(
+            [ActivityTrigger] JObject ignored,
+            [Blob("test/{data.InputPrefix}-{data.Suffix}", FileAccess.Read)] Stream input,
+            [Blob("test/{data.OutputPrefix}-{data.Suffix}", FileAccess.Write)] Stream output)
+        {
+            await input.CopyToAsync(output);
         }
 
         public class PlainOldClrObject
