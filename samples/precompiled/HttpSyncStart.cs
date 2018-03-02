@@ -13,11 +13,9 @@ namespace VSSample
         private const string Timeout = "timeout";
         private const string RetryInterval = "retryInterval";
 
-
         [FunctionName("HttpSyncStart")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(
-            AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
+            [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
             HttpRequestMessage req,
             [OrchestrationClient] DurableOrchestrationClientBase starter,
             string functionName,
