@@ -5,6 +5,7 @@
     "AzureWebJobsDashboard": "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10002/",
     "TwilioAccountSid": "<Put your Twilio Account SID here>",
     "TwilioAuthToken": "<Put your Twilio Auth Token here>",
-    "TwilioPhoneNumber": "<Put your Twilio Phone Number here>"
+    "TwilioPhoneNumber": "<Put your Twilio Phone Number here>",
+    "WeatherUndergroundApiKey": "<Put your Weather Underground API key here>"
   }
 }

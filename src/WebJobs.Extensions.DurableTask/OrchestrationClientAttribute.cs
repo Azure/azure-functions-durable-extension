@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Diagnostics;
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <value>The name of a connection string that exists in the app's application settings.</value>
         /// <remarks>
-        /// The default behavior is to use the value specified in 
+        /// The default behavior is to use the value specified in
         /// <see cref="DurableTaskExtension.AzureStorageConnectionStringName"/>. If no value exists there, then
         /// the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>

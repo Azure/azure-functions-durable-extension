@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Threading;
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
-        public async Task<IDisposable> AcquireAsync()
+        public async Task<Releaser> AcquireAsync()
         {
             await this.semaphore.WaitAsync();
             return new Releaser(this);
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.semaphore.Dispose();
         }
 
-        private sealed class Releaser : IDisposable
+        public struct Releaser : IDisposable
         {
             private readonly AsyncLock asyncLock;
 
@@ -42,7 +42,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public void Dispose()
             {
-                this.asyncLock.Release();
+                if (this.asyncLock != null)
+                {
+                    this.asyncLock.Release();
+                }
             }
         }
     }

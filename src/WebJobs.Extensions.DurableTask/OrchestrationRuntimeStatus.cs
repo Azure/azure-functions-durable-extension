@@ -1,10 +1,11 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 namespace Microsoft.Azure.WebJobs
 {
     // Must be kept consistent with DurableTask.Core.OrchestrationStatus:
     // https://github.com/Azure/durabletask/blob/master/src/DurableTask.Core/OrchestrationStatus.cs
+
     /// <summary>
     /// Represents the possible runtime execution status values for an orchestration instance.
     /// </summary>
@@ -43,6 +44,6 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// The orchestration was scheduled but is not yet active.
         /// </summary>
-        Pending = 6
+        Pending = 6,
     }
 }

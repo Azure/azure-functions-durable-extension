@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs
         private readonly string instanceId;
         private readonly string serializedInput;
 
+        private JToken parsedJsonInput;
         private string serializedOutput;
 
         internal DurableActivityContext(string instanceId, string serializedInput)
@@ -55,11 +56,7 @@ namespace Microsoft.Azure.WebJobs
         /// </returns>
         public JToken GetInputAsJson()
         {
-            if (this.serializedInput == null)
-            {
-                return null;
-            }
-            else
+            if (this.serializedInput != null && this.parsedJsonInput == null)
             {
                 JArray array = JArray.Parse(this.serializedInput);
                 if (array?.Count != 1)
@@ -67,9 +64,10 @@ namespace Microsoft.Azure.WebJobs
                     throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
                 }
 
-                JToken token = array[0];
-                return token;
+                this.parsedJsonInput = array[0];
             }
+
+            return this.parsedJsonInput;
         }
 
         /// <summary>

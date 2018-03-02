@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Runtime.ExceptionServices;
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
-            
+
             if (string.IsNullOrEmpty(activityName))
             {
                 throw new ArgumentNullException(nameof(activityName));
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string serializedOutput = inputContext.GetSerializedOutput();
             this.config.TraceHelper.FunctionCompleted(
-                config.HubName,
+                this.config.HubName,
                 this.activityName,
                 this.activityVersion,
                 instanceId,

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using Microsoft.Azure.WebJobs.Host;
@@ -17,7 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
         /// <param name="listenerConfig">Durable Functions configuration.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static void UseDurableTask(
             this JobHostConfiguration hostConfig,
             DurableTaskExtension listenerConfig)
@@ -31,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentNullException(nameof(listenerConfig));
             }
-                        
+
             IExtensionRegistry extensions = hostConfig.GetService<IExtensionRegistry>();
             extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
         }
