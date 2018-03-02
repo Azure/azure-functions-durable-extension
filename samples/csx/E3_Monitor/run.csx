@@ -7,7 +7,7 @@ using System.Threading;
 public static async Task Run(DurableOrchestrationContext monitorContext, TraceWriter log)
 {
     MonitorRequest input = monitorContext.GetInput<MonitorRequest>();
-    if (!monitorContext.IsReplaying) { log.Info($"Received monitor request. Location: {input.Location}. Phone: {input.Phone}."); }
+    if (!monitorContext.IsReplaying) { log.Info($"Received monitor request. Location: {input?.Location}. Phone: {input?.Phone}."); }
 
     VerifyRequest(input);
 

@@ -40,7 +40,7 @@ namespace VSSample
         public static async Task Run([OrchestrationTrigger] DurableOrchestrationContext monitorContext, TraceWriter log)
         {
             MonitorRequest input = monitorContext.GetInput<MonitorRequest>();
-            if (!monitorContext.IsReplaying) { log.Info($"Received monitor request. Location: {input.Location}. Phone: {input.Phone}."); }
+            if (!monitorContext.IsReplaying) { log.Info($"Received monitor request. Location: {input?.Location}. Phone: {input?.Phone}."); }
 
             VerifyRequest(input);
 
@@ -167,7 +167,13 @@ namespace VSSample
 
         internal static async Task<WeatherCondition> GetCurrentConditionsAsync(Location location)
         {
-            var callString = string.Format("http://api.wunderground.com/api/{0}/conditions/q/{1}/{2}.json", Environment.GetEnvironmentVariable("WeatherUndergroundApiKey"), location.State, location.City);
+            var apiKey = Environment.GetEnvironmentVariable("WeatherUndergroundApiKey");
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                throw new InvalidOperationException("The WeatherUndergroundApiKey environment variable was not set.");
+            }
+
+            var callString = string.Format("http://api.wunderground.com/api/{0}/conditions/q/{1}/{2}.json", apiKey, location.State, location.City);
             var response = await httpClient.GetAsync(callString);
             var conditions = await response.Content.ReadAsAsync<JObject>();
 
