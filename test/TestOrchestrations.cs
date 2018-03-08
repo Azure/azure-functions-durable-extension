@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,6 +79,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return currentValue;
+        }
+
+        public static async Task BatchActor([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            var requiredItems = new HashSet<string>(new[] { @"item1", @"item2", @"item3", @"item4", @"item5" });
+
+            // If an item was sent in during StartAsNew() this handles that
+            string itemName = ctx.GetInput<string>();
+            requiredItems.Remove(itemName);
+
+            while (requiredItems.Any())
+            {
+                itemName = await ctx.WaitForExternalEvent<string>("newItem");
+
+                requiredItems.Remove(itemName);
+            }
+
+            // we've received events for all the required items; safe to bail now!
         }
 
         public static async Task<string> Approval([OrchestrationTrigger] DurableOrchestrationContext ctx)

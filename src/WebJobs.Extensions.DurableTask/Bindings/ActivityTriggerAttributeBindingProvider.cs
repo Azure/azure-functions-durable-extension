@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -63,18 +63,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class ActivityTriggerBinding : ITriggerBinding
         {
-            private static readonly IReadOnlyDictionary<string, Type> StaticBindingContract =
-                new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
-                {
-                    // This binding supports return values of any type
-                    { "$return", typeof(object).MakeByRefType() },
-                    { nameof(DurableActivityContext.InstanceId), typeof(string) },
-                };
+            private const string InstanceIdBindingPropertyName = "instanceId";
+            private const string DataBindingPropertyName = "data";
 
             private readonly ActivityTriggerAttributeBindingProvider parent;
             private readonly ParameterInfo parameterInfo;
             private readonly ActivityTriggerAttribute attribute;
             private readonly FunctionName activityName;
+            private readonly IReadOnlyDictionary<string, Type> contract;
 
             public ActivityTriggerBinding(
                 ActivityTriggerAttributeBindingProvider parent,
@@ -86,11 +82,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.parameterInfo = parameterInfo;
                 this.attribute = attribute;
                 this.activityName = activity;
+                this.contract = GetBindingDataContract(parameterInfo);
             }
 
             public Type TriggerValueType => typeof(DurableActivityContext);
 
-            public IReadOnlyDictionary<string, Type> BindingDataContract => StaticBindingContract;
+            public IReadOnlyDictionary<string, Type> BindingDataContract => this.contract;
+
+            private static IReadOnlyDictionary<string, Type> GetBindingDataContract(ParameterInfo parameterInfo)
+            {
+                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                    { InstanceIdBindingPropertyName, typeof(string) },
+                };
+
+                // allow binding to the parameter name
+                contract[parameterInfo.Name] = parameterInfo.ParameterType;
+
+                // allow binding directly to the JSON representation of the data.
+                contract[DataBindingPropertyName] = typeof(JValue);
+
+                return contract;
+            }
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
@@ -106,7 +121,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     // Try using the converter manager
+#pragma warning disable CS0618 // Type or member is obsolete
                     IConverterManager cm = this.parent.extensionContext.Config.ConverterManager;
+#pragma warning restore CS0618 // Type or member is obsolete
                     MethodInfo getConverterMethod = cm.GetType().GetMethod(nameof(cm.GetConverter));
                     getConverterMethod = getConverterMethod.MakeGenericMethod(
                         typeof(DurableActivityContext),
@@ -134,13 +151,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 var inputValueProvider = new ObjectValueProvider(
-                    convertedValue, 
+                    convertedValue,
                     this.parameterInfo.ParameterType);
 
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                {
-                    { nameof(DurableActivityContext.InstanceId), activityContext.InstanceId },
-                };
+                // Note that there could be conflicts in thiese dictionary keys, in which case
+                // the order here determines which binding rule will win.
+                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                bindingData[InstanceIdBindingPropertyName] = activityContext.InstanceId;
+                bindingData[this.parameterInfo.Name] = convertedValue;
+                bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
                 triggerData.ReturnValueProvider = new ActivityTriggerReturnValueBinder(
@@ -172,7 +191,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public static void RegisterBindingRules(JobHostConfiguration hostConfig)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 IConverterManager cm = hostConfig.ConverterManager;
+#pragma warning restore CS0618 // Type or member is obsolete
                 cm.AddConverter<DurableActivityContext, string>(ActivityContextToString);
                 cm.AddConverter<DurableActivityContext, JObject>(ActivityContextToJObject);
             }

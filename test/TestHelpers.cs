@@ -1,5 +1,5 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.UseDurableTask(new DurableTaskExtension
             {
                 HubName = taskHub.Replace("_", ""),
-                TraceInputsAndOutputs = true
+                TraceInputsAndOutputs = true,
             });
 
             // Performance is *significantly* worse when dashboard logging is enabled, at least
@@ -35,8 +35,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return host;
         }
 
-        public static void AssertLogMessageSequence(TestLoggerProvider loggerProvider, string testName,
-            string[] orchestratorFunctionNames, string activityFunctionName = null)
+        public static void AssertLogMessageSequence(
+            TestLoggerProvider loggerProvider,
+            string testName,
+            string[] orchestratorFunctionNames,
+            string activityFunctionName = null)
         {
             List<string> messageIds;
             string timeStamp;
@@ -49,8 +52,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             AssertLogMessages(expectedLogMessages, actualLogMessages);
         }
 
-        public static void UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(TestLoggerProvider loggerProvider, string testName,
-            string[] orchestratorFunctionNames, string activityFunctionName = null)
+        public static void UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(
+            TestLoggerProvider loggerProvider,
+            string testName,
+            string[] orchestratorFunctionNames,
+            string activityFunctionName = null)
         {
             List<string> messageIds;
             string timeStamp;
@@ -63,14 +69,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(4, exceptionCount);
         }
 
-        private static List<LogMessage> GetLogMessages(TestLoggerProvider loggerProvider, string testName, out List<string> messageIds,
+        private static List<LogMessage> GetLogMessages(
+            TestLoggerProvider loggerProvider,
+            string testName,
+            out List<string> messageIds,
             out string timeStamp)
         {
             var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == LogCategory);
             var logMessages = logger.LogMessages.ToList();
             messageIds = new List<string>()
             {
-                GetMessageId(logMessages[0].FormattedMessage)
+                GetMessageId(logMessages[0].FormattedMessage),
             };
 
             timeStamp = string.Empty;
@@ -146,6 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.StartsWith(expected[i], actual[i]);
             }
         }
+
         private static List<string> GetLogs_HelloWorldOrchestration_Inline(string messageId, string[] functionNames)
         {
             var list = new List<string>()
@@ -187,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' was terminated. Reason: sayōnara",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: 0",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False."
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
             };
 
             return list;
@@ -207,7 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' is waiting for input. Reason: WaitForExternalEvent:approval. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' is waiting for input. Reason: CreateTimer:{timerTimestamp}. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' received a 'approval' event.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Approved\""
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Approved\"",
             };
 
             return list;
