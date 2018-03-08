@@ -1,18 +1,21 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
-using Moq;
-using FluentAssertions;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
-using Newtonsoft.Json;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
 
 namespace VSSample.Tests
 {
+    using System;
+    using System.Diagnostics;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading.Tasks;
+    using FluentAssertions;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Host;
+    using Moq;
+    using Newtonsoft.Json;
+    using Xunit;
+
     public class HttpSyncStartTests
     {
         private const string FunctionName = "SampleFunction";
