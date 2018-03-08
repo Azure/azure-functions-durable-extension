@@ -47,8 +47,8 @@ namespace VSSample.Tests
             var result = await HttpStart.Run(
                 new HttpRequestMessage()
                 {
-                    Content = new StringContent(JsonConvert.SerializeObject(string.Empty), Encoding.UTF8, "application/json"),
-                    RequestUri = new Uri("https://www.microsoft.com/"),
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+                    RequestUri = new Uri("http://localhost:7071/orchestrators/E1_HelloSequence"),
                 },
                 durableOrchestrationClientBaseMock.Object,
                 functionName,
