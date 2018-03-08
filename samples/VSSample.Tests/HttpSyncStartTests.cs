@@ -1,18 +1,21 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
-using Moq;
-using FluentAssertions;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
-using Newtonsoft.Json;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
 
 namespace VSSample.Tests
 {
+    using System;
+    using System.Diagnostics;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading.Tasks;
+    using FluentAssertions;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Host;
+    using Moq;
+    using Newtonsoft.Json;
+    using Xunit;
+
     public class HttpSyncStartTests
     {
         private const string FunctionName = "SampleFunction";
@@ -22,25 +25,25 @@ namespace VSSample.Tests
         [Fact]
         public async Task Run_uses_default_values_when_query_parameters_missing()
         {
-            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/", null, null);
+            await Check_behavior_based_on_query_parameters("http://localhost:7071/orchestrators/E1_HelloSequence", null, null);
         }
 
         [Fact]
         public async Task Run_uses_default_value_for_timeout()
         {
-            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/?retryInterval=2", null, TimeSpan.FromSeconds(2));
+            await Check_behavior_based_on_query_parameters("http://localhost:7071/orchestrators/E1_HelloSequence?retryInterval=2", null, TimeSpan.FromSeconds(2));
         }
 
         [Fact]
         public async Task Run_uses_default_value_for_retryInterval()
         {
-            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/?timeout=6", TimeSpan.FromSeconds(6), null);
+            await Check_behavior_based_on_query_parameters("http://localhost:7071/orchestrators/E1_HelloSequence?timeout=6", TimeSpan.FromSeconds(6), null);
         }
 
         [Fact]
         public async Task Run_uses_query_parameters()
         {
-            await Check_behavior_based_on_query_parameters("https://www.microsoft.com/?timeout=6&retryInterval=2", TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(2));
+            await Check_behavior_based_on_query_parameters("http://localhost:7071/orchestrators/E1_HelloSequence?timeout=6&retryInterval=2", TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(2));
         }
 
         private static async Task Check_behavior_based_on_query_parameters(string url, TimeSpan? timeout, TimeSpan? retryInterval)

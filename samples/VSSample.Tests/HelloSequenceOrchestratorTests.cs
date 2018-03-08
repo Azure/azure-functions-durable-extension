@@ -1,19 +1,15 @@
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Moq;
-using Xunit;
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
 
 namespace VSSample.Tests
 {
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Moq;
+    using Xunit;
+
     public class HelloSequenceTests
     {
-        [Fact]
-        public void SayHello_returns_greeting()
-        {
-            var result = HelloSequence.SayHello("John");
-            Assert.Equal("Hello John!", result);
-        }
-
         [Fact]
         public async Task Run_retuns_multiple_greetings()
         {
