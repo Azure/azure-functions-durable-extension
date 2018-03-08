@@ -8,13 +8,6 @@ namespace VSSample.Tests
     public class HelloSequenceTests
     {
         [Fact]
-        public void SayHello_returns_greeting()
-        {
-            var result = HelloSequence.SayHello("John");
-            Assert.Equal("Hello John!", result);
-        }
-
-        [Fact]
         public async Task Run_retuns_multiple_greetings()
         {
             var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
