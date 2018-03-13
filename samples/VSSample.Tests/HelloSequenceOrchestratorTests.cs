@@ -11,7 +11,7 @@ namespace VSSample.Tests
     public class HelloSequenceTests
     {
         [Fact]
-        public async Task Run_retuns_multiple_greetings()
+        public async Task Run_returns_multiple_greetings()
         {
             var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo!");
