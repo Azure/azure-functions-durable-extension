@@ -9,7 +9,6 @@ namespace VSSample.Tests
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
-    using FluentAssertions;
     using Microsoft.Azure.WebJobs;
     using Microsoft.Azure.WebJobs.Host;
     using Moq;
@@ -56,10 +55,10 @@ namespace VSSample.Tests
                 traceWriterMock.Object);
 
             // Validate that output is not null
-            result.Headers.RetryAfter.Should().NotBeNull();
+            Assert.NotNull(result.Headers.RetryAfter);
 
             // Validate output's Retry-After header value
-            result.Headers.RetryAfter.Delta.Should().Be(TimeSpan.FromSeconds(10));
+            Assert.Equal(TimeSpan.FromSeconds(10), result.Headers.RetryAfter.Delta);
         }
     }
 }
