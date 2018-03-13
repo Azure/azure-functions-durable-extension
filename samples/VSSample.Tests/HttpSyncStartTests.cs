@@ -9,7 +9,6 @@ namespace VSSample.Tests
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
-    using FluentAssertions;
     using Microsoft.Azure.WebJobs;
     using Microsoft.Azure.WebJobs.Host;
     using Moq;
@@ -67,8 +66,8 @@ namespace VSSample.Tests
                     Content = new StringContent(EventData)
                 });
             var result = await HttpSyncStart.Run(request, durableOrchestrationClientBaseMock.Object, FunctionName, traceWriterMock.Object);
-            result.StatusCode.Should().Be(HttpStatusCode.OK);
-            (await result.Content.ReadAsStringAsync()).Should().Be(EventData);
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.Equal(EventData, await result.Content.ReadAsStringAsync());
         }
     }
 
