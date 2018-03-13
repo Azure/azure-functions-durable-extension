@@ -136,6 +136,16 @@
             <c>true</c> to disable the instance management HTTP APIs; otherwise <c>false</c>.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableStartInstancePolling">
+            <summary>
+            Gets or sets a value which controls whether the polling behavior of
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)"/> is disabled.
+            </summary>
+            <remarks>
+            This is a temporary setting and will be removed in future versions.
+            </remarks>
+            <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
             Internal initialization call from the WebJobs host.
