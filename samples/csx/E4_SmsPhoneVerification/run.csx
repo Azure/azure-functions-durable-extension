@@ -18,7 +18,8 @@ public static async Task<bool> Run(DurableOrchestrationContext context)
 
     using (var timeoutCts = new CancellationTokenSource())
     {
-        // The user has 90 seconds to respond with the code they received in the SMS message.
+        // The user has 90 seconds to respond with the code they received in 
+        // the SMS message.
         DateTime expiration = context.CurrentUtcDateTime.AddSeconds(90);
         Task timeoutTask = context.CreateTimer(expiration, timeoutCts.Token);
 
@@ -47,7 +48,8 @@ public static async Task<bool> Run(DurableOrchestrationContext context)
 
         if (!timeoutTask.IsCompleted)
         {
-            // All pending timers must be complete or canceled before the function exits.
+            // All pending timers must be complete or canceled before the function 
+            // exits.
             timeoutCts.Cancel();
         }
 
