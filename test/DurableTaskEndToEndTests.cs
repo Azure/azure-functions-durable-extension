@@ -275,7 +275,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
-                Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
+                Assert.True(
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
                 // The end message will cause the actor to complete itself.
                 await client.RaiseEventAsync("operation", "end");
