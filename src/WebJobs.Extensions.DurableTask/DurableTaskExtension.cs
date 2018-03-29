@@ -15,6 +15,7 @@ using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -29,12 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
-        private const string LoggerCategoryName = "Host.Triggers.DurableTask";
-
         /// <summary>
         /// The default task hub name to use when not explicitly configured.
         /// </summary>
         internal const string DefaultHubName = "DurableFunctionsHub";
+
+        private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that OrchestrationClientAttribute defines a custom equality comparer.
