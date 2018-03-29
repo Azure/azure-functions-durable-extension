@@ -15,6 +15,7 @@ using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -28,6 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
+        private const string LoggerCategoryName = "Host.Triggers.DurableTask";
+
         /// <summary>
         /// The default task hub name to use when not explicitly configured.
         /// </summary>
@@ -178,9 +181,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Register the trigger bindings
             JobHostConfiguration hostConfig = context.Config;
+            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.traceHelper = new EndToEndTraceHelper(hostConfig, context.Trace);
-            this.httpApiHandler = new HttpApiHandler(this, context.Trace);
+            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
+            this.httpApiHandler = new HttpApiHandler(this, logger);
 
             // Register the non-trigger bindings, which have a different model.
             var bindings = new BindingHelper(this, this.traceHelper);
@@ -279,6 +283,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 new TriggeredFunctionData
                 {
                     TriggerValue = context,
+
+#pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = userCodeInvoker =>
                     {
                         // 2. Configure the shim with the inner invoker to execute the user code.
@@ -287,6 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
                         return next();
                     },
+#pragma warning restore CS0618
                 },
                 CancellationToken.None);
 

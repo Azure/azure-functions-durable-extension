@@ -29,8 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durableTaskConfig = durableTaskConfig;
             this.extensionContext = extensionContext;
             this.traceHelper = traceHelper;
-
-            ActivityTriggerBinding.RegisterBindingRules(extensionContext.Config);
         }
 
         public Task<ITriggerBinding> TryCreateAsync(TriggerBindingProviderContext context)
@@ -115,39 +113,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 object convertedValue;
                 if (destinationType == typeof(object))
                 {
-                    // Straight assignment
                     convertedValue = value;
+                }
+                else if (destinationType == typeof(DurableActivityContext))
+                {
+                    convertedValue = activityContext;
+                }
+                else if (destinationType == typeof(JObject))
+                {
+                    convertedValue = ActivityContextToJObject(activityContext);
                 }
                 else
                 {
-                    // Try using the converter manager
-#pragma warning disable CS0618 // Type or member is obsolete
-                    IConverterManager cm = this.parent.extensionContext.Config.ConverterManager;
-#pragma warning restore CS0618 // Type or member is obsolete
-                    MethodInfo getConverterMethod = cm.GetType().GetMethod(nameof(cm.GetConverter));
-                    getConverterMethod = getConverterMethod.MakeGenericMethod(
-                        typeof(DurableActivityContext),
-                        destinationType,
-                        typeof(ActivityTriggerAttribute));
-
-                    Delegate d = (Delegate)getConverterMethod.Invoke(cm, null);
-                    if (d != null)
-                    {
-                        convertedValue = d.DynamicInvoke(value, this.attribute, context);
-                    }
-                    else if (!destinationType.IsInterface)
-                    {
-                        MethodInfo getInputMethod = activityContext.GetType()
-                            .GetMethod(nameof(activityContext.GetInput))
-                            .MakeGenericMethod(destinationType);
-                        convertedValue = getInputMethod.Invoke(activityContext, null);
-                    }
-                    else
-                    {
-                        throw new ArgumentException(
-                            $"Activity triggers cannot be bound to {destinationType}.",
-                            this.parameterInfo.Name);
-                    }
+                    convertedValue = activityContext.GetInput(destinationType);
                 }
 
                 var inputValueProvider = new ObjectValueProvider(
@@ -189,15 +167,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IListener>(listener);
             }
 
-            public static void RegisterBindingRules(JobHostConfiguration hostConfig)
-            {
-#pragma warning disable CS0618 // Type or member is obsolete
-                IConverterManager cm = hostConfig.ConverterManager;
-#pragma warning restore CS0618 // Type or member is obsolete
-                cm.AddConverter<DurableActivityContext, string>(ActivityContextToString);
-                cm.AddConverter<DurableActivityContext, JObject>(ActivityContextToJObject);
-            }
-
             private static JObject ActivityContextToJObject(DurableActivityContext arg)
             {
                 JToken token = arg.GetInputAsJson();
@@ -213,11 +182,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 return jObj;
-            }
-
-            private static string ActivityContextToString(DurableActivityContext arg)
-            {
-                return arg.GetInput<string>();
             }
 
             private class ActivityTriggerReturnValueBinder : IValueBinder
