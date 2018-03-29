@@ -82,15 +82,27 @@ namespace Microsoft.Azure.WebJobs
                 return default(T);
             }
 
+            return (T)this.GetInput(typeof(T));
+        }
+
+        internal object GetInput(Type destinationType)
+        {
+            if (this.serializedInput == null)
+            {
+                return destinationType.IsValueType ?
+                    Activator.CreateInstance(destinationType) :
+                    null;
+            }
+
             JToken jToken = this.GetInputAsJson();
             var value = jToken as JValue;
             if (value != null)
             {
-                return value.ToObject<T>();
+                return value.ToObject(destinationType);
             }
 
             string serializedValue = jToken.ToString(Formatting.None);
-            return MessagePayloadDataConverter.Default.Deserialize<T>(serializedValue);
+            return MessagePayloadDataConverter.Default.Deserialize(serializedValue, destinationType);
         }
 
         internal string GetSerializedOutput()

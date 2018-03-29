@@ -69,17 +69,20 @@ namespace Microsoft.Azure.WebJobs
                 functionType: FunctionType.Orchestrator,
                 isReplay: false);
 
-            DurableOrchestrationStatus status = await this.GetStatusAsync(instance.InstanceId);
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
+            if (!this.config.DisableStartInstancePolling)
             {
-                await Task.Delay(200);
-                status = await this.GetStatusAsync(instance.InstanceId);
-            }
+                DurableOrchestrationStatus status = await this.GetStatusAsync(instance.InstanceId);
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
+                {
+                    await Task.Delay(200);
+                    status = await this.GetStatusAsync(instance.InstanceId);
+                }
 
-            if (status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending)
-            {
-                throw new TimeoutException($"Timeout expired while waiting for the new instance to start. This can happen if the task hub is overloaded or if the orchestration host failed to process the start message. Please check the orchestration logs to see whether an internal failure may have occurred. Instance ID: {instance.InstanceId}");
+                if (status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending)
+                {
+                    throw new TimeoutException($"Timeout expired while waiting for the new instance to start. This can happen if the task hub is overloaded or if the orchestration host failed to process the start message. Please check the orchestration logs to see whether an internal failure may have occurred. Instance ID: {instance.InstanceId}");
+                }
             }
 
             return instance.InstanceId;

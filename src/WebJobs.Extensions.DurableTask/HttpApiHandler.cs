@@ -8,7 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -25,12 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
 
         private readonly DurableTaskExtension config;
-        private readonly TraceWriter traceWriter;
+        private readonly ILogger logger;
 
-        public HttpApiHandler(DurableTaskExtension config, TraceWriter traceWriter)
+        public HttpApiHandler(DurableTaskExtension config, ILogger logger)
         {
             this.config = config;
-            this.traceWriter = traceWriter;
+            this.logger = logger;
         }
 
         internal HttpResponseMessage CreateCheckStatusResponse(
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     location = null;
                     break;
                 default:
-                    this.traceWriter.Error($"Unknown runtime state '{status.RuntimeStatus}'.");
+                    this.logger.LogError($"Unknown runtime state '{status.RuntimeStatus}'.");
                     statusCode = HttpStatusCode.InternalServerError;
                     location = null;
                     break;

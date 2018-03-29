@@ -275,7 +275,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
-                Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
+                Assert.True(
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
                 // The end message will cause the actor to complete itself.
                 await client.RaiseEventAsync("operation", "end");
@@ -1068,14 +1070,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 // The expected maximum payload size is 60 KB.
-                // Strings in Azure Storage are encoded in UTF-32, which is 4 bytes per character.
-                int stringLength = (61 * 1024) / 4;
+                // Strings in Azure Storage are encoded in UTF-16, which is 2 bytes per character.
+                int stringLength = (61 * 1024) / 2;
 
                 var client = await host.StartOrchestratorAsync(orchestrator, stringLength, this.output);
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
-                Assert.True(status?.Output.ToString().Contains("The UTF-32 size of the JSON-serialized payload must not exceed 60 KB"));
+                Assert.True(status?.Output.ToString().Contains("The UTF-16 size of the JSON-serialized payload must not exceed 60 KB"));
 
                 await host.StopAsync();
             }
@@ -1093,8 +1095,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 // The expected maximum payload size is 60 KB.
-                // Strings in Azure Storage are encoded in UTF-32, which is 4 bytes per character.
-                int stringLength = (61 * 1024) / 4;
+                // Strings in Azure Storage are encoded in UTF-16, which is 2 bytes per character.
+                int stringLength = (61 * 1024) / 2;
                 var input = new StartOrchestrationArgs
                 {
                     FunctionName = nameof(TestActivities.BigReturnValue),
@@ -1108,7 +1110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Activity function exception details are not captured in the orchestrator output:
                 // https://github.com/Azure/azure-functions-durable-extension/issues/84
-                ////Assert.True(status?.Output.ToString().Contains("The UTF-32 size of the JSON-serialized payload must not exceed 60 KB"));
+                ////Assert.True(status?.Output.ToString().Contains("The UTF-16 size of the JSON-serialized payload must not exceed 60 KB"));
                 Assert.StartsWith($"The activity function '{input.FunctionName}' failed.", (string)status?.Output);
 
                 await host.StopAsync();
