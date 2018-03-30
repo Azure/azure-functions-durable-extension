@@ -159,6 +159,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
+                this.parent.durableTaskConfig.RegisterActivity(this.activityName, context.Executor);
+
                 var listener = new DurableTaskListener(
                     this.parent.durableTaskConfig,
                     this.activityName,

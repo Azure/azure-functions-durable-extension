@@ -103,6 +103,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
+               this.config.RegisterOrchestrator(this.orchestratorName, context.Executor);
+
                 var listener = new DurableTaskListener(
                     this.config,
                     this.orchestratorName,
