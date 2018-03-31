@@ -4,15 +4,18 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal class TestLogger : ILogger
     {
+        private readonly ITestOutputHelper testOutput;
         private readonly Func<string, LogLevel, bool> filter;
 
-        public TestLogger(string category, Func<string, LogLevel, bool> filter = null)
+        public TestLogger(ITestOutputHelper testOutput, string category, Func<string, LogLevel, bool> filter = null)
         {
+            this.testOutput = testOutput;
             this.Category = category;
             this.filter = filter;
         }
@@ -38,15 +41,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 return;
             }
 
+            string formattedMessage = formatter(state, exception);
             this.LogMessages.Add(new LogMessage
             {
                 Level = logLevel,
                 EventId = eventId,
                 State = state as IEnumerable<KeyValuePair<string, object>>,
                 Exception = exception,
-                FormattedMessage = formatter(state, exception),
+                FormattedMessage = formattedMessage,
                 Category = this.Category,
             });
+
+            // Only write traces specific to this extension
+            if (this.Category == TestHelpers.LogCategory)
+            {
+                this.testOutput.WriteLine("    " + formattedMessage);
+            }
         }
     }
 }

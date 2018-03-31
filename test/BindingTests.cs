@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public BindingTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider();
+            this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory = new LoggerFactory();
             this.loggerFactory.AddProvider(this.loggerProvider);
         }

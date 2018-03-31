@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Set to false to manually verify log entries in Application Insights but tests with TestHelpers.AssertLogMessageSequence will be skipped
             this.useTestLogger = true;
 
-            this.loggerProvider = new TestLoggerProvider();
+            this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory = new LoggerFactory();
 
             if (this.useTestLogger)
@@ -86,7 +86,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (this.useTestLogger)
             {
-                TestHelpers.AssertLogMessageSequence(this.loggerProvider, "HelloWorldOrchestration_Inline", orchestratorFunctionNames);
+                TestHelpers.AssertLogMessageSequence(
+                    this.output,
+                    this.loggerProvider,
+                    "HelloWorldOrchestration_Inline",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -181,6 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "HelloWorldOrchestration_Activity",
                     orchestratorFunctionNames,
@@ -375,7 +380,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (this.useTestLogger)
             {
-                TestHelpers.AssertLogMessageSequence(this.loggerProvider, "TerminateOrchestration", orchestratorFunctionNames);
+                TestHelpers.AssertLogMessageSequence(
+                    this.output,
+                    this.loggerProvider,
+                    "TerminateOrchestration",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -412,7 +421,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (this.useTestLogger)
             {
-                TestHelpers.AssertLogMessageSequence(this.loggerProvider, "TimerCancellation", orchestratorFunctionNames);
+                TestHelpers.AssertLogMessageSequence(
+                    this.output,
+                    this.loggerProvider,
+                    "TimerCancellation",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -450,7 +463,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (this.useTestLogger)
             {
-                TestHelpers.AssertLogMessageSequence(this.loggerProvider, "TimerExpiration", orchestratorFunctionNames);
+                TestHelpers.AssertLogMessageSequence(
+                    this.output,
+                    this.loggerProvider,
+                    "TimerExpiration",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -539,7 +556,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (this.useTestLogger)
             {
-                TestHelpers.AssertLogMessageSequence(this.loggerProvider, "UnhandledOrchestrationException", orchestratorFunctionNames);
+                TestHelpers.AssertLogMessageSequence(
+                    this.output,
+                    this.loggerProvider,
+                    "UnhandledOrchestrationException",
+                    orchestratorFunctionNames);
             }
         }
 
@@ -575,6 +596,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "Orchestration_Activity",
                     orchestratorFunctionNames,
@@ -740,6 +762,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "UnhandledOrchestrationExceptionWithRetry",
                     orchestratorFunctionNames);
@@ -807,6 +830,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "UnhandledActivityException",
                     orchestratorFunctionNames,
@@ -846,6 +870,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "UnhandledActivityExceptionWithRetry",
                     orchestratorFunctionNames,
@@ -936,6 +961,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "Orchestration_OnUnregisteredActivity",
                     orchestratorFunctionNames);
@@ -987,6 +1013,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 if (this.useTestLogger)
                 {
                     TestHelpers.AssertLogMessageSequence(
+                        this.output,
                         this.loggerProvider,
                         "Orchestration_OnValidOrchestrator",
                         orchestratorFunctionNames,
@@ -1053,6 +1080,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 TestHelpers.AssertLogMessageSequence(
+                    this.output,
                     this.loggerProvider,
                     "Orchestration_OnUnregisteredOrchestrator",
                     orchestratorFunctionNames);
