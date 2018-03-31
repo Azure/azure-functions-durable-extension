@@ -256,5 +256,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int stringLength = ctx.GetInput<int>();
             return new string('*', stringLength);
         }
+
+        public static async Task SetStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                object newStatus = await ctx.WaitForExternalEvent<object>("UpdateStatus");
+                ctx.SetCustomStatus(newStatus);
+            }
+
+            // Make sure status updates can survive awaits
+            await ctx.CreateTimer(ctx.CurrentUtcDateTime.AddSeconds(2), CancellationToken.None);
+        }
     }
 }

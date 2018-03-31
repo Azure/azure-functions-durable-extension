@@ -136,16 +136,6 @@
             <c>true</c> to disable the instance management HTTP APIs; otherwise <c>false</c>.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableStartInstancePolling">
-            <summary>
-            Gets or sets a value which controls whether the polling behavior of
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)"/> is disabled.
-            </summary>
-            <remarks>
-            This is a temporary setting and will be removed in future versions.
-            </remarks>
-            <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
             Internal initialization call from the WebJobs host.
@@ -220,6 +210,17 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">
             <summary>
             Task orchestration implementation which delegates the orchestration implementation to a function.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object)">
+            <summary>
+            JSON-serializes the specified object. This method will throw if the maximum message payload size is exceeded.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object,System.Int32)">
+            <summary>
+            JSON-serializes the specified object and throws a <see cref="T:System.ArgumentException"/> if the
+            resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload">
@@ -444,6 +445,16 @@
             If this method is not called explicitly, the return value of the orchestrator function is used as the output.
             </remarks>
             <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)">
+            <summary>
+            Sets the JSON-serializeable status of the current orchestrator function.
+            </summary>
+            <remarks>
+            The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
+            to the orchestration status query APIs.
+            </remarks>
+            <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)">
             <inheritdoc />
@@ -857,6 +868,14 @@
             </summary>
             <value>
             Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus">
+            <summary>
+            Gets a custom status payload that was assigned by the orchestrator function.
+            </summary>
+            <value>
+            The custom status as a <c>JToken</c> object or <c>null</c> if no custom status has been set.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History">
