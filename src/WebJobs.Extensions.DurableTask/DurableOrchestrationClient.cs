@@ -21,6 +21,8 @@ namespace Microsoft.Azure.WebJobs
     {
         private const string DefaultVersion = "";
 
+        private static readonly JValue NullJValue = JValue.CreateNull();
+
         private readonly TaskHubClient client;
         private readonly string hubName;
         private readonly EndToEndTraceHelper traceHelper;
@@ -146,7 +148,7 @@ namespace Microsoft.Azure.WebJobs
         {
             if (value == null)
             {
-                return null;
+                return NullJValue;
             }
 
             // Ignore whitespace
@@ -297,6 +299,7 @@ namespace Microsoft.Azure.WebJobs
                 CreatedTime = orchestrationState.CreatedTime,
                 LastUpdatedTime = orchestrationState.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
+                CustomStatus = ParseToJToken(orchestrationState.Status),
                 Input = ParseToJToken(orchestrationState.Input),
                 Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,
