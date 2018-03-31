@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -178,7 +177,7 @@ namespace Microsoft.Azure.WebJobs
         private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, bool showHistory, bool showHistoryOutput)
         {
             JArray historyArray = null;
-            if (showHistory)
+            if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
             {
                 string history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
                 if (!string.IsNullOrEmpty(history))
