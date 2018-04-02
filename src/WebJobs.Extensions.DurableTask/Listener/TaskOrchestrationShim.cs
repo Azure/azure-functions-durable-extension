@@ -56,6 +56,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
+            await this.config.LifeCycleTraceHelper.OrchestratorStartingAsync(
+                this.context.HubName,
+                this.context.Name,
+                this.context.Version,
+                this.context.InstanceId,
+                FunctionType.Orchestrator,
+                this.context.IsReplaying);
+
             object returnValue;
             try
             {
@@ -72,6 +80,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (Exception e)
             {
                 this.config.TraceHelper.FunctionFailed(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.Version,
+                    this.context.InstanceId,
+                    e.ToString(),
+                    FunctionType.Orchestrator,
+                    this.context.IsReplaying);
+
+                await this.config.LifeCycleTraceHelper.OrchestratorFailedAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.Version,
@@ -99,6 +116,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.Version,
                 this.context.InstanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
+                this.context.ContinuedAsNew,
+                FunctionType.Orchestrator,
+                this.context.IsReplaying);
+
+            await this.config.LifeCycleTraceHelper.OrchestratorCompletedAsync(
+                this.context.HubName,
+                this.context.Name,
+                this.context.Version,
+                this.context.InstanceId,
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);

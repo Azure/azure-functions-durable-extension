@@ -56,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private EndToEndTraceHelper traceHelper;
         private HttpApiHandler httpApiHandler;
+        private LifeCycleTraceHelper lifeCycleTraceHelper;
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
@@ -158,6 +159,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool DisableHttpManagementApis { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value of Event Grid Topic Endpoint for emitting lifecycle events.
+        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// <see cref="LifeCycleTraceHelper"/>
+        /// </summary>
+        public string EventGridTopicEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value of Event Grid Key.
+        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// <see cref="LifeCycleTraceHelper"/>
+        /// </summary>
+        public string EventGridKey { get; set; }
+
+        internal LifeCycleTraceHelper LifeCycleTraceHelper => this.lifeCycleTraceHelper;
+
+
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
         /// <summary>
@@ -176,6 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
+            this.lifeCycleTraceHelper = new LifeCycleTraceHelper(this, logger);
 
             // Register the non-trigger bindings, which have a different model.
             var bindings = new BindingHelper(this, this.traceHelper);
