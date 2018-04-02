@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,14 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private async Task TraceRequestAsync(EventGridEvent eventGridEvent)
+        private async Task TraceRequestAsync(EventGridEvent[] eventGridEventArray)
         {
-            var sendObject = new [] {eventGridEvent};
-
-            var json = JsonConvert.SerializeObject(sendObject);
+            var json = JsonConvert.SerializeObject(eventGridEventArray);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var result = await httpClient.PostAsync(config.EventGridTopicEndpoint, content);
+            var result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
 
             if (!result.IsSuccessStatusCode)
             {
@@ -47,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public Task OrchestratorStartingAsync(
+        public async Task OrchestratorStartingAsync(
             string hubName,
             string functionName,
             string version,
@@ -56,7 +53,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
-            return Task.CompletedTask;
+            EventGridEvent[] sendObject = this.CreateEventGridEvent(
+                hubName,
+                functionName,
+                version,
+                instanceId,
+                "",
+                OrchestrationRuntimeStatus.Running);
+            await this.TraceRequestAsync(sendObject);
         }
 
         public Task OrchestratorCompletedAsync(
@@ -69,6 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
+
             return Task.CompletedTask;
         }
 
@@ -92,6 +97,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason)
         {
             return Task.CompletedTask;
+        }
+
+        private EventGridEvent[] CreateEventGridEvent(
+            string hubName,
+            string functionName,
+            string version,
+            string instanceId,
+            string reason,
+            OrchestrationRuntimeStatus orchestrationRuntimeStatus)
+        {
+            return new[]
+            {
+                new EventGridEvent
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    EventType = "orchestratorEvent",
+                    Subject = $"durable/orchestrator/{orchestrationRuntimeStatus}",
+                    EventTime = DateTime.UtcNow,
+                    Data = new
+                    {
+                        HubName = hubName,
+                        FunctionName = functionName,
+                        Version = version,
+                        InstanceId = instanceId,
+                        Reason = reason,
+                        EventType = orchestrationRuntimeStatus,
+                        EventTime = DateTime.UtcNow,
+                    },
+                    DataVersion = "1.0",
+                },
+            };
         }
 
         private class EventGridEvent
