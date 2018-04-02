@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,7 +31,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private async Task TraceRequestAsync(EventGridEvent[] eventGridEventArray)
+        private async Task TraceRequestAsync(
+            EventGridEvent[] eventGridEventArray,
+            string hubName,
+            string functionName,
+            string version,
+            string instanceId,
+            string reason,
+            FunctionType functionType,
+            bool isReplay,
+            FunctionState functionState)
         {
             var json = JsonConvert.SerializeObject(eventGridEventArray);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -39,7 +49,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!result.IsSuccessStatusCode)
             {
-                this.logger.LogError("Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase}", result.StatusCode, result.ReasonPhrase);
+                var appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? string.Empty;
+                var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
+                var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
+                this.logger.LogError(
+                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                    result.StatusCode,
+                    result.ReasonPhrase,
+                    instanceId,
+                    functionName,
+                    functionType,
+                    version,
+                    reason,
+                    isReplay,
+                    functionState,
+                    hubName,
+                    appName,
+                    slotName,
+                    extensionVersion);
             }
         }
 
@@ -52,6 +79,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
+            if (!this.UseTrace)
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -59,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Running);
-            await this.TraceRequestAsync(sendObject);
+            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Started);
         }
 
         public async Task OrchestratorCompletedAsync(
@@ -72,6 +104,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
+            if (!this.UseTrace)
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -79,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Completed);
-            await this.TraceRequestAsync(sendObject);
+            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Completed);
         }
 
         public async Task OrchestratorFailedAsync(
@@ -91,6 +128,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
+            if (!this.UseTrace)
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -98,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Failed);
-            await this.TraceRequestAsync(sendObject);
+            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, isReplay, FunctionState.Failed);
         }
 
         public async Task OrchestratorTerminatedAsync(
@@ -108,6 +150,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
+            if (!this.UseTrace)
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -115,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Terminated);
-            await this.TraceRequestAsync(sendObject);
+            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, false, FunctionState.Terminated);
         }
 
         private EventGridEvent[] CreateEventGridEvent(
