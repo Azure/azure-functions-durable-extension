@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Human Interaction &amp; Timeouts ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="human-interaction--timeouts">Human Interaction &amp; Timeouts</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification">here</a>.</p>
+</div>
+<h1 id="human-interaction--timeouts">Human Interaction &amp; Timeouts</h1>
 <h2 id="phone-verification">Phone Verification</h2>
 <p>This sample demonstrates how to build a function orchestration that involves human interaction. Whenever a real person is involved in an automated process, the process must be able to send notifications to the person, receive responses back asynchronously from the person, and account for the person being unavailable (and this last part is where timeouts become important).</p>
 <p>This sample in particular implements an SMS-based phone verification system. These types of flows are often used when verifying a customer&#39;s phone number of when incorporating multi-factor authentication (MFA) into an online authentication system. This is a powerful example because the entire implementation is done using a couple small functions and does not require any external data store, like a database.</p>

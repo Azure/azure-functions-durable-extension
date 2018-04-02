@@ -55,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
 
         private EndToEndTraceHelper traceHelper;
+        private LifeCycleTraceHelper lifeCycleTraceHelper;
         private HttpApiHandler httpApiHandler;
 
         /// <summary>
@@ -158,6 +159,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool DisableHttpManagementApis { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value which controls whether the polling behavior of
+        /// <see cref="DurableOrchestrationClient.StartNewAsync"/> is disabled.
+        /// </summary>
+        /// <remarks>
+        /// This is a temporary setting and will be removed in future versions.
+        /// </remarks>
+        /// <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
+        public bool DisableStartInstancePolling { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value of Event Grid Topic Endpoint for emitting lifecycle events.
+        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// <see cref="LifeCycleTraceHelper"/>
+        /// </summary>
+        public string EventGridTopicEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value of Event Grid Key.
+        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// <see cref="LifeCycleTraceHelper"/>
+        /// </summary>
+        public string EventGridKey { get; set; }
+
+        internal LifeCycleTraceHelper LifeCycleTraceHelper => this.lifeCycleTraceHelper;
+
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
         /// <summary>
@@ -175,6 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
+            this.lifeCycleTraceHelper = new LifeCycleTraceHelper(this, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
 
             // Register the non-trigger bindings, which have a different model.

@@ -10,7 +10,7 @@
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Bindings ">
-    <meta name="generator" content="docfx 2.24.0.0">
+    <meta name="generator" content="docfx 2.28.1.0">
     
     <link rel="shortcut icon" href="../../images/favicon.ico">
     <link rel="stylesheet" href="../../styles/docfx.vendor.css">
@@ -68,8 +68,10 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="bindings">Bindings</h1>
 
+<div class="WARNING"><h5>Warning</h5><p>This documentation is out of date and will be deleted. The official documentation has been moved <a href="https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-bindings">here</a>.</p>
+</div>
+<h1 id="bindings">Bindings</h1>
 <h2 id="overview">Overview</h2>
 <p>The Durable Functions extension introduces two new trigger bindings which control the execution of orchestrator and activity functions. It also introduces an output binding which acts as a client into the Durable Functions runtime.</p>
 <h2 id="orchestration-triggers">Orchestration triggers</h2>
@@ -145,7 +147,7 @@ public static async Task&lt;string&gt; Run(
 <p>Internally this trigger binding polls a queue in the default storage account for the function app. This queue is an internal implementation detail of the extension, which is why it is not explicitly configured in the binding properties.</p>
 <div class="NOTE"><h5>Note</h5><p>Setting values for <code>activity</code> or <code>version</code> properties is not recommended at this time.</p>
 </div>
-<h3 id="trigger-behavior">Trigger behavior</h3>
+<h3 id="trigger-behavior-1">Trigger behavior</h3>
 <p>Note the following behaviors of the activity trigger:</p>
 <ul>
 <li><strong>threading</strong> - unlike the orchestration trigger, activity triggers don&#39;t have any restrictions around threading or I/O. They can be treated like regular functions.</li>
@@ -155,7 +157,7 @@ public static async Task&lt;string&gt; Run(
 </ul>
 <div class="WARNING"><h5>Warning</h5><p>The storage backend for activity functions is an implementation detail and user code should not interact with these storage entities directly.</p>
 </div>
-<h3 id="trigger-usage">Trigger usage</h3>
+<h3 id="trigger-usage-1">Trigger usage</h3>
 <p>The activity trigger binding supports both inputs and outputs, just like the orchestration trigger. Here are some things to know about input and output handling:</p>
 <ul>
 <li><strong>inputs</strong> - activity functions natively use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a> as a parameter type. Alternatively, an activity function can be declared with any parameter type that is JSON-serializable. When using <code>DurableActivityContext</code>, code can use <a class="xref" href="../../api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetInput_">GetInput</a> to fetch and deserialize the activity function input.</li>
@@ -164,7 +166,7 @@ public static async Task&lt;string&gt; Run(
 </ul>
 <div class="NOTE"><h5>Note</h5><p>Activity triggers are not currently supported in Node.js functions.</p>
 </div>
-<h3 id="trigger-sample">Trigger sample</h3>
+<h3 id="trigger-sample-1">Trigger sample</h3>
 <p>The following is an example of what a very simple &quot;Hello World&quot; C# activity function might look like:</p>
 <pre><code class="lang-csharp">[FunctionName(&quot;SayHello&quot;)]
 public static string SayHello([ActivityTrigger] DurableActivityContext helloContext)

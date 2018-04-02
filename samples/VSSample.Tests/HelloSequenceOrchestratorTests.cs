@@ -1,5 +1,5 @@
 // Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 namespace VSSample.Tests
 {
@@ -11,7 +11,7 @@ namespace VSSample.Tests
     public class HelloSequenceTests
     {
         [Fact]
-        public async Task Run_retuns_multiple_greetings()
+        public async Task Run_returns_multiple_greetings()
         {
             var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo!");
