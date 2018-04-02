@@ -32,6 +32,7 @@ namespace Microsoft.Azure.WebJobs
         private OrchestrationContext innerContext;
         private string serializedInput;
         private string serializedOutput;
+        private string serializedCustomStatus;
         private int owningThreadId;
 
         internal DurableOrchestrationContext(
@@ -154,6 +155,26 @@ namespace Microsoft.Azure.WebJobs
         internal string GetSerializedOutput()
         {
             return this.serializedOutput;
+        }
+
+        /// <summary>
+        /// Sets the JSON-serializeable status of the current orchestrator function.
+        /// </summary>
+        /// <remarks>
+        /// The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
+        /// to the orchestration status query APIs.
+        /// </remarks>
+        /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
+        public void SetCustomStatus(object customStatusObject)
+        {
+            // Limit the custom status payload to 16 KB
+            const int MaxPayloadSizeInKB = 16 * 1024;
+            this.serializedCustomStatus = MessagePayloadDataConverter.Default.Serialize(customStatusObject, MaxPayloadSizeInKB);
+        }
+
+        internal string GetSerializedCustomStatus()
+        {
+            return this.serializedCustomStatus;
         }
 
         /// <inheritdoc />

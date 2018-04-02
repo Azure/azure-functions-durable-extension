@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static void AssertLogMessageSequence(
+            ITestOutputHelper testOutput,
             TestLoggerProvider loggerProvider,
             string testName,
             string[] orchestratorFunctionNames,
@@ -48,11 +50,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
 
-            Assert.Equal(expectedLogMessages.Count, logMessages.Count);
-            AssertLogMessages(expectedLogMessages, actualLogMessages);
+            AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
         }
 
         public static void UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(
+            ITestOutputHelper testOutput,
             TestLoggerProvider loggerProvider,
             string testName,
             string[] orchestratorFunctionNames,
@@ -148,12 +150,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return messages;
         }
 
-        private static void AssertLogMessages(IList<string> expected, IList<string> actual)
+        private static void AssertLogMessages(IList<string> expected, IList<string> actual, ITestOutputHelper testOutput)
         {
+            TraceExpectedLogMessages(testOutput, expected);
+
+            Assert.Equal(expected.Count, actual.Count);
+
             for (int i = 0; i < expected.Count; i++)
             {
                 Assert.StartsWith(expected[i], actual[i]);
             }
+        }
+
+        private static void TraceExpectedLogMessages(ITestOutputHelper testOutput, IList<string> expected)
+        {
+            string prefix = "    ";
+            string allExpectedTraces = string.Join(Environment.NewLine + prefix, expected);
+            testOutput.WriteLine("Expected trace output:");
+            testOutput.WriteLine(prefix + allExpectedTraces);
         }
 
         private static List<string> GetLogs_HelloWorldOrchestration_Inline(string messageId, string[] functionNames)

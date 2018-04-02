@@ -134,8 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override string GetStatus()
         {
-            // TODO: Implement a means for orchestrator functions to set status
-            return null;
+            return this.context.GetSerializedCustomStatus();
         }
 
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
