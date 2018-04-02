@@ -10,6 +10,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly ILogger logger;
 
+        private static string eventGridTopicEndpoint;
+        private static string eventGridTopicKey;
+
+        public static string EventGridTopicEndpoint
+        {
+            get
+            {
+                if(eventGridTopicEndpoint == null)
+                {
+                    eventGridTopicEndpoint = Environment.GetEnvironmentVariable("DURABLE_EVENTGRIDTOPIC_ENDPOINT") ?? string.Empty;
+                }
+
+                return eventGridTopicEndpoint;
+            }
+        }
+
+        public static string EventGridKey
+        {
+            get
+            {
+                if(eventGridTopicKey == null)
+                {
+                    eventGridTopicKey = Environment.GetEnvironmentVariable("DURABLE_EVENTGRIDTOPIC_KEY") ?? string.Empty;
+                }
+
+                return eventGridTopicKey;
+            }
+        }
+
         public LifeCycleTraceHelper(JobHostConfiguration config, ILogger logger)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
