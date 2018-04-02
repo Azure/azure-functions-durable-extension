@@ -53,7 +53,7 @@ Durable Functions are distributed as a NuGet package. So in order to test your c
 5. Add the newly built Durable Functions NuGet package to the local NuGet source. The command to add packages to this location is nuget **add package.nupkg -Source C:\LocalNuGet** .
 5. Update your local NuGet cache (**%USERPROFILE%\\.nuget\packages**) with the newest version of the Durable Functions NuGet package.
 6. In Visual Studio, add the new NuGet package from your local NuGet source to a function. 
-7. Run Azure Storage Emulator 5.2.
+7. Run Azure Storage Emulator with version 5.2 or higher.
 8. Run the function and debug.
 
 
