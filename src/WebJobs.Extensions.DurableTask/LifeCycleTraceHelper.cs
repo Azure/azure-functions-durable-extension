@@ -11,48 +11,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class LifeCycleTraceHelper
     {
         private readonly ILogger logger;
+        private readonly DurableTaskExtension config;
 
-        private static string eventGridTopicEndpoint;
-        private static string eventGridTopicKey;
+        private bool UseTrace { get; }
 
-        public static string EventGridTopicEndpoint
+        private static HttpClient httpClient = null;
+
+        public LifeCycleTraceHelper(DurableTaskExtension config, ILogger logger)
         {
-            get
-            {
-                if(eventGridTopicEndpoint == null)
-                {
-                    eventGridTopicEndpoint = Environment.GetEnvironmentVariable("DURABLE_EVENTGRIDTOPIC_ENDPOINT") ?? string.Empty;
-                }
+            this.config = config;
 
-                return eventGridTopicEndpoint;
-            }
-        }
-
-        public static string EventGridKey
-        {
-            get
-            {
-                if(eventGridTopicKey == null)
-                {
-                    eventGridTopicKey = Environment.GetEnvironmentVariable("DURABLE_EVENTGRIDTOPIC_KEY") ?? string.Empty;
-                }
-
-                return eventGridTopicKey;
-            }
-        }
-
-        public static bool UseTrace => EventGridKey != string.Empty && EventGridTopicEndpoint != string.Empty;
-
-        private HttpClient httpClient = null;
-
-        public LifeCycleTraceHelper(JobHostConfiguration config, ILogger logger)
-        {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (UseTrace)
+            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKey))
             {
+                UseTrace = true;
                 httpClient = new HttpClient();
-                // TODO:header setting
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", config.EventGridKey);
             }
         }
 
@@ -63,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var json = JsonConvert.SerializeObject(sendObject);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var result = await httpClient.PostAsync(eventGridTopicEndpoint, content);
+            var result = await httpClient.PostAsync(config.EventGridTopicEndpoint, content);
 
             if (!result.IsSuccessStatusCode)
             {

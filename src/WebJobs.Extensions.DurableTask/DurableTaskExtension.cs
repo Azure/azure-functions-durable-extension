@@ -55,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
 
         private EndToEndTraceHelper traceHelper;
+        private LifeCycleTraceHelper lifeCycleTraceHelper;
         private HttpApiHandler httpApiHandler;
 
         /// <summary>
@@ -167,6 +168,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         /// <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
         public bool DisableStartInstancePolling { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value of Event Grid Topic Endpoint for emitting lifecycle events.
+        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// <see cref="LifeCycleTraceHelper"/>
+        /// </summary>
+        public string EventGridTopicEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value of Event Grid Key.
+        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// <see cref="LifeCycleTraceHelper"/>
+        /// </summary>
+        public string EventGridKey { get; set; }
+
+        internal LifeCycleTraceHelper LifeCycleTraceHelper => this.lifeCycleTraceHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
