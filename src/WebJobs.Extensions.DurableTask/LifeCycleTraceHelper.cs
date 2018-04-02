@@ -75,7 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string version,
             string instanceId,
-            string input,
             FunctionType functionType,
             bool isReplay)
         {
@@ -99,7 +98,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string version,
             string instanceId,
-            string output,
             bool continuedAsNew,
             FunctionType functionType,
             bool isReplay)
