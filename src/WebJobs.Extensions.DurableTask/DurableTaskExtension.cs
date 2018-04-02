@@ -202,6 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
+            this.lifeCycleTraceHelper = new LifeCycleTraceHelper(this, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
 
             // Register the non-trigger bindings, which have a different model.
