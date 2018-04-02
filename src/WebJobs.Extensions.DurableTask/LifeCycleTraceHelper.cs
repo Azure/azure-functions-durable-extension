@@ -39,8 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!result.IsSuccessStatusCode)
             {
-                // TODO:ErrorMessage
-                logger.LogError("Error LifeCycleTraceHelper{HttpStatusCode}", result.IsSuccessStatusCode);
+                this.logger.LogError("Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase}", result.StatusCode, result.ReasonPhrase);
             }
         }
 
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await this.TraceRequestAsync(sendObject);
         }
 
-        public Task OrchestratorCompletedAsync(
+        public async Task OrchestratorCompletedAsync(
             string hubName,
             string functionName,
             string version,
@@ -73,11 +72,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
-
-            return Task.CompletedTask;
+            EventGridEvent[] sendObject = this.CreateEventGridEvent(
+                hubName,
+                functionName,
+                version,
+                instanceId,
+                "",
+                OrchestrationRuntimeStatus.Completed);
+            await this.TraceRequestAsync(sendObject);
         }
 
-        public Task OrchestratorFailedAsync(
+        public async Task OrchestratorFailedAsync(
             string hubName,
             string functionName,
             string version,
@@ -86,17 +91,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
-            return Task.CompletedTask;
+            EventGridEvent[] sendObject = this.CreateEventGridEvent(
+                hubName,
+                functionName,
+                version,
+                instanceId,
+                reason,
+                OrchestrationRuntimeStatus.Failed);
+            await this.TraceRequestAsync(sendObject);
         }
 
-        public Task OrchestratorTerminatedAsync(
+        public async Task OrchestratorTerminatedAsync(
             string hubName,
             string functionName,
             string version,
             string instanceId,
             string reason)
         {
-            return Task.CompletedTask;
+            EventGridEvent[] sendObject = this.CreateEventGridEvent(
+                hubName,
+                functionName,
+                version,
+                instanceId,
+                reason,
+                OrchestrationRuntimeStatus.Terminated);
+            await this.TraceRequestAsync(sendObject);
         }
 
         private EventGridEvent[] CreateEventGridEvent(
