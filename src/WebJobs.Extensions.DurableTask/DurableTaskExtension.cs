@@ -399,9 +399,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
-            if (!this.registeredActivities.TryAdd(activityFunction, executor))
+            if (this.registeredActivities.ContainsKey(activityFunction))
             {
-                throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
+                if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
+                {
+                    throw new ArgumentException($"The executor of an activity function named '{activityFunction}' cannot be updated from previous null value.");
+                }
+            }
+            else
+            {
+                if (!this.registeredActivities.TryAdd(activityFunction, executor))
+                {
+                    throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
+                }
             }
         }
 
