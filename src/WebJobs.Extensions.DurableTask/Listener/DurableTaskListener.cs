@@ -36,15 +36,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            if (this.isOrchestrator)
-            {
-                this.config.RegisterOrchestrator(this.functionName, this.executor);
-            }
-            else
-            {
-                this.config.RegisterActivity(this.functionName, this.executor);
-            }
-
             return this.config.StartTaskHubWorkerIfNotStartedAsync();
         }
 
