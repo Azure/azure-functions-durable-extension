@@ -386,9 +386,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, ITriggeredFunctionExecutor executor)
         {
-            if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, executor))
+            if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, executor, null))
             {
-                throw new ArgumentException($"The orchestrator function named '{orchestratorFunction}' is already registered.");
+                if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, executor))
+                {
+                    throw new ArgumentException(
+                        $"The orchestrator function named '{orchestratorFunction}' is already registered.");
+                }
             }
         }
 
@@ -399,14 +403,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
-            if (this.registeredActivities.ContainsKey(activityFunction))
-            {
-                if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
-                {
-                    throw new ArgumentException($"The executor of an activity function named '{activityFunction}' cannot be updated from previous null value.");
-                }
-            }
-            else
+            // Allow adding with a null key and subsequently updating with a non-null key.
+            if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
             {
                 if (!this.registeredActivities.TryAdd(activityFunction, executor))
                 {
