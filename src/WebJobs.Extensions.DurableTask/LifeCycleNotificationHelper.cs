@@ -49,6 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var json = JsonConvert.SerializeObject(eventGridEventArray);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+            // Details about the Event Grid REST API
+            // https://docs.microsoft.com/en-us/rest/api/eventgrid/
             var result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
 
             if (!result.IsSuccessStatusCode)
