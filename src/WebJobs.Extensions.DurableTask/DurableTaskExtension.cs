@@ -315,7 +315,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.IsReplaying);
             }
 
-            await context.RunDeferredTasks();
+ 
+                await context.RunDeferredTasks();
+            
         }
 
         // This is temporary until script loading

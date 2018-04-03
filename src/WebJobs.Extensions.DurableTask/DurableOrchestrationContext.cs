@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs
             string functionVersion)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-
+            this.deferedFunctions = new List<Func<Task>>();
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
             this.owningThreadId = -1;
@@ -451,10 +451,6 @@ namespace Microsoft.Azure.WebJobs
 
         public override void AddDeferredTask(Func<Task> function)
         {
-            if (this.deferedFunctions == null)
-            {
-                this.deferedFunctions = new List<Func<Task>>();
-            }
             this.deferedFunctions.Add(function);
         }
 
@@ -466,6 +462,7 @@ namespace Microsoft.Azure.WebJobs
                     "AddDeferredTask needs to be called first.");
             }
             await Task.WhenAll(this.deferedFunctions.Select(x => x()));
+            this.deferedFunctions.Clear();
         }
     }
 }
