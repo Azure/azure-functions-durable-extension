@@ -142,7 +142,7 @@
             If this property has been set, it will emit the event to the Event Grid Topic.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKey">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName">
             <summary>
             Gets or sets a value of Event Grid Key.
             If this property has been set, it will emit the event to the Event Grid Topic.

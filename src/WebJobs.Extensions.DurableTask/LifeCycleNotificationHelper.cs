@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseTrace = true;
                 httpClient = new HttpClient();
                 INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
-                var eventGridKeyValue = nameResolver.Resolve(config.EventGridKey);
+                var eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
                 httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
             }
         }
