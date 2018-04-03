@@ -162,14 +162,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or sets a value of Event Grid Topic Endpoint for emitting lifecycle events.
         /// If this property has been set, it will emit the event to the Event Grid Topic.
-        /// <see cref="LifeCycleTraceHelper"/>
         /// </summary>
         public string EventGridTopicEndpoint { get; set; }
 
         /// <summary>
         /// Gets or sets a value of Event Grid Key.
         /// If this property has been set, it will emit the event to the Event Grid Topic.
-        /// <see cref="LifeCycleTraceHelper"/>
         /// </summary>
         public string EventGridKey { get; set; }
 
