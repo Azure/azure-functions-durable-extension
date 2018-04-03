@@ -169,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a value of Event Grid Key.
         /// If this property has been set, it will emit the event to the Event Grid Topic.
         /// </summary>
-        public string EventGridKey { get; set; }
+        public string EventGridKeySettingName { get; set; }
 
         internal LifeCycleTraceHelper LifeCycleTraceHelper => this.lifeCycleTraceHelper;
 

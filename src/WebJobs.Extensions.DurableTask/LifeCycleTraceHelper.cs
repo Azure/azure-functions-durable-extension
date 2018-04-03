@@ -19,15 +19,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public LifeCycleTraceHelper(DurableTaskExtension config, ILogger logger)
         {
-            this.config = config;
-
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKey))
+            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
                 UseTrace = true;
                 httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", config.EventGridKey);
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", config.EventGridKeySettingName);
             }
         }
 
@@ -53,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
                 var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
                 this.logger.LogError(
-                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKeySettingName. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
                     result.StatusCode,
                     result.ReasonPhrase,
                     instanceId,
