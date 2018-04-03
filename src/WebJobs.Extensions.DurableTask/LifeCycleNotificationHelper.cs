@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class LifeCycleTraceHelper
+    internal class LifeCycleNotificationHelper
     {
         private readonly ILogger logger;
         private readonly DurableTaskExtension config;
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static HttpClient httpClient = null;
 
-        public LifeCycleTraceHelper(DurableTaskExtension config, ILogger logger)
+        public LifeCycleNotificationHelper(DurableTaskExtension config, ILogger logger)
         {
             this.config = config;
 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
                 var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
                 this.logger.LogError(
-                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
                     result.StatusCode,
                     result.ReasonPhrase,
                     instanceId,
