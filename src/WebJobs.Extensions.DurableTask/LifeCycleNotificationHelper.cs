@@ -29,6 +29,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
                 UseTrace = true;
+                // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
+                // For more detail about the Event Grid, please refer this document.
+                // Post to custom topic for Azure Event Grid
+                // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
                 httpClient = new HttpClient();
                 INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
                 eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
