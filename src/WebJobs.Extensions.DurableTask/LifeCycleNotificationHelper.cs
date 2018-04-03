@@ -3,30 +3,35 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class LifeCycleTraceHelper
+    internal class LifeCycleNotificationHelper
     {
         private readonly ILogger logger;
         private readonly DurableTaskExtension config;
+        private readonly ExtensionConfigContext extensionConfigContext;
 
         private bool UseTrace { get; }
 
         private static HttpClient httpClient = null;
 
-        public LifeCycleTraceHelper(DurableTaskExtension config, ILogger logger)
+        public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext, ILogger logger)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
 
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
                 UseTrace = true;
                 httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", config.EventGridKeySettingName);
+                INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
+                var eventGridKeyValue = nameResolver.Resolve(config.EventGridKey);
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
             }
         }
 
@@ -52,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
                 var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
                 this.logger.LogError(
-                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKeySettingName. LifeCycleTraceHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
                     result.StatusCode,
                     result.ReasonPhrase,
                     instanceId,
