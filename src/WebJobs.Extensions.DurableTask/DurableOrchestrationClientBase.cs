@@ -82,5 +82,11 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
         public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false);
+
+        /// <summary>
+        /// Gets the taskhub name
+        /// </summary>
+        /// <returns>Returns a taskhub name</returns>
+        public abstract string GetTaskHubName();
     }
 }

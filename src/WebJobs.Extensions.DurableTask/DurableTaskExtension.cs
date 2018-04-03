@@ -158,16 +158,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool DisableHttpManagementApis { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value which controls whether the polling behavior of
-        /// <see cref="DurableOrchestrationClient.StartNewAsync"/> is disabled.
-        /// </summary>
-        /// <remarks>
-        /// This is a temporary setting and will be removed in future versions.
-        /// </remarks>
-        /// <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
-        public bool DisableStartInstancePolling { get; set; }
-
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
         /// <summary>
