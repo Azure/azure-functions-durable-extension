@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,6 +35,8 @@ namespace Microsoft.Azure.WebJobs
         private string serializedOutput;
         private string serializedCustomStatus;
         private int owningThreadId;
+
+        private List<Func<Task>> deferedFunctions;
 
         internal DurableOrchestrationContext(
             DurableTaskExtension config,
@@ -444,6 +447,25 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException(
                     "Multithreaded execution was detected. This can happen if the orchestrator function previously resumed from an unsupported async callback.");
             }
+        }
+
+        public override void AddDeferredTask(Func<Task> function)
+        {
+            if (this.deferedFunctions == null)
+            {
+                this.deferedFunctions = new List<Func<Task>>();
+            }
+            this.deferedFunctions.Add(function);
+        }
+
+        public override async Task RunDeferredTasks()
+        {
+            if (this.deferedFunctions == null)
+            {
+                throw new InvalidOperationException(
+                    "AddDeferredTask needs to be called first.");
+            }
+            await Task.WhenAll(this.deferedFunctions.Select(x => x()));
         }
     }
 }

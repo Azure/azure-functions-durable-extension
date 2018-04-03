@@ -56,13 +56,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
-            await this.config.LifeCycleTraceHelper.OrchestratorStartingAsync(
+            this.context.AddDeferredTask(() => this.config.LifeCycleTraceHelper.OrchestratorStartingAsync(
                 this.context.HubName,
                 this.context.Name,
                 this.context.Version,
                 this.context.InstanceId,
                 FunctionType.Orchestrator,
-                this.context.IsReplaying);
+                this.context.IsReplaying));
 
             object returnValue;
             try
@@ -88,14 +88,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
 
-                await this.config.LifeCycleTraceHelper.OrchestratorFailedAsync(
+                this.context.AddDeferredTask(() => this.config.LifeCycleTraceHelper.OrchestratorFailedAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.Version,
                     this.context.InstanceId,
                     e.ToString(),
                     FunctionType.Orchestrator,
-                    this.context.IsReplaying);
+                    this.context.IsReplaying));
                 throw;
             }
             finally
@@ -120,14 +120,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
-            await this.config.LifeCycleTraceHelper.OrchestratorCompletedAsync(
+            this.context.AddDeferredTask(() => this.config.LifeCycleTraceHelper.OrchestratorCompletedAsync(
                 this.context.HubName,
                 this.context.Name,
                 this.context.Version,
                 this.context.InstanceId,
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
-                this.context.IsReplaying);
+                this.context.IsReplaying));
 
             return serializedOutput;
         }

@@ -537,6 +537,20 @@
             <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
             <returns>The deserialized input value.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.AddDeferredTask(System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            AddDeferredTask enable us to add the function which we want to execute later.
+            This method doesn't execute the function during executes AddDeferredTask. 
+            You can execute the function at the RunDeferredTasks() method.
+            </summary>
+            <param name="function">a function which you want to execute later</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.RunDeferredTasks">
+            <summary>
+            RunDeferredTasks exectutes functions which are registered by the AddDeferredTask 
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution.
