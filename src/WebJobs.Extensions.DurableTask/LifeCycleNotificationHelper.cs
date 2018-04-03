@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -12,22 +13,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly ILogger logger;
         private readonly DurableTaskExtension config;
+        private readonly ExtensionConfigContext extensionConfigContext;
 
         private bool UseTrace { get; }
 
         private static HttpClient httpClient = null;
 
-        public LifeCycleNotificationHelper(DurableTaskExtension config, ILogger logger)
+        public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext, ILogger logger)
         {
-            this.config = config;
-
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
 
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKey))
             {
                 UseTrace = true;
                 httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", config.EventGridKey);
+                INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
+                var eventGridKeyValue = nameResolver.Resolve(config.EventGridKey);
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
             }
         }
 

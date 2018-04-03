@@ -192,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
-            this.lifeCycleTraceHelper = new LifeCycleNotificationHelper(this, logger);
+            this.lifeCycleTraceHelper = new LifeCycleNotificationHelper(this, context, logger);
 
             // Register the non-trigger bindings, which have a different model.
             var bindings = new BindingHelper(this, this.traceHelper);
