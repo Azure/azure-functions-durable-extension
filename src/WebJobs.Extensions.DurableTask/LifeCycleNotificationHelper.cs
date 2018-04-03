@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ILogger logger;
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionConfigContext;
+        private readonly string eventGridKeyValue;
 
         private bool UseTrace { get; }
 
@@ -30,9 +31,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseTrace = true;
                 httpClient = new HttpClient();
                 INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
-                var eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
+                eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
                 httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
             }
+        }
+
+        public void SetHttpMessageHandler(HttpMessageHandler handler)
+        {
+            httpClient = new HttpClient(handler);
+            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
         }
 
         private async Task TraceRequestAsync(
