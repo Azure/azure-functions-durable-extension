@@ -133,6 +133,12 @@ namespace Microsoft.Azure.WebJobs
             return await this.GetDurableOrchestrationStatusAsync(state, showHistory, showHistoryOutput);
         }
 
+        /// <inheritdoc />
+        public override string GetTaskHubName()
+        {
+            return this.hubName;
+        }
+
         private static JToken ParseToJToken(string value)
         {
             if (value == null)
