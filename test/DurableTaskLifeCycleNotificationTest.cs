@@ -162,7 +162,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
                                 else if (callCount == 1)
                                 {
-                                    Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
+                                    Assert.Equal("durable/orchestrator/Failed", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
                                     Assert.Equal("3", o.data.EventType.ToString());
                                 }
@@ -203,7 +203,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
             Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKey, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridEndpoint))
             {
                 await host.StartAsync();
                 var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
@@ -239,7 +239,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
                                 else if (callCount == 1)
                                 {
-                                    Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
+                                    Assert.Equal("durable/orchestrator/Terminated", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
                                     Assert.Equal("5", o.data.EventType.ToString());
                                 }
