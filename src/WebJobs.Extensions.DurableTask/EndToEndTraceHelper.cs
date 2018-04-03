@@ -254,6 +254,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 "{instanceId}: Function '{functionName} ({functionType})', version '{version}' received a '{eventName}' event. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                 instanceId, functionName, functionType, version, eventName, FunctionState.ExternalEventRaised, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
+        public void SendMessageFailed(
+            System.Net.HttpStatusCode statusCode,
+            string reasonPhrase,
+            string instanceId,
+            string functionName,
+            FunctionType functionType,
+            string version,
+            string reason,
+            bool isReplay,
+            FunctionState functionState,
+            string hubName,
+            string appName,
+            string slotName,
+            string extensionVersion
+            )
+        {
+            this.logger.LogError(
+                "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                statusCode,
+                reasonPhrase,
+                instanceId,
+                functionName,
+                functionType,
+                version,
+                reason,
+                isReplay,
+                functionState,
+                hubName,
+                appName,
+                slotName,
+                extensionVersion);
+        }
 
         public void TimerExpired(
             string hubName,

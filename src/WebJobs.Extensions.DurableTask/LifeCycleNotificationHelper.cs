@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class LifeCycleNotificationHelper
     {
-        private readonly ILogger logger;
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionConfigContext;
         private readonly string eventGridKeyValue;
@@ -20,12 +19,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static HttpClient httpClient = null;
 
-        public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext, ILogger logger)
+        public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
-
+            
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
                 UseTrace = true;
@@ -69,8 +67,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? string.Empty;
                 var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
                 var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
-                this.logger.LogError(
-                    "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: {result_StatusCode} Reason Phrase: {result_ReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                this.config.TraceHelper.SendMessageFailed
+                    (
                     result.StatusCode,
                     result.ReasonPhrase,
                     instanceId,
