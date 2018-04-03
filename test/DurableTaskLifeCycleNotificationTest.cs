@@ -42,7 +42,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
             var eventGridKey = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
-            var eventGridEndpoint = "http://dymmy.com";
+            var eventGridEndpoint = "http://dymmy.com/";
             Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
@@ -53,7 +53,6 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
                     .Where(x => x is DurableTaskExtension)
                     .ToList();
-                
                 if (extensionProviders.Any())
                 {
                     var extension = (DurableTaskExtension)extensionProviders.First();
@@ -66,6 +65,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 var values = request.Headers.GetValues("aeg-sas-key").ToList();
                                 Assert.Single(values);
                                 Assert.Equal(eventGridKey, values[0]);
+                                Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                                 var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                                 dynamic content = JsonConvert.DeserializeObject(json);
                                 foreach (dynamic o in content)
@@ -121,7 +121,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
             var eventGridKey = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
-            var eventGridEndpoint = "http://dymmy.com";
+            var eventGridEndpoint = "http://dymmy.com/";
             Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
@@ -146,6 +146,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             var values = request.Headers.GetValues("aeg-sas-key").ToList();
                             Assert.Single(values);
                             Assert.Equal(eventGridKey, values[0]);
+                            Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                             var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                             dynamic content = JsonConvert.DeserializeObject(json);
                             foreach (dynamic o in content)
@@ -199,7 +200,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
             };
             var eventGridKey = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
-            var eventGridEndpoint = "http://dymmy.com";
+            var eventGridEndpoint = "http://dymmy.com/";
             Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
@@ -223,6 +224,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             var values = request.Headers.GetValues("aeg-sas-key").ToList();
                             Assert.Single(values);
                             Assert.Equal(eventGridKey, values[0]);
+                            Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                             var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                             dynamic content = JsonConvert.DeserializeObject(json);
                             foreach (dynamic o in content)
@@ -274,6 +276,86 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
+        }
+
+        [Fact]
+        public async Task OrchestrationEventGridApiReturnBadStatus()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKey = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
+            var callCount = 0;
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridEndpoint))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+
+                if (extensionProviders.Any())
+                {
+                    var extension = (DurableTaskExtension)extensionProviders.First();
+                    var mock = new Mock<HttpMessageHandler>();
+                    mock.Protected()
+                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                        {
+                            Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
+                            var values = request.Headers.GetValues("aeg-sas-key").ToList();
+                            Assert.Single(values);
+                            Assert.Equal(eventGridKey, values[0]);
+                            Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
+                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                            dynamic content = JsonConvert.DeserializeObject(json);
+                            foreach (dynamic o in content)
+                            {
+                                Assert.Equal("1.0", o.dataVersion.ToString());
+                                Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.HubName.ToString());
+                                Assert.Equal(orchestratorFunctionNames[0], o.data.FunctionName.ToString());
+
+                                if (callCount == 0)
+                                {
+                                    Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
+                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
+                                    Assert.Equal("0", o.data.EventType.ToString());
+                                }
+                                else if (callCount == 1)
+                                {
+                                    Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
+                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
+                                    Assert.Equal("1", o.data.EventType.ToString());
+                                }
+                                else
+                                {
+                                    throw new Exception("Call Count is Bad");
+                                }
+                            }
+
+                            callCount++;
+                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+                        });
+
+                    extension.LifeCycleTraceHelper.SetHttpMessageHandler(mock.Object);
+                }
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(2, callCount);
+
+                await host.StopAsync();
+            }
         }
     }
 }
