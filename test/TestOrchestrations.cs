@@ -268,5 +268,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Make sure status updates can survive awaits
             await ctx.CreateTimer(ctx.CurrentUtcDateTime.AddSeconds(2), CancellationToken.None);
         }
+
+        public static async Task ParallelBatchActor([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+           Task item1 = ctx.WaitForExternalEvent<string>("newItem");
+           Task item2 = ctx.WaitForExternalEvent<string>("newItem");
+           Task item3 = ctx.WaitForExternalEvent<string>("newItem");
+           Task item4 = ctx.WaitForExternalEvent<string>("newItem");
+           await Task.WhenAll(item1, item2, item3, item4);
+        }
     }
 }

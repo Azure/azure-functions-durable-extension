@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -253,12 +254,29 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                object tcsRef;
+                object tcsRefList;
+                List<TaskCompletionSource<T>> tcsList;
                 TaskCompletionSource<T> tcs;
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRef) || (tcs = tcsRef as TaskCompletionSource<T>) == null)
+                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefList) ||
+                    (tcsList = tcsRefList as List<TaskCompletionSource<T>>) == null ||
+                    (tcsList.Count == 0) ||
+                    (tcs = tcsList[0] as TaskCompletionSource<T>) == null)
                 {
                     tcs = new TaskCompletionSource<T>();
-                    this.pendingExternalEvents[name] = tcs;
+                    tcsList = new List<TaskCompletionSource<T>>
+                    {
+                        tcs,
+                    };
+                    this.pendingExternalEvents[name] = tcsList;
+                }
+                else
+                {
+                    if (tcsList != null && tcsList.Count > 0)
+                    {
+                        tcs = new TaskCompletionSource<T>();
+                        tcsList.Add(tcs);
+                        this.pendingExternalEvents[name] = tcsList;
+                    }
                 }
 
                 this.config.TraceHelper.FunctionListening(
@@ -412,15 +430,30 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                object tcs;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcs))
+                object tcsObject;
+                if (this.pendingExternalEvents.TryGetValue(name, out tcsObject))
                 {
+                    var tcsList = tcsObject as IList;
+                    if (tcsList == null || tcsList.Count == 0)
+                    {
+                        return;
+                    }
+
+                    var tcs = tcsList[0];
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
                     // If we're going to raise an event we should remove it from the pending collection
                     // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
-                    this.pendingExternalEvents.Remove(name);
+                    if (tcsList.Count == 1)
+                    {
+                        this.pendingExternalEvents.Remove(name);
+                    }
+                    else
+                    {
+                        tcsList.RemoveAt(0);
+                        this.pendingExternalEvents[name] = tcsList;
+                    }
 
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
