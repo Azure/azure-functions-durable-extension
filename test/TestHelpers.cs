@@ -145,6 +145,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "Orchestration_Activity":
                     messages = GetLogs_Orchestration_Activity(messageIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
                     break;
+                case "OrchestrationEventGridApiReturnBadStatus":
+                    messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(messageIds[0], orchestratorFunctionNames);
+                    break;
                 default:
                     break;
             }
@@ -179,6 +182,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\"",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_OrchestrationEventGridApiReturnBadStatus(string messageId, string[] functionNames)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 0.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\". State: Started. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 1.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 2.",
+                $"Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: InternalServerError Reason Phrase: Internal Server Error For more detail: {messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', function state Started version '' failed with an error. Reason: . IsReplay: False. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0.",
+                $"Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: InternalServerError Reason Phrase: Internal Server Error For more detail: {messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', function state Completed version '' failed with an error. Reason: . IsReplay: False. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0.",
             };
 
             return list;

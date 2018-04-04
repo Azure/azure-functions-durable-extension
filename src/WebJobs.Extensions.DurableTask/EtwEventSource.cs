@@ -171,6 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string AppName,
             string SlotName,
             string FunctionName,
+            FunctionState FunctionState,
             string Version,
             string InstanceId,
             HttpStatusCode StatusCode,
@@ -180,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, StatusCode, HttpStatusCodeReasonPhrase, Reason, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, StatusCode, HttpStatusCodeReasonPhrase, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter

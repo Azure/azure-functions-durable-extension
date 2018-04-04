@@ -70,9 +70,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? string.Empty;
                 var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
                 var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
+
                 this.config.TraceHelper.SendMessageFailed(
                     hubName,
                     functionName,
+                    functionState,
                     version,
                     instanceId,
                     result.StatusCode,

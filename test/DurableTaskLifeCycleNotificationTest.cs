@@ -12,6 +12,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -25,11 +26,21 @@ namespace WebJobs.Extensions.DurableTask.Tests
     {
         private readonly ITestOutputHelper output;
         private readonly ILoggerFactory loggerFactory;
+        private readonly TestLoggerProvider loggerProvider;
+        private readonly bool useTestLogger;
 
         public DurableTaskLifeCycleNotificationTest(ITestOutputHelper output)
         {
             this.output = output;
+            this.useTestLogger = true;
+
+            this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory = new LoggerFactory();
+
+            if (this.useTestLogger)
+            {
+                this.loggerFactory.AddProvider(this.loggerProvider);
+            }
         }
 
         [Fact]
@@ -353,6 +364,16 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
                 Assert.Equal(2, callCount);
+
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        "OrchestrationEventGridApiReturnBadStatus",
+                        orchestratorFunctionNames);
+                }
+
 
                 await host.StopAsync();
             }
