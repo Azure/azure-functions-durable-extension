@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
@@ -23,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
-            
+
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
                 UseTrace = true;
@@ -44,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
         }
 
-        private async Task TraceRequestAsync(
+        private async Task SendNotificationAsync(
             EventGridEvent[] eventGridEventArray,
             string hubName,
             string functionName,
@@ -67,21 +70,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? string.Empty;
                 var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
                 var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
-                this.config.TraceHelper.SendMessageFailed
-                    (
+                this.config.TraceHelper.SendMessageFailed(
+                    hubName,
+                    functionName,
+                    version,
+                    instanceId,
                     result.StatusCode,
                     result.ReasonPhrase,
-                    instanceId,
-                    functionName,
-                    functionType,
-                    version,
-                    reason,
-                    isReplay,
-                    functionState,
-                    hubName,
-                    appName,
-                    slotName,
-                    extensionVersion);
+                    reason);
             }
         }
 
@@ -105,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Running);
-            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Started);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Started);
         }
 
         public async Task OrchestratorCompletedAsync(
@@ -129,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Completed);
-            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Completed);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Completed);
         }
 
         public async Task OrchestratorFailedAsync(
@@ -153,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Failed);
-            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, isReplay, FunctionState.Failed);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, isReplay, FunctionState.Failed);
         }
 
         public async Task OrchestratorTerminatedAsync(
@@ -175,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Terminated);
-            await this.TraceRequestAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, false, FunctionState.Terminated);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, false, FunctionState.Terminated);
         }
 
         private EventGridEvent[] CreateEventGridEvent(

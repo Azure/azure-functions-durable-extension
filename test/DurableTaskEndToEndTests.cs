@@ -485,7 +485,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     var timeout = TimeSpan.FromSeconds(10);
                     var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(100), this.output);
 
                     // Don't send any notification - let the internal timeout expire
                 };

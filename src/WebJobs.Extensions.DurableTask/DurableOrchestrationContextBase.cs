@@ -56,20 +56,6 @@ namespace Microsoft.Azure.WebJobs
         public abstract T GetInput<T>();
 
         /// <summary>
-        /// AddDeferredTask enable us to add the function which we want to execute later.
-        /// This method doesn't execute the function during executes AddDeferredTask. 
-        /// You can execute the function at the RunDeferredTasks() method.
-        /// </summary>
-        /// <param name="function">a function which you want to execute later</param>
-        public abstract void AddDeferredTask(Func<Task> function);
-
-        /// <summary>
-        /// RunDeferredTasks exectutes functions which are registered by the AddDeferredTask 
-        /// </summary>
-        /// <returns></returns>
-        public abstract Task RunDeferredTasks();
-
-        /// <summary>
         /// Schedules an activity function named <paramref name="functionName"/> for execution.
         /// </summary>
         /// <param name="functionName">The name of the activity function to call.</param>

@@ -96,7 +96,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
                             });
 
-                    extension.LifeCycleTraceHelper.SetHttpMessageHandler(mock.Object);
+                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
@@ -169,7 +169,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
                                 else
                                 {
-                                    throw new Exception("Call Count is Bad");
+                                    Assert.True(false, "Call Count is Bad");
                                 }
                             }
 
@@ -177,12 +177,12 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
                         });
 
-                    extension.LifeCycleTraceHelper.SetHttpMessageHandler(mock.Object);
+                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
                 }
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
@@ -255,7 +255,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
                         });
 
-                    extension.LifeCycleTraceHelper.SetHttpMessageHandler(mock.Object);
+                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
                 }
 
                 // Using the counter orchestration because it will wait indefinitely for input.
@@ -264,7 +264,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 // Need to wait for the instance to start before we can terminate it.
                 // TODO: This requirement may not be ideal and should be revisited.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
 
                 await client.TerminateAsync("sayōnara");
 
@@ -343,7 +343,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
                         });
 
-                    extension.LifeCycleTraceHelper.SetHttpMessageHandler(mock.Object);
+                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);

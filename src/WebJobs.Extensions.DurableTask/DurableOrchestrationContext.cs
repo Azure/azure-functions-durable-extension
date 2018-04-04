@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs
         private string serializedCustomStatus;
         private int owningThreadId;
 
-        private List<Func<Task>> deferedFunctions;
+        private readonly List<Func<Task>> deferredTasks;
 
         internal DurableOrchestrationContext(
             DurableTaskExtension config,
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs
             string functionVersion)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.deferedFunctions = new List<Func<Task>>();
+            this.deferredTasks = new List<Func<Task>>();
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
             this.owningThreadId = -1;
@@ -449,20 +449,15 @@ namespace Microsoft.Azure.WebJobs
             }
         }
 
-        public override void AddDeferredTask(Func<Task> function)
+        internal void AddDeferredTask(Func<Task> function)
         {
-            this.deferedFunctions.Add(function);
+            this.deferredTasks.Add(function);
         }
 
-        public override async Task RunDeferredTasks()
+        internal async Task RunDeferredTasks()
         {
-            if (this.deferedFunctions == null)
-            {
-                throw new InvalidOperationException(
-                    "AddDeferredTask needs to be called first.");
-            }
-            await Task.WhenAll(this.deferedFunctions.Select(x => x()));
-            this.deferedFunctions.Clear();
+            await Task.WhenAll(this.deferredTasks.Select(x => x()));
+            this.deferredTasks.Clear();
         }
     }
 }

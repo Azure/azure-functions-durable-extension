@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private EndToEndTraceHelper traceHelper;
         private HttpApiHandler httpApiHandler;
-        private LifeCycleNotificationHelper lifeCycleTraceHelper;
+        private LifeCycleNotificationHelper lifeCycleNotificationHelper;
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
@@ -171,9 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public string EventGridKeySettingName { get; set; }
 
-        internal LifeCycleNotificationHelper LifeCycleTraceHelper => this.lifeCycleTraceHelper;
-
-
+        internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
         /// <summary>
@@ -192,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
-            this.lifeCycleTraceHelper = new LifeCycleNotificationHelper(this, context);
+            this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
 
             // Register the non-trigger bindings, which have a different model.
             var bindings = new BindingHelper(this, this.traceHelper);
@@ -315,9 +313,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.IsReplaying);
             }
 
- 
-                await context.RunDeferredTasks();
-            
+            await context.RunDeferredTasks();
         }
 
         // This is temporary until script loading

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.IsReplaying);
             if (!this.context.IsReplaying)
             {
-                this.context.AddDeferredTask(() => this.config.LifeCycleTraceHelper.OrchestratorStartingAsync(
+                this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.Version,
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying);
                 if (!this.context.IsReplaying)
                 {
-                    this.context.AddDeferredTask(() => this.config.LifeCycleTraceHelper.OrchestratorFailedAsync(
+                    this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                         this.context.HubName,
                         this.context.Name,
                         this.context.Version,
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.IsReplaying);
             if (!this.context.IsReplaying)
             {
-                this.context.AddDeferredTask(() => this.config.LifeCycleTraceHelper.OrchestratorCompletedAsync(
+                this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.Version,

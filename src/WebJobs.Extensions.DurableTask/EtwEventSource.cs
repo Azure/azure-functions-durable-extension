@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Diagnostics.Tracing;
+using System.Net;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -163,6 +164,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.WriteEvent(209, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
+
+        [Event(210, Level = EventLevel.Informational)]
+        public void ExternalEventRaised(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string Version,
+            string InstanceId,
+            HttpStatusCode StatusCode,
+            string HttpStatusCodeReasonPhrase,
+            string Reason,
+            FunctionType FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, StatusCode, HttpStatusCodeReasonPhrase, Reason, FunctionType, ExtensionVersion, IsReplay);
+        }
+
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }
