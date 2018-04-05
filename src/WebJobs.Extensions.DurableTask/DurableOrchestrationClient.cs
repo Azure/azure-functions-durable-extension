@@ -42,6 +42,9 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override string TaskHubName => this.hubName;
+
+        /// <inheritdoc />
         public override HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);

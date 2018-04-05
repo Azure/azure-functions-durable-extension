@@ -13,6 +13,11 @@ namespace Microsoft.Azure.WebJobs
     public abstract class DurableOrchestrationClientBase
     {
         /// <summary>
+        /// Provides Task Hub's name
+        /// </summary>
+        public abstract string TaskHubName { get;  }
+
+        /// <summary>
         /// Creates an HTTP response for checking the status of the specified instance.
         /// </summary>
         /// <param name="request">The HTTP request that triggered the current function.</param>
