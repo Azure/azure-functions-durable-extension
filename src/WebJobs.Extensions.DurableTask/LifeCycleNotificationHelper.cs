@@ -17,9 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionConfigContext;
         private readonly string eventGridKeyValue;
-
-        private bool UseTrace { get; }
-
         private static HttpClient httpClient = null;
 
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
@@ -29,22 +26,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
-                UseTrace = true;
+                this.UseTrace = true;
+
                 // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
                 // For more detail about the Event Grid, please refer this document.
                 // Post to custom topic for Azure Event Grid
                 // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
                 httpClient = new HttpClient();
                 INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
-                eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
+                this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
             }
         }
+
+        private bool UseTrace { get; }
 
         public void SetHttpMessageHandler(HttpMessageHandler handler)
         {
             httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", eventGridKeyValue);
+            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
         }
 
         private async Task SendNotificationAsync(

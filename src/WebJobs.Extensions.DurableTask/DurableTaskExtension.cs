@@ -172,6 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string EventGridKeySettingName { get; set; }
 
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
+
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
         /// <summary>

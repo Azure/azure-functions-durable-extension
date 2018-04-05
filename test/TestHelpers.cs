@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
 
-        public static JobHost GetJobHost(ILoggerFactory loggerFactory, string taskHub = "CommonTestHub", string eventGridKeySettingName = null , string eventGridTopicEndpoint = null)
+        public static JobHost GetJobHost(ILoggerFactory loggerFactory, string taskHub = "CommonTestHub", string eventGridKeySettingName = null, string eventGridTopicEndpoint = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));

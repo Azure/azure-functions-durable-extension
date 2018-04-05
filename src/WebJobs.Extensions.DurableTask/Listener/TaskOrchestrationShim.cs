@@ -100,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         FunctionType.Orchestrator,
                         this.context.IsReplaying));
                 }
+
                 throw;
             }
             finally
@@ -134,6 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FunctionType.Orchestrator,
                     this.context.IsReplaying));
             }
+
             return serializedOutput;
         }
 

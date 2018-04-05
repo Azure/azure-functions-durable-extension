@@ -140,14 +140,14 @@ namespace WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var extensionRegistry = (IExtensionRegistry) host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
                 var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
                     .Where(x => x is DurableTaskExtension)
                     .ToList();
 
                 if (extensionProviders.Any())
                 {
-                    var extension = (DurableTaskExtension) extensionProviders.First();
+                    var extension = (DurableTaskExtension)extensionProviders.First();
                     var mock = new Mock<HttpMessageHandler>();
                     mock.Protected()
                         .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
@@ -372,7 +372,6 @@ namespace WebJobs.Extensions.DurableTask.Tests
                         "OrchestrationEventGridApiReturnBadStatus",
                         orchestratorFunctionNames);
                 }
-
 
                 await host.StopAsync();
             }

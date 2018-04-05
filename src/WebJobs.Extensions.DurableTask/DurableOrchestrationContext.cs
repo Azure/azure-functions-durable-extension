@@ -29,14 +29,13 @@ namespace Microsoft.Azure.WebJobs
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
         private readonly string orchestrationVersion;
+        private readonly List<Func<Task>> deferredTasks;
 
         private OrchestrationContext innerContext;
         private string serializedInput;
         private string serializedOutput;
         private string serializedCustomStatus;
         private int owningThreadId;
-
-        private readonly List<Func<Task>> deferredTasks;
 
         internal DurableOrchestrationContext(
             DurableTaskExtension config,
