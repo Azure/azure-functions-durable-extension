@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
@@ -99,7 +99,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                     }
                                     else
                                     {
-                                        throw new Exception("Call Count is Bad");
+                                        Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
                                     }
                                 }
 
@@ -180,7 +180,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
                                 else
                                 {
-                                    Assert.True(false, "Call Count is Bad");
+                                    Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
                                 }
                             }
 
@@ -258,7 +258,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
                                 else
                                 {
-                                    throw new Exception("Call Count is Bad");
+                                    Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
                                 }
                             }
 
@@ -286,7 +286,6 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
-
         }
 
         [Fact]
@@ -346,7 +345,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
                                 else
                                 {
-                                    throw new Exception("Call Count is Bad");
+                                    Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
                                 }
                             }
 
