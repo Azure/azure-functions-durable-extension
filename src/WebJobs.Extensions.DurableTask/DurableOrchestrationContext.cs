@@ -442,7 +442,7 @@ namespace Microsoft.Azure.WebJobs
             if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
             {
                 throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function previously resumed from an unsupported async callback.");
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints .");
             }
         }
     }
