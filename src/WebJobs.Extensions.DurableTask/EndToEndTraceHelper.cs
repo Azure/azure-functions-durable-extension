@@ -286,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 isReplay);
 
             this.logger.LogError(
-                "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.TraceRequestAsync - Status: {statusCode} Reason Phrase: {httpStatusCodeReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}.",
+                "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode} Reason Phrase: {httpStatusCodeReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}.",
                 statusCode,
                 httpStatusCodeReasonPhrase,
                 instanceId,
