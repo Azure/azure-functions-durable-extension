@@ -279,7 +279,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
 
                 await client.TerminateAsync("sayōnara");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Terminated, status?.RuntimeStatus);
                 Assert.Equal("sayōnara", status?.Output);
