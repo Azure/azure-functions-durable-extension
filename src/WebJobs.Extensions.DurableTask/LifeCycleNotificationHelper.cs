@@ -192,7 +192,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = instanceId,
                         Reason = reason,
                         EventType = orchestrationRuntimeStatus,
-                        EventTime = DateTime.UtcNow,
                     },
                     DataVersion = "1.0",
                 },
