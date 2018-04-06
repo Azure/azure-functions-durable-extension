@@ -376,5 +376,31 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
         }
+
+        [Fact]
+        public async Task ConfigurationWihtoutEventGridKeySettingName()
+        {
+            var eventGridKeySettingName = ""; 
+            var eventGridEndpoint = "http://dymmy.com/";
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridEndpoint))
+            {
+                var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
+                Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridEndpoint} and {eventGridKeySettingName}.", ex.Message);
+            }
+        }
+
+        [Fact]
+        public async Task ConfigurationWithoutEventGridKeyValue()
+        {
+            string eventGridKey = null;
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridEndpoint))
+            {
+                var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
+                Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridKeySettingName} on AppSettings.", ex.Message);
+            }
+        }
     }
 }

@@ -23,18 +23,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
 
-            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
+            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint))
             {
-                this.useTrace = true;
+                if (!string.IsNullOrEmpty(config.EventGridKeySettingName))
+                {
+                    this.useTrace = true;
 
-                // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
-                // For more detail about the Event Grid, please refer this document.
-                // Post to custom topic for Azure Event Grid
-                // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                httpClient = new HttpClient();
-                INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
-                this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+                    // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
+                    // For more detail about the Event Grid, please refer this document.
+                    // Post to custom topic for Azure Event Grid
+                    // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
+                    httpClient = new HttpClient();
+                    INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
+                    this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
+                    if (!string.IsNullOrEmpty(eventGridKeyValue))
+                    {
+                        httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+                    } else
+                    {
+                        throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridKeySettingName} on AppSettings.");
+                    }
+                } else
+                {
+                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridTopicEndpoint} and {config.EventGridKeySettingName}.");
+                }
             }
         }
 
