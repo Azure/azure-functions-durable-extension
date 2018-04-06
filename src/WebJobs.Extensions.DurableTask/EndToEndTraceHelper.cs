@@ -257,7 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
-        public void SendMessageFailed(
+        public void EventGridMessageSent(
             string hubName,
             string functionName,
             FunctionState functionState,
@@ -265,7 +265,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             HttpStatusCode statusCode,
             string httpStatusCodeReasonPhrase,
-            string reason)
+            string reason,
+            long latency)
         {
             FunctionType functionType = FunctionType.Orchestrator;
             bool isReplay = false;
@@ -283,10 +284,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 reason,
                 functionType,
                 ExtensionVersion,
-                isReplay);
+                isReplay,
+                latency);
 
             this.logger.LogError(
-                "Error in sending message to the EventGrid. Please check the host.json configuration durableTask.EventGridTopicEndpoint and EventGridKey. LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode} Reason Phrase: {httpStatusCodeReasonPhrase} For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}.",
+                "LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode} Reason Phrase: {httpStatusCodeReasonPhrase}. For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}. Latency: {latency} ms.",
                 statusCode,
                 httpStatusCodeReasonPhrase,
                 instanceId,
@@ -299,7 +301,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 hubName,
                 LocalAppName,
                 LocalSlotName,
-                ExtensionVersion);
+                ExtensionVersion,
+                latency);
         }
 
         public void TimerExpired(

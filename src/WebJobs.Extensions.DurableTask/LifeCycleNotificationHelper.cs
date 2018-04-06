@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Config;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -26,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint) && !string.IsNullOrEmpty(config.EventGridKeySettingName))
             {
-                this.UseTrace = true;
+                this.useTrace = true;
 
                 // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
                 // For more detail about the Event Grid, please refer this document.
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private bool UseTrace { get; }
+        private readonly bool useTrace;
 
         public void SetHttpMessageHandler(HttpMessageHandler handler)
         {
@@ -54,33 +53,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string version,
             string instanceId,
             string reason,
-            FunctionType functionType,
-            bool isReplay,
             FunctionState functionState)
         {
-            var json = JsonConvert.SerializeObject(eventGridEventArray);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            string json = JsonConvert.SerializeObject(eventGridEventArray);
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            Stopwatch stopWatch = Stopwatch.StartNew();
 
             // Details about the Event Grid REST API
             // https://docs.microsoft.com/en-us/rest/api/eventgrid/
-            var result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
+            HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
 
-            if (!result.IsSuccessStatusCode)
-            {
-                var appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? string.Empty;
-                var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") ?? string.Empty;
-                var extensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
-
-                this.config.TraceHelper.SendMessageFailed(
-                    hubName,
-                    functionName,
-                    functionState,
-                    version,
-                    instanceId,
-                    result.StatusCode,
-                    result.ReasonPhrase,
-                    reason);
-            }
+            this.config.TraceHelper.EventGridMessageSent(
+                hubName,
+                functionName,
+                functionState,
+                version,
+                instanceId,
+                result.StatusCode,
+                result.ReasonPhrase,
+                reason,
+                stopWatch.ElapsedMilliseconds);
         }
 
         public async Task OrchestratorStartingAsync(
@@ -91,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
-            if (!this.UseTrace)
+            if (!this.useTrace)
             {
                 return;
             }
@@ -103,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Running);
-            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Started);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionState.Started);
         }
 
         public async Task OrchestratorCompletedAsync(
@@ -115,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
-            if (!this.UseTrace)
+            if (!this.useTrace)
             {
                 return;
             }
@@ -127,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Completed);
-            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionType.Orchestrator, isReplay, FunctionState.Completed);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, "", FunctionState.Completed);
         }
 
         public async Task OrchestratorFailedAsync(
@@ -139,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             bool isReplay)
         {
-            if (!this.UseTrace)
+            if (!this.useTrace)
             {
                 return;
             }
@@ -151,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Failed);
-            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, isReplay, FunctionState.Failed);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionState.Failed);
         }
 
         public async Task OrchestratorTerminatedAsync(
@@ -161,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            if (!this.UseTrace)
+            if (!this.useTrace)
             {
                 return;
             }
@@ -173,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Terminated);
-            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionType.Orchestrator, false, FunctionState.Terminated);
+            await this.SendNotificationAsync(sendObject, hubName, functionName, version, instanceId, reason, FunctionState.Terminated);
         }
 
         private EventGridEvent[] CreateEventGridEvent(
@@ -210,10 +202,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private class EventGridEvent
         {
             public EventGridEvent() { }
-
-            public EventGridEvent(string id, string subject, object data, string eventType, DateTime eventTime, string dataVersion, string topic = null, string metadataVersion = null)
-            {
-            }
 
             [JsonProperty(PropertyName = "id")]
             public string Id { get; set; }

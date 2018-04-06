@@ -160,14 +160,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool DisableHttpManagementApis { get; set; }
 
         /// <summary>
-        /// Gets or sets a value of Event Grid Topic Endpoint for emitting lifecycle events.
-        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.
         /// </summary>
         public string EventGridTopicEndpoint { get; set; }
 
         /// <summary>
-        /// Gets or sets a value of Event Grid Key.
-        /// If this property has been set, it will emit the event to the Event Grid Topic.
+        /// Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridTopicEndpoint"/>.
         /// </summary>
         public string EventGridKeySettingName { get; set; }
 
