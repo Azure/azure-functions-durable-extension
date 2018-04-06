@@ -314,6 +314,9 @@
             Client for starting, querying, terminating, and raising events to new or existing orchestration instances.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
         </member>
@@ -335,6 +338,11 @@
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
             <summary>
             Abstract class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName">
+            <summary>
+            Gets the name of the task hub configured on this client instance.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
