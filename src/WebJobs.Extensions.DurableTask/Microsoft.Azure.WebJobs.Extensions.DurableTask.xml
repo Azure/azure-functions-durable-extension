@@ -342,7 +342,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName">
             <summary>
-            Provides Task Hub's name
+            Gets the name of the task hub configured on this client instance.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs
     public abstract class DurableOrchestrationClientBase
     {
         /// <summary>
-        /// Provides Task Hub's name
+        /// Gets the name of the task hub configured on this client instance.
         /// </summary>
         public abstract string TaskHubName { get;  }
 
