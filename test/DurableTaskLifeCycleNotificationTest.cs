@@ -51,13 +51,12 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloInline),
             };
 
-            var eventGridKey = "testEventGridKey";
+            var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
             {
                 await host.StartAsync();
                 var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
@@ -75,7 +74,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
                                 var values = request.Headers.GetValues("aeg-sas-key").ToList();
                                 Assert.Single(values);
-                                Assert.Equal(eventGridKey, values[0]);
+                                Assert.Equal(eventGridKeyValue, values[0]);
                                 Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                                 var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                                 dynamic content = JsonConvert.DeserializeObject(json);
@@ -130,13 +129,12 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.Throw),
             };
 
-            var eventGridKey = "testEventGridKey";
+            var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationFailed), eventGridKeySettingName, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationFailed), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
             {
                 await host.StartAsync();
 
@@ -156,7 +154,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
                             var values = request.Headers.GetValues("aeg-sas-key").ToList();
                             Assert.Single(values);
-                            Assert.Equal(eventGridKey, values[0]);
+                            Assert.Equal(eventGridKeyValue, values[0]);
                             Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                             var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                             dynamic content = JsonConvert.DeserializeObject(json);
@@ -209,13 +207,12 @@ namespace WebJobs.Extensions.DurableTask.Tests
             {
                 nameof(TestOrchestrations.Counter),
             };
-            var eventGridKey = "testEventGridKey";
+            var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
             {
                 await host.StartAsync();
                 var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
@@ -234,7 +231,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
                             var values = request.Headers.GetValues("aeg-sas-key").ToList();
                             Assert.Single(values);
-                            Assert.Equal(eventGridKey, values[0]);
+                            Assert.Equal(eventGridKeyValue, values[0]);
                             Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                             var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                             dynamic content = JsonConvert.DeserializeObject(json);
@@ -296,13 +293,12 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloInline),
             };
 
-            var eventGridKey = "testEventGridKey";
+            var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
             var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
             {
                 await host.StartAsync();
                 var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
@@ -321,7 +317,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
                             var values = request.Headers.GetValues("aeg-sas-key").ToList();
                             Assert.Single(values);
-                            Assert.Equal(eventGridKey, values[0]);
+                            Assert.Equal(eventGridKeyValue, values[0]);
                             Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
                             var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                             dynamic content = JsonConvert.DeserializeObject(json);
@@ -380,9 +376,10 @@ namespace WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ConfigurationWihtoutEventGridKeySettingName()
         {
-            var eventGridKeySettingName = ""; 
+            string eventGridKeyValue = null;
+            var eventGridKeySettingName = "";
             var eventGridEndpoint = "http://dymmy.com/";
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridKeyValue,  eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
                 Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridEndpoint} and {eventGridKeySettingName}.", ex.Message);
@@ -392,11 +389,10 @@ namespace WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ConfigurationWithoutEventGridKeyValue()
         {
-            string eventGridKey = null;
+            string eventGridKeyValue = null;
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            Environment.SetEnvironmentVariable(eventGridKeySettingName, eventGridKey);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
                 Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridKeySettingName} on AppSettings.", ex.Message);

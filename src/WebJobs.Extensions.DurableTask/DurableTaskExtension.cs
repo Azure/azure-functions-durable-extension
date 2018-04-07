@@ -169,6 +169,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public string EventGridKeySettingName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the value of the appsetting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridKeySettingName"/>
+        /// This value loaded from appsettings. Not from host.json.
+        /// </summary>
+        public string EventGridKeyValue { get; set; }
+
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
@@ -189,6 +195,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
+
+            // Resolve the EventGridKeyValue settings from appsettings.
+            if (string.IsNullOrEmpty(EventGridKeyValue))
+            {
+                INameResolver nameResolver = context.Config.GetService<INameResolver>();
+                this.EventGridKeyValue = nameResolver.Resolve(this.EventGridKeySettingName);
+            }
             this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
 
             // Register the non-trigger bindings, which have a different model.

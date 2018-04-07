@@ -271,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType = FunctionType.Orchestrator;
             bool isReplay = false;
 
-            EtwEventSource.Instance.ExternalEventRaised(
+            EtwEventSource.Instance.EventGridNotificationFailed(
                 hubName,
                 LocalAppName,
                 LocalSlotName,

@@ -166,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [Event(210, Level = EventLevel.Informational)]
-        public void ExternalEventRaised(
+        public void EventGridNotificationFailed(
             string TaskHub,
             string AppName,
             string SlotName,

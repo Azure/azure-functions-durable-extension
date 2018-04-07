@@ -146,6 +146,12 @@
             Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint"/>.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeyValue">
+            <summary>
+            Gets or sets the value of the appsetting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName"/>
+            This value loaded from appsettings. Not from host.json.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
             Internal initialization call from the WebJobs host.
