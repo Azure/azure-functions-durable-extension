@@ -103,7 +103,9 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 }
 
                                 callCount++;
-                                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+                                var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                return Task.FromResult(message);
                             });
 
                     extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
@@ -183,11 +185,15 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             }
 
                             callCount++;
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+                            var message = new HttpResponseMessage(HttpStatusCode.OK);
+                            message.Content = new StringContent("{\"message\":\"OK!\"}");
+                            return Task.FromResult(message);
                         });
 
                     extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
                 }
+
+
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
@@ -260,7 +266,9 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             }
 
                             callCount++;
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+                            var message = new HttpResponseMessage(HttpStatusCode.OK);
+                            message.Content = new StringContent("{\"message\":\"OK!\"}");
+                            return Task.FromResult(message);
                         });
 
                     extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
@@ -346,7 +354,9 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             }
 
                             callCount++;
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+                            var message = new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                            message.Content = new StringContent("{\"message\":\"Exception has been thrown\"}");
+                            return Task.FromResult(message);
                         });
 
                     extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
