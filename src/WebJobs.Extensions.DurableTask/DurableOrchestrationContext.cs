@@ -23,8 +23,8 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, object> pendingExternalEvents =
-            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ICollection> pendingExternalEvents =
+            new Dictionary<string, ICollection>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
@@ -254,28 +254,28 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                object tcsRefList;
-                List<TaskCompletionSource<T>> tcsList;
+                ICollection tcsRefCollection;
+                Queue<TaskCompletionSource<T>> tcsQueue;
                 TaskCompletionSource<T> tcs;
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefList) ||
-                    (tcsList = tcsRefList as List<TaskCompletionSource<T>>) == null ||
-                    (tcsList.Count == 0) ||
-                    (tcs = tcsList[0] as TaskCompletionSource<T>) == null)
+
+                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefCollection))
                 {
                     tcs = new TaskCompletionSource<T>();
-                    tcsList = new List<TaskCompletionSource<T>>
-                    {
-                        tcs,
-                    };
-                    this.pendingExternalEvents[name] = tcsList;
+                    tcsQueue = new Queue<TaskCompletionSource<T>>();
+                    tcsQueue.Enqueue(tcs);
+                    this.pendingExternalEvents[name] = tcsQueue;
                 }
                 else
                 {
-                    if (tcsList != null && tcsList.Count > 0)
+                    if ((tcsQueue = tcsRefCollection as Queue<TaskCompletionSource<T>>) == null)
+                    {
+                        throw new ArgumentException("Events with the same name should have the same type argument.");
+                    }
+                    else
                     {
                         tcs = new TaskCompletionSource<T>();
-                        tcsList.Add(tcs);
-                        this.pendingExternalEvents[name] = tcsList;
+                        tcsQueue.Enqueue(tcs);
+                        this.pendingExternalEvents[name] = tcsQueue;
                     }
                 }
 
@@ -430,29 +430,29 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                object tcsObject;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcsObject))
+                ICollection tcsColleciton;
+                if (this.pendingExternalEvents.TryGetValue(name, out tcsColleciton))
                 {
-                    var tcsList = tcsObject as IList;
-                    if (tcsList == null || tcsList.Count == 0)
+                    if (tcsColleciton == null || tcsColleciton.Count == 0)
                     {
                         return;
                     }
 
-                    var tcs = tcsList[0];
+                    Queue tcsQueue = new Queue(tcsColleciton);
+
+                    var tcs = tcsQueue.Dequeue();
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
                     // If we're going to raise an event we should remove it from the pending collection
                     // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
-                    if (tcsList.Count == 1)
+                    if (tcsQueue.Count == 0)
                     {
                         this.pendingExternalEvents.Remove(name);
                     }
                     else
                     {
-                        tcsList.RemoveAt(0);
-                        this.pendingExternalEvents[name] = tcsList;
+                        this.pendingExternalEvents[name] = tcsQueue;
                     }
 
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
