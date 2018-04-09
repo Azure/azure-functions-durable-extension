@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -22,8 +23,8 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, object> pendingExternalEvents =
-            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Queue> pendingExternalEvents =
+            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
@@ -253,12 +254,27 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                object tcsRef;
+                Queue tcsRefQueue;
                 TaskCompletionSource<T> tcs;
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRef) || (tcs = tcsRef as TaskCompletionSource<T>) == null)
+
+                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefQueue))
                 {
                     tcs = new TaskCompletionSource<T>();
-                    this.pendingExternalEvents[name] = tcs;
+                    tcsRefQueue = new Queue();
+                    tcsRefQueue.Enqueue(tcs);
+                    this.pendingExternalEvents[name] = tcsRefQueue;
+                }
+                else
+                {
+                    if (tcsRefQueue.Count > 0 && tcsRefQueue.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    {
+                        throw new ArgumentException("Events with the same name should have the same type argument.");
+                    }
+                    else
+                    {
+                        tcs = new TaskCompletionSource<T>();
+                        tcsRefQueue.Enqueue(tcs);
+                    }
                 }
 
                 this.config.TraceHelper.FunctionListening(
@@ -412,15 +428,19 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                object tcs;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcs))
+                Queue tcsQueue;
+                if (this.pendingExternalEvents.TryGetValue(name, out tcsQueue))
                 {
+                    var tcs = tcsQueue.Dequeue();
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
                     // If we're going to raise an event we should remove it from the pending collection
                     // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
-                    this.pendingExternalEvents.Remove(name);
+                    if (tcsQueue.Count == 0)
+                    {
+                        this.pendingExternalEvents.Remove(name);
+                    }
 
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
