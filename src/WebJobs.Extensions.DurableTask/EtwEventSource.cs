@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(209, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(210, Level = EventLevel.Informational)]
+        [Event(210, Level = EventLevel.Error)]
         public void EventGridNotificationFailed(
             string TaskHub,
             string AppName,
@@ -180,9 +180,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType FunctionType,
             string ExtensionVersion,
             bool IsReplay,
-            long latency)
+            long LatencyMs)
         {
-            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, latency);
+            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter

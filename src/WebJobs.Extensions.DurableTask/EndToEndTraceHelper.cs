@@ -266,7 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string details,
             HttpStatusCode statusCode,
             string reason,
-            long latency)
+            long latencyMs)
         {
             FunctionType functionType = FunctionType.Orchestrator;
             bool isReplay = false;
@@ -285,10 +285,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType,
                 ExtensionVersion,
                 isReplay,
-                latency);
+                latencyMs);
 
             this.logger.LogError(
-                "LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode}. For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}. Latency: {latency} ms.",
+                "LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode}. For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}. Latency: {latencyMs} ms.",
                 statusCode,
                 instanceId,
                 functionName,
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalAppName,
                 LocalSlotName,
                 ExtensionVersion,
-                latency);
+                latencyMs);
         }
 
         public void TimerExpired(
