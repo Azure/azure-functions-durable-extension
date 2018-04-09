@@ -23,8 +23,8 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, ICollection> pendingExternalEvents =
-            new Dictionary<string, ICollection>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Queue> pendingExternalEvents =
+            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
@@ -254,28 +254,26 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                ICollection tcsRefCollection;
-                Queue<TaskCompletionSource<T>> tcsQueue;
+                Queue tcsRefQueue;
                 TaskCompletionSource<T> tcs;
 
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefCollection))
+                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefQueue))
                 {
                     tcs = new TaskCompletionSource<T>();
-                    tcsQueue = new Queue<TaskCompletionSource<T>>();
-                    tcsQueue.Enqueue(tcs);
-                    this.pendingExternalEvents[name] = tcsQueue;
+                    tcsRefQueue = new Queue();
+                    tcsRefQueue.Enqueue(tcs);
+                    this.pendingExternalEvents[name] = tcsRefQueue;
                 }
                 else
                 {
-                    if ((tcsQueue = tcsRefCollection as Queue<TaskCompletionSource<T>>) == null)
+                    if (tcsRefQueue.Count > 0 && tcsRefQueue.Peek().GetType() != typeof(TaskCompletionSource<T>))
                     {
                         throw new ArgumentException("Events with the same name should have the same type argument.");
                     }
                     else
                     {
                         tcs = new TaskCompletionSource<T>();
-                        tcsQueue.Enqueue(tcs);
-                        this.pendingExternalEvents[name] = tcsQueue;
+                        tcsRefQueue.Enqueue(tcs);
                     }
                 }
 
@@ -430,16 +428,9 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                ICollection tcsColleciton;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcsColleciton))
+                Queue tcsQueue;
+                if (this.pendingExternalEvents.TryGetValue(name, out tcsQueue))
                 {
-                    if (tcsColleciton == null || tcsColleciton.Count == 0)
-                    {
-                        return;
-                    }
-
-                    Queue tcsQueue = new Queue(tcsColleciton);
-
                     var tcs = tcsQueue.Dequeue();
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
@@ -449,10 +440,6 @@ namespace Microsoft.Azure.WebJobs
                     if (tcsQueue.Count == 0)
                     {
                         this.pendingExternalEvents.Remove(name);
-                    }
-                    else
-                    {
-                        this.pendingExternalEvents[name] = tcsQueue;
                     }
 
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
