@@ -265,7 +265,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string details,
             HttpStatusCode statusCode,
-            string httpStatusCodeReasonPhrase,
             string reason,
             long latency)
         {
@@ -282,7 +281,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 details,
                 statusCode,
-                httpStatusCodeReasonPhrase,
                 reason,
                 functionType,
                 ExtensionVersion,
@@ -290,9 +288,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 latency);
 
             this.logger.LogError(
-                "LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode} Reason Phrase: {httpStatusCodeReasonPhrase}. For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}. Latency: {latency} ms.",
+                "LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode}. For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}. Latency: {latency} ms.",
                 statusCode,
-                httpStatusCodeReasonPhrase,
                 instanceId,
                 functionName,
                 functionType,

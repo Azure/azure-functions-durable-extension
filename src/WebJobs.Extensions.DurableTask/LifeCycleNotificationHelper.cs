@@ -85,7 +85,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 body,
                 result.StatusCode,
-                result.ReasonPhrase,
                 reason,
                 stopWatch.ElapsedMilliseconds);
         }
