@@ -75,18 +75,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Details about the Event Grid REST API
             // https://docs.microsoft.com/en-us/rest/api/eventgrid/
-            HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
-            var body = await result.Content.ReadAsStringAsync();
-            this.config.TraceHelper.EventGridMessageSent(
-                hubName,
-                functionName,
-                functionState,
-                version,
-                instanceId,
-                body,
-                result.StatusCode,
-                reason,
-                stopWatch.ElapsedMilliseconds);
+            using (HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content))
+            {
+                var body = await result.Content.ReadAsStringAsync();
+                this.config.TraceHelper.EventGridMessageSent(
+                    hubName,
+                    functionName,
+                    functionState,
+                    version,
+                    instanceId,
+                    body,
+                    result.StatusCode,
+                    reason,
+                    stopWatch.ElapsedMilliseconds);
+            }
         }
 
         public async Task OrchestratorStartingAsync(
