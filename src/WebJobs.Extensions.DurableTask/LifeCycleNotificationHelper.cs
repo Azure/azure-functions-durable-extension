@@ -15,12 +15,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionConfigContext;
+        private readonly string eventGridKeyValue;
         private static HttpClient httpClient = null;
 
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
+
+            INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
+            this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
 
             if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint))
             {
@@ -33,14 +37,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
                     httpClient = new HttpClient();
-                    if (!string.IsNullOrEmpty(config.EventGridKeyValue))
+                    if (!string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
-                        httpClient.DefaultRequestHeaders.Add("aeg-sas-key", config.EventGridKeyValue);
-                    }  else
+                        httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+                    }
+                    else
                     {
                         throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridKeySettingName} on AppSettings.");
                      }
-                }  else
+                }
+                else
                 {
                     throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridTopicEndpoint} and {config.EventGridKeySettingName}.");
                 }
@@ -52,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void SetHttpMessageHandler(HttpMessageHandler handler)
         {
             httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.config.EventGridKeyValue);
+            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
         }
 
         private async Task SendNotificationAsync(

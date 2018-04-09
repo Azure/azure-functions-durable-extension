@@ -24,9 +24,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 HubName = taskHub.Replace("_", ""),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
-                EventGridKeyValue = eventGridKeyValue,
                 EventGridTopicEndpoint = eventGridTopicEndpoint,
             });
+
+            // Mock INameResolver for not setting EnvironmentVariables.
+            if (eventGridKeyValue != null)
+            {
+                config.AddService<INameResolver>(new MockNameResolver(eventGridKeyValue));
+            }
 
             // Performance is *significantly* worse when dashboard logging is enabled, at least
             // when running in the storage emulator. Disabling to keep tests running quickly.
@@ -426,6 +431,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
+        }
+
+        private class MockNameResolver : INameResolver
+        {
+            private string value;
+
+            public MockNameResolver(string value)
+            {
+                this.value = value;
+            }
+
+            public string Resolve(string name)
+            {
+                return value;
+            }
         }
     }
 }
