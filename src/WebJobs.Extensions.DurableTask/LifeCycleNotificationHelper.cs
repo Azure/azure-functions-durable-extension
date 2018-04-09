@@ -15,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionConfigContext;
+        private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private static HttpClient httpClient = null;
 
@@ -52,8 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
         }
-
-        private readonly bool useTrace;
 
         public void SetHttpMessageHandler(HttpMessageHandler handler)
         {
