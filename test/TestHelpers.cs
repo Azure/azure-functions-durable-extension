@@ -14,8 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class TestHelpers
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
-        private static int eventGridErrorCounter;
-        
+
         public static JobHost GetJobHost(ILoggerFactory loggerFactory, string taskHub = "CommonTestHub", string eventGridKeySettingName = null, string eventGridKeyValue = null, string eventGridTopicEndpoint = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
@@ -71,7 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             List<string> messageIds;
             string timeStamp;
-            string[] latencyMs;
             var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
 
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();

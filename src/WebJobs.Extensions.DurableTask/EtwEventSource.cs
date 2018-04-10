@@ -165,7 +165,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(209, TaskHub, AppName, SlotName, FunctionName, Version ?? "", InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(210, Level = EventLevel.Error)]
+        [Event(210, Level = EventLevel.Informational)]
+        public void EventGridNotificationCompleted(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            FunctionState FunctionState,
+            string Version,
+            string InstanceId,
+            string Details,
+            HttpStatusCode StatusCode,
+            string Reason,
+            FunctionType FunctionType,
+            string ExtensionVersion,
+            bool IsReplay,
+            long LatencyMs)
+        {
+            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
+        }
+
+        [Event(211, Level = EventLevel.Error)]
         public void EventGridNotificationFailed(
             string TaskHub,
             string AppName,

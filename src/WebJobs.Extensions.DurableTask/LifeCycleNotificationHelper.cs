@@ -78,16 +78,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             using (HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content))
             {
                 var body = await result.Content.ReadAsStringAsync();
-                this.config.TraceHelper.EventGridMessageSent(
-                    hubName,
-                    functionName,
-                    functionState,
-                    version,
-                    instanceId,
-                    body,
-                    result.StatusCode,
-                    reason,
-                    stopWatch.ElapsedMilliseconds);
+                if (result.IsSuccessStatusCode)
+                {
+                    this.config.TraceHelper.EventGridSuccess(
+                        hubName,
+                        functionName,
+                        functionState,
+                        version,
+                        instanceId,
+                        body,
+                        result.StatusCode,
+                        reason,
+                        stopWatch.ElapsedMilliseconds);
+                }
+                else
+                {
+                    this.config.TraceHelper.EventGridFailed(
+                        hubName,
+                        functionName,
+                        functionState,
+                        version,
+                        instanceId,
+                        body,
+                        result.StatusCode,
+                        reason,
+                        stopWatch.ElapsedMilliseconds);
+                }
             }
         }
 

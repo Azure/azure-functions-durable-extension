@@ -257,7 +257,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
-        public void EventGridMessageSent(
+        public void EventGridSuccess(
+            string hubName,
+            string functionName,
+            FunctionState functionState,
+            string version,
+            string instanceId,
+            string details,
+            HttpStatusCode statusCode,
+            string reason,
+            long latencyMs)
+        {
+            FunctionType functionType = FunctionType.Orchestrator;
+            bool isReplay = false;
+
+            EtwEventSource.Instance.EventGridNotificationFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                functionState,
+                version,
+                instanceId,
+                details,
+                statusCode,
+                reason,
+                functionType,
+                ExtensionVersion,
+                isReplay,
+                latencyMs);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})', failed to send a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
+                instanceId, functionName, functionType, functionState, statusCode, details, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, latencyMs);
+        }
+
+        public void EventGridFailed(
             string hubName,
             string functionName,
             FunctionState functionState,
