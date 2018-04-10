@@ -54,10 +54,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             List<string> messageIds;
             string timeStamp;
-            string[] latencyMs;
-            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp, out latencyMs);
+            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
 
-            var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp, latencyMs);
+            var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
 
             AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
@@ -73,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             List<string> messageIds;
             string timeStamp;
             string[] latencyMs;
-            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp, out latencyMs);
+            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
 
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
             var exceptionCount =
@@ -86,8 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TestLoggerProvider loggerProvider,
             string testName,
             out List<string> messageIds,
-            out string timeStamp,
-            out string[] latencyMs)
+            out string timeStamp)
         {
             var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == LogCategory);
             var logMessages = logger.LogMessages.ToList();
@@ -97,7 +95,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             timeStamp = string.Empty;
-            latencyMs = new string[2];
 
             if (testName.Equals("TimerCancellation", StringComparison.InvariantCultureIgnoreCase)
                 || testName.Equals("TimerExpiration", StringComparison.InvariantCultureIgnoreCase))
@@ -108,11 +105,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                      testName.Equals("Orchestration_Activity", StringComparison.InvariantCultureIgnoreCase))
             {
                 messageIds.Add(GetMessageId(logMessages[4].FormattedMessage));
-            }
-            else if (testName.Equals("OrchestrationEventGridApiReturnBadStatus"))
-            {
-                latencyMs[0] = GetLatencyMs(logMessages[3].FormattedMessage);
-                latencyMs[1] = GetLatencyMs(logMessages[4].FormattedMessage);
             }
 
             Assert.True(
@@ -210,8 +202,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 0.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\". State: Started. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 1.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 2.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Started' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 3. Latency:{latencyMs[0]} ms.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Completed' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 4. Latency:{latencyMs[1]} ms.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Started' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. ",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Completed' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. ",
             };
             return list;
         }
