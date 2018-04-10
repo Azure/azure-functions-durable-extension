@@ -434,14 +434,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return message.Substring(start, end - start);
         }
 
-        private static string GetLatencyMs(string message)
-        {
-            const string LatencyMsPrefix = " Latency:";
-            int start = message.IndexOf(LatencyMsPrefix) + LatencyMsPrefix.Length;
-            int end = message.IndexOf('m', start) - 1;
-            return message.Substring(start, end - start);
-        }
-
         private class MockNameResolver : INameResolver
         {
             private string value;
@@ -453,7 +445,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public string Resolve(string name)
             {
-                return value;
+                return this.value;
             }
         }
     }
