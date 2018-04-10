@@ -288,20 +288,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 latencyMs);
 
             this.logger.LogError(
-                "LifeCycleNotificationHelper.SendNotificationAsync - Status: {statusCode}. For more detail: {instanceId}: Function '{functionName} ({functionType})', function state {functionState} version '{version}' failed with an error. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {ExtensionVersion}. Latency: {latencyMs} ms.",
-                statusCode,
-                instanceId,
-                functionName,
-                functionType,
-                functionState,
-                version,
-                reason,
-                isReplay,
-                hubName,
-                LocalAppName,
-                LocalSlotName,
-                ExtensionVersion,
-                latencyMs);
+                "{instanceId}: Function '{functionName} ({functionType})', failed to send a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
+                instanceId, functionName, functionType, functionState, statusCode, details, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, latencyMs);
         }
 
         public void TimerExpired(

@@ -14,7 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class TestHelpers
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
-
+        private static int eventGridErrorCounter;
+        
         public static JobHost GetJobHost(ILoggerFactory loggerFactory, string taskHub = "CommonTestHub", string eventGridKeySettingName = null, string eventGridKeyValue = null, string eventGridTopicEndpoint = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
@@ -53,9 +54,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             List<string> messageIds;
             string timeStamp;
-            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
+            string[] latencyMs;
+            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp, out latencyMs);
 
-            var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp);
+            var expectedLogMessages = GetExpectedLogMessages(testName, messageIds, orchestratorFunctionNames, activityFunctionName, timeStamp, latencyMs);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
 
             AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
@@ -70,7 +72,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             List<string> messageIds;
             string timeStamp;
-            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp);
+            string[] latencyMs;
+            var logMessages = GetLogMessages(loggerProvider, testName, out messageIds, out timeStamp, out latencyMs);
 
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
             var exceptionCount =
@@ -83,7 +86,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TestLoggerProvider loggerProvider,
             string testName,
             out List<string> messageIds,
-            out string timeStamp)
+            out string timeStamp,
+            out string[] latencyMs)
         {
             var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == LogCategory);
             var logMessages = logger.LogMessages.ToList();
@@ -93,6 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             timeStamp = string.Empty;
+            latencyMs = new string[2];
 
             if (testName.Equals("TimerCancellation", StringComparison.InvariantCultureIgnoreCase)
                 || testName.Equals("TimerExpiration", StringComparison.InvariantCultureIgnoreCase))
@@ -104,13 +109,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 messageIds.Add(GetMessageId(logMessages[4].FormattedMessage));
             }
+            else if (testName.Equals("OrchestrationEventGridApiReturnBadStatus"))
+            {
+                latencyMs[0] = GetLatencyMs(logMessages[3].FormattedMessage);
+                latencyMs[1] = GetLatencyMs(logMessages[4].FormattedMessage);
+            }
 
             Assert.True(
                 logMessages.TrueForAll(m => m.Category.Equals(LogCategory, StringComparison.InvariantCultureIgnoreCase)));
             return logMessages;
         }
 
-        private static IList<string> GetExpectedLogMessages(string testName, List<string> messageIds, string[] orchestratorFunctionNames, string activityFunctionName = null, string timeStamp = null)
+        private static IList<string> GetExpectedLogMessages(string testName, List<string> messageIds, string[] orchestratorFunctionNames, string activityFunctionName = null, string timeStamp = null, string[] latencyMs = null)
         {
             var messages = new List<string>();
             switch (testName)
@@ -152,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     messages = GetLogs_Orchestration_Activity(messageIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
                     break;
                 case "OrchestrationEventGridApiReturnBadStatus":
-                    messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(messageIds[0], orchestratorFunctionNames);
+                    messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(messageIds[0], orchestratorFunctionNames, latencyMs);
                     break;
                 default:
                     break;
@@ -193,17 +203,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return list;
         }
 
-        private static List<string> GetLogs_OrchestrationEventGridApiReturnBadStatus(string messageId, string[] functionNames)
+        private static List<string> GetLogs_OrchestrationEventGridApiReturnBadStatus(string messageId, string[] functionNames, string[] latencyMs)
         {
             var list = new List<string>()
             {
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 0.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\". State: Started. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 1.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 2.",
-                $"LifeCycleNotificationHelper.SendNotificationAsync - Status: InternalServerError. For more detail: {messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', function state Started version '' failed with an error. Reason: . IsReplay: False. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0.",
-                $"LifeCycleNotificationHelper.SendNotificationAsync - Status: InternalServerError. For more detail: {messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', function state Completed version '' failed with an error. Reason: . IsReplay: False. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Started' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 3. Latency:{latencyMs[0]} ms.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Completed' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 4. Latency:{latencyMs[1]} ms.",
             };
-
             return list;
         }
 
@@ -430,6 +439,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string CreateTimerPrefix = "CreateTimer:";
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
+            return message.Substring(start, end - start);
+        }
+
+        private static string GetLatencyMs(string message)
+        {
+            const string LatencyMsPrefix = " Latency:";
+            int start = message.IndexOf(LatencyMsPrefix) + LatencyMsPrefix.Length;
+            int end = message.IndexOf('m', start) - 1;
             return message.Substring(start, end - start);
         }
 
