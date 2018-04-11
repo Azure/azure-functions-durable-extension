@@ -11,6 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestOrchestrations
     {
+        public const char BigValueChar = '*';
+
         public static string SayHelloInline([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
@@ -254,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static string BigReturnValue([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             int stringLength = ctx.GetInput<int>();
-            return new string('*', stringLength);
+            return new string(BigValueChar, stringLength);
         }
 
         public static async Task SetStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)

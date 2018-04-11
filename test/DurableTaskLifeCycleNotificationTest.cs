@@ -193,8 +193,6 @@ namespace WebJobs.Extensions.DurableTask.Tests
                     extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
                 }
 
-
-
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
