@@ -1134,8 +1134,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestrator, stringLength, this.output);
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
-                Assert.True(status?.Output.ToString().Contains("The UTF-16 size of the JSON-serialized payload must not exceed 60 KB"));
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(stringLength, status?.Output.ToString().Count(c => c == TestOrchestrations.BigValueChar));
 
                 await host.StopAsync();
             }
@@ -1164,12 +1164,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestrator, input, this.output);
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
-
-                // Activity function exception details are not captured in the orchestrator output:
-                // https://github.com/Azure/azure-functions-durable-extension/issues/84
-                ////Assert.True(status?.Output.ToString().Contains("The UTF-16 size of the JSON-serialized payload must not exceed 60 KB"));
-                Assert.StartsWith($"The activity function '{input.FunctionName}' failed.", (string)status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(stringLength, status?.Output.ToString().Count(c => c == TestActivities.BigValueChar));
 
                 await host.StopAsync();
             }

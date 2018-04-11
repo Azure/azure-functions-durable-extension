@@ -56,16 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 serializedJson = base.Serialize(value);
             }
 
-            // String payloads in Azure Storage are encoded in UTF-16.
-            int payloadSizeInKB = (int)(Encoding.Unicode.GetByteCount(serializedJson) / 1024.0);
-            if (payloadSizeInKB > maxSizeInKB)
-            {
-                throw new ArgumentException(
-                    string.Format(
-                        "The UTF-16 size of the JSON-serialized payload must not exceed 60 KB. The current payload size is {0:N0} KB.",
-                        payloadSizeInKB));
-            }
-
             return serializedJson;
         }
     }
