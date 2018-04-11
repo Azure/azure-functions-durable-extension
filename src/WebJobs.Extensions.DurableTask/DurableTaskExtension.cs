@@ -42,8 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient> cachedClients =
             new ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient>();
 
-        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredOrchestrators =
-            new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
+        private readonly ConcurrentDictionary<FunctionName, OrchestratorInfo> registeredOrchestrators =
+            new ConcurrentDictionary<FunctionName, OrchestratorInfo>();
 
         private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities =
             new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
@@ -283,16 +283,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
 
+            context.History = orchestrationRuntimeState.Events;
+            context.SetInput(orchestrationRuntimeState.Input);
+
             FunctionName orchestratorFunction = new FunctionName(context.Name, context.Version);
 
-            ITriggeredFunctionExecutor executor;
-            if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out executor))
+            OrchestratorInfo info;
+            if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info))
             {
                 throw new InvalidOperationException($"Orchestrator function '{orchestratorFunction}' does not exist.");
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            FunctionResult result = await executor.TryExecuteAsync(
+            FunctionResult result = await info.Executor.TryExecuteAsync(
                 new TriggeredFunctionData
                 {
                     TriggerValue = context,
@@ -398,11 +401,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        internal void RegisterOrchestrator(FunctionName orchestratorFunction, ITriggeredFunctionExecutor executor)
+        internal void RegisterOrchestrator(FunctionName orchestratorFunction, OrchestratorInfo orchestratorInfo)
         {
-            if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, executor, null))
+            if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, orchestratorInfo, null))
             {
-                if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, executor))
+                if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
                 {
                     throw new ArgumentException(
                         $"The orchestrator function named '{orchestratorFunction}' is already registered.");
@@ -413,6 +416,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
         {
             this.registeredOrchestrators.TryRemove(orchestratorFunction, out _);
+        }
+
+        internal OrchestratorInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
+        {
+            OrchestratorInfo info;
+            this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info);
+
+            return info;
         }
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
