@@ -202,7 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool IsReplay,
             long LatencyMs)
         {
-            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
+            this.WriteEvent(211, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
