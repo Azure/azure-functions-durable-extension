@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
 
-        public static JobHost GetJobHost(ILoggerFactory loggerFactory, string taskHub = "CommonTestHub")
+        public static JobHost GetJobHost(ILoggerFactory loggerFactory, string taskHub = "CommonTestHub", string eventGridKeySettingName = null, string eventGridKeyValue = null, string eventGridTopicEndpoint = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
@@ -23,7 +23,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 HubName = taskHub.Replace("_", ""),
                 TraceInputsAndOutputs = true,
+                EventGridKeySettingName = eventGridKeySettingName,
+                EventGridTopicEndpoint = eventGridTopicEndpoint,
             });
+
+            // Mock INameResolver for not setting EnvironmentVariables.
+            if (eventGridKeyValue != null)
+            {
+                config.AddService<INameResolver>(new MockNameResolver(eventGridKeyValue));
+            }
 
             // Performance is *significantly* worse when dashboard logging is enabled, at least
             // when running in the storage emulator. Disabling to keep tests running quickly.
@@ -102,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return logMessages;
         }
 
-        private static IList<string> GetExpectedLogMessages(string testName, List<string> messageIds, string[] orchestratorFunctionNames, string activityFunctionName = null, string timeStamp = null)
+        private static IList<string> GetExpectedLogMessages(string testName, List<string> messageIds, string[] orchestratorFunctionNames, string activityFunctionName = null, string timeStamp = null, string[] latencyMs = null)
         {
             var messages = new List<string>();
             switch (testName)
@@ -143,6 +151,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "Orchestration_Activity":
                     messages = GetLogs_Orchestration_Activity(messageIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
                     break;
+                case "OrchestrationEventGridApiReturnBadStatus":
+                    messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(messageIds[0], orchestratorFunctionNames, latencyMs);
+                    break;
                 default:
                     break;
             }
@@ -179,6 +190,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
             };
 
+            return list;
+        }
+
+        private static List<string> GetLogs_OrchestrationEventGridApiReturnBadStatus(string messageId, string[] functionNames, string[] latencyMs)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 0.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\". State: Started. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 1.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 2.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Started' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. ",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Completed' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. ",
+            };
             return list;
         }
 
@@ -406,6 +430,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
+        }
+
+        private class MockNameResolver : INameResolver
+        {
+            private string value;
+
+            public MockNameResolver(string value)
+            {
+                this.value = value;
+            }
+
+            public string Resolve(string name)
+            {
+                return this.value;
+            }
         }
     }
 }

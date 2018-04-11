@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.WebJobs
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
         private readonly string orchestrationVersion;
+        private readonly List<Func<Task>> deferredTasks;
 
         private OrchestrationContext innerContext;
         private string serializedInput;
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.WebJobs
             string functionVersion)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-
+            this.deferredTasks = new List<Func<Task>>();
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
             this.owningThreadId = -1;
@@ -464,6 +466,17 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException(
                     "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints .");
             }
+        }
+
+        internal void AddDeferredTask(Func<Task> function)
+        {
+            this.deferredTasks.Add(function);
+        }
+
+        internal async Task RunDeferredTasks()
+        {
+            await Task.WhenAll(this.deferredTasks.Select(x => x()));
+            this.deferredTasks.Clear();
         }
     }
 }

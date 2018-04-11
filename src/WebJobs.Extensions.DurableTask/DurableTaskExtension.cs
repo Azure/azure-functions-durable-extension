@@ -56,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private EndToEndTraceHelper traceHelper;
         private HttpApiHandler httpApiHandler;
+        private LifeCycleNotificationHelper lifeCycleNotificationHelper;
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
@@ -158,6 +159,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool DisableHttpManagementApis { get; set; }
 
+        /// <summary>
+        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.
+        /// </summary>
+        public string EventGridTopicEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridTopicEndpoint"/>.
+        /// </summary>
+        public string EventGridKeySettingName { get; set; }
+
+        internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
+
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
         /// <summary>
@@ -176,6 +189,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
+
+            this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
 
             // Register the non-trigger bindings, which have a different model.
             var bindings = new BindingHelper(this, this.traceHelper);
@@ -297,6 +312,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.InstanceId,
                     context.IsReplaying);
             }
+
+            await context.RunDeferredTasks();
         }
 
         // This is temporary until script loading
