@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -74,6 +75,8 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool IsOutputSet => this.serializedOutput != null;
 
+        internal IList<HistoryEvent> History { get; set; }
+
         internal void AssignToCurrentThread()
         {
             this.owningThreadId = Thread.CurrentThread.ManagedThreadId;
@@ -97,9 +100,8 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The parsed <c>JToken</c> representation of the orchestrator function input.
         /// </returns>
-        public JToken GetInputAsJson()
+        internal JToken GetInputAsJson()
         {
-            this.ThrowIfInvalidAccess();
             return this.serializedInput != null ? JToken.Parse(this.serializedInput) : null;
         }
 
@@ -118,10 +120,14 @@ namespace Microsoft.Azure.WebJobs
             return MessagePayloadDataConverter.Default.Deserialize<T>(this.serializedInput);
         }
 
-        internal void SetInput(OrchestrationContext frameworkContext, string rawInput)
+        internal void SetInput(string rawInput)
+        {
+            this.serializedInput = rawInput;
+        }
+
+        internal void SetInnerContext(OrchestrationContext frameworkContext)
         {
             this.innerContext = frameworkContext;
-            this.serializedInput = rawInput;
         }
 
         /// <summary>
