@@ -361,5 +361,15 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
         public abstract void ContinueAsNew(object input);
+
+        /// <summary>
+        /// Sets the JSON-serializeable status of the current orchestrator function.
+        /// </summary>
+        /// <remarks>
+        /// The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
+        /// to the orchestration status query APIs.
+        /// </remarks>
+        /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
+        public abstract void SetCustomStatus(object customStatusObject);
     }
 }

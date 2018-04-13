@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return info.Length;
         }
 
-        public static void Throw([ActivityTrigger] DurableActivityContext ctx)
+        public static void ThrowActivity([ActivityTrigger] DurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
             throw new Exception(message);

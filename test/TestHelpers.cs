@@ -298,13 +298,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: Throw. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ThrowOrchestrator. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: Throw. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ThrowOrchestrator. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
             };
 
             return list;
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
@@ -335,13 +335,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.Host.FunctionInvocationException",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' awaited. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})', version '' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})', version '' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
             };
 
             return list;

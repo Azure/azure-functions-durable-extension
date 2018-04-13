@@ -160,19 +160,14 @@ namespace Microsoft.Azure.WebJobs
             return this.serializedOutput;
         }
 
-        /// <summary>
-        /// Sets the JSON-serializeable status of the current orchestrator function.
-        /// </summary>
-        /// <remarks>
-        /// The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
-        /// to the orchestration status query APIs.
-        /// </remarks>
-        /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
-        public void SetCustomStatus(object customStatusObject)
+        /// <inheritdoc />
+        public override void SetCustomStatus(object customStatusObject)
         {
             // Limit the custom status payload to 16 KB
-            const int MaxPayloadSizeInKB = 16 * 1024;
-            this.serializedCustomStatus = MessagePayloadDataConverter.Default.Serialize(customStatusObject, MaxPayloadSizeInKB);
+            const int MaxCustomStatusPayloadSizeInKB = 16;
+            this.serializedCustomStatus = MessagePayloadDataConverter.Default.Serialize(
+                customStatusObject,
+                MaxCustomStatusPayloadSizeInKB);
         }
 
         internal string GetSerializedCustomStatus()
@@ -381,10 +376,11 @@ namespace Microsoft.Azure.WebJobs
             {
                 exception = e;
                 string message = string.Format(
-                    "The {0} function '{1}' failed. See the function execution logs for details.",
+                    "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
                     functionType.ToString().ToLowerInvariant(),
-                    functionName);
-                throw new FunctionFailedException(message, e);
+                    functionName,
+                    e.InnerException?.Message);
+                throw new FunctionFailedException(message, e.InnerException);
             }
             catch (Exception e)
             {

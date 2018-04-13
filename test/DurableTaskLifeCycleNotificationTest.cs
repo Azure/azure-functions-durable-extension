@@ -128,7 +128,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.Throw),
+                nameof(TestOrchestrations.ThrowOrchestrator),
             };
 
             var eventGridKeyValue = "testEventGridKey";

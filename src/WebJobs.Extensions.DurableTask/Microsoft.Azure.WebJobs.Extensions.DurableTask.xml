@@ -224,7 +224,7 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object)">
             <summary>
-            JSON-serializes the specified object. This method will throw if the maximum message payload size is exceeded.
+            JSON-serializes the specified object.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object,System.Int32)">
@@ -465,14 +465,7 @@
             <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)">
-            <summary>
-            Sets the JSON-serializeable status of the current orchestrator function.
-            </summary>
-            <remarks>
-            The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
-            to the orchestration status query APIs.
-            </remarks>
-            <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)">
             <inheritdoc />
@@ -822,6 +815,16 @@
             Restarts the orchestration and its history.
             </summary>
             <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)">
+            <summary>
+            Sets the JSON-serializeable status of the current orchestrator function.
+            </summary>
+            <remarks>
+            The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
+            to the orchestration status query APIs.
+            </remarks>
+            <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
