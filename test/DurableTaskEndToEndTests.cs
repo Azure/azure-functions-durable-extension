@@ -825,7 +825,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
-                string output = status.Output.ToString();
+                string output = status.Output.ToString().Replace(Environment.NewLine, " ");
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.StartsWith(
                     $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: Value cannot be null. Parameter name: retryOptions",
@@ -939,8 +939,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
-                Assert.True(status?.Output.ToString().Contains("Value cannot be null."));
-                Assert.True(status?.Output.ToString().Contains("Parameter name: retryOptions"));
+
+                string output = (string)status?.Output;
+                this.output.WriteLine($"Orchestration output string: {output}");
+                Assert.True(output.Contains(orchestratorFunctionName));
+                Assert.True(output.Contains("Value cannot be null."));
+                Assert.True(output.Contains("Parameter name: retryOptions"));
 
                 await host.StopAsync();
             }
@@ -980,7 +984,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             const string activityFunctionName = "UnregisteredActivity";
-            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity function";
+            string errorMessage = $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity function";
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.Orchestration_OnUnregisteredActivity)))
             {
