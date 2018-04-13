@@ -488,6 +488,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         await this.orchestrationService.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
+
+                        // Enable flowing exception information from activities
+                        // to the parent orchestration code.
+                        this.taskHubWorker.TaskActivityDispatcher.IncludeDetails = true;
+                        this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
                         this.isTaskHubWorkerStarted = true;
                         return true;
                     }

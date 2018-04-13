@@ -4,6 +4,8 @@
 using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -55,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
+
             if (!this.context.IsReplaying)
             {
                 this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
@@ -81,14 +84,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
+                string exceptionDetails = e.ToString();
                 this.config.TraceHelper.FunctionFailed(
                     this.context.HubName,
                     this.context.Name,
                     this.context.Version,
                     this.context.InstanceId,
-                    e.ToString(),
+                    exceptionDetails,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
+
                 if (!this.context.IsReplaying)
                 {
                     this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
@@ -96,12 +101,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.Name,
                         this.context.Version,
                         this.context.InstanceId,
-                        e.ToString(),
+                        exceptionDetails,
                         FunctionType.Orchestrator,
                         this.context.IsReplaying));
                 }
 
-                throw;
+                throw new OrchestrationFailureException(
+                    $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                    Utils.SerializeCause(e, MessagePayloadDataConverter.Default));
             }
             finally
             {
