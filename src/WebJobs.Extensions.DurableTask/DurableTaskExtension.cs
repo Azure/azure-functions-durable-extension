@@ -98,20 +98,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan WorkItemQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
         /// <summary>
-        /// Gets or sets the maximum number of work items that can be processed concurrently on a single node.
+        /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10.
+        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
         /// </value>
-        public int MaxConcurrentTaskActivityWorkItems { get; set; } = 10;
+        public int MaxConcurrentActivityFunctions { get; set; } = 10 * Environment.ProcessorCount;
 
         /// <summary>
-        /// Gets or sets the maximum number of orchestrations that can be processed concurrently on a single node.
+        /// Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 100.
+        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
         /// </value>
-        public int MaxConcurrentTaskOrchestrationWorkItems { get; set; } = 100;
+        public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
 
         /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
@@ -386,8 +386,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 PartitionCount = this.PartitionCount,
                 ControlQueueVisibilityTimeout = this.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentTaskOrchestrationWorkItems,
-                MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentTaskActivityWorkItems,
+                MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentOrchestratorFunctions,
+                MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentActivityFunctions,
             };
         }
 

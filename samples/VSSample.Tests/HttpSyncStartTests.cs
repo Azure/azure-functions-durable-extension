@@ -53,7 +53,7 @@ namespace VSSample.Tests
                 Content = new StringContent(JsonConvert.SerializeObject(name), Encoding.UTF8, "application/json"),
                 RequestUri = new Uri(url)
             };
-            var traceWriterMock = new Mock<TraceWriter>(TraceLevel.Info);
+            var traceWriterMock = new Mock<TraceWriter>(System.Diagnostics.TraceLevel.Info);
             var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase> { CallBase = true };
             durableOrchestrationClientBaseMock.
                 Setup(x => x.StartNewAsync(FunctionName, It.IsAny<object>())).

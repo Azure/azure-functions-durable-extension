@@ -1,5 +1,7 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
@@ -39,10 +41,12 @@ namespace VSSample
 
         private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
         {
-            var queryParameterStringValue = request.GetQueryNameValuePairs()?
-                .FirstOrDefault(x => x.Key == queryParameterName)
-                .Value;
-            if (string.IsNullOrEmpty(queryParameterStringValue)) { return null; }
+            string queryParameterStringValue = request.RequestUri.ParseQueryString()[queryParameterName];
+            if (string.IsNullOrEmpty(queryParameterStringValue))
+            {
+                return null;
+            }
+
             return TimeSpan.FromSeconds(double.Parse(queryParameterStringValue));
         }
     }
