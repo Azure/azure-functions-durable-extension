@@ -72,6 +72,14 @@ namespace Microsoft.Azure.WebJobs
         public OrchestrationRuntimeStatus RuntimeStatus { get; internal set; }
 
         /// <summary>
+        /// Gets a custom status payload that was assigned by the orchestrator function.
+        /// </summary>
+        /// <value>
+        /// The custom status as a <c>JToken</c> object or <c>null</c> if no custom status has been set.
+        /// </value>
+        public JToken CustomStatus { get; internal set; }
+
+        /// <summary>
         /// Gets the execution history of the queried orchestrator function instance.
         /// </summary>
         /// <value>

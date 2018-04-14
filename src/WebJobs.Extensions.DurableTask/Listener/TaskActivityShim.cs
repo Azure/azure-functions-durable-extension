@@ -2,10 +2,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Executors;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -59,20 +61,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionResult result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
             if (!result.Succeeded)
             {
+                // Flow the original activity function exception to the orchestration
+                // without the outer FunctionInvocationException.
+                Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
+
                 this.config.TraceHelper.FunctionFailed(
                     this.config.HubName,
                     this.activityName,
                     this.activityVersion,
                     instanceId,
-                    result.Exception?.ToString() ?? string.Empty,
+                    exceptionToReport?.ToString() ?? string.Empty,
                     functionType: FunctionType.Activity,
                     isReplay: false);
 
-                if (result.Exception != null)
+                if (exceptionToReport != null)
                 {
-                    // Preserve the original exception context so that the durable task
-                    // framework can report useful failure information.
-                    ExceptionDispatchInfo.Capture(result.Exception).Throw();
+                    throw new TaskFailureException(
+                        $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
+                        Utils.SerializeCause(exceptionToReport, MessagePayloadDataConverter.Default));
                 }
             }
 
@@ -94,6 +100,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // This won't get called as long as we've implemented RunAsync.
             throw new NotImplementedException();
+        }
+
+        private static Exception StripFunctionInvocationException(Exception e)
+        {
+            var infrastructureException = e as FunctionInvocationException;
+            if (infrastructureException?.InnerException != null)
+            {
+                return infrastructureException.InnerException;
+            }
+
+            return e;
         }
     }
 }

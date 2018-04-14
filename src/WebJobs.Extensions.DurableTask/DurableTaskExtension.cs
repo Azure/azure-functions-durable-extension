@@ -56,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private EndToEndTraceHelper traceHelper;
         private HttpApiHandler httpApiHandler;
+        private LifeCycleNotificationHelper lifeCycleNotificationHelper;
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
@@ -97,20 +98,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan WorkItemQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
         /// <summary>
-        /// Gets or sets the maximum number of work items that can be processed concurrently on a single node.
+        /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10.
+        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
         /// </value>
-        public int MaxConcurrentTaskActivityWorkItems { get; set; } = 10;
+        public int MaxConcurrentActivityFunctions { get; set; } = 10 * Environment.ProcessorCount;
 
         /// <summary>
-        /// Gets or sets the maximum number of orchestrations that can be processed concurrently on a single node.
+        /// Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 100.
+        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
         /// </value>
-        public int MaxConcurrentTaskOrchestrationWorkItems { get; set; } = 100;
+        public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
 
         /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
@@ -159,14 +160,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool DisableHttpManagementApis { get; set; }
 
         /// <summary>
-        /// Gets or sets a value which controls whether the polling behavior of
-        /// <see cref="DurableOrchestrationClient.StartNewAsync"/> is disabled.
+        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.
         /// </summary>
-        /// <remarks>
-        /// This is a temporary setting and will be removed in future versions.
-        /// </remarks>
-        /// <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
-        public bool DisableStartInstancePolling { get; set; }
+        public string EventGridTopicEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridTopicEndpoint"/>.
+        /// </summary>
+        public string EventGridKeySettingName { get; set; }
+
+        internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
 
@@ -186,6 +189,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
             this.httpApiHandler = new HttpApiHandler(this, logger);
+
+            this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
 
             // Register the non-trigger bindings, which have a different model.
             var bindings = new BindingHelper(this, this.traceHelper);
@@ -307,6 +312,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.InstanceId,
                     context.IsReplaying);
             }
+
+            await context.RunDeferredTasks();
         }
 
         // This is temporary until script loading
@@ -379,16 +386,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 PartitionCount = this.PartitionCount,
                 ControlQueueVisibilityTimeout = this.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentTaskOrchestrationWorkItems,
-                MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentTaskActivityWorkItems,
+                MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentOrchestratorFunctions,
+                MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentActivityFunctions,
             };
         }
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, ITriggeredFunctionExecutor executor)
         {
-            if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, executor))
+            if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, executor, null))
             {
-                throw new ArgumentException($"The orchestrator function named '{orchestratorFunction}' is already registered.");
+                if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, executor))
+                {
+                    throw new ArgumentException(
+                        $"The orchestrator function named '{orchestratorFunction}' is already registered.");
+                }
             }
         }
 
@@ -399,9 +410,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
-            if (!this.registeredActivities.TryAdd(activityFunction, executor))
+            // Allow adding with a null key and subsequently updating with a non-null key.
+            if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
             {
-                throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
+                if (!this.registeredActivities.TryAdd(activityFunction, executor))
+                {
+                    throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
+                }
             }
         }
 
@@ -473,6 +488,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         await this.orchestrationService.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
+
+                        // Enable flowing exception information from activities
+                        // to the parent orchestration code.
+                        this.taskHubWorker.TaskActivityDispatcher.IncludeDetails = true;
+                        this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
                         this.isTaskHubWorkerStarted = true;
                         return true;
                     }

@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,16 +24,18 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, object> pendingExternalEvents =
-            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Queue> pendingExternalEvents =
+            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
         private readonly string orchestrationVersion;
+        private readonly List<Func<Task>> deferredTasks;
 
         private OrchestrationContext innerContext;
         private string serializedInput;
         private string serializedOutput;
+        private string serializedCustomStatus;
         private int owningThreadId;
 
         internal DurableOrchestrationContext(
@@ -40,7 +44,7 @@ namespace Microsoft.Azure.WebJobs
             string functionVersion)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-
+            this.deferredTasks = new List<Func<Task>>();
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
             this.owningThreadId = -1;
@@ -157,6 +161,21 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override void SetCustomStatus(object customStatusObject)
+        {
+            // Limit the custom status payload to 16 KB
+            const int MaxCustomStatusPayloadSizeInKB = 16;
+            this.serializedCustomStatus = MessagePayloadDataConverter.Default.Serialize(
+                customStatusObject,
+                MaxCustomStatusPayloadSizeInKB);
+        }
+
+        internal string GetSerializedCustomStatus()
+        {
+            return this.serializedCustomStatus;
+        }
+
+        /// <inheritdoc />
         public override Task<TResult> CallActivityAsync<TResult>(string functionName, object input)
         {
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, null, null, input);
@@ -232,12 +251,27 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                object tcsRef;
+                Queue tcsRefQueue;
                 TaskCompletionSource<T> tcs;
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRef) || (tcs = tcsRef as TaskCompletionSource<T>) == null)
+
+                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefQueue))
                 {
                     tcs = new TaskCompletionSource<T>();
-                    this.pendingExternalEvents[name] = tcs;
+                    tcsRefQueue = new Queue();
+                    tcsRefQueue.Enqueue(tcs);
+                    this.pendingExternalEvents[name] = tcsRefQueue;
+                }
+                else
+                {
+                    if (tcsRefQueue.Count > 0 && tcsRefQueue.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    {
+                        throw new ArgumentException("Events with the same name should have the same type argument.");
+                    }
+                    else
+                    {
+                        tcs = new TaskCompletionSource<T>();
+                        tcsRefQueue.Enqueue(tcs);
+                    }
                 }
 
                 this.config.TraceHelper.FunctionListening(
@@ -342,10 +376,11 @@ namespace Microsoft.Azure.WebJobs
             {
                 exception = e;
                 string message = string.Format(
-                    "The {0} function '{1}' failed. See the function execution logs for details.",
+                    "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
                     functionType.ToString().ToLowerInvariant(),
-                    functionName);
-                throw new FunctionFailedException(message, e);
+                    functionName,
+                    e.InnerException?.Message);
+                throw new FunctionFailedException(message, e.InnerException);
             }
             catch (Exception e)
             {
@@ -391,15 +426,19 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                object tcs;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcs))
+                Queue tcsQueue;
+                if (this.pendingExternalEvents.TryGetValue(name, out tcsQueue))
                 {
+                    var tcs = tcsQueue.Dequeue();
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
                     // If we're going to raise an event we should remove it from the pending collection
                     // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
-                    this.pendingExternalEvents.Remove(name);
+                    if (tcsQueue.Count == 0)
+                    {
+                        this.pendingExternalEvents.Remove(name);
+                    }
 
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
@@ -421,8 +460,19 @@ namespace Microsoft.Azure.WebJobs
             if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
             {
                 throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function previously resumed from an unsupported async callback.");
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints .");
             }
+        }
+
+        internal void AddDeferredTask(Func<Task> function)
+        {
+            this.deferredTasks.Add(function);
+        }
+
+        internal async Task RunDeferredTasks()
+        {
+            await Task.WhenAll(this.deferredTasks.Select(x => x()));
+            this.deferredTasks.Clear();
         }
     }
 }

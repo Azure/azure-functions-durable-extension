@@ -53,6 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The orchestration name defaults to the method name.
             var orchestratorName = new FunctionName(name, trigger.Version);
+            this.config.RegisterOrchestrator(orchestratorName, null);
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
@@ -102,6 +103,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     throw new ArgumentNullException(nameof(context));
                 }
+
+                this.config.RegisterOrchestrator(this.orchestratorName, context.Executor);
 
                 var listener = new DurableTaskListener(
                     this.config,

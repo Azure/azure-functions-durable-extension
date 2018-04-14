@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -20,6 +19,8 @@ namespace Microsoft.Azure.WebJobs
     public class DurableOrchestrationClient : DurableOrchestrationClientBase
     {
         private const string DefaultVersion = "";
+
+        private static readonly JValue NullJValue = JValue.CreateNull();
 
         private readonly TaskHubClient client;
         private readonly string hubName;
@@ -41,6 +42,9 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override string TaskHubName => this.hubName;
+
+        /// <inheritdoc />
         public override HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
@@ -57,34 +61,24 @@ namespace Microsoft.Azure.WebJobs
         {
             this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
 
-            OrchestrationInstance instance = await this.client.CreateOrchestrationInstanceAsync(
+            if (string.IsNullOrEmpty(instanceId))
+            {
+                instanceId = Guid.NewGuid().ToString("N");
+            }
+
+            Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName, DefaultVersion, instanceId, input);
 
             this.traceHelper.FunctionScheduled(
                 this.hubName,
                 orchestratorFunctionName,
                 DefaultVersion,
-                instance.InstanceId,
+                instanceId,
                 reason: "NewInstance",
                 functionType: FunctionType.Orchestrator,
                 isReplay: false);
 
-            if (!this.config.DisableStartInstancePolling)
-            {
-                DurableOrchestrationStatus status = await this.GetStatusAsync(instance.InstanceId);
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                while ((status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending) && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
-                {
-                    await Task.Delay(200);
-                    status = await this.GetStatusAsync(instance.InstanceId);
-                }
-
-                if (status == null || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending)
-                {
-                    throw new TimeoutException($"Timeout expired while waiting for the new instance to start. This can happen if the task hub is overloaded or if the orchestration host failed to process the start message. Please check the orchestration logs to see whether an internal failure may have occurred. Instance ID: {instance.InstanceId}");
-                }
-            }
-
+            OrchestrationInstance instance = await createTask;
             return instance.InstanceId;
         }
 
@@ -146,7 +140,7 @@ namespace Microsoft.Azure.WebJobs
         {
             if (value == null)
             {
-                return null;
+                return NullJValue;
             }
 
             // Ignore whitespace
@@ -186,7 +180,7 @@ namespace Microsoft.Azure.WebJobs
         private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, bool showHistory, bool showHistoryOutput)
         {
             JArray historyArray = null;
-            if (showHistory)
+            if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
             {
                 string history = await this.client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
                 if (!string.IsNullOrEmpty(history))
@@ -297,6 +291,7 @@ namespace Microsoft.Azure.WebJobs
                 CreatedTime = orchestrationState.CreatedTime,
                 LastUpdatedTime = orchestrationState.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
+                CustomStatus = ParseToJToken(orchestrationState.Status),
                 Input = ParseToJToken(orchestrationState.Input),
                 Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,

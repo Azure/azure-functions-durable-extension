@@ -7,15 +7,18 @@ using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Host.TestCommon
 {
     internal class TestLoggerProvider : ILoggerProvider
     {
+        private readonly ITestOutputHelper testOutput;
         private readonly Func<string, LogLevel, bool> filter;
 
-        public TestLoggerProvider(Func<string, LogLevel, bool> filter = null)
+        public TestLoggerProvider(ITestOutputHelper testOutput, Func<string, LogLevel, bool> filter = null)
         {
+            this.testOutput = testOutput;
             this.filter = filter ?? new LogCategoryFilter().Filter;
         }
 
@@ -23,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Host.TestCommon
 
         public ILogger CreateLogger(string categoryName)
         {
-            var logger = new TestLogger(categoryName, this.filter);
+            var logger = new TestLogger(this.testOutput, categoryName, this.filter);
             this.CreatedLoggers.Add(logger);
             return logger;
         }

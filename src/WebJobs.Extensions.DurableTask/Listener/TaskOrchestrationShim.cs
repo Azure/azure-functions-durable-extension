@@ -4,6 +4,8 @@
 using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -56,6 +58,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
+            if (!this.context.IsReplaying)
+            {
+                this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.Version,
+                    this.context.InstanceId,
+                    FunctionType.Orchestrator,
+                    this.context.IsReplaying));
+            }
+
             object returnValue;
             try
             {
@@ -71,15 +84,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
+                string exceptionDetails = e.ToString();
                 this.config.TraceHelper.FunctionFailed(
                     this.context.HubName,
                     this.context.Name,
                     this.context.Version,
                     this.context.InstanceId,
-                    e.ToString(),
+                    exceptionDetails,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
-                throw;
+
+                if (!this.context.IsReplaying)
+                {
+                    this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.Version,
+                        this.context.InstanceId,
+                        exceptionDetails,
+                        FunctionType.Orchestrator,
+                        this.context.IsReplaying));
+                }
+
+                throw new OrchestrationFailureException(
+                    $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                    Utils.SerializeCause(e, MessagePayloadDataConverter.Default));
             }
             finally
             {
@@ -102,14 +131,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
+            if (!this.context.IsReplaying)
+            {
+                this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.Version,
+                    this.context.InstanceId,
+                    this.context.ContinuedAsNew,
+                    FunctionType.Orchestrator,
+                    this.context.IsReplaying));
+            }
 
             return serializedOutput;
         }
 
         public override string GetStatus()
         {
-            // TODO: Implement a means for orchestrator functions to set status
-            return null;
+            return this.context.GetSerializedCustomStatus();
         }
 
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)

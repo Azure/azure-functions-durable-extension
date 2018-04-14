@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             do
             {
                 DurableOrchestrationStatus status = await this.GetStatusAsync();
-                if (status != null)
+                if (status != null && status.RuntimeStatus != OrchestrationRuntimeStatus.Pending)
                 {
                     output.WriteLine($"{status.Name} (ID = {status.InstanceId}) started successfully after ~{sw.ElapsedMilliseconds}ms. Status = {status.RuntimeStatus}.");
                     return status;

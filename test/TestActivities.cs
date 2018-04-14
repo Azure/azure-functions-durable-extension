@@ -10,6 +10,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestActivities
     {
+        public const char BigValueChar = '*';
+
         public static string Hello([ActivityTrigger] DurableActivityContext ctx)
         {
             string input = ctx.GetInput<string>();
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return info.Length;
         }
 
-        public static void Throw([ActivityTrigger] DurableActivityContext ctx)
+        public static void ThrowActivity([ActivityTrigger] DurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
             throw new Exception(message);
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static string BigReturnValue([ActivityTrigger] int stringLength)
         {
-            return new string('*', stringLength);
+            return new string(BigValueChar, stringLength);
         }
 
         public static bool BindToJObject([ActivityTrigger] JObject jObj)

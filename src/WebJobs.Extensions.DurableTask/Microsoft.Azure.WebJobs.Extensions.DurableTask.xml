@@ -74,20 +74,20 @@
             A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions">
             <summary>
-            Gets or sets the maximum number of work items that can be processed concurrently on a single node.
+            Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
             </summary>
             <value>
-            A positive integer configured by the host. The default value is 10.
+            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions">
             <summary>
-            Gets or sets the maximum number of orchestrations that can be processed concurrently on a single node.
+            Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
             </summary>
             <value>
-            A positive integer configured by the host. The default value is 100.
+            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.AzureStorageConnectionStringName">
@@ -136,15 +136,15 @@
             <c>true</c> to disable the instance management HTTP APIs; otherwise <c>false</c>.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableStartInstancePolling">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint">
             <summary>
-            Gets or sets a value which controls whether the polling behavior of
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)"/> is disabled.
+            Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.
             </summary>
-            <remarks>
-            This is a temporary setting and will be removed in future versions.
-            </remarks>
-            <value><c>true</c> to disable polling; <c>false</c> otherwise.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName">
+            <summary>
+            Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint"/>.
+            </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -220,6 +220,17 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">
             <summary>
             Task orchestration implementation which delegates the orchestration implementation to a function.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object)">
+            <summary>
+            JSON-serializes the specified object.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object,System.Int32)">
+            <summary>
+            JSON-serializes the specified object and throws a <see cref="T:System.ArgumentException"/> if the
+            resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload">
@@ -313,6 +324,9 @@
             Client for starting, querying, terminating, and raising events to new or existing orchestration instances.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
         </member>
@@ -334,6 +348,11 @@
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
             <summary>
             Abstract class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName">
+            <summary>
+            Gets the name of the task hub configured on this client instance.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
@@ -444,6 +463,9 @@
             If this method is not called explicitly, the return value of the orchestrator function is used as the output.
             </remarks>
             <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)">
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)">
             <inheritdoc />
@@ -794,6 +816,16 @@
             </summary>
             <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)">
+            <summary>
+            Sets the JSON-serializeable status of the current orchestrator function.
+            </summary>
+            <remarks>
+            The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
+            to the orchestration status query APIs.
+            </remarks>
+            <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
             Represents the status of a durable orchestration instance.
@@ -857,6 +889,14 @@
             </summary>
             <value>
             Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus">
+            <summary>
+            Gets a custom status payload that was assigned by the orchestrator function.
+            </summary>
+            <value>
+            The custom status as a <c>JToken</c> object or <c>null</c> if no custom status has been set.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History">
