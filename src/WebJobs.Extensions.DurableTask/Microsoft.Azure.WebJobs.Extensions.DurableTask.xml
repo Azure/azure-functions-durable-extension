@@ -74,20 +74,20 @@
             A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions">
             <summary>
-            Gets or sets the maximum number of work items that can be processed concurrently on a single node.
+            Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
             </summary>
             <value>
-            A positive integer configured by the host. The default value is 10.
+            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions">
             <summary>
-            Gets or sets the maximum number of orchestrations that can be processed concurrently on a single node.
+            Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
             </summary>
             <value>
-            A positive integer configured by the host. The default value is 100.
+            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.AzureStorageConnectionStringName">

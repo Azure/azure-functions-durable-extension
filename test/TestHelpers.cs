@@ -197,9 +197,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var list = new List<string>()
             {
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 0.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\". State: Started. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 1.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed. HubName: OrchestrationStartAndCompleted. AppName: . SlotName: . ExtensionVersion: 1.2.1.0. SequenceNumber: 2.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' started. IsReplay: False. Input: \"World\". State: Started.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', version '' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Started' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. ",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})', failed to send a 'Completed' notification event to Azure Event Grid. Status code: InternalServerError. Details: {{\"message\":\"Exception has been thrown\"}}. ",
             };
