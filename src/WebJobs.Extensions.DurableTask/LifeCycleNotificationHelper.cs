@@ -123,7 +123,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
-                version,
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Running);
@@ -147,7 +146,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
-                version,
                 instanceId,
                 "",
                 OrchestrationRuntimeStatus.Completed);
@@ -171,7 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
-                version,
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Failed);
@@ -193,7 +190,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
-                version,
                 instanceId,
                 reason,
                 OrchestrationRuntimeStatus.Terminated);
@@ -203,7 +199,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private EventGridEvent[] CreateEventGridEvent(
             string hubName,
             string functionName,
-            string version,
             string instanceId,
             string reason,
             OrchestrationRuntimeStatus orchestrationRuntimeStatus)
@@ -216,11 +211,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     EventType = "orchestratorEvent",
                     Subject = $"durable/orchestrator/{orchestrationRuntimeStatus}",
                     EventTime = DateTime.UtcNow,
-                    Data = new
+                    Data = new EventGridPayload
                     {
                         HubName = hubName,
                         FunctionName = functionName,
-                        Version = version,
                         InstanceId = instanceId,
                         Reason = reason,
                         EventType = orchestrationRuntimeStatus,
@@ -228,6 +222,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     DataVersion = "1.0",
                 },
             };
+        }
+
+        private class EventGridPayload
+        {
+            public EventGridPayload() { }
+
+            [JsonProperty(PropertyName = "hubName")]
+            public string HubName { get; set; }
+
+            [JsonProperty(PropertyName = "functionName")]
+            public string FunctionName { get; set; }
+
+            [JsonProperty(PropertyName = "instanceId")]
+            public string InstanceId { get; set; }
+
+            [JsonProperty(PropertyName = "reason")]
+            public string Reason { get; set; }
+
+            [JsonProperty(PropertyName = "eventType")]
+            public OrchestrationRuntimeStatus EventType { get; set; }
+
         }
 
         private class EventGridEvent
