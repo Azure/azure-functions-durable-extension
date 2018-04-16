@@ -242,7 +242,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty(PropertyName = "eventType")]
             public OrchestrationRuntimeStatus EventType { get; set; }
-
         }
 
         private class EventGridEvent
