@@ -169,8 +169,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     location = request.RequestUri;
                     break;
 
-                // The orchestration is not running - return 202 w/out Location header
+                // The orchestration has failed - return 500 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
+                    statusCode = HttpStatusCode.InternalServerError;
+                    location = null;
+                    break;
+
+                // The orchestration is not running - return 200 w/out Location header
                 case OrchestrationRuntimeStatus.Canceled:
                 case OrchestrationRuntimeStatus.Terminated:
                 case OrchestrationRuntimeStatus.Completed:
