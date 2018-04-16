@@ -81,20 +81,20 @@ namespace WebJobs.Extensions.DurableTask.Tests
                                 foreach (dynamic o in content)
                                 {
                                     Assert.Equal("1.0", o.dataVersion.ToString());
-                                    Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.HubName.ToString());
-                                    Assert.Equal(orchestratorFunctionNames[0], o.data.FunctionName.ToString());
+                                    Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.hubName.ToString());
+                                    Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
 
                                     if (callCount == 0)
                                     {
                                         Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
                                         Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                        Assert.Equal("0", o.data.EventType.ToString());
+                                        Assert.Equal("0", o.data.eventType.ToString());
                                     }
                                     else if (callCount == 1)
                                     {
                                         Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
                                         Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                        Assert.Equal("1", o.data.EventType.ToString());
+                                        Assert.Equal("1", o.data.eventType.ToString());
                                     }
                                     else
                                     {
@@ -163,20 +163,20 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             foreach (dynamic o in content)
                             {
                                 Assert.Equal("1.0", o.dataVersion.ToString());
-                                Assert.Equal(nameof(this.OrchestrationFailed), o.data.HubName.ToString());
-                                Assert.Equal(orchestratorFunctionNames[0], o.data.FunctionName.ToString());
+                                Assert.Equal(nameof(this.OrchestrationFailed), o.data.hubName.ToString());
+                                Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
 
                                 if (callCount == 0)
                                 {
                                     Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("0", o.data.EventType.ToString());
+                                    Assert.Equal("0", o.data.eventType.ToString());
                                 }
                                 else if (callCount == 1)
                                 {
                                     Assert.Equal("durable/orchestrator/Failed", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("3", o.data.EventType.ToString());
+                                    Assert.Equal("3", o.data.eventType.ToString());
                                 }
                                 else
                                 {
@@ -242,20 +242,20 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             foreach (dynamic o in content)
                             {
                                 Assert.Equal("1.0", o.dataVersion.ToString());
-                                Assert.Equal(nameof(this.OrchestrationTerminate), o.data.HubName.ToString());
-                                Assert.Equal(orchestratorFunctionNames[0], o.data.FunctionName.ToString());
+                                Assert.Equal(nameof(this.OrchestrationTerminate), o.data.hubName.ToString());
+                                Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
 
                                 if (callCount == 0)
                                 {
                                     Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("0", o.data.EventType.ToString());
+                                    Assert.Equal("0", o.data.eventType.ToString());
                                 }
                                 else if (callCount == 1)
                                 {
                                     Assert.Equal("durable/orchestrator/Terminated", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("5", o.data.EventType.ToString());
+                                    Assert.Equal("5", o.data.eventType.ToString());
                                 }
                                 else
                                 {
@@ -330,20 +330,20 @@ namespace WebJobs.Extensions.DurableTask.Tests
                             foreach (dynamic o in content)
                             {
                                 Assert.Equal("1.0", o.dataVersion.ToString());
-                                Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.HubName.ToString());
-                                Assert.Equal(orchestratorFunctionNames[0], o.data.FunctionName.ToString());
+                                Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.hubName.ToString());
+                                Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
 
                                 if (callCount == 0)
                                 {
                                     Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("0", o.data.EventType.ToString());
+                                    Assert.Equal("0", o.data.eventType.ToString());
                                 }
                                 else if (callCount == 1)
                                 {
                                     Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
                                     Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("1", o.data.EventType.ToString());
+                                    Assert.Equal("1", o.data.eventType.ToString());
                                 }
                                 else
                                 {

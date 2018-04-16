@@ -163,7 +163,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Failed()
         {
-            await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed);
+            await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed, HttpStatusCode.InternalServerError);
         }
 
         [Fact]
@@ -178,7 +178,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
             await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
         }
 
-        private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus)
+        private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus, HttpStatusCode httpStatusCode = HttpStatusCode.OK)
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -194,7 +194,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 },
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));
-            Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.OK);
+            Assert.Equal(httpResponseMessage.StatusCode, httpStatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var response = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());

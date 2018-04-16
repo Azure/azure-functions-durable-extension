@@ -95,6 +95,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
+        /// </summary>
+        [Fact]
+        public async Task ParentInstnaceId_Not_Assigned_In_Orchestrator()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ProvideParentInstanceId),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.HelloWorldOrchestration_Inline)))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("", status.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
         /// </summary>
         [Fact]
@@ -661,6 +686,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task SubOrchestration_ComplexType_HistoryInputOutput()
         {
             await this.SubOrchestration_ComplexType_Main_Logic(true, true);
+        }
+
+        /// <summary>
+        /// End-to-end test which validates a sub-orchestrator function have assigned corrent value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
+        /// </summary>
+        [Fact]
+        public async Task SubOrchestration_Has_Valid_ParentInstanceId_Assigned()
+        {
+            const string TaskHub = nameof(this.SubOrchestration_ComplexType);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, TaskHub))
+            {
+                await host.StartAsync();
+
+                string parentOrchestrator = nameof(TestOrchestrations.CallOrchestrator);
+
+                var input = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.ProvideParentInstanceId),
+                };
+
+                var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
+                var status = await client.WaitForCompletionAsync(
+                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
+                    this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(client.InstanceId, status.InstanceId);
+
+                Assert.NotNull(status.Output);
+                Assert.Equal(status.Output, client.InstanceId);
+
+                await host.StopAsync();
+            }
         }
 
         private async Task SubOrchestration_ComplexType_Main_Logic(bool showHistory = false, bool showHistoryOutput = false)

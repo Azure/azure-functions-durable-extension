@@ -53,6 +53,9 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
 
+        /// <inheritdoc cref="DurableOrchestrationClientBase" />
+        public new string ParentInstanceId { get; internal set; }
+
         /// <inheritdoc />
         public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
 
