@@ -25,6 +25,18 @@ namespace Microsoft.Azure.WebJobs
         public abstract string InstanceId { get;  }
 
         /// <summary>
+        /// Gets the parent instance ID of the currently executing sub-orchestration.
+        /// </summary>
+        /// <remarks>
+        /// The parent instance ID is generated and fixed when the parent orchestrator function is scheduled. It can be either
+        /// auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+        /// </remarks>
+        /// <value>
+        /// The ID of the parent orchestration of the current sub-orchestration instance. The value will be available only in sub-orchestrations.
+        /// </value>
+        public virtual string ParentInstanceId { get; }
+
+        /// <summary>
         /// Gets the current date/time in a way that is safe for use by orchestrator functions.
         /// </summary>
         /// <remarks>

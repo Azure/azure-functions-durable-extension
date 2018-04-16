@@ -236,6 +236,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result;
         }
 
+        public static string ProvideParentInstanceId([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            return ctx.ParentInstanceId;
+        }
+
         public static async Task<object> CallOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             // Using StartOrchestrationArgs to start an orchestrator function because it's easier than creating a new type.

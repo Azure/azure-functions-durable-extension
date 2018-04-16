@@ -430,6 +430,9 @@
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId">
             <inheritdoc />
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ParentInstanceId">
+            <inheritdoc cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase" />
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
             <inheritdoc />
         </member>
@@ -503,6 +506,18 @@
             </remarks>
             <value>
             The ID of the current orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId">
+            <summary>
+            Gets the parent instance ID of the currently executing sub-orchestration.
+            </summary>
+            <remarks>
+            The parent instance ID is generated and fixed when the parent orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+            </remarks>
+            <value>
+            The ID of the parent orchestration of the current sub-orchestration instance. The value will be available only in sub-orchestrations.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime">

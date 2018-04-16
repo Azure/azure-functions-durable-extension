@@ -276,6 +276,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TaskOrchestrationShim shim = (TaskOrchestrationShim)dispatchContext.GetProperty<TaskOrchestration>();
             DurableOrchestrationContext context = shim.Context;
 
+            OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
+
+            if (orchestrationRuntimeState.ParentInstance != null)
+            {
+                context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
+            }
+
             FunctionName orchestratorFunction = new FunctionName(context.Name, context.Version);
 
             ITriggeredFunctionExecutor executor;
