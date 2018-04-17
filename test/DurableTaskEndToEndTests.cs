@@ -1319,6 +1319,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        public async Task GetStatus_InstanceNotFound()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.GetStatus_InstanceNotFound)))
+            {
+                await host.StartAsync();
+
+                // Start a dummy orchestration just to help us get a client object
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
+
+                string bogusInstanceId = "BOGUS_" + Guid.NewGuid().ToString("N");
+                this.output.WriteLine($"Fetching status for fake instance: {bogusInstanceId}");
+                DurableOrchestrationStatus status = await client.InnerClient.GetStatusAsync(instanceId: bogusInstanceId);
+                Assert.Null(status);
+            }
+        }
+
         [DataContract]
         private class ComplexType
         {
