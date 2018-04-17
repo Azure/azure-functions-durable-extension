@@ -1328,6 +1328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Start a dummy orchestration just to help us get a client object
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 string bogusInstanceId = "BOGUS_" + Guid.NewGuid().ToString("N");
                 this.output.WriteLine($"Fetching status for fake instance: {bogusInstanceId}");
