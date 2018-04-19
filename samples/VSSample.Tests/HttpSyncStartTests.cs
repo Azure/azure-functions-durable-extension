@@ -4,13 +4,12 @@
 namespace VSSample.Tests
 {
     using System;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
-    using Microsoft.Azure.WebJobs.Host;
+    using Microsoft.Extensions.Logging;
     using Moq;
     using Newtonsoft.Json;
     using Xunit;
@@ -53,7 +52,7 @@ namespace VSSample.Tests
                 Content = new StringContent(JsonConvert.SerializeObject(name), Encoding.UTF8, "application/json"),
                 RequestUri = new Uri(url)
             };
-            var traceWriterMock = new Mock<TraceWriter>(System.Diagnostics.TraceLevel.Info);
+            var loggerMock = new Mock<ILogger>();
             var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase> { CallBase = true };
             durableOrchestrationClientBaseMock.
                 Setup(x => x.StartNewAsync(FunctionName, It.IsAny<object>())).
@@ -65,7 +64,7 @@ namespace VSSample.Tests
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent(EventData)
                 });
-            var result = await HttpSyncStart.Run(request, durableOrchestrationClientBaseMock.Object, FunctionName, traceWriterMock.Object);
+            var result = await HttpSyncStart.Run(request, durableOrchestrationClientBaseMock.Object, FunctionName, loggerMock.Object);
             Assert.Equal(HttpStatusCode.OK, result.StatusCode);
             Assert.Equal(EventData, await result.Content.ReadAsStringAsync());
         }
