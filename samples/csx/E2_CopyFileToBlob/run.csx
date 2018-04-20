@@ -1,4 +1,5 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+#r "Microsoft.Extensions.Logging"
 #r "Microsoft.WindowsAzure.Storage"
 
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -6,7 +7,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 public static async Task<long> Run(
     string filePath,
     Binder binder,
-    TraceWriter log)
+    ILogger log)
 {
     long byteCount = new FileInfo(filePath).Length;
 
@@ -16,7 +17,7 @@ public static async Task<long> Run(
         .Replace('\\', '/');
     string outputLocation = $"backups/{blobPath}";
 
-    log.Info($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
+    log.LogInformation($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
 
     // copy the file contents into a blob
     using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
