@@ -3,8 +3,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Newtonsoft.Json;
@@ -37,7 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // For more detail about the Event Grid, please refer this document.
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    httpClient = new HttpClient();
+                    var handler = new HttpRetryMessageHandler(new HttpClientHandler(),  5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(retryAttempt, 2)));
+                    httpClient = new HttpClient(handler);
                     if (!string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
                         httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
@@ -271,6 +274,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty(PropertyName = "dataVersion")]
             public string DataVersion { get; set; }
+        }
+
+        internal class HttpRetryMessageHandler : DelegatingHandler
+        {
+            private readonly int maxRetryCount;
+            private readonly Func<int, TimeSpan> retryWaitSpanFunc;
+
+            public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, Func<int, TimeSpan> retryWaitSpanFunc)
+                : base(messageHandler)
+            {
+                this.maxRetryCount = maxRetryCount;
+                this.retryWaitSpanFunc = retryWaitSpanFunc;
+            }
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var tryCount = 0;
+                Exception lastException = null;
+                do
+                {
+                    try
+                    {
+                        var response = await base.SendAsync(request, cancellationToken);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            return response;
+                        }
+                        else if (response.StatusCode != HttpStatusCode.ServiceUnavailable)
+                        {
+                            return response;
+                        }
+
+                        // TODO: ExceptionMessage
+                        lastException = new LifeCyclePublishingException("", response.StatusCode);
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        lastException = e;
+                    }
+
+                    tryCount++;
+
+                    await Task.Delay(this.retryWaitSpanFunc(tryCount), cancellationToken);
+
+                } while (this.maxRetryCount >= tryCount);
+
+                throw lastException;
+            }
+        }
+
+        public class LifeCyclePublishingException : Exception
+        {
+            public HttpStatusCode StatusCode { get; }
+
+            public LifeCyclePublishingException(string message, HttpStatusCode statusCode)
+                : base(message)
+            {
+                this.StatusCode = statusCode;
+            }
         }
     }
 }
