@@ -122,20 +122,6 @@
             <c>true</c> to trace the raw values of inputs and outputs; otherwise <c>false</c>.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis">
-            <summary>
-            Gets or sets a value indicating whether to expose HTTP APIs for managing orchestration instances.
-            </summary>
-            <remarks>
-            Orchestration instances can be managed using HTTP APIs implemented by the Durable Functions extension.
-            This includes checking status, raising events, and terminating instances. These APIs do not require
-            any authentication and therefore the instance IDs for these URLs should not be shared externally.
-            These APIs are enabled by default but can be disabled by setting this property to <c>true</c>.
-            </remarks>
-            <value>
-            <c>true</c> to disable the instance management HTTP APIs; otherwise <c>false</c>.
-            </value>
-        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint">
             <summary>
             Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.

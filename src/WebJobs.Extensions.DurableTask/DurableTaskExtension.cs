@@ -146,20 +146,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool TraceInputsAndOutputs { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to expose HTTP APIs for managing orchestration instances.
-        /// </summary>
-        /// <remarks>
-        /// Orchestration instances can be managed using HTTP APIs implemented by the Durable Functions extension.
-        /// This includes checking status, raising events, and terminating instances. These APIs do not require
-        /// any authentication and therefore the instance IDs for these URLs should not be shared externally.
-        /// These APIs are enabled by default but can be disabled by setting this property to <c>true</c>.
-        /// </remarks>
-        /// <value>
-        /// <c>true</c> to disable the instance management HTTP APIs; otherwise <c>false</c>.
-        /// </value>
-        public bool DisableHttpManagementApis { get; set; }
-
-        /// <summary>
         /// Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.
         /// </summary>
         public string EventGridTopicEndpoint { get; set; }
@@ -549,11 +535,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            if (this.DisableHttpManagementApis)
-            {
-                throw new InvalidOperationException("HTTP instance management APIs are disabled.");
-            }
-
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
 
@@ -566,11 +547,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan timeout,
             TimeSpan retryInterval)
         {
-            if (this.DisableHttpManagementApis)
-            {
-                throw new InvalidOperationException("HTTP instance management APIs are disabled.");
-            }
-
             return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, attribute, timeout, retryInterval);
         }
 
@@ -579,11 +555,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (this.DisableHttpManagementApis)
-            {
-                return Task.FromResult(request.CreateResponse(HttpStatusCode.NotFound));
-            }
-
             return this.httpApiHandler.HandleRequestAsync(request);
         }
 
