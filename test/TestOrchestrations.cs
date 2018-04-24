@@ -26,6 +26,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task<string> SayHelloWithActivityAndCustomStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            var customStatus = new { nextActions = new[] { "A", "B", "C" }, foo = 2, };
+            ctx.SetCustomStatus(customStatus);
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            return output;
+        }
+
         public static async Task<long> Factorial([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             int n = ctx.GetInput<int>();

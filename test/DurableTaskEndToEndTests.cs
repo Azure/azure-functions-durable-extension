@@ -146,6 +146,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.HelloWorldOrchestration_Activity_Main_Logic(true, true);
         }
 
+        [Fact]
+        public async Task HelloWorldOrchestration_Activity_CustomStatus()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivityAndCustomStatus),
+            };
+
+            string activityFunctionName = nameof(TestActivities.Hello);
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.HelloWorldOrchestration_Activity_CustomStatus)))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal(
+                    new JObject
+                    {
+                        { "nextActions", new JArray("A", "B", "C") },
+                        { "foo", 2 },
+                    },
+                    (JToken)status.CustomStatus);
+                Assert.Equal("Hello, World!", status.Output);
+
+                await host.StopAsync();
+            }
+
+            if (this.useTestLogger)
+            {
+                TestHelpers.AssertLogMessageSequence(
+                    this.output,
+                    this.loggerProvider,
+                    "HelloWorldOrchestration_Activity",
+                    orchestratorFunctionNames,
+                    activityFunctionName);
+            }
+        }
+
         private async Task HelloWorldOrchestration_Activity_Main_Logic(bool showHistory = false, bool showHistoryOutput = false)
         {
             string[] orchestratorFunctionNames =
@@ -1356,3 +1399,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 }
+
