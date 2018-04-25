@@ -9,6 +9,7 @@ using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -276,6 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private class AsyncAction
         {
             [JsonProperty("actionType")]
+            [JsonConverter(typeof(StringEnumConverter))]
             internal AsyncActionType ActionType { get; set; }
 
             [JsonProperty("functionName")]
