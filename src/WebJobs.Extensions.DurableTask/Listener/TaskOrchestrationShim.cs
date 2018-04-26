@@ -19,17 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskOrchestrationShim : TaskOrchestration
     {
-        private enum AsyncActionType
-        {
-            CallActivity = 0,
-            CallActivityWithRetry = 1,
-            CallSubOrchestrator = 2,
-            CallSubOrchestratorWithRetry = 3,
-            ContinueAsNew = 4,
-            CreateTimer = 5,
-            WaitForExternalEvent = 6,
-        }
-
         private readonly DurableTaskExtension config;
         private readonly DurableOrchestrationContext context;
 
@@ -41,6 +30,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        private enum AsyncActionType
+        {
+            CallActivity = 0,
+            CallActivityWithRetry = 1,
+            CallSubOrchestrator = 2,
+            CallSubOrchestratorWithRetry = 3,
+            ContinueAsNew = 4,
+            CreateTimer = 5,
+            WaitForExternalEvent = 6,
         }
 
         internal DurableOrchestrationContext Context => this.context;
