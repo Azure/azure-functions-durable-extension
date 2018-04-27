@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs
         public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
-            if (state == null)
+            if (state?.OrchestrationInstance == null)
             {
                 return null;
             }

@@ -196,6 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     RuntimeStatus = status.RuntimeStatus.ToString(),
                     Input = status.Input,
+                    CustomStatus = status.CustomStatus,
                     Output = status.Output,
                     CreatedTime = status.CreatedTime.ToString("s") + "Z",
                     LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",

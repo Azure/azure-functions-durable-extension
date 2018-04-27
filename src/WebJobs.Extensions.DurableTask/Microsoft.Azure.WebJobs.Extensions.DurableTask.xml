@@ -234,6 +234,11 @@
             Input.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.CustomStatus">
+            <summary>
+            Custom status.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.Output">
             <summary>
             Output.
