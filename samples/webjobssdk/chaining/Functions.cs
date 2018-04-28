@@ -19,18 +19,18 @@ namespace DFWebJobsSample
         public static async Task CronJob(
             [TimerTrigger("0 */2 * * * *")] TimerInfo timer,
             [OrchestrationClient] DurableOrchestrationClient client,
-            TraceWriter log)
+            ILogger logger)
         {
-            Console.WriteLine("Cron job fired!");
+            logger.LogInformation("Cron job fired!");
 
             string instanceId = await client.StartNewAsync(nameof(HelloSequence), input: null);
-            Console.WriteLine($"Started new instance with ID = {instanceId}.");
+            logger.LogInformation($"Started new instance with ID = {instanceId}.");
 
             DurableOrchestrationStatus status;
             while (true)
             {
                 status = await client.GetStatusAsync(instanceId);
-                log.Warning($"Status: {status.RuntimeStatus}, Last update: {status.LastUpdatedTime}.");
+                logger.LogInformation($"Status: {status.RuntimeStatus}, Last update: {status.LastUpdatedTime}.");
 
                 if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
                     status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
@@ -42,7 +42,7 @@ namespace DFWebJobsSample
                 await Task.Delay(TimeSpan.FromSeconds(2));
             }
 
-            log.Warning($"Output: {status.Output}");
+            logger.LogInformation($"Output: {status.Output}");
         }
 
         public static async Task<List<string>> HelloSequence(

@@ -3,14 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.Files;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+
 
 namespace DFWebJobsSample
 {
@@ -18,17 +21,27 @@ namespace DFWebJobsSample
     {
         static void Main(string[] args)
         {
-            var config = new JobHostConfiguration();
-            config.LoggerFactory = new LoggerFactory();
-
-            config.UseTimers();
-            config.UseDurableTask(new DurableTaskExtension
+            using (var loggerFactory = new LoggerFactory())
             {
-                HubName = "MyTaskHub",
-            });
+                var config = new JobHostConfiguration();
 
-            var host = new JobHost(config);
-            host.RunAndBlock();
+                config.DashboardConnectionString = "";
+
+                var instrumentationKey =
+                    ConfigurationManager.AppSettings["APPINSIGHTS_INSTRUMENTATIONKEY"];
+ 
+                config.LoggerFactory = loggerFactory
+                    .AddApplicationInsights(instrumentationKey, null)
+                    .AddConsole();
+
+                config.UseTimers();
+                config.UseDurableTask(new DurableTaskExtension
+                {
+                    HubName = "MyTaskHub",
+                });
+                var host = new JobHost(config);
+                host.RunAndBlock();
+            }
         }
     }
 }
