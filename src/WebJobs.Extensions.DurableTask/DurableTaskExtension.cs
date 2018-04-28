@@ -169,6 +169,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public string EventGridKeySettingName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the Event Grid publish request retry count.
+        /// </summary>
+        public int EventGridPublishRetryCount { get; set; }
+
+        /// <summary>
+        /// Gets orsets the Event Grid publish request retry interval.
+        /// </summary>
+        public int EventGridPublishRetryInterval { get; set; } = 5;
+
+        /// <summary>
+        /// Gets or sets the Event Grid publish request http status.
+        /// </summary>
+        /// <example>400,403</example>
+        public string EventGridPublishRetryHttpStatus { get; set; }
+
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -35,11 +36,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.useTrace = true;
 
+                    var retryStatusCode = string.IsNullOrEmpty(config.EventGridPublishRetryHttpStatus) ? Array.Empty<int>() :
+                        config.EventGridPublishRetryHttpStatus.Split(',')
+                        .Select(x =>
+                        {
+                            if (int.TryParse(x, out var statusCode))
+                            {
+                                return statusCode;
+                            }
+
+                            return 0;
+                        })
+                        .Where(x => x > 0).ToArray();
+
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
                     // For more detail about the Event Grid, please refer this document.
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    var handler = new HttpRetryMessageHandler(new HttpClientHandler(),  5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(retryAttempt, 2)));
+                    var handler = new HttpRetryMessageHandler(
+                        new HttpClientHandler(),
+                        config.EventGridPublishRetryCount,
+                        retryAttempt => TimeSpan.FromSeconds(config.EventGridPublishRetryInterval),
+                        retryStatusCode);
+
                     httpClient = new HttpClient(handler);
                     if (!string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
@@ -280,12 +299,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             private readonly int maxRetryCount;
             private readonly Func<int, TimeSpan> retryWaitSpanFunc;
+            private int[] retryTargetStatus;
 
-            public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, Func<int, TimeSpan> retryWaitSpanFunc)
+            public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, Func<int, TimeSpan> retryWaitSpanFunc, int[] retryTargetStatusCode)
                 : base(messageHandler)
             {
                 this.maxRetryCount = maxRetryCount;
                 this.retryWaitSpanFunc = retryWaitSpanFunc;
+                this.retryTargetStatus = retryTargetStatusCode;
             }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -303,11 +324,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                         else if (response.StatusCode != HttpStatusCode.ServiceUnavailable)
                         {
-                            return response;
+                            var statusCode = (int) response.StatusCode;
+                            if (this.retryTargetStatus.All(x => x != statusCode))
+                            {
+                                return response;
+                            }
                         }
 
-                        // TODO: ExceptionMessage
-                        lastException = new LifeCyclePublishingException("", response.StatusCode);
+                        lastException = new LifeCyclePublishingException("EventGrid publish api returned badstatus.", response.StatusCode);
                     }
                     catch (HttpRequestException e)
                     {
