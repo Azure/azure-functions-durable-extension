@@ -58,11 +58,11 @@ namespace DFWebJobsSample
             return outputs;
         }
 
-        public static string SayHello([ActivityTrigger] string name, TraceWriter log)
+        public static string SayHello([ActivityTrigger] string name, ILogger logger)
         {
             string greeting = $"Hello {name}!";
-            log.Warning(greeting);
-            Thread.Sleep(10000);
+            logger.LogInformation(greeting);
+            Thread.Sleep(5000);
             return greeting;
         }
     }
