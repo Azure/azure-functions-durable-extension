@@ -7,7 +7,7 @@ This extension enables a new type of function called the *orchestrator function*
 * They can *synchronously* and *asynchronously* **call other functions** and **save output to local variables**.
 * They **automatically checkpoint** their progress whenever the function awaits so that local state is never lost if the process recycles or the VM reboots.
 
-The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package that can be referenced by an Azure Functions Visual Studio project. The project is currently in a public preview "beta" status.
+The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package that can be referenced by an Azure Functions Visual Studio project.
 
 ## Getting Started
 Are you new to Durable Functions? If so, this is the place to start.
