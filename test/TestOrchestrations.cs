@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             long result = 1;
             for (int i = 1; i <= n; i++)
             {
-                result = await ctx.CallActivityAsync<int>(nameof(TestActivities.Multiply), new[] { result, i });
+                result = await ctx.CallActivityAsync<int>(nameof(TestActivities.Multiply), (result, i));
             }
 
             return result;

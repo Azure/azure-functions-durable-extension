@@ -26,8 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static long Multiply([ActivityTrigger] DurableActivityContext ctx)
         {
-            long[] values = ctx.GetInput<long[]>();
-            return values[0] * values[1];
+            (long a, long b) = ctx.GetInput<(long, long)>();
+            return a * b;
         }
 
         public static string[] GetFileList([ActivityTrigger] DurableActivityContext ctx)

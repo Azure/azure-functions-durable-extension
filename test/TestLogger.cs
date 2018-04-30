@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Only write traces specific to this extension
             if (this.Category == TestHelpers.LogCategory)
             {
-                this.testOutput.WriteLine("    " + formattedMessage);
+                this.testOutput.WriteLine($"    {DateTime.Now:o}: {formattedMessage}");
             }
         }
     }

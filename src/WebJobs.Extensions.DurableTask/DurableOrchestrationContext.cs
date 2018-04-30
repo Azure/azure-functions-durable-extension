@@ -37,7 +37,6 @@ namespace Microsoft.Azure.WebJobs
         private string serializedInput;
         private string serializedOutput;
         private string serializedCustomStatus;
-        private int owningThreadId;
 
         internal DurableOrchestrationContext(
             DurableTaskExtension config,
@@ -48,7 +47,6 @@ namespace Microsoft.Azure.WebJobs
             this.deferredTasks = new List<Func<Task>>();
             this.orchestrationName = functionName;
             this.orchestrationVersion = functionVersion;
-            this.owningThreadId = -1;
         }
 
         /// <inheritdoc />
@@ -76,11 +74,6 @@ namespace Microsoft.Azure.WebJobs
         internal bool IsOutputSet => this.serializedOutput != null;
 
         internal IList<HistoryEvent> History { get; set; }
-
-        internal void AssignToCurrentThread()
-        {
-            this.owningThreadId = Thread.CurrentThread.ManagedThreadId;
-        }
 
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
@@ -463,13 +456,10 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The inner context has not been initialized.");
             }
 
-            // TODO: This should be considered best effort because it's possible that async work
-            // was scheduled and the CLR decided to run it on the same thread. The only guaranteed
-            // way to detect cross-thread access is to do it in the Durable Task Framework directly.
-            if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
+            if (!OrchestrationContext.IsOrchestratorThread)
             {
                 throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints .");
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.");
             }
         }
 

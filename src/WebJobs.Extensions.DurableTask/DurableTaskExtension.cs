@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -155,6 +154,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public string EventGridKeySettingName { get; set; }
 
+        /// <summary>
+        /// Gets or sets a flag indicating whether to enable extended sessions.
+        /// </summary>
+        /// <remarks>
+        /// <para>Extended sessions can improve the performance of orchestrator functions by allowing them to skip
+        /// replays when new messages and received within short periods of time.</para>
+        /// <para>Note that orchestrator functions which are extended this way will continue to count against the
+        /// <see cref="MaxConcurrentOrchestratorFunctions"/> limit. To avoid starvation, only half of the maximum
+        /// number of allowed concurrent orchestrator functions can be concurrently extended at any given time.
+        /// The <see cref="ExtendedSessionIdleTimeoutInSeconds"/> property can also be used to control how long an idle
+        /// orchestrator function is allowed to be extended.</para>
+        /// <para>It is recommended that this property be set to <c>false</c> during development to help
+        /// ensure that the orchestrator code correctly obeys the idempotency rules.</para>
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to enable extended sessions; otherwise <c>false</c>.
+        /// </value>
+        public bool ExtendedSessionsEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the amount of time in seconds before an idle session times out. The default value is 30 seconds.
+        /// </summary>
+        /// <remarks>
+        /// This setting is applicable when <see cref="ExtendedSessionsEnabled"/> is set to <c>true</c>.
+        /// </remarks>
+        /// <value>
+        /// The number of seconds before an idle session times out.
+        /// </value>
+        public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
+
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
@@ -206,6 +235,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.orchestrationService = new AzureStorageOrchestrationService(settings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+
+            context.Config.AddService<IOrchestrationService>(this.orchestrationService);
+        }
+
+        /// <summary>
+        /// Deletes all data stored in the current task hub.
+        /// </summary>
+        /// <returns>A task representing the async delete operation.</returns>
+        public Task DeleteTaskHubAsync()
+        {
+            return this.orchestrationService.DeleteAsync();
         }
 
         /// <summary>
@@ -375,6 +415,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Unable to find an Azure Storage connection string to use for this binding.");
             }
 
+            TimeSpan extendedSessionTimeout = TimeSpan.FromSeconds(
+                Math.Max(this.ExtendedSessionIdleTimeoutInSeconds, 0));
+
             return new AzureStorageOrchestrationServiceSettings
             {
                 StorageConnectionString = resolvedStorageConnectionString,
@@ -384,6 +427,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 WorkItemQueueVisibilityTimeout = this.WorkItemQueueVisibilityTimeout,
                 MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentOrchestratorFunctions,
                 MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentActivityFunctions,
+                ExtendedSessionsEnabled = this.ExtendedSessionsEnabled,
+                ExtendedSessionIdleTimeout = extendedSessionTimeout,
             };
         }
 
