@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The function checks to see if there is a property called "Foo" which is set to a value
                 // called "Bar" and returns true if this is the case. Otherwise returns false.
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(true, status?.Output);
+                Assert.True((bool)status?.Output);
 
                 await host.StopAsync();
             }

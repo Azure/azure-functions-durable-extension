@@ -384,6 +384,16 @@ namespace Microsoft.Azure.WebJobs
                     e.InnerException?.Message);
                 throw new FunctionFailedException(message, e.InnerException);
             }
+            catch (SubOrchestrationFailedException e)
+            {
+                exception = e;
+                string message = string.Format(
+                    "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
+                    functionType.ToString().ToLowerInvariant(),
+                    functionName,
+                    e.InnerException?.Message);
+                throw new FunctionFailedException(message, e.InnerException);
+            }
             catch (Exception e)
             {
                 exception = e;

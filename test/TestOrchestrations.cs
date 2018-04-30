@@ -161,8 +161,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
 
+            // Specify an explicit sub-orchestration ID that can be queried by the test driver.
+            Guid subInstanceId = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.NewGuid), null);
+            ctx.SetCustomStatus(subInstanceId.ToString("N"));
+
             // This throw happens in the implementation of an orchestrator.
-            await ctx.CallSubOrchestratorWithRetryAsync(nameof(TestOrchestrations.ThrowOrchestrator), options, message);
+            await ctx.CallSubOrchestratorWithRetryAsync(
+                nameof(TestOrchestrations.ThrowOrchestrator),
+                options,
+                subInstanceId.ToString("N"),
+                message);
         }
 
         public static async Task OrchestratorWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)

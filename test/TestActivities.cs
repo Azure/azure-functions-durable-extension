@@ -86,6 +86,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await input.CopyToAsync(output);
         }
 
+        public static Guid NewGuid([ActivityTrigger] DurableActivityContext ctx)
+        {
+            return Guid.NewGuid();
+        }
+
         public class PlainOldClrObject
         {
             public string Foo { get; set; }

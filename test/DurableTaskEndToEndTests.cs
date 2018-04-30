@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerFactory,
-                nameof(HelloWorldOrchestration_Inline),
+                nameof(this.HelloWorldOrchestration_Inline),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -189,31 +189,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("Hello, World!", status.Output);
                 if (!showHistory)
                 {
-                    Assert.Equal(null, status.History);
+                    Assert.Null(status.History);
                 }
                 else
                 {
                     Assert.Equal(3, status.History.Count);
-                    Assert.Equal<string>("ExecutionStarted", status.History[0]["EventType"].ToString());
-                    Assert.Equal<string>("SayHelloWithActivity", status.History[0]["FunctionName"].ToString());
-                    Assert.Equal<string>("TaskCompleted", status.History[1]["EventType"].ToString());
-                    Assert.Equal<string>("Hello", status.History[1]["FunctionName"].ToString());
+                    Assert.Equal("ExecutionStarted", status.History[0]["EventType"].ToString());
+                    Assert.Equal("SayHelloWithActivity", status.History[0]["FunctionName"].ToString());
+                    Assert.Equal("TaskCompleted", status.History[1]["EventType"].ToString());
+                    Assert.Equal("Hello", status.History[1]["FunctionName"].ToString());
                     if (DateTime.TryParse(status.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
                         DateTime.TryParse(status.History[1]["ScheduledTime"].ToString(), out DateTime scheduledTime))
                     {
                         Assert.True(timestamp >= scheduledTime);
                     }
 
-                    Assert.Equal<string>("ExecutionCompleted", status.History[2]["EventType"].ToString());
-                    Assert.Equal<string>("Completed", status.History[2]["OrchestrationStatus"].ToString());
+                    Assert.Equal("ExecutionCompleted", status.History[2]["EventType"].ToString());
+                    Assert.Equal("Completed", status.History[2]["OrchestrationStatus"].ToString());
 
                     if (showHistoryOutput)
                     {
                         Assert.Null(status.History[0]["Input"]);
                         Assert.NotNull(status.History[1]["Result"]);
-                        Assert.Equal<string>("Hello, World!", status.History[1]["Result"].ToString());
+                        Assert.Equal("Hello, World!", status.History[1]["Result"].ToString());
                         Assert.NotNull(status.History[2]["Result"]);
-                        Assert.Equal<string>("Hello, World!", status.History[2]["Result"].ToString());
+                        Assert.Equal("Hello, World!", status.History[2]["Result"].ToString());
                     }
                     else
                     {
@@ -372,11 +372,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 int initialValue = 0;
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
 
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
-
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr");
 
@@ -384,15 +379,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 //       are processed by the same instance at the same time, resulting in a corrupt
                 //       storage failure in DTFx.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 await client.RaiseEventAsync("operation", "decr");
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await Task.Delay(3000);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
@@ -917,23 +912,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 if (!showHistory)
                 {
-                    Assert.Equal(null, status.History);
+                    Assert.Null(status.History);
                 }
                 else
                 {
                     Assert.Equal(3, status.History.Count);
-                    Assert.Equal<string>("ExecutionStarted", status.History[0]["EventType"].ToString());
-                    Assert.Equal<string>("CallOrchestrator", status.History[0]["FunctionName"].ToString());
-                    Assert.Equal<string>("SubOrchestrationInstanceCompleted", status.History[1]["EventType"].ToString());
-                    Assert.Equal<string>("CallActivity", status.History[1]["FunctionName"].ToString());
+                    Assert.Equal("ExecutionStarted", status.History[0]["EventType"].ToString());
+                    Assert.Equal("CallOrchestrator", status.History[0]["FunctionName"].ToString());
+                    Assert.Equal("SubOrchestrationInstanceCompleted", status.History[1]["EventType"].ToString());
+                    Assert.Equal("CallActivity", status.History[1]["FunctionName"].ToString());
                     if (DateTime.TryParse(status.History[1]["Timestamp"].ToString(), out DateTime timestamp) &&
                         DateTime.TryParse(status.History[1]["FunctionName"].ToString(), out DateTime scheduledTime))
                     {
                         Assert.True(timestamp > scheduledTime);
                     }
 
-                    Assert.Equal<string>("ExecutionCompleted", status.History[2]["EventType"].ToString());
-                    Assert.Equal<string>("Completed", status.History[2]["OrchestrationStatus"].ToString());
+                    Assert.Equal("ExecutionCompleted", status.History[2]["EventType"].ToString());
+                    Assert.Equal("Completed", status.History[2]["OrchestrationStatus"].ToString());
 
                     if (showHistoryOutput)
                     {
@@ -999,7 +994,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string output = status.Output.ToString();
                 this.output.WriteLine($"Orchestration output string: {output}");
-                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: Orchestrator function 'ThrowOrchestrator' failed: Value cannot be null.", output);
+                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\"", output);
+
+                string subOrchestrationInstanceId = (string)status.CustomStatus;
+                Assert.NotNull(subOrchestrationInstanceId);
 
                 await host.StopAsync();
 
@@ -1009,7 +1007,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.output,
                         this.loggerProvider,
                         "UnhandledOrchestrationExceptionWithRetry",
-                        client.InstanceId,
+                        subOrchestrationInstanceId,
                         orchestratorFunctionNames);
                 }
             }
@@ -1173,9 +1171,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string output = (string)status?.Output;
                 this.output.WriteLine($"Orchestration output string: {output}");
-                Assert.True(output.Contains(orchestratorFunctionName));
-                Assert.True(output.Contains("Value cannot be null."));
-                Assert.True(output.Contains("Parameter name: retryOptions"));
+                Assert.Contains(orchestratorFunctionName, output);
+                Assert.Contains("Value cannot be null.", output);
+                Assert.Contains("Parameter name: retryOptions", output);
 
                 await host.StopAsync();
             }
@@ -1339,7 +1337,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-                Assert.True(status.Output.ToString().Contains("fireAt"));
+                Assert.Contains("fireAt", status.Output.ToString());
 
                 await host.StopAsync();
             }
