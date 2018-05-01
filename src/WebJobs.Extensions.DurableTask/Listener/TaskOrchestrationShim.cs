@@ -63,7 +63,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.FunctionStarting(
                 this.context.HubName,
                 this.context.Name,
-                this.context.Version,
                 this.context.InstanceId,
                 this.config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
@@ -76,7 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
                     this.context.Name,
-                    this.context.Version,
                     this.context.InstanceId,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying));
@@ -103,7 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.TraceHelper.FunctionFailed(
                     this.context.HubName,
                     this.context.Name,
-                    this.context.Version,
                     this.context.InstanceId,
                     exceptionDetails,
                     FunctionType.Orchestrator,
@@ -114,7 +111,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                         this.context.HubName,
                         this.context.Name,
-                        this.context.Version,
                         this.context.InstanceId,
                         exceptionDetails,
                         FunctionType.Orchestrator,
@@ -155,7 +151,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.FunctionCompleted(
                 this.context.HubName,
                 this.context.Name,
-                this.context.Version,
                 this.context.InstanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
                 this.context.ContinuedAsNew,
@@ -166,7 +161,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                     this.context.HubName,
                     this.context.Name,
-                    this.context.Version,
                     this.context.InstanceId,
                     this.context.ContinuedAsNew,
                     FunctionType.Orchestrator,
@@ -186,7 +180,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.ExternalEventRaised(
                 this.context.HubName,
                 this.context.Name,
-                this.context.Version,
                 this.context.InstanceId,
                 eventName,
                 this.config.GetIntputOutputTrace(serializedEventData),

@@ -72,7 +72,6 @@ namespace Microsoft.Azure.WebJobs
             this.traceHelper.FunctionScheduled(
                 this.hubName,
                 orchestratorFunctionName,
-                DefaultVersion,
                 instanceId,
                 reason: "NewInstance",
                 functionType: FunctionType.Orchestrator,
@@ -102,7 +101,6 @@ namespace Microsoft.Azure.WebJobs
                 this.traceHelper.FunctionScheduled(
                     this.hubName,
                     state.Name,
-                    state.Version,
                     state.OrchestrationInstance.InstanceId,
                     reason: "RaiseEvent:" + eventName,
                     functionType: FunctionType.Orchestrator,
@@ -120,7 +118,7 @@ namespace Microsoft.Azure.WebJobs
             {
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
-                this.traceHelper.FunctionTerminated(this.hubName, state.Name, state.Version, instanceId, reason);
+                this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
             }
         }
 
