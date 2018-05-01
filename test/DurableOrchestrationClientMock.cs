@@ -4,10 +4,8 @@
 using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal class DurableOrchestrationClientMock : DurableOrchestrationClient
     {

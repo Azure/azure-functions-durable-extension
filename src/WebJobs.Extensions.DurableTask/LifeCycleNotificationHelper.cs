@@ -251,7 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string Subject { get; set; }
 
             [JsonProperty(PropertyName = "data")]
-            public object Data { get; set; }
+            public EventGridPayload Data { get; set; }
 
             [JsonProperty(PropertyName = "eventType")]
             public string EventType { get; set; }

@@ -6,14 +6,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class HttpApiHandlerTests
     {
@@ -60,19 +58,19 @@ namespace WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 });
-            Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.Accepted);
+            Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.InstanceId);
             Assert.Equal(
-                status["statusQueryGetUri"],
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey");
+                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["statusQueryGetUri"]);
             Assert.Equal(
-                status["sendEventPostUri"],
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey");
+                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["sendEventPostUri"]);
             Assert.Equal(
-                status["terminatePostUri"],
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey");
+                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["terminatePostUri"]);
         }
 
         [Fact]
@@ -95,19 +93,19 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10));
             stopWatch.Stop();
-            Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.Accepted);
+            Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.RandomInstanceId);
             Assert.Equal(
-                status["statusQueryGetUri"],
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey");
+                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["statusQueryGetUri"]);
             Assert.Equal(
-                status["sendEventPostUri"],
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey");
+                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["sendEventPostUri"]);
             Assert.Equal(
-                status["terminatePostUri"],
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey");
+                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["terminatePostUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
         }
 
@@ -128,10 +126,10 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 },
                 TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10));
-            Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.OK);
+            Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
-            Assert.Equal(value, "Hello Tokyo!");
+            Assert.Equal("Hello Tokyo!", value);
         }
 
         [Fact]
@@ -153,10 +151,10 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));
             stopwatch.Stop();
-            Assert.Equal(httpResponseMessage.StatusCode, HttpStatusCode.OK);
+            Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
-            Assert.Equal(value, "Hello Tokyo!");
+            Assert.Equal("Hello Tokyo!", value);
             Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
         }
 

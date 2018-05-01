@@ -26,8 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static long Multiply([ActivityTrigger] DurableActivityContext ctx)
         {
-            long[] values = ctx.GetInput<long[]>();
-            return values[0] * values[1];
+            (long a, long b) = ctx.GetInput<(long, long)>();
+            return a * b;
         }
 
         public static string[] GetFileList([ActivityTrigger] DurableActivityContext ctx)
@@ -84,6 +84,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             [Blob("test/{data.OutputPrefix}-{data.Suffix}", FileAccess.Write)] Stream output)
         {
             await input.CopyToAsync(output);
+        }
+
+        public static Guid NewGuid([ActivityTrigger] DurableActivityContext ctx)
+        {
+            return Guid.NewGuid();
         }
 
         public class PlainOldClrObject

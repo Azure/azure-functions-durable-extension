@@ -47,11 +47,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void SetFunctionInvocationCallback(Func<Task> callback)
         {
-            if (this.functionInvocationCallback != null)
-            {
-                throw new InvalidOperationException($"{nameof(this.SetFunctionInvocationCallback)} must be called only once.");
-            }
-
             this.functionInvocationCallback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
@@ -62,7 +57,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"The {nameof(this.functionInvocationCallback)} has not been assigned!");
             }
 
-            this.context.AssignToCurrentThread();
             this.context.SetInnerContext(innerContext);
             this.context.SetInput(serializedInput);
 
