@@ -304,7 +304,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,
                     context.Name,
-                    context.Version,
                     context.InstanceId,
                     context.IsReplaying);
             }
