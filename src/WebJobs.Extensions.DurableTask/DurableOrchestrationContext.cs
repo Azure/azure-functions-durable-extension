@@ -235,7 +235,6 @@ namespace Microsoft.Azure.WebJobs
             this.config.TraceHelper.FunctionListening(
                 this.config.HubName,
                 this.orchestrationName,
-                this.orchestrationVersion,
                 this.InstanceId,
                 reason: $"CreateTimer:{fireAt:o}",
                 isReplay: this.innerContext.IsReplaying);
@@ -245,7 +244,6 @@ namespace Microsoft.Azure.WebJobs
             this.config.TraceHelper.TimerExpired(
                 this.config.HubName,
                 this.orchestrationName,
-                this.orchestrationVersion,
                 this.InstanceId,
                 expirationTime: fireAt,
                 isReplay: this.innerContext.IsReplaying);
@@ -286,7 +284,6 @@ namespace Microsoft.Azure.WebJobs
                 this.config.TraceHelper.FunctionListening(
                     this.config.HubName,
                     this.orchestrationName,
-                    this.orchestrationVersion,
                     this.InstanceId,
                     reason: $"WaitForExternalEvent:{name}",
                     isReplay: this.innerContext.IsReplaying);
@@ -368,7 +365,6 @@ namespace Microsoft.Azure.WebJobs
             this.config.TraceHelper.FunctionScheduled(
                 this.config.HubName,
                 functionName,
-                version,
                 this.InstanceId,
                 reason: sourceFunctionId,
                 functionType: functionType,
@@ -405,7 +401,6 @@ namespace Microsoft.Azure.WebJobs
                     this.config.TraceHelper.FunctionFailed(
                         this.config.HubName,
                         functionName,
-                        version,
                         this.InstanceId,
                         reason: $"(replayed {exception.GetType().Name})",
                         functionType: functionType,
@@ -420,7 +415,6 @@ namespace Microsoft.Azure.WebJobs
                 this.config.TraceHelper.FunctionCompleted(
                     this.config.HubName,
                     functionName,
-                    version,
                     this.InstanceId,
                     output: "(replayed)",
                     continuedAsNew: false,

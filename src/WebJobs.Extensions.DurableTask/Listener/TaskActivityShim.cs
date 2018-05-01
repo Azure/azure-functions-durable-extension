@@ -52,7 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.FunctionStarting(
                 this.config.HubName,
                 this.activityName,
-                this.activityVersion,
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
@@ -68,7 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.TraceHelper.FunctionFailed(
                     this.config.HubName,
                     this.activityName,
-                    this.activityVersion,
                     instanceId,
                     exceptionToReport?.ToString() ?? string.Empty,
                     functionType: FunctionType.Activity,
@@ -86,7 +84,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.FunctionCompleted(
                 this.config.HubName,
                 this.activityName,
-                this.activityVersion,
                 instanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
                 continuedAsNew: false,
