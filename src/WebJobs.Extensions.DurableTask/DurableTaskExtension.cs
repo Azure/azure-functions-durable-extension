@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <remarks>
         /// <para>Extended sessions can improve the performance of orchestrator functions by allowing them to skip
-        /// replays when new messages and received within short periods of time.</para>
+        /// replays when new messages are received within short periods of time.</para>
         /// <para>Note that orchestrator functions which are extended this way will continue to count against the
         /// <see cref="MaxConcurrentOrchestratorFunctions"/> limit. To avoid starvation, only half of the maximum
         /// number of allowed concurrent orchestrator functions can be concurrently extended at any given time.
