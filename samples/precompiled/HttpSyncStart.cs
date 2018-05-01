@@ -17,8 +17,10 @@ namespace VSSample
 
         [FunctionName("HttpSyncStart")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
-            HttpRequestMessage req,
+            [HttpTrigger(
+                AuthorizationLevel.Function, 
+                methods: "post", 
+                Route = "orchestrators/{functionName}/wait")] HttpRequestMessage req,
             [OrchestrationClient] DurableOrchestrationClientBase starter,
             string functionName,
             TraceWriter log)
@@ -39,7 +41,9 @@ namespace VSSample
                 retryInterval);
         }
 
-        private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
+        private static TimeSpan? GetTimeSpan(
+            HttpRequestMessage request, 
+            string queryParameterName)
         {
             string queryParameterStringValue = request.RequestUri.ParseQueryString()[queryParameterName];
             if (string.IsNullOrEmpty(queryParameterStringValue))

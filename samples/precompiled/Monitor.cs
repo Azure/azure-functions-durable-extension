@@ -16,9 +16,10 @@ using Twilio.Types;
 using Twilio;
 #endif
 
-/* This sample demonstrates the Monitor workflow. In this pattern, the orchestrator function is
- * used to periodically check something's status and take action as appropriate. While a
- * Timer-triggered function can perform similar polling action, the Monitor has additional
+/* This sample demonstrates the Monitor workflow. In this pattern, the 
+ * orchestrator function is used to periodically check something's status and 
+ * take action as appropriate. While a Timer-triggered function can perform 
+ * similar polling action, the Monitor has additional
  * capabilities:
  *
  *   - manual termination (via request to the orchestrator termination endpoint)
@@ -32,7 +33,8 @@ using Twilio;
  *   - TwilioPhoneNumber: an SMS-capable Twilio number
  *   - WeatherUndergroundApiKey: a WeatherUnderground API key
  *
- * For Twilio trial accounts, you also need to verify the phone number in your MonitorRequest.
+ * For Twilio trial accounts, you also need to verify the phone number in your 
+ * MonitorRequest.
  *
  * Twilio: https://www.twilio.com
  * WeatherUnderground API: https://www.wunderground.com/weather/api/d/docs
@@ -42,38 +44,64 @@ namespace VSSample
     public static class Monitor
     {
         [FunctionName("E3_Monitor")]
-        public static async Task Run([OrchestrationTrigger] DurableOrchestrationContext monitorContext, TraceWriter log)
+        public static async Task Run(
+            [OrchestrationTrigger] DurableOrchestrationContext monitorContext, 
+            TraceWriter log)
         {
             MonitorRequest input = monitorContext.GetInput<MonitorRequest>();
-            if (!monitorContext.IsReplaying) { log.Info($"Received monitor request. Location: {input?.Location}. Phone: {input?.Phone}."); }
-
+            if (!monitorContext.IsReplaying) { log.Info(string.Format(
+                "Received monitor request. Location: {0}. Phone: {1}.", 
+                input?.Location, 
+                input?.Phone)); }
+            
             VerifyRequest(input);
 
             DateTime endTime = monitorContext.CurrentUtcDateTime.AddHours(6);
-            if (!monitorContext.IsReplaying) { log.Info($"Instantiating monitor for {input.Location}. Expires: {endTime}."); }
+            if (!monitorContext.IsReplaying) { log.Info(string.Format(
+                "Instantiating monitor for {0}. Expires: {1}.",
+                input.Location,
+                endTime)); }
 
             while (monitorContext.CurrentUtcDateTime < endTime)
             {
                 // Check the weather
-                if (!monitorContext.IsReplaying) { log.Info($"Checking current weather conditions for {input.Location} at {monitorContext.CurrentUtcDateTime}."); }
+                if (!monitorContext.IsReplaying) { log.Info(string.Format(
+                    "Checking current weather conditions for {0} at {1}.",
+                    input.Location,
+                    monitorContext.CurrentUtcDateTime)); }
 
-                bool isClear = await monitorContext.CallActivityAsync<bool>("E3_GetIsClear", input.Location);
+                bool isClear = await monitorContext.CallActivityAsync<bool>(
+                    "E3_GetIsClear", 
+                    input.Location);
 
                 if (isClear)
                 {
-                    // It's not raining! Or snowing. Or misting. Tell our user to take advantage of it.
-                    if (!monitorContext.IsReplaying) { log.Info($"Detected clear weather for {input.Location}. Notifying {input.Phone}."); }
+                    // It's not raining! Or snowing. Or misting. 
+                    // Tell our user to take advantage of it.
+                    if (!monitorContext.IsReplaying) { log.Info(string.Format(
+                        "Detected clear weather for {0}. Notifying {1}.",
+                        input.Location,
+                        input.Phone)); }
 
-                    await monitorContext.CallActivityAsync("E3_SendGoodWeatherAlert", input.Phone);
+                    await monitorContext.CallActivityAsync(
+                        "E3_SendGoodWeatherAlert", 
+                        input.Phone);
                     break;
                 }
                 else
                 {
                     // Wait for the next checkpoint
-                    var nextCheckpoint = monitorContext.CurrentUtcDateTime.AddMinutes(30);
-                    if (!monitorContext.IsReplaying) { log.Info($"Next check for {input.Location} at {nextCheckpoint}."); }
+                    var nextCheckpoint = monitorContext
+                        .CurrentUtcDateTime
+                        .AddMinutes(30);
+                    if (!monitorContext.IsReplaying) { log.Info(string.Format(
+                        "Next check for {0} at {1}.",
+                        input.Location,
+                        nextCheckpoint)); }
 
-                    await monitorContext.CreateTimer(nextCheckpoint, CancellationToken.None);
+                    await monitorContext.CreateTimer(
+                        nextCheckpoint, 
+                        CancellationToken.None);
                 }
             }
 
@@ -81,9 +109,11 @@ namespace VSSample
         }
 
         [FunctionName("E3_GetIsClear")]
-        public static async Task<bool> GetIsClear([ActivityTrigger] Location location)
+        public static async Task<bool> GetIsClear(
+            [ActivityTrigger] Location location)
         {
-            var currentConditions = await WeatherUnderground.GetCurrentConditionsAsync(location);
+            var currentConditions = await WeatherUnderground
+                .GetCurrentConditionsAsync(location);
             return currentConditions.Equals(WeatherCondition.Clear);
         }
 
@@ -91,7 +121,10 @@ namespace VSSample
         public static void SendGoodWeatherAlert(
             [ActivityTrigger] string phoneNumber,
             TraceWriter log,
-            [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")]
+            [TwilioSms(
+                AccountSidSetting = "TwilioAccountSid", 
+                AuthTokenSetting = "TwilioAuthToken", 
+                From = "%TwilioPhoneNumber%")]
 #if NETSTANDARD2_0
                 out CreateMessageOptions message)
 #else
@@ -110,17 +143,23 @@ namespace VSSample
         {
             if (request == null)
             {
-                throw new ArgumentNullException(nameof(request), "An input object is required.");
+                throw new ArgumentNullException(
+                    nameof(request), 
+                    "An input object is required.");
             }
 
             if (request.Location == null)
             {
-                throw new ArgumentNullException(nameof(request.Location), "A location input is required.");
+                throw new ArgumentNullException(
+                    nameof(request.Location), 
+                    "A location input is required.");
             }
 
             if (string.IsNullOrEmpty(request.Phone))
             {
-                throw new ArgumentNullException(nameof(request.Phone), "A phone number input is required.");
+                throw new ArgumentNullException(
+                    nameof(request.Phone), 
+                    "A phone number input is required.");
             }
         }
     }
@@ -151,53 +190,67 @@ namespace VSSample
     internal class WeatherUnderground
     {
         private static readonly HttpClient httpClient = new HttpClient();
-        private static IReadOnlyDictionary<string, WeatherCondition> weatherMapping = new Dictionary<string, WeatherCondition>()
-        {
-            { "Clear", WeatherCondition.Clear },
-            { "Overcast", WeatherCondition.Clear },
-            { "Cloudy", WeatherCondition.Clear },
-            { "Clouds", WeatherCondition.Clear },
-            { "Drizzle", WeatherCondition.Precipitation },
-            { "Hail", WeatherCondition.Precipitation },
-            { "Ice", WeatherCondition.Precipitation },
-            { "Mist", WeatherCondition.Precipitation },
-            { "Precipitation", WeatherCondition.Precipitation },
-            { "Rain", WeatherCondition.Precipitation },
-            { "Showers", WeatherCondition.Precipitation },
-            { "Snow", WeatherCondition.Precipitation },
-            { "Spray", WeatherCondition.Precipitation },
-            { "Squall", WeatherCondition.Precipitation },
-            { "Thunderstorm", WeatherCondition.Precipitation },
-        };
+        private static IReadOnlyDictionary<string, WeatherCondition> weatherMapping =
+            new Dictionary<string, WeatherCondition>()
+            {
+                { "Clear", WeatherCondition.Clear },
+                { "Overcast", WeatherCondition.Clear },
+                { "Cloudy", WeatherCondition.Clear },
+                { "Clouds", WeatherCondition.Clear },
+                { "Drizzle", WeatherCondition.Precipitation },
+                { "Hail", WeatherCondition.Precipitation },
+                { "Ice", WeatherCondition.Precipitation },
+                { "Mist", WeatherCondition.Precipitation },
+                { "Precipitation", WeatherCondition.Precipitation },
+                { "Rain", WeatherCondition.Precipitation },
+                { "Showers", WeatherCondition.Precipitation },
+                { "Snow", WeatherCondition.Precipitation },
+                { "Spray", WeatherCondition.Precipitation },
+                { "Squall", WeatherCondition.Precipitation },
+                { "Thunderstorm", WeatherCondition.Precipitation },
+            };
 
-        internal static async Task<WeatherCondition> GetCurrentConditionsAsync(Location location)
+        internal static async Task<WeatherCondition> GetCurrentConditionsAsync(
+            Location location)
         {
-            var apiKey = Environment.GetEnvironmentVariable("WeatherUndergroundApiKey");
+            var apiKey = Environment
+                .GetEnvironmentVariable("WeatherUndergroundApiKey");
             if (string.IsNullOrEmpty(apiKey))
             {
-                throw new InvalidOperationException("The WeatherUndergroundApiKey environment variable was not set.");
+                throw new InvalidOperationException(
+                    "The WeatherUndergroundApiKey environment variable was not set.");
             }
 
-            var callString = string.Format("http://api.wunderground.com/api/{0}/conditions/q/{1}/{2}.json", apiKey, location.State, location.City);
+            var callString = string.Format(
+                "http://api.wunderground.com/api/{0}/conditions/q/{1}/{2}.json", 
+                apiKey, 
+                location.State, 
+                location.City);
             var response = await httpClient.GetAsync(callString);
             var conditions = await response.Content.ReadAsAsync<JObject>();
 
             JToken currentObservation;
-            if (!conditions.TryGetValue("current_observation", out currentObservation))
+            if (!conditions.TryGetValue(
+                "current_observation", 
+                out currentObservation))
             {
                 JToken error = conditions.SelectToken("response.error");
 
                 if (error != null)
                 {
-                    throw new InvalidOperationException($"API returned an error: {error}.");
+                    throw new InvalidOperationException(
+                        $"API returned an error: {error}.");
                 }
                 else
                 {
-                    throw new ArgumentException("Could not find weather for this location. Try being more specific.");
+                    throw new ArgumentException(
+                        "Could not find weather for this location." + 
+                        "Try being more specific.");
                 }
             }
 
-            return MapToWeatherCondition((string)(currentObservation as JObject).GetValue("weather"));
+            return MapToWeatherCondition((string)(currentObservation as JObject)
+                .GetValue("weather"));
         }
 
         private static WeatherCondition MapToWeatherCondition(string weather)

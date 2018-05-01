@@ -35,7 +35,8 @@ namespace VSSample
 
             using (var timeoutCts = new CancellationTokenSource())
             {
-                // The user has 90 seconds to respond with the code they received in the SMS message.
+                // The user has 90 seconds to respond with the code they received 
+                // in the SMS message.
                 DateTime expiration = context.CurrentUtcDateTime.AddSeconds(90);
                 Task timeoutTask = context.CreateTimer(expiration, timeoutCts.Token);
 
@@ -45,7 +46,9 @@ namespace VSSample
                     Task<int> challengeResponseTask =
                         context.WaitForExternalEvent<int>("SmsChallengeResponse");
 
-                    Task winner = await Task.WhenAny(challengeResponseTask, timeoutTask);
+                    Task winner = await Task.WhenAny(
+                        challengeResponseTask, 
+                        timeoutTask);
                     if (winner == challengeResponseTask)
                     {
                         // We got back a response! Compare it to the challenge code.
@@ -64,7 +67,8 @@ namespace VSSample
 
                 if (!timeoutTask.IsCompleted)
                 {
-                    // All pending timers must be complete or canceled before the function exits.
+                    // All pending timers must be complete or canceled before 
+                    // the function exits.
                     timeoutCts.Cancel();
                 }
 
@@ -76,7 +80,10 @@ namespace VSSample
         public static int SendSmsChallenge(
             [ActivityTrigger] string phoneNumber,
             TraceWriter log,
-            [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")]
+            [TwilioSms(
+                AccountSidSetting = "TwilioAccountSid", 
+                AuthTokenSetting = "TwilioAuthToken", 
+                From = "%TwilioPhoneNumber%")]
 #if NETSTANDARD2_0
                 out CreateMessageOptions message)
 #else

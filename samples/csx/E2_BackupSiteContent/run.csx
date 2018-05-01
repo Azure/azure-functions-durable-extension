@@ -2,7 +2,8 @@
 
 public static async Task<long> Run(DurableOrchestrationContext backupContext)
 {
-    string rootDirectory = Environment.ExpandEnvironmentVariables(backupContext.GetInput<string>() ?? "");
+    string rootDirectory = Environment.ExpandEnvironmentVariables(
+        backupContext.GetInput<string>() ?? "");
     if (string.IsNullOrEmpty(rootDirectory))
     {
         throw new ArgumentException("A directory path is required as an input.");
@@ -10,7 +11,9 @@ public static async Task<long> Run(DurableOrchestrationContext backupContext)
 
     if (!Directory.Exists(rootDirectory))
     {
-        throw new DirectoryNotFoundException($"Could not find a directory named '{rootDirectory}'.");
+        throw new DirectoryNotFoundException(string.Format(
+            "Could not find a directory named '{0}'.", 
+            rootDirectory));
     }
 
     string[] files = await backupContext.CallActivityAsync<string[]>(

@@ -16,10 +16,18 @@ public static async Task<long> Run(
         .Replace('\\', '/');
     string outputLocation = $"backups/{blobPath}";
 
-    log.Info($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
+    log.Info(string.Format(
+        "Copying '{0}' to '{1}'. Total bytes = {2}.",
+        filePath,
+        outputLocation,
+        byteCount));
 
     // copy the file contents into a blob
-    using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+    using (Stream source = File.Open(
+        filePath, 
+        FileMode.Open, 
+        FileAccess.Read, 
+        FileShare.ReadWrite))
     using (Stream destination = await binder.BindAsync<CloudBlobStream>(
         new BlobAttribute(outputLocation)))
     {

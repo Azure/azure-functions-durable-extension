@@ -19,7 +19,8 @@ namespace VSSample
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                rootDirectory = Directory.GetParent(typeof(BackupSiteContent).Assembly.Location).FullName;
+                rootDirectory = Directory.GetParent(
+                    typeof(BackupSiteContent).Assembly.Location).FullName;
             }
 
             string[] files = await backupContext.CallActivityAsync<string[]>(
@@ -46,7 +47,10 @@ namespace VSSample
             TraceWriter log)
         {
             log.Info($"Searching for files under '{rootDirectory}'...");
-            string[] files = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
+            string[] files = Directory.GetFiles(
+                rootDirectory, 
+                "*", 
+                SearchOption.AllDirectories);
             log.Info($"Found {files.Length} file(s) under {rootDirectory}.");
 
             return files;
@@ -66,10 +70,18 @@ namespace VSSample
                 .Replace('\\', '/');
             string outputLocation = $"backups/{blobPath}";
 
-            log.Info($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
-
+            log.Info(string.Format(
+                "Copying '{0}' to '{1}'. Total bytes = {2}.",
+                filePath,
+                outputLocation,
+                byteCount));
+            
             // copy the file contents into a blob
-            using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (Stream source = File.Open(
+                filePath, 
+                FileMode.Open, 
+                FileAccess.Read, 
+                FileShare.Read))
             using (Stream destination = await binder.BindAsync<CloudBlobStream>(
                 new BlobAttribute(outputLocation, FileAccess.Write)))
             {

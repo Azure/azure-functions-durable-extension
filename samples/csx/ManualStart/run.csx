@@ -2,7 +2,10 @@
 
 using System;
 
-public static async Task Run(string functionName, DurableOrchestrationClient starter, TraceWriter log)
+public static async Task Run(
+    string functionName, 
+    DurableOrchestrationClient starter, 
+    TraceWriter log)
 {
     log.Info($"Starting orchestration named: {functionName}");
     string instanceId = await starter.StartNewAsync(functionName, null);
