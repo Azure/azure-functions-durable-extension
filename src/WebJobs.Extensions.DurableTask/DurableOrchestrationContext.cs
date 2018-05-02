@@ -25,8 +25,8 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, Queue> pendingExternalEvents =
-            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Stack> pendingExternalEvents =
+            new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
@@ -251,26 +251,29 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                Queue tcsRefQueue;
+                // We use a stack to make it easier for users to abandon external events
+                // that they no longer care about. The common case is a Task.WhenAny in a loop.
+                Stack taskCompletionSources;
                 TaskCompletionSource<T> tcs;
 
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefQueue))
+                if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
                     tcs = new TaskCompletionSource<T>();
-                    tcsRefQueue = new Queue();
-                    tcsRefQueue.Enqueue(tcs);
-                    this.pendingExternalEvents[name] = tcsRefQueue;
+                    taskCompletionSources = new Stack();
+                    taskCompletionSources.Push(tcs);
+                    this.pendingExternalEvents[name] = taskCompletionSources;
                 }
                 else
                 {
-                    if (tcsRefQueue.Count > 0 && tcsRefQueue.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    if (taskCompletionSources.Count > 0 &&
+                        taskCompletionSources.Peek().GetType() != typeof(TaskCompletionSource<T>))
                     {
                         throw new ArgumentException("Events with the same name should have the same type argument.");
                     }
                     else
                     {
                         tcs = new TaskCompletionSource<T>();
-                        tcsRefQueue.Enqueue(tcs);
+                        taskCompletionSources.Push(tcs);
                     }
                 }
 
@@ -432,16 +435,16 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                Queue tcsQueue;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcsQueue))
+                Stack taskCompletionSources;
+                if (this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
-                    var tcs = tcsQueue.Dequeue();
+                    object tcs = taskCompletionSources.Pop();
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
                     // If we're going to raise an event we should remove it from the pending collection
-                    // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
-                    if (tcsQueue.Count == 0)
+                    // because otherwise WaitForExternalEventAsync() will always find one with this key and run infinitely.
+                    if (taskCompletionSources.Count == 0)
                     {
                         this.pendingExternalEvents.Remove(name);
                     }

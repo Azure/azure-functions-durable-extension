@@ -301,5 +301,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
            Task item4 = ctx.WaitForExternalEvent<string>("newItem");
            await Task.WhenAll(item1, item2, item3, item4);
         }
+
+        public static async Task<int> Counter2([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            int value = 0;
+            while (value < 100)
+            {
+                Task incr = ctx.WaitForExternalEvent<object>("incr");
+                Task done = ctx.WaitForExternalEvent<object>("done");
+                Task winner = await Task.WhenAny(incr, done);
+                if (winner == incr)
+                {
+                    value++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return value;
+        }
     }
 }

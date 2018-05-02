@@ -494,6 +494,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ExternalEvents_MultipleNamesLooping(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.ExternalEvents_MultipleNamesLooping),
+                extendedSessions))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter2), null, this.output);
+
+                // Perform some operations
+                await client.RaiseEventAsync("incr", null);
+                await client.RaiseEventAsync("incr", null);
+                await client.RaiseEventAsync("done", null);
+
+                // Make sure it actually completed
+                var status = await client.WaitForCompletionAsync(
+                    TimeSpan.FromSeconds(1000),
+                    this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(2, status.Output);
+
+                await host.StopAsync();
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates the Terminate functionality.
         /// </summary>
