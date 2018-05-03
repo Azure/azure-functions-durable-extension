@@ -136,7 +136,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var isOutOfProc = this.parameterInfo.ParameterType != typeof(DurableOrchestrationContext);
+                // The current assumption is that in-proc (.NET) apps always use
+                // DurableOrchestrationContextBase or some derivative. Non-.NET apps
+                // which cannot use these types are therefore assumed to be "out-of-proc".
+                // We may need to revisit this assumption when Functions v2 adds support
+                // for "out-of-proc" .NET.
+                var isOutOfProc = !typeof(DurableOrchestrationContextBase).IsAssignableFrom(this.parameterInfo.ParameterType);
                 this.config.RegisterOrchestrator(this.orchestratorName, new OrchestratorInfo(context.Executor, isOutOfProc));
 
                 var listener = new DurableTaskListener(
