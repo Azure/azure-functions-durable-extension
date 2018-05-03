@@ -210,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         FunctionName = functionName,
                         InstanceId = instanceId,
                         Reason = reason,
-                        RuntimeStatus = $"{orchestrationRuntimeStatus}",
+                        RuntimeStatus = orchestrationRuntimeStatus.ToString(),
                     },
                     DataVersion = "1.0",
                 },
