@@ -81,13 +81,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             Assert.Equal("durable/orchestrator/Running", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(0, (int)o.data.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
                         }
                         else if (callCount == 1)
                         {
                             Assert.Equal("durable/orchestrator/Completed", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(1, (int?)o.data.eventType);
+                            Assert.Equal("Completed", (string)o.data.runtimeStatus);
                         }
                         else
                         {
@@ -162,13 +162,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             Assert.Equal("durable/orchestrator/Running", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(0, (int)o.data.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
                         }
                         else if (callCount == 1)
                         {
                             Assert.Equal("durable/orchestrator/Failed", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(3, (int?)o.data.eventType);
+                            Assert.Equal("Failed", (string)o.data.runtimeStatus);
                         }
                         else
                         {
@@ -243,13 +243,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             Assert.Equal("durable/orchestrator/Running", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(0, (int)o.data.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
                         }
                         else if (callCount == 1)
                         {
                             Assert.Equal("durable/orchestrator/Terminated", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(5, (int?)o.data.eventType);
+                            Assert.Equal("Terminated", (string)o.data.runtimeStatus);
                         }
                         else
                         {
@@ -330,13 +330,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             Assert.Equal("durable/orchestrator/Running", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(0, (int)o.data.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
                         }
                         else if (callCount == 1)
                         {
                             Assert.Equal("durable/orchestrator/Completed", (string)o.subject);
                             Assert.Equal("orchestratorEvent", (string)o.eventType);
-                            Assert.Equal(1, (int?)o.data.eventType);
+                            Assert.Equal("Completed", (string)o.data.runtimeStatus);
                         }
                         else
                         {
