@@ -210,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         FunctionName = functionName,
                         InstanceId = instanceId,
                         Reason = reason,
-                        EventType = orchestrationRuntimeStatus,
+                        RuntimeStatus = $"{orchestrationRuntimeStatus}",
                     },
                     DataVersion = "1.0",
                 },
@@ -233,8 +233,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [JsonProperty(PropertyName = "reason")]
             public string Reason { get; set; }
 
-            [JsonProperty(PropertyName = "eventType")]
-            public OrchestrationRuntimeStatus EventType { get; set; }
+            [JsonProperty(PropertyName = "runtimeStatus")]
+            public string RuntimeStatus { get; set; }
         }
 
         private class EventGridEvent
