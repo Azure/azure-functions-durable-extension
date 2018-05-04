@@ -457,9 +457,6 @@
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId">
             <inheritdoc />
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ParentInstanceId">
-            <inheritdoc cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase" />
-        </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
             <inheritdoc />
         </member>
@@ -520,7 +517,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
             <summary>
-            Abstract class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>
+            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId">

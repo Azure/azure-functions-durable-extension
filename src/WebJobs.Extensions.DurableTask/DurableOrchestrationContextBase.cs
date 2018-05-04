@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Abstract class for <see cref="DurableOrchestrationContext"/>
+    /// Abstract base class for <see cref="DurableOrchestrationContext"/>.
     /// </summary>
     public abstract class DurableOrchestrationContextBase
     {
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The ID of the current orchestration instance.
         /// </value>
-        public abstract string InstanceId { get;  }
+        public abstract string InstanceId { get; }
 
         /// <summary>
         /// Gets the parent instance ID of the currently executing sub-orchestration.
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The ID of the parent orchestration of the current sub-orchestration instance. The value will be available only in sub-orchestrations.
         /// </value>
-        public virtual string ParentInstanceId { get; }
+        public virtual string ParentInstanceId { get; internal set; }
 
         /// <summary>
         /// Gets the current date/time in a way that is safe for use by orchestrator functions.

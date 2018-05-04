@@ -9,7 +9,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html",
-          "hash": "R5U2SKCOxHqdVz5ROs3bmQ=="
+          "hash": "/rIf28cKeM52XTWJwlg79A=="
         }
       },
       "is_incremental": false,
@@ -21,7 +21,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableActivityContext.html",
-          "hash": "CANKye5jMe0U4+iN5WTsBQ=="
+          "hash": "zdHq5f+938Oh2qZDM06+EQ=="
         }
       },
       "is_incremental": false,
@@ -33,7 +33,19 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html",
-          "hash": "g9f1XLQCqM8gx3J5SqDxAg=="
+          "hash": "Qyfs2z0KZoEGRq55u/xrUQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html",
+          "hash": "8JsfpHK75dcSW+xhqq5tjw=="
         }
       },
       "is_incremental": false,
@@ -45,7 +57,19 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html",
-          "hash": "rx9V3VzZqLu5wQ56yxS3YQ=="
+          "hash": "oVNM+BrxIIjteYqR+wIh5Q=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html",
+          "hash": "L2o6hbSTIjlY11VHCxRiVA=="
         }
       },
       "is_incremental": false,
@@ -57,7 +81,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html",
-          "hash": "yfvyQT7pKVJ+DyZYnJe5lw=="
+          "hash": "X714ip3tRp0z2wyRyWbGfQ=="
         }
       },
       "is_incremental": false,
@@ -69,7 +93,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html",
-          "hash": "e7kMVEC0qZfojjIQZ5RW0A=="
+          "hash": "lGkDIYPaH7qWhJ5BJcOShg=="
         }
       },
       "is_incremental": false,
@@ -81,7 +105,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html",
-          "hash": "S1+hnANwtc+s+t2r7oIMiQ=="
+          "hash": "bGh9v2Rd3ToNBiJow1VCCQ=="
         }
       },
       "is_incremental": false,
@@ -93,7 +117,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.html",
-          "hash": "93VFGoUnkfsgPz6pj3FwOg=="
+          "hash": "tot8tznjE73KX4ZPoJgQ1A=="
         }
       },
       "is_incremental": false,
@@ -105,7 +129,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.FunctionFailedException.html",
-          "hash": "SzbwpwI/5GO9Rh/iKLf3MA=="
+          "hash": "NBouqGOHbuESz9QBiUEGWw=="
         }
       },
       "is_incremental": false,
@@ -117,7 +141,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html",
-          "hash": "2tQSa07jMdyuFfgb3sw19w=="
+          "hash": "weHwx+d86EXyt9ziBj6G3g=="
         }
       },
       "is_incremental": false,
@@ -129,7 +153,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html",
-          "hash": "2unRAxT5BMeNWoqaSvIRLQ=="
+          "hash": "Zh3g0Li/qPza8Vw2vY6t4w=="
         }
       },
       "is_incremental": false,
@@ -141,7 +165,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html",
-          "hash": "gnEwC/oL9g4c5GTIP/keWA=="
+          "hash": "Nal95E+Gnz09KEqYLwSAEw=="
         }
       },
       "is_incremental": false,
@@ -153,7 +177,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.RetryOptions.html",
-          "hash": "jJiRAR8BRffHfUCK++mTBg=="
+          "hash": "n/dz1NvnDhFYVRTFFjiURw=="
         }
       },
       "is_incremental": false,
@@ -165,7 +189,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html",
-          "hash": "wqhLxbzcXU9sqkTHgt5g0g=="
+          "hash": "7hWVCJpdisbZ/e0Ifypm7A=="
         }
       },
       "is_incremental": false,
@@ -177,7 +201,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.html",
-          "hash": "vEu7RMvUl7hnjVR6jVy6vQ=="
+          "hash": "RTKTthGclyOu+fg+fniawg=="
         }
       },
       "is_incremental": false,
@@ -189,436 +213,7 @@
       "output": {
         ".html": {
           "relative_path": "api/toc.html",
-          "hash": "rcYAOllksbe4Df4BzXbnzA=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/installation.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/installation.html",
-          "hash": "13J/o3hnGmXxW3awBJoJPg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/known-issues.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/known-issues.html",
-          "hash": "hfUJ/glB8zPDEUK/M2yzrw=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/overview.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/overview.html",
-          "hash": "rIDor9QEz8OYL3vzX/QR8Q=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/samples/cloud-backup.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/samples/cloud-backup.html",
-          "hash": "+okHgip2D28XxRaDyrdvRQ=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/samples/counter.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/samples/counter.html",
-          "hash": "GcC4K+qx7wgHSQBrZdgYrQ=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/samples/phone-verification.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/samples/phone-verification.html",
-          "hash": "h1KF8XENv4fh2oX1Kt9Erg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/samples/sequence.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/samples/sequence.html",
-          "hash": "qe4uN7uDMetx90H2dE6Oow=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Toc",
-      "source_relative_path": "articles/toc.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/toc.html",
-          "hash": "4IyCi5IMg5cTkCjbPYv6Bw=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/bindings.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/bindings.html",
-          "hash": "U/3iLyJTGgqqKCz1SGG2Gg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/checkpointing-and-replay.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/checkpointing-and-replay.html",
-          "hash": "0jvgbzY+vOvU3hRQ33CGmA=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/diagnostics.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/diagnostics.html",
-          "hash": "12JmraGZz5aWNgom3IZ6AA=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/error-handling.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/error-handling.html",
-          "hash": "7jwXZENPc6sPrsPSjgp3Rw=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/eternal-orchestrations.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/eternal-orchestrations.html",
-          "hash": "2khWafLOhJob8Pme80Psog=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/external-events.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/external-events.html",
-          "hash": "aFDKjCtGrmBr1ZCeaIF5Cw=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/http-api.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/http-api.html",
-          "hash": "VyOfDo7pcK7JQNqsXAbh1w=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/instance-management.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/instance-management.html",
-          "hash": "8i+4zcsgGcsBPNjcmc3aog=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/perf-and-scale.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/perf-and-scale.html",
-          "hash": "tdwSbhZ/UAXz5HVDEsLdMA=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/singletons.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/singletons.html",
-          "hash": "SgGmSXPL9wI0OXY2eMuI6Q=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/sub-orchestrations.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/sub-orchestrations.html",
-          "hash": "EfICbOQLa5VirVuxBn7Jvg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/task-hubs.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/task-hubs.html",
-          "hash": "om+CQ1LIZGM0rs6xdI7Nzg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/timers.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/timers.html",
-          "hash": "MOL3CMJSG0p+ZWeErAW56A=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "articles/topics/versioning.md",
-      "output": {
-        ".html": {
-          "relative_path": "articles/topics/versioning.html",
-          "hash": "WWUNQ96+9MXFyhU7izP8Gg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "files/DFSampleApp.zip",
-      "output": {
-        "resource": {
-          "relative_path": "files/DFSampleApp.zip"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "files/VSDFSampleApp.zip",
-      "output": {
-        "resource": {
-          "relative_path": "files/VSDFSampleApp.zip"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/app-insights-1.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/app-insights-1.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/app-insights-2.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/app-insights-2.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/app-insights-single-instance-query.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/app-insights-single-instance-query.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/app-insights-single-summary-query.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/app-insights-single-summary-query.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/approval.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/approval.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/async-http-api.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/async-http-api.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/durable-functions-templates.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/durable-functions-templates.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/fan-out-fan-in.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/fan-out-fan-in.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/favicon.ico",
-      "output": {
-        "resource": {
-          "relative_path": "images/favicon.ico"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/function-chaining.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/function-chaining.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/scale-diagram.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/scale-diagram.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/stateful-singleton.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/stateful-singleton.png"
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "Resource",
-      "source_relative_path": "images/storage-explorer.png",
-      "output": {
-        "resource": {
-          "relative_path": "images/storage-explorer.png"
+          "hash": "/Hf3J6t4nBYFnHqdE+urFQ=="
         }
       },
       "is_incremental": false,
@@ -630,7 +225,7 @@
       "output": {
         ".html": {
           "relative_path": "index.html",
-          "hash": "zIC0HznoWoPiQJ+Ir9n9yQ=="
+          "hash": "8lvYspdGJP2TihiKQ5LTwQ=="
         }
       },
       "is_incremental": false,
@@ -642,7 +237,7 @@
       "output": {
         ".html": {
           "relative_path": "toc.html",
-          "hash": "xc/d5D8jhkVD5sUkDZzcKw=="
+          "hash": "PWAZ4CfRQkEcWKDeWYQvIw=="
         }
       },
       "is_incremental": false,
@@ -657,21 +252,16 @@
         "incrementalPhase": "build"
       },
       "processors": {
-        "ResourceDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
-          "incrementalPhase": "build"
-        },
         "TocDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         },
-        "ConceptualDocumentProcessor": {
+        "ManagedReferenceDocumentProcessor": {
           "can_incremental": false,
           "incrementalPhase": "build"
         },
-        "ManagedReferenceDocumentProcessor": {
+        "ConceptualDocumentProcessor": {
           "can_incremental": false,
           "incrementalPhase": "build"
         }
