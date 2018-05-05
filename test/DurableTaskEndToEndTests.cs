@@ -701,9 +701,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     tasks[i] = orchestrationStarter();
                 }
 
-                // The 100 orchestrations above (which each delay for 10 seconds) should all complete in less than 80 seconds.
+                // The 100 orchestrations above (which each delay for 10 seconds) should all complete in less than 1000 seconds (~16 minutes).
                 Task parallelOrchestrations = Task.WhenAll(tasks);
-                Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(80));
+                Task timeoutTask = Task.Delay(TimeSpan.FromMinutes(3));
 
                 Task winner = await Task.WhenAny(parallelOrchestrations, timeoutTask);
                 Assert.Equal(parallelOrchestrations, winner);
