@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// The name of a durable function, which includes its version (if any).
+    /// The name of a durable function.
     /// </summary>
     internal struct FunctionName : IEquatable<FunctionName>
     {
@@ -14,11 +14,9 @@ namespace Microsoft.Azure.WebJobs
         /// Initializes a new instance of the <see cref="FunctionName"/> struct.
         /// </summary>
         /// <param name="name">The name of the function.</param>
-        /// <param name="version">The version of the function.</param>
-        public FunctionName(string name, string version)
+        public FunctionName(string name)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Version = version ?? string.Empty;
         }
 
         /// <summary>
@@ -28,14 +26,6 @@ namespace Microsoft.Azure.WebJobs
         /// The name of the activity function without the version.
         /// </value>
         public string Name { get; }
-
-        /// <summary>
-        /// Gets the version of the function.
-        /// </summary>
-        /// <value>
-        /// The version of the function or <c>null</c> if no version information was specified.
-        /// </value>
-        public string Version { get; }
 
         /// <summary>
         /// Compares two <see cref="FunctionName"/> objects for equality.
@@ -67,8 +57,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns><c>true</c> if the two objects are equal using value semantics; otherwise <c>false</c>.</returns>
         public bool Equals(FunctionName other)
         {
-            return string.Equals(this.Name, other.Name, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(this.Version, other.Version, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(this.Name, other.Name, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -93,7 +82,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A 32-bit hash code value.</returns>
         public override int GetHashCode()
         {
-            return this.Name.GetHashCode() ^ this.Version.GetHashCode();
+            return this.Name.GetHashCode();
         }
 
         /// <summary>
@@ -102,14 +91,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>The name and optional version of the current <see cref="FunctionName"/> instance.</returns>
         public override string ToString()
         {
-            if (string.IsNullOrEmpty(this.Version))
-            {
-                return this.Name;
-            }
-            else
-            {
-                return $"{this.Name} ({this.Version})";
-            }
+            return this.Name;
         }
     }
 }

@@ -71,12 +71,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
         /// </summary>
-        /// <value>A positive integer configured by the host. The default value is <c>20</c>.</value>
-        public int ControlQueueBatchSize { get; set; } = 20;
+        /// <remarks>
+        /// Messages pulled from the control queue are buffered in memory until the internal
+        /// dispatcher is ready to process them.
+        /// </remarks>
+        /// <value>A positive integer configured by the host. The default value is <c>32</c>.</value>
+        public int ControlQueueBatchSize { get; set; } = 32;
 
         /// <summary>
         /// Gets or sets the partition count for the control queue.
         /// </summary>
+        /// <remarks>
+        /// Increasing the number of partitions will increase the number of workers
+        /// that can concurrently execute orchestrator functions. However, increasing
+        /// the partition count can also increase the amount of load placed on the storage
+        /// account and on the thread pool if the number of workers is smaller than the
+        /// number of partitions.
+        /// </remarks>
         /// <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
         public int PartitionCount { get; set; } = 4;
 
@@ -99,6 +110,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
         /// </summary>
+        /// <remarks>
+        /// Increasing activity function concurrent can result in increased throughput but can
+        /// also increase the total CPU and memory usage on a single worker instance.
+        /// </remarks>
         /// <value>
         /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
         /// </value>
@@ -122,8 +137,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string AzureStorageConnectionStringName { get; set; }
 
         /// <summary>
-        /// Gets or sets the notification URL for polling status of instances.
+        /// Gets or sets the base URL for the HTTP APIs managed by this extension.
         /// </summary>
+        /// <remarks>
+        /// This property is intended for use only by runtime hosts.
+        /// </remarks>
         /// <value>
         /// A URL pointing to the hosted function app that responds to status polling requests.
         /// </value>
@@ -145,13 +163,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool TraceInputsAndOutputs { get; set; }
 
         /// <summary>
-        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint. When set, orchestration life cycle notification events will be automatically published to this endpoint.
+        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint.
+        /// When set, orchestration life cycle notification events will be automatically
+        /// published to this endpoint.
         /// </summary>
+        /// <remarks>
+        /// Azure Event Grid topic URLs are generally expected to be in the form
+        /// https://{topic_name}.{region}.eventgrid.azure.net/api/events.
+        /// </remarks>
+        /// <value>
+        /// The Azure Event Grid custom topic URL.
+        /// </value>
         public string EventGridTopicEndpoint { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridTopicEndpoint"/>.
         /// </summary>
+        /// <value>
+        /// The name of the app setting that stores the Azure Event Grid key.
+        /// </value>
         public string EventGridKeySettingName { get; set; }
 
         /// <summary>
@@ -261,11 +291,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Called by the Durable Task Framework: Returns the specified <see cref="TaskOrchestration"/>.
         /// </summary>
         /// <param name="name">The name of the orchestration to return.</param>
-        /// <param name="version">The version of the orchestration to return.</param>
+        /// <param name="version">Not used.</param>
         /// <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
         TaskOrchestration INameVersionObjectManager<TaskOrchestration>.GetObject(string name, string version)
         {
-            var context = new DurableOrchestrationContext(this, name, version);
+            var context = new DurableOrchestrationContext(this, name);
             return new TaskOrchestrationShim(this, context);
         }
 
@@ -282,11 +312,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Called by the Durable Task Framework: Returns the specified <see cref="TaskActivity"/>.
         /// </summary>
         /// <param name="name">The name of the activity to return.</param>
-        /// <param name="version">The version of the activity to return.</param>
+        /// <param name="version">Not used.</param>
         /// <returns>An activity shim that delegates execution to an activity function.</returns>
         TaskActivity INameVersionObjectManager<TaskActivity>.GetObject(string name, string version)
         {
-            FunctionName activityFunction = new FunctionName(name, version);
+            FunctionName activityFunction = new FunctionName(name);
 
             ITriggeredFunctionExecutor executor;
             if (!this.registeredActivities.TryGetValue(activityFunction, out executor))
@@ -294,7 +324,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"Activity function '{activityFunction}' does not exist.");
             }
 
-            return new TaskActivityShim(this, executor, name, version);
+            return new TaskActivityShim(this, executor, name);
         }
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
@@ -312,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.History = orchestrationRuntimeState.Events;
             context.SetInput(orchestrationRuntimeState.Input);
 
-            FunctionName orchestratorFunction = new FunctionName(context.Name, context.Version);
+            FunctionName orchestratorFunction = new FunctionName(context.Name);
 
             OrchestratorInfo info;
             if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info))
@@ -476,7 +506,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void AssertOrchestratorExists(string name, string version)
         {
-            var functionName = new FunctionName(name, version);
+            var functionName = new FunctionName(name);
             if (!this.registeredOrchestrators.ContainsKey(functionName))
             {
                 throw new ArgumentException(
@@ -489,7 +519,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal FunctionType ThrowIfInvalidFunctionType(string name, FunctionType functionType, string version)
         {
-            var functionName = new FunctionName(name, version);
+            var functionName = new FunctionName(name);
 
             if (functionType == FunctionType.Activity)
             {
@@ -603,7 +633,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan timeout,
             TimeSpan retryInterval)
         {
-            return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, attribute, timeout, retryInterval);
+            return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                attribute,
+                timeout,
+                retryInterval);
         }
 
         /// <inheritdoc/>

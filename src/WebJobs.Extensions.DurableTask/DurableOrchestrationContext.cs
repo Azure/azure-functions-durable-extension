@@ -30,7 +30,6 @@ namespace Microsoft.Azure.WebJobs
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
-        private readonly string orchestrationVersion;
         private readonly List<Func<Task>> deferredTasks;
 
         private OrchestrationContext innerContext;
@@ -38,22 +37,15 @@ namespace Microsoft.Azure.WebJobs
         private string serializedOutput;
         private string serializedCustomStatus;
 
-        internal DurableOrchestrationContext(
-            DurableTaskExtension config,
-            string functionName,
-            string functionVersion)
+        internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.deferredTasks = new List<Func<Task>>();
             this.orchestrationName = functionName;
-            this.orchestrationVersion = functionVersion;
         }
 
         /// <inheritdoc />
         public override string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
-
-        /// <inheritdoc cref="DurableOrchestrationClientBase" />
-        public new string ParentInstanceId { get; internal set; }
 
         /// <inheritdoc />
         public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
@@ -69,8 +61,6 @@ namespace Microsoft.Azure.WebJobs
 
         internal string Name => this.orchestrationName;
 
-        internal string Version => this.orchestrationVersion;
-
         internal bool IsOutputSet => this.serializedOutput != null;
 
         internal IList<HistoryEvent> History { get; set; }
@@ -81,7 +71,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The raw JSON-formatted orchestrator function input.
         /// </returns>
-        public string GetRawInput()
+        internal string GetRawInput()
         {
             this.ThrowIfInvalidAccess();
             return this.serializedInput;
@@ -211,7 +201,19 @@ namespace Microsoft.Azure.WebJobs
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, instanceId, retryOptions, input);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Creates a durable timer that expires at a specified time.
+        /// </summary>
+        /// <remarks>
+        /// All durable timers created using this method must either expire or be cancelled
+        /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
+        /// Otherwise the underlying framework will keep the instance alive until the timer expires.
+        /// </remarks>
+        /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
+        /// <param name="fireAt">The time at which the timer should expire.</param>
+        /// <param name="state">Any state to be preserved by the timer.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <returns>A durable task that completes when the durable timer expires.</returns>
         public override async Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
@@ -354,9 +356,7 @@ namespace Microsoft.Azure.WebJobs
                     throw new InvalidOperationException($"Unexpected function type '{functionType}'.");
             }
 
-            string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion)
-                ? this.orchestrationName
-                : this.orchestrationName + "/" + this.orchestrationVersion;
+            string sourceFunctionId = this.orchestrationName;
 
             this.config.TraceHelper.FunctionScheduled(
                 this.config.HubName,

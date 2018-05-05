@@ -1,6 +1,6 @@
 ## Durable Functions
 
-Durable Functions (an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs)) enables writing *long-running*, *stateful* function orchestrations in code in a serverless environment.
+Durable Functions (an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs)) enables writing *long-running*, *stateful* function orchestrations in code in a serverless environment (PaaS options and self-hosting is also supported).
 
 This extension enables a new type of function called the *orchestrator function* that allows you to do several new things that differentiates it from an ordinary, stateless function:
 * They are stateful workflows **authored in code**. No JSON schemas or designers.
@@ -21,28 +21,33 @@ Here are some samples you can study and/or reference. These will help you 1) lea
 * [Monitors - Weather Watcher](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-monitor)
 * [Human Interaction & Timeouts - Phone Verification](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification)
 
-Also, you can download all the samples as a single function app, which you can download from one of these two links:
-* C# Scripts: [DFSampleApp.zip](../../raw/master/docfx/files/DFSampleApp.zip)
-* Visual Studio Project: [VSDFSampleApp.zip](../../raw/master/docfx/files/VSDFSampleApp.zip)
-
 Using one of the sample projects is a great way to get up and running quickly and is the recommended way to get started. See the sample / walkthrough links above for specific instructions.
+
+Or if you prefer to start diving into the sample code, there are samples available for several development platforms:
+* [C# for Visual Studio](./samples/precompiled), including [unit test samples](./samples/VSSample.Tests)
+* [C# scripts](./samples/csx)
+* [C# for Azure WebJobs](./samples/webjobssdk)
+* [F#](./samples/fsharp)
+* [JavaScript (Functions v2 only)](./samples/javascript)
 
 ## Topical Guides
 Here you will find comprehensive documentation with examples on all of the feature areas. It's *highly* recommended that you read through all of these topics before coding.
 * [Bindings](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-bindings)
-* [Checkpointing & Replay](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay)
-* [Instance Management](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-instance-management)
+* [Checkpointing & replay](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay)
+* [Custom orchestration status](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-custom-orchestration-status)
+* [Instance management](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-instance-management)
 * [HTTP APIs](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-http-api)
-* [Error Handling & Compensation](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-error-handling)
+* [Error handling & compensation](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-error-handling)
 * [Diagnostics](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-diagnostics)
-* [Durable Timers](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-timers)
-* [External Events](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-external-events)
-* [Eternal Orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-eternal-orchestrations)
-* [Singleton Orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-singletons)
-* [Sub-Orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sub-orchestrations)
-* [Task Hubs](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-task-hubs)
+* [Durable timers](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-timers)
+* [External events](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-external-events)
+* [Eternal orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-eternal-orchestrations)
+* [Singleton orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-singletons)
+* [Sub-orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sub-orchestrations)
+* [Task hubs](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-task-hubs)
 * [Versioning](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-versioning)
-* [Performance & Scale](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-perf-and-scale)
+* [Performance & scale](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-perf-and-scale)
+* [Disaster recovery and geo-distribution](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-disaster-recovery-geo-distribution)
  
 ## .NET API Reference
 .NET API reference for the attributes and bindings provided by Durable Functions.
