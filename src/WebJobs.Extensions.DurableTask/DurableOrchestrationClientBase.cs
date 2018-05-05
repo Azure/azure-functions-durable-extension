@@ -15,25 +15,68 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the name of the task hub configured on this client instance.
         /// </summary>
+        /// <value>
+        /// The name of the task hub.
+        /// </value>
         public abstract string TaskHubName { get;  }
 
         /// <summary>
-        /// Creates an HTTP response for checking the status of the specified instance.
+        /// Creates an HTTP response that is useful for checking the status of the specified instance.
         /// </summary>
-        /// <param name="request">The HTTP request that triggered the current function.</param>
-        /// <param name="instanceId">The unique ID of the instance to check.</param>
-        /// <returns>An HTTP response which may include a 202 and location header.</returns>
+        /// <remarks>
+        /// The payload of the returned <see cref="HttpResponseMessage"/> contains HTTP API URLs that can
+        /// be used to query the status of the orchestration, raise events to the orchestration, or
+        /// terminate the orchestration.
+        /// </remarks>
+        /// <param name="request">The HTTP request that triggered the current orchestration instance.</param>
+        /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+        /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         public abstract HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
 
+        /// <inheritdoc />
+        public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId)
+        {
+            return this.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                timeout: TimeSpan.FromSeconds(10));
+        }
+
+        /// <inheritdoc />
+        public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            TimeSpan timeout)
+        {
+            return this.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                timeout,
+                retryInterval: TimeSpan.FromSeconds(1));
+        }
+
         /// <summary>
-        /// Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well.
+        /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+        /// or contains the payload containing the output of the completed orchestration.
         /// </summary>
+        /// <remarks>
+        /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+        /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+        /// complete within the specified timeout, then the HTTP response will be identical to that of the
+        /// <see cref="CreateCheckStatusResponse"/> API.
+        /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        public abstract Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval);
+        public abstract Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            TimeSpan timeout,
+            TimeSpan retryInterval);
 
         /// <summary>
         /// Starts a new execution of the specified orchestrator function.
@@ -50,10 +93,14 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Starts a new execution of the specified orchestrator function.
+        /// Starts a new instance of the specified orchestrator function.
         /// </summary>
+        /// <remarks>
+        /// If an orchestration instance with the specified ID already exists, the existing instance
+        /// will be silently replaced by this new instance.
+        /// </remarks>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-        /// <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
+        /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
         /// <returns>A task that completes when the orchestration is started.</returns>
         /// <exception cref="ArgumentException">
@@ -62,8 +109,17 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input);
 
         /// <summary>
-        /// Sends an event notification message to a running orchestration instance.
+        /// Sends an event notification message to a waiting orchestration instance.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In order to handle the event, the target orchestration instance must be waiting for an
+        /// event named <paramref name="eventName"/> using the
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}"/> API.
+        /// </para><para>
+        /// If the specified instance is not found or not running, this operation will have no effect.
+        /// </para>
+        /// </remarks>
         /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
         /// <param name="eventName">The name of the event.</param>
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
@@ -74,6 +130,10 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Terminates a running orchestration instance.
         /// </summary>
+        /// <remarks>
+        /// Terminating an orchestration instance has no effect on any in-flight activity function executions
+        /// or sub-orchestrations that were started by the current orchestration instance.
+        /// </remarks>
         /// <param name="instanceId">The ID of the orchestration instance to terminate.</param>
         /// <param name="reason">The reason for terminating the orchestration instance.</param>
         /// <returns>A task that completes when the terminate message is enqueued.</returns>
@@ -83,9 +143,30 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the status of the specified orchestration instance.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
+        /// <returns>Returns a task which completes when the status has been fetched.</returns>
+        public virtual Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId)
+        {
+            return this.GetStatusAsync(instanceId, showHistory: false);
+        }
+
+        /// <summary>
+        /// Gets the status of the specified orchestration instance.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to query.</param>
+        /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
+        /// <returns>Returns a task which completes when the status has been fetched.</returns>
+        public virtual Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory)
+        {
+            return this.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false);
+        }
+
+        /// <summary>
+        /// Gets the status of the specified orchestration instance.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false);
+        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput);
     }
 }

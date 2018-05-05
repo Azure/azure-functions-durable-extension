@@ -32,17 +32,17 @@ namespace Microsoft.Azure.WebJobs
         Failed = 3,
 
         /// <summary>
-        /// The orchestration was gracefully canceled.
+        /// The orchestration was canceled.
         /// </summary>
         Canceled = 4,
 
         /// <summary>
-        /// The orchestration was abruptly terminated via an API call.
+        /// The orchestration was terminated via an API call.
         /// </summary>
         Terminated = 5,
 
         /// <summary>
-        /// The orchestration was scheduled but is not yet active.
+        /// The orchestration was scheduled but has not yet started.
         /// </summary>
         Pending = 6,
     }

@@ -164,7 +164,7 @@ namespace Microsoft.Azure.WebJobs
         /// The current thread is different than the thread which started the orchestrator execution.
         /// </exception>
         /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
+        /// The sub-orchestrator function failed with an unhandled exception.
         /// </exception>
         public virtual Task CallSubOrchestratorAsync(string functionName, object input)
         {
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input);
 
         /// <summary>
-        /// Creates a durable timer which expires at a specified time.
+        /// Creates a durable timer that expires at a specified time.
         /// </summary>
         /// <remarks>
         /// All durable timers created using this method must either expire or be cancelled
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Creates a durable timer which expires at a specified time.
+        /// Creates a durable timer that expires at a specified time.
         /// </summary>
         /// <remarks>
         /// All durable timers created using this method must either expire or be cancelled
@@ -363,14 +363,25 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
         /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync"/>.
+        /// </remarks>
         /// <param name="name">The name of the event to wait for.</param>
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received.</returns>
         public abstract Task<T> WaitForExternalEvent<T>(string name);
 
         /// <summary>
-        /// Restarts the orchestration and its history.
+        /// Restarts the orchestration by clearing its history.
         /// </summary>
+        /// <remarks>
+        /// <para>Large orchestration histories can consume a lot of memory and cause delays in
+        /// instance load times. This method can be used to periodically truncate the stored
+        /// history of an orchestration instance.</para>
+        /// <para>Note that any unprocessed external events will be discarded when an orchestration
+        /// instance restarts itself using this method.</para>
+        /// </remarks>
         /// <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
         public abstract void ContinueAsNew(object input);
 
@@ -378,8 +389,9 @@ namespace Microsoft.Azure.WebJobs
         /// Sets the JSON-serializeable status of the current orchestrator function.
         /// </summary>
         /// <remarks>
-        /// The <paramref name="customStatusObject"/> value is serialized to JSON and will be made available
-        /// to the orchestration status query APIs.
+        /// The <paramref name="customStatusObject"/> value is serialized to JSON and will
+        /// be made available to the orchestration status query APIs. The serialized JSON 
+        /// value must not exceed 16 KB of UTF-16 encoded text.
         /// </remarks>
         /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         public abstract void SetCustomStatus(object customStatusObject);

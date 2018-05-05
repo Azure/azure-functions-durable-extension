@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
-            var orchestratorInfo = this.config.GetOrchestratorInfo(new FunctionName(this.context.Name, this.context.Version));
+            var orchestratorInfo = this.config.GetOrchestratorInfo(new FunctionName(this.context.Name));
 
             if (!this.context.IsReplaying)
             {

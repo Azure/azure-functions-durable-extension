@@ -17,14 +17,6 @@
             The name of the activity function or <c>null</c> to use the function name.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version">
-            <summary>
-            Gets or sets the version of the activity function.
-            </summary>
-            <value>
-            The version of the activity function.
-            </value>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension">
             <summary>
             Configuration for the Durable Functions extension.
@@ -185,7 +177,7 @@
             Called by the Durable Task Framework: Returns the specified <see cref="T:DurableTask.Core.TaskOrchestration"/>.
             </summary>
             <param name="name">The name of the orchestration to return.</param>
-            <param name="version">The version of the orchestration to return.</param>
+            <param name="version">Not used.</param>
             <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})">
@@ -199,7 +191,7 @@
             Called by the Durable Task Framework: Returns the specified <see cref="T:DurableTask.Core.TaskActivity"/>.
             </summary>
             <param name="name">The name of the activity to return.</param>
-            <param name="version">The version of the activity to return.</param>
+            <param name="version">Not used.</param>
             <returns>An activity shim that delegates execution to an activity function.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)">
@@ -297,7 +289,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableActivityContext">
             <summary>
-            Parameter data for activity bindings that are scheduled by their parent orchestrations.
+            The default parameter type for activity functions.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId">
@@ -305,8 +297,8 @@
             Gets the instance ID of the currently executing orchestration.
             </summary>
             <remarks>
-            The instance ID is generated and fixed when the parent orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+            The instance ID is fixed when the parent orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be an arbitrary string value.
             </remarks>
             <value>
             The ID of the current orchestration instance.
@@ -348,7 +340,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient">
             <summary>
-            Client for starting, querying, terminating, and raising events to new or existing orchestration instances.
+            Client for starting, querying, terminating, and raising events to orchestration instances.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName">
@@ -357,7 +349,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
@@ -381,16 +373,30 @@
             <summary>
             Gets the name of the task hub configured on this client instance.
             </summary>
+            <value>
+            The name of the task hub.
+            </value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <summary>
-            Creates an HTTP response for checking the status of the specified instance.
+            Creates an HTTP response that is useful for checking the status of the specified instance.
             </summary>
-            <param name="request">The HTTP request that triggered the current function.</param>
-            <param name="instanceId">The unique ID of the instance to check.</param>
-            <returns>An HTTP response which may include a 202 and location header.</returns>
+            <remarks>
+            The payload of the returned <see cref="T:System.Net.Http.HttpResponseMessage"/> contains HTTP API URLs that can
+            be used to query the status of the orchestration, raise events to the orchestration, or
+            terminate the orchestration.
+            </remarks>
+            <param name="request">The HTTP request that triggered the current orchestration instance.</param>
+            <param name="instanceId">The ID of the orchestration instance to check.</param>
+            <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
             <summary>
             Creates an HTTP response for checking the status of the specified instance supporting synchronous response as well.
             </summary>
@@ -413,10 +419,14 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object)">
             <summary>
-            Starts a new execution of the specified orchestrator function.
+            Starts a new instance of the specified orchestrator function.
             </summary>
+            <remarks>
+            If an orchestration instance with the specified ID already exists, the existing instance
+            will be silently replaced by this new instance.
+            </remarks>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <param name="instanceId">A unique ID to use for the new orchestration instance.</param>
+            <param name="instanceId">The ID to use for the new orchestration instance.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
             <returns>A task that completes when the orchestration is started.</returns>
             <exception cref="T:System.ArgumentException">
@@ -427,6 +437,15 @@
             <summary>
             Sends an event notification message to a running orchestration instance.
             </summary>
+            <remarks>
+            <para>
+            In order to handle the event, the target orchestration instance must be waiting for an
+            event named <paramref name="eventName"/> using the
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
+            </para><para>
+            If the specified instance is not found or not running, this operation will have no effect.
+            </para>
+            </remarks>
             <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
             <param name="eventName">The name of the event.</param>
             <param name="eventData">The JSON-serializeable data associated with the event.</param>
@@ -439,6 +458,12 @@
             <param name="instanceId">The ID of the orchestration instance to terminate.</param>
             <param name="reason">The reason for terminating the orchestration instance.</param>
             <returns>A task that completes when the terminate message is enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean)">
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
             <summary>
@@ -954,15 +979,14 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.FunctionName">
             <summary>
-            The name of a durable function, which includes its version (if any).
+            The name of a durable function.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.FunctionName.#ctor(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.FunctionName.#ctor(System.String)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> struct.
             </summary>
             <param name="name">The name of the function.</param>
-            <param name="version">The version of the function.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.FunctionName.Name">
             <summary>
@@ -970,14 +994,6 @@
             </summary>
             <value>
             The name of the activity function without the version.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.FunctionName.Version">
-            <summary>
-            Gets the version of the function.
-            </summary>
-            <value>
-            The version of the function or <c>null</c> if no version information was specified.
             </value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.FunctionName.op_Equality(Microsoft.Azure.WebJobs.FunctionName,Microsoft.Azure.WebJobs.FunctionName)">
@@ -1121,14 +1137,6 @@
             </summary>
             <value>
             The name of the orchestrator function or <c>null</c> to use the function name.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version">
-            <summary>
-            Gets or sets the version of the orchestrator function.
-            </summary>
-            <value>
-            The version of the orchestrator function.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.RetryOptions">
