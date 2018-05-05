@@ -1,6 +1,6 @@
 ## Durable Functions
 
-Durable Functions (an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs)) enables writing *long-running*, *stateful* function orchestrations in code in a serverless environment (PaaS options and self-hosting is also supported).
+Durable Functions (an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs)) enables writing *long-running*, *stateful* function orchestrations in code in a serverless environment (PaaS options and self-hosting are also supported).
 
 This extension enables a new type of function called the *orchestrator function* that allows you to do several new things that differentiates it from an ordinary, stateless function:
 * They are stateful workflows **authored in code**. No JSON schemas or designers.
@@ -13,13 +13,17 @@ The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.
 Are you new to Durable Functions? If so, this is the place to start.
 * [Overview](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-overview)
 * [Installation](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-install)
+* [Azure WebJobs hosting]()
 
 ## Samples / Walkthroughs
 Here are some samples you can study and/or reference. These will help you 1) learn how to write Durable Functions by example and 2) learn the various capabilities of Durable Functions.
-* [Function Chaining - Hello Sequence](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sequence)
-* [Fan-out/Fan-in - Cloud Backup](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-cloud-backup)
-* [Monitors - Weather Watcher](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-monitor)
-* [Human Interaction & Timeouts - Phone Verification](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification)
+* [Function Chaining - Hello sequence](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sequence)
+* [Fan-out/Fan-in - Cloud backup](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-cloud-backup)
+* [Monitors - Weather watcher](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-monitor)
+* [Human interaction & timeouts - Phone verification](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification)
+* [Unit testing - xUnit & Moq](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-unit-testing)
+* [Self hosting - WebJob SDK integration](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-webjobs-sdk)
+* [Lifecycle event notifications - Azure Event Grid](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-event-publishing)
 
 Using one of the sample projects is a great way to get up and running quickly and is the recommended way to get started. See the sample / walkthrough links above for specific instructions.
 
@@ -49,20 +53,21 @@ Here you will find comprehensive documentation with examples on all of the featu
 * [Performance & scale](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-perf-and-scale)
 * [Disaster recovery and geo-distribution](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-disaster-recovery-geo-distribution)
  
-## .NET API Reference
-.NET API reference for the attributes and bindings provided by Durable Functions.
+## API Reference
 
-### Attributes
+### Configuration
+* [Host.json reference](https://docs.microsoft.com/en-us/azure/azure-functions/functions-host-json#durabletask)
+### .NET Attributes
 * [OrchestrationTriggerAttribute](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html)
 * [OrchestrationClientAttribute](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html)
 * [ActivityTriggerAttribute](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html)
 
-### Bindings
+### .NET APIs / Bindings
 * [DurableOrchestrationContext](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html)
 * [DurableOrchestrationClient](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html)
 * [DurableActivityContext](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.DurableActivityContext.html)
 
-You can browse all of our public APIs [here](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.html).
+You can browse all of our public .NET APIs [here](https://azure.github.io/azure-functions-durable-extension/api/Microsoft.Azure.WebJobs.html). JavaScript API reference docs are coming soon!
 
 ## Contributing
 
