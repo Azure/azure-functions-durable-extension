@@ -112,18 +112,22 @@
   <div class="codewrapper">
     <pre><code class="lang-csharp hljs">public class DurableOrchestrationStatus</code></pre>
   </div>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>An external client can fetch the status of an orchestration instance using
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_">GetStatusAsync(String, Boolean, Boolean)</a>.</p>
+</div>
   <h3 id="properties">Properties
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CreatedTime.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CreatedTime%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CreatedTime.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CreatedTime%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L40">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L48">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CreatedTime_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CreatedTime*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CreatedTime" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CreatedTime">CreatedTime</h4>
-  <div class="markdown level1 summary"><p>Gets the time at which the queried orchestration instance was created.</p>
+  <div class="markdown level1 summary"><p>Gets the time at which the orchestration instance was created.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -141,21 +145,25 @@
     <tbody>
       <tr>
         <td><span class="xref">System.DateTime</span></td>
-        <td><p>The creation time in UTC.</p>
+        <td><p>The instance creation time in UTC.</p>
 </td>
       </tr>
     </tbody>
   </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CreatedTime_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>If the orchestration instance is in the <a class="xref" href="Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Pending">Pending</a>
+status, this time represents the time at which the orchestration instance was scheduled.</p>
+</div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L80">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L91">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus">CustomStatus</h4>
-  <div class="markdown level1 summary"><p>Gets a custom status payload that was assigned by the orchestrator function.</p>
+  <div class="markdown level1 summary"><p>Gets the custom status payload (if any) that was set by the orchestrator function.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -173,21 +181,24 @@
     <tbody>
       <tr>
         <td><span class="xref">Newtonsoft.Json.Linq.JToken</span></td>
-        <td><p>The custom status as a <code>JToken</code> object or <code>null</code> if no custom status has been set.</p>
+        <td><p>The custom status as either a <code>JToken</code> object or <code>null</code> if no custom status has been set.</p>
 </td>
       </tr>
     </tbody>
   </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Orchestrator functions can set a custom status using <a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetCustomStatus_System_Object_">SetCustomStatus(Object)</a>.</p>
+</div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L88">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L104">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History">History</h4>
-  <div class="markdown level1 summary"><p>Gets the execution history of the queried orchestrator function instance.</p>
+  <div class="markdown level1 summary"><p>Gets the execution history of the orchestration instance.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -210,16 +221,21 @@
       </tr>
     </tbody>
   </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The history log can be large and is therefore <code>null</code> by default.
+It is populated only when explicitly requested in the call to
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_">GetStatusAsync(String, Boolean, Boolean)</a>.</p>
+</div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Input.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Input.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L56">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L64">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Input_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Input" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input">Input</h4>
-  <div class="markdown level1 summary"><p>Gets the input of the queried orchestrator function instance.</p>
+  <div class="markdown level1 summary"><p>Gets the input of the orchestrator function instance.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -237,17 +253,17 @@
     <tbody>
       <tr>
         <td><span class="xref">Newtonsoft.Json.Linq.JToken</span></td>
-        <td><p>The input as a <code>JToken</code> or <code>null</code> if no input was provided.</p>
+        <td><p>The input as either a <code>JToken</code> or <code>null</code> if no input was provided.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_InstanceId.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_InstanceId.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L32">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L36">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_InstanceId_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_InstanceId" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId">InstanceId</h4>
@@ -269,7 +285,7 @@
     <tbody>
       <tr>
         <td><span class="xref">System.String</span></td>
-        <td><p>The ID of the queried instance.</p>
+        <td><p>The unique ID of the instance.</p>
 </td>
       </tr>
     </tbody>
@@ -280,14 +296,14 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
 </div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_LastUpdatedTime.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_LastUpdatedTime.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L48">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L56">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_LastUpdatedTime_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_LastUpdatedTime" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime">LastUpdatedTime</h4>
-  <div class="markdown level1 summary"><p>Gets the time at which the queried orchestration instance last updated its execution history.</p>
+  <div class="markdown level1 summary"><p>Gets the time at which the orchestration instance last updated its execution history.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -312,10 +328,10 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Name.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Name.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L20">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L24">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Name_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Name" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name">Name</h4>
@@ -344,10 +360,10 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Output.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Output.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L64">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L72">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Output_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Output" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output">Output</h4>
@@ -369,17 +385,17 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <tbody>
       <tr>
         <td><span class="xref">Newtonsoft.Json.Linq.JToken</span></td>
-        <td><p>The output as a <code>JToken</code> object or <code>null</code> if it has not yet completed.</p>
+        <td><p>The output as either a <code>JToken</code> object or <code>null</code> if it has not yet completed.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_RuntimeStatus.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus_RuntimeStatus.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L72">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L80">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_RuntimeStatus_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_RuntimeStatus" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus">RuntimeStatus</h4>
@@ -414,10 +430,10 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationStatus.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationStatus%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
                   </li>
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L12" class="contribution-link">View Source</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationStatus.cs/#L16" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

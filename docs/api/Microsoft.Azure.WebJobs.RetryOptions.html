@@ -74,7 +74,7 @@
   
   <h1 id="Microsoft_Azure_WebJobs_RetryOptions" data-uid="Microsoft.Azure.WebJobs.RetryOptions" class="text-break">Class RetryOptions
   </h1>
-  <div class="markdown level0 summary"><p>Contains retry policies that can be passed as parameters to various operations</p>
+  <div class="markdown level0 summary"><p>Defines retry policies that can be passed as parameters to various operations.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -116,14 +116,14 @@
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions__ctor_System_TimeSpan_System_Int32_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.%23ctor(System.TimeSpan%2CSystem.Int32)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions__ctor_System_TimeSpan_System_Int32_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.%23ctor(System.TimeSpan%2CSystem.Int32)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L24">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L24">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions__ctor_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.#ctor*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions__ctor_System_TimeSpan_System_Int32_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.#ctor(System.TimeSpan,System.Int32)">RetryOptions(TimeSpan, Int32)</h4>
-  <div class="markdown level1 summary"><p>Creates a new instance RetryOptions with the supplied first retry and max attempts</p>
+  <div class="markdown level1 summary"><p>Creates a new instance RetryOptions with the supplied first retry and max attempts.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -143,13 +143,13 @@
       <tr>
         <td><span class="xref">System.TimeSpan</span></td>
         <td><span class="parametername">firstRetryInterval</span></td>
-        <td><p>Timespan to wait for the first retry</p>
+        <td><p>Timespan to wait for the first retry.</p>
 </td>
       </tr>
       <tr>
         <td><span class="xref">System.Int32</span></td>
         <td><span class="parametername">maxNumberOfAttempts</span></td>
-        <td><p>Max number of attempts to retry</p>
+        <td><p>Max number of attempts to retry.</p>
 </td>
       </tr>
     </tbody>
@@ -165,7 +165,7 @@
     <tbody>
       <tr>
         <td><span class="xref">System.ArgumentException</span></td>
-        <td><p>The TimeSpan value must be greater than TimeSpan.Zero.</p>
+        <td><p>The <code data-dev-comment-type="paramref" class="paramref">firstRetryInterval</code> value must be greater than <span class="xref">System.TimeSpan.Zero</span>.</p>
 </td>
       </tr>
     </tbody>
@@ -174,14 +174,14 @@
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L59">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L59">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient" data-uid="Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient">BackoffCoefficient</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the backoff coefficient</p>
+  <div class="markdown level1 summary"><p>Gets or sets the backoff coefficient.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -199,21 +199,21 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Double</span></td>
-        <td><p>The backoff coefficient used to determine rate of increase of backoff, defaults to 1.</p>
+        <td><p>The backoff coefficient used to determine rate of increase of backoff. Defaults to 1.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L35">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L35">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval" data-uid="Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval">FirstRetryInterval</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the first retry interval</p>
+  <div class="markdown level1 summary"><p>Gets or sets the first retry interval.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -231,21 +231,21 @@
     <tbody>
       <tr>
         <td><span class="xref">System.TimeSpan</span></td>
-        <td><p>The TimeSpan to wait for the first retries</p>
+        <td><p>The TimeSpan to wait for the first retries.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_Handle.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.Handle%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_Handle.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.Handle%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L95">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L95">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions_Handle_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.Handle*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions_Handle" data-uid="Microsoft.Azure.WebJobs.RetryOptions.Handle">Handle</h4>
-  <div class="markdown level1 summary"><p>Gets or sets a Func to call on exception to determine if retries should proceed</p>
+  <div class="markdown level1 summary"><p>Gets or sets a delegate to call on exception to determine if retries should proceed.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -263,21 +263,21 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Func</span>&lt;<span class="xref">System.Exception</span>, <span class="xref">System.Boolean</span>&gt;</td>
-        <td><p>The Func to handle exception to determie if retries should proceed</p>
+        <td><p>The delegate to handle exception to determie if retries should proceed.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L83">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L83">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts">MaxNumberOfAttempts</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the max number of attempts</p>
+  <div class="markdown level1 summary"><p>Gets or sets the max number of attempts.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -295,21 +295,21 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Int32</span></td>
-        <td><p>The maximum number of retry attempts</p>
+        <td><p>The maximum number of retry attempts.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L47">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L47">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval" data-uid="Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval">MaxRetryInterval</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the max retry interval</p>
+  <div class="markdown level1 summary"><p>Gets or sets the max retry interval.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -327,21 +327,21 @@
     <tbody>
       <tr>
         <td><span class="xref">System.TimeSpan</span></td>
-        <td><p>The TimeSpan of the max retry interval, defaults to TimeSpan.MaxValue</p>
+        <td><p>The TimeSpan of the max retry interval, defaults to <span class="xref">System.TimeSpan.MaxValue</span>.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L71">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L71">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout_" data-uid="Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout*"></a>
   <h4 id="Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout" data-uid="Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout">RetryTimeout</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the timeout for retries</p>
+  <div class="markdown level1 summary"><p>Gets or sets the timeout for retries.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -359,7 +359,7 @@
     <tbody>
       <tr>
         <td><span class="xref">System.TimeSpan</span></td>
-        <td><p>The TimeSpan timeout for retries, defaults to TimeSpan.MaxValue</p>
+        <td><p>The TimeSpan timeout for retries, defaults to <span class="xref">System.TimeSpan.MaxValue</span>.</p>
 </td>
       </tr>
     </tbody>
@@ -372,10 +372,10 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/dev/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_RetryOptions.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.RetryOptions%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
                   </li>
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L12" class="contribution-link">View Source</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/RetryOptions.cs/#L12" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
