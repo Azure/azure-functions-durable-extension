@@ -29,8 +29,8 @@ namespace VSSample
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
-            TimeSpan? timeout = GetTimeSpan(req, Timeout);
-            TimeSpan? retryInterval = GetTimeSpan(req, RetryInterval);
+            TimeSpan timeout = GetTimeSpan(req, Timeout) ?? TimeSpan.FromSeconds(30);
+            TimeSpan retryInterval = GetTimeSpan(req, RetryInterval) ?? TimeSpan.FromSeconds(1);
             
             return await starter.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 req,

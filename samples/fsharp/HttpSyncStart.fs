@@ -12,12 +12,12 @@ open FSharp.Control.Tasks
 
 module HttpSyncStart = 
 
-  let private getTimeSpan (request: HttpRequestMessage) (queryParameterName: string) =
+  let private getTimeSpan (request: HttpRequestMessage) (queryParameterName: string) (defaultSeconds: double) =
     request.RequestUri.ParseQueryString().[queryParameterName]
     |> Option.ofObj
     |> Option.map Double.Parse
-    |> Option.map TimeSpan.FromSeconds
-    |> Option.toNullable
+    |> Option.defaultValue defaultSeconds
+    |> TimeSpan.FromSeconds
 
   [<FunctionName("HttpSyncStart")>]
   let Run([<HttpTrigger(AuthorizationLevel.Function, "post", Route = "orchestrators/{functionName}/wait")>] req: HttpRequestMessage,
@@ -30,8 +30,8 @@ module HttpSyncStart =
 
       log.Info(sprintf "Started orchestration with ID = '{%s}'." instanceId)
 
-      let timeout = getTimeSpan req "timeout"
-      let retryInterval = getTimeSpan req "retryInterval"
+      let timeout = getTimeSpan req "timeout" 30.0
+      let retryInterval = getTimeSpan req "retryInterval" 1.0
 
       return! starter.WaitForCompletionOrCreateCheckStatusResponseAsync(req, instanceId, timeout, retryInterval)
     }

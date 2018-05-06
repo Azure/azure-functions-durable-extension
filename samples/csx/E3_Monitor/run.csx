@@ -40,7 +40,7 @@ public static async Task Run(DurableOrchestrationContext monitorContext, ILogger
         }
     }
 
-    log.Info($"Monitor expiring.");
+    log.LogInformation("Monitor expiring.");
 }
 
 private static void VerifyRequest(MonitorRequest request)
