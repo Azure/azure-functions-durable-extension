@@ -1312,14 +1312,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
+                string parentInstanceId = "PARENT_" + Guid.NewGuid().ToString("N");
                 var startArgs = new StartOrchestrationArgs
                 {
                     FunctionName = orchestratorFunctionNames[1],
+                    InstanceId = parentInstanceId + ":0",
                     Input = inputJson,
                 };
 
                 // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output, parentInstanceId);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
 

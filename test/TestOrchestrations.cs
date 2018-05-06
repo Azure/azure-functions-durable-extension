@@ -152,7 +152,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string message = ctx.GetInput<string>();
 
-            await ctx.CallSubOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), message);
+            string childInstanceId = ctx.InstanceId + ":0";
+            await ctx.CallSubOrchestratorAsync(
+                nameof(TestOrchestrations.SayHelloWithActivity),
+                childInstanceId,
+                message);
         }
 
         public static async Task OrchestratorThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
