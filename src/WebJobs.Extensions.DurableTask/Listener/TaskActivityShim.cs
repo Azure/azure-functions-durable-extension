@@ -20,13 +20,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly ITriggeredFunctionExecutor executor;
         private readonly string activityName;
-        private readonly string activityVersion;
 
         public TaskActivityShim(
             DurableTaskExtension config,
             ITriggeredFunctionExecutor executor,
-            string activityName,
-            string activityVersion)
+            string activityName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -37,7 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.activityName = activityName;
-            this.activityVersion = activityVersion;
         }
 
         public override async Task<string> RunAsync(TaskContext context, string rawInput)
@@ -52,7 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.FunctionStarting(
                 this.config.HubName,
                 this.activityName,
-                this.activityVersion,
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
@@ -68,7 +64,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.TraceHelper.FunctionFailed(
                     this.config.HubName,
                     this.activityName,
-                    this.activityVersion,
                     instanceId,
                     exceptionToReport?.ToString() ?? string.Empty,
                     functionType: FunctionType.Activity,
@@ -86,7 +81,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.TraceHelper.FunctionCompleted(
                 this.config.HubName,
                 this.activityName,
-                this.activityVersion,
                 instanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
                 continuedAsNew: false,

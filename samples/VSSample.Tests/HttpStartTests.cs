@@ -4,13 +4,12 @@
 namespace VSSample.Tests
 {
     using System;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
-    using Microsoft.Azure.WebJobs.Host;
+    using Microsoft.Extensions.Logging;
     using Moq;
     using Xunit;
 
@@ -24,7 +23,7 @@ namespace VSSample.Tests
             const string instanceId = "7E467BDB-213F-407A-B86A-1954053D3C24";
 
             // Mock TraceWriter
-            var traceWriterMock = new Mock<TraceWriter>(TraceLevel.Info);
+            var loggerMock = new Mock<ILogger>();
 
             // Mock DurableOrchestrationClientBase
             var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase>();
@@ -52,7 +51,7 @@ namespace VSSample.Tests
                 },
                 durableOrchestrationClientBaseMock.Object,
                 functionName,
-                traceWriterMock.Object);
+                loggerMock.Object);
 
             // Validate that output is not null
             Assert.NotNull(result.Headers.RetryAfter);

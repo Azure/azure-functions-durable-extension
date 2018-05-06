@@ -5,11 +5,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Azure.WebJobs;
 using Moq;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableOrchestrationContextBaseTests
     {

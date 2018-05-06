@@ -25,6 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public JToken Input { get; set; }
 
         /// <summary>
+        /// Custom status.
+        /// </summary>
+        [DataMember(Name = "customStatus")]
+        public JToken CustomStatus { get; set; }
+
+        /// <summary>
         /// Output.
         /// </summary>
         [DataMember(Name = "output")]

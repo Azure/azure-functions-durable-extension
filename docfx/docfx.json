@@ -24,8 +24,6 @@
     "content": [
       {
         "files": [
-          "articles/**.md",
-          "articles/**/toc.yml",
           "api/**.md",
           "api/**.yml",
           "toc.yml",
@@ -39,10 +37,6 @@
     ],
     "resource": [
       {
-        "files": [
-          "files/**",
-          "images/**"
-        ],
         "exclude": [
           "obj/**"
         ]
@@ -51,7 +45,7 @@
     "dest": "../docs",
     "globalMetadataFiles": [],
     "globalMetadata": {
-      "_appFaviconPath": "images/favicon.ico",
+      "_appFaviconPath": "favicon.ico",
       "_appFooter": "Copyright © .NET Foundation"
     },
     "fileMetadataFiles": [],

@@ -5,14 +5,14 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
-    <AssemblyVersion>1.3.1.0</AssemblyVersion>
-    <FileVersion>1.3.1.0</FileVersion>
-    <Version>1.3.1-rc</Version>
+    <AssemblyVersion>1.4.0.0</AssemblyVersion>
+    <FileVersion>1.4.0.0</FileVersion>
+    <Version>1.4.0</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="1.1.7-beta" />
+    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
@@ -37,7 +37,7 @@
     <Title>Azure Functions Durable Task Extension</Title>
     <Authors>Microsoft</Authors>
     <Description>Azure WebJobs SDK Extension for the Durable Task Framework</Description>
-    <PackageReleaseNotes>This is a prerelease version of the Durable Task Extension for Azure Functions and Azure WebJobs.</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/Azure/azure-functions-durable-extension/releases/</PackageReleaseNotes>
     <Copyright>(c) Microsoft Corporation. All rights reserved.</Copyright>
     <PackageTags>Microsoft;Azure;WebJobs;Durable;Extension;Orchestration;Workflow;Functions</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
