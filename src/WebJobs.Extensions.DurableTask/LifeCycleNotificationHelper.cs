@@ -97,7 +97,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Details about the Event Grid REST API
             // https://docs.microsoft.com/en-us/rest/api/eventgrid/
-            using (HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content))
+            HttpResponseMessage result = null;
+            try
+            {
+                result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
+            }
+            catch (Exception e)
+            {
+                this.config.TraceHelper.EventGridException(
+                    hubName,
+                    functionName,
+                    functionState,
+                    version,
+                    instanceId,
+                    e.StackTrace,
+                    e,
+                    reason,
+                    stopWatch.ElapsedMilliseconds);
+                return;
+            }
+
+            using (result)
             {
                 var body = await result.Content.ReadAsStringAsync();
                 if (result.IsSuccessStatusCode)
@@ -313,11 +333,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var tryCount = 0;
                 Exception lastException = null;
+                HttpResponseMessage response = null;
                 do
                 {
                     try
                     {
-                        var response = await base.SendAsync(request, cancellationToken);
+                        response = null;
+                        response = await base.SendAsync(request, cancellationToken);
                         if (response.IsSuccessStatusCode)
                         {
                             return response;
@@ -330,8 +352,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 return response;
                             }
                         }
-
-                        lastException = new LifeCyclePublishingException("EventGrid publish api returned badstatus.", response.StatusCode);
                     }
                     catch (HttpRequestException e)
                     {
@@ -344,7 +364,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 } while (this.maxRetryCount >= tryCount);
 
-                throw lastException;
+                if (response != null)
+                {
+                    return response;
+                }
+                else
+                {
+                    throw lastException;
+                }
             }
         }
 
