@@ -250,6 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
+                .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
