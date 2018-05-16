@@ -69,5 +69,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return serializedJson;
         }
+
+        /// <summary>
+        /// JSON-deserializes the specified string to the specified object type.
+        /// </summary>
+        public override object Deserialize(string data, Type objectType)
+        {
+            // Deserializing to a string throws an exception.
+            if (objectType.Equals(typeof(string)))
+            {
+                return data;
+            }
+            else
+            {
+                return base.Deserialize(data, objectType);
+            }
+        }
     }
 }
