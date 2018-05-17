@@ -6,6 +6,7 @@
         "durable-functions": "^0.0.3",
         "moment": "^2.22.1",
         "readdirp": "^2.1.0",
+        "seedrandom": "^2.4.3",
         "uuid": "^3.2.1"
     }
 }
