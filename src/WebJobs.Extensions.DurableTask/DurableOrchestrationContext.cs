@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -24,37 +25,27 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private readonly Dictionary<string, Queue> pendingExternalEvents =
-            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Stack> pendingExternalEvents =
+            new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
-        private readonly string orchestrationVersion;
         private readonly List<Func<Task>> deferredTasks;
 
         private OrchestrationContext innerContext;
         private string serializedInput;
         private string serializedOutput;
         private string serializedCustomStatus;
-        private int owningThreadId;
 
-        internal DurableOrchestrationContext(
-            DurableTaskExtension config,
-            string functionName,
-            string functionVersion)
+        internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.deferredTasks = new List<Func<Task>>();
             this.orchestrationName = functionName;
-            this.orchestrationVersion = functionVersion;
-            this.owningThreadId = -1;
         }
 
         /// <inheritdoc />
         public override string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
-
-        /// <inheritdoc cref="DurableOrchestrationClientBase" />
-        public new string ParentInstanceId { get; internal set; }
 
         /// <inheritdoc />
         public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
@@ -70,14 +61,9 @@ namespace Microsoft.Azure.WebJobs
 
         internal string Name => this.orchestrationName;
 
-        internal string Version => this.orchestrationVersion;
-
         internal bool IsOutputSet => this.serializedOutput != null;
 
-        internal void AssignToCurrentThread()
-        {
-            this.owningThreadId = Thread.CurrentThread.ManagedThreadId;
-        }
+        internal IList<HistoryEvent> History { get; set; }
 
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
@@ -85,7 +71,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The raw JSON-formatted orchestrator function input.
         /// </returns>
-        public string GetRawInput()
+        internal string GetRawInput()
         {
             this.ThrowIfInvalidAccess();
             return this.serializedInput;
@@ -97,9 +83,8 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The parsed <c>JToken</c> representation of the orchestrator function input.
         /// </returns>
-        public JToken GetInputAsJson()
+        internal JToken GetInputAsJson()
         {
-            this.ThrowIfInvalidAccess();
             return this.serializedInput != null ? JToken.Parse(this.serializedInput) : null;
         }
 
@@ -118,10 +103,14 @@ namespace Microsoft.Azure.WebJobs
             return MessagePayloadDataConverter.Default.Deserialize<T>(this.serializedInput);
         }
 
-        internal void SetInput(OrchestrationContext frameworkContext, string rawInput)
+        internal void SetInput(string rawInput)
+        {
+            this.serializedInput = rawInput;
+        }
+
+        internal void SetInnerContext(OrchestrationContext frameworkContext)
         {
             this.innerContext = frameworkContext;
-            this.serializedInput = rawInput;
         }
 
         /// <summary>
@@ -212,7 +201,19 @@ namespace Microsoft.Azure.WebJobs
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, instanceId, retryOptions, input);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Creates a durable timer that expires at a specified time.
+        /// </summary>
+        /// <remarks>
+        /// All durable timers created using this method must either expire or be cancelled
+        /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
+        /// Otherwise the underlying framework will keep the instance alive until the timer expires.
+        /// </remarks>
+        /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
+        /// <param name="fireAt">The time at which the timer should expire.</param>
+        /// <param name="state">Any state to be preserved by the timer.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <returns>A durable task that completes when the durable timer expires.</returns>
         public override async Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
@@ -229,7 +230,6 @@ namespace Microsoft.Azure.WebJobs
             this.config.TraceHelper.FunctionListening(
                 this.config.HubName,
                 this.orchestrationName,
-                this.orchestrationVersion,
                 this.InstanceId,
                 reason: $"CreateTimer:{fireAt:o}",
                 isReplay: this.innerContext.IsReplaying);
@@ -239,7 +239,6 @@ namespace Microsoft.Azure.WebJobs
             this.config.TraceHelper.TimerExpired(
                 this.config.HubName,
                 this.orchestrationName,
-                this.orchestrationVersion,
                 this.InstanceId,
                 expirationTime: fireAt,
                 isReplay: this.innerContext.IsReplaying);
@@ -254,33 +253,35 @@ namespace Microsoft.Azure.WebJobs
 
             lock (this.pendingExternalEvents)
             {
-                Queue tcsRefQueue;
+                // We use a stack to make it easier for users to abandon external events
+                // that they no longer care about. The common case is a Task.WhenAny in a loop.
+                Stack taskCompletionSources;
                 TaskCompletionSource<T> tcs;
 
-                if (!this.pendingExternalEvents.TryGetValue(name, out tcsRefQueue))
+                if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
                     tcs = new TaskCompletionSource<T>();
-                    tcsRefQueue = new Queue();
-                    tcsRefQueue.Enqueue(tcs);
-                    this.pendingExternalEvents[name] = tcsRefQueue;
+                    taskCompletionSources = new Stack();
+                    taskCompletionSources.Push(tcs);
+                    this.pendingExternalEvents[name] = taskCompletionSources;
                 }
                 else
                 {
-                    if (tcsRefQueue.Count > 0 && tcsRefQueue.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    if (taskCompletionSources.Count > 0 &&
+                        taskCompletionSources.Peek().GetType() != typeof(TaskCompletionSource<T>))
                     {
                         throw new ArgumentException("Events with the same name should have the same type argument.");
                     }
                     else
                     {
                         tcs = new TaskCompletionSource<T>();
-                        tcsRefQueue.Enqueue(tcs);
+                        taskCompletionSources.Push(tcs);
                     }
                 }
 
                 this.config.TraceHelper.FunctionListening(
                     this.config.HubName,
                     this.orchestrationName,
-                    this.orchestrationVersion,
                     this.InstanceId,
                     reason: $"WaitForExternalEvent:{name}",
                     isReplay: this.innerContext.IsReplaying);
@@ -355,14 +356,11 @@ namespace Microsoft.Azure.WebJobs
                     throw new InvalidOperationException($"Unexpected function type '{functionType}'.");
             }
 
-            string sourceFunctionId = string.IsNullOrEmpty(this.orchestrationVersion)
-                ? this.orchestrationName
-                : this.orchestrationName + "/" + this.orchestrationVersion;
+            string sourceFunctionId = this.orchestrationName;
 
             this.config.TraceHelper.FunctionScheduled(
                 this.config.HubName,
                 functionName,
-                version,
                 this.InstanceId,
                 reason: sourceFunctionId,
                 functionType: functionType,
@@ -376,6 +374,16 @@ namespace Microsoft.Azure.WebJobs
                 output = await callTask;
             }
             catch (TaskFailedException e)
+            {
+                exception = e;
+                string message = string.Format(
+                    "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
+                    functionType.ToString().ToLowerInvariant(),
+                    functionName,
+                    e.InnerException?.Message);
+                throw new FunctionFailedException(message, e.InnerException);
+            }
+            catch (SubOrchestrationFailedException e)
             {
                 exception = e;
                 string message = string.Format(
@@ -399,7 +407,6 @@ namespace Microsoft.Azure.WebJobs
                     this.config.TraceHelper.FunctionFailed(
                         this.config.HubName,
                         functionName,
-                        version,
                         this.InstanceId,
                         reason: $"(replayed {exception.GetType().Name})",
                         functionType: functionType,
@@ -414,7 +421,6 @@ namespace Microsoft.Azure.WebJobs
                 this.config.TraceHelper.FunctionCompleted(
                     this.config.HubName,
                     functionName,
-                    version,
                     this.InstanceId,
                     output: "(replayed)",
                     continuedAsNew: false,
@@ -429,16 +435,16 @@ namespace Microsoft.Azure.WebJobs
         {
             lock (this.pendingExternalEvents)
             {
-                Queue tcsQueue;
-                if (this.pendingExternalEvents.TryGetValue(name, out tcsQueue))
+                Stack taskCompletionSources;
+                if (this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
-                    var tcs = tcsQueue.Dequeue();
+                    object tcs = taskCompletionSources.Pop();
                     Type tcsType = tcs.GetType();
                     Type genericTypeArgument = tcsType.GetGenericArguments()[0];
 
                     // If we're going to raise an event we should remove it from the pending collection
-                    // because otherwise WaitForExternal() will always find one with this key and run infinitely. Fixes #141
-                    if (tcsQueue.Count == 0)
+                    // because otherwise WaitForExternalEventAsync() will always find one with this key and run infinitely.
+                    if (taskCompletionSources.Count == 0)
                     {
                         this.pendingExternalEvents.Remove(name);
                     }
@@ -457,13 +463,10 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The inner context has not been initialized.");
             }
 
-            // TODO: This should be considered best effort because it's possible that async work
-            // was scheduled and the CLR decided to run it on the same thread. The only guaranteed
-            // way to detect cross-thread access is to do it in the Durable Task Framework directly.
-            if (this.owningThreadId != -1 && this.owningThreadId != Thread.CurrentThread.ManagedThreadId)
+            if (!OrchestrationContext.IsOrchestratorThread)
             {
                 throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints .");
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.");
             }
         }
 

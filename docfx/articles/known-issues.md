@@ -1,2 +1,0 @@
-# Known-Issues / FAQ
-In general, all known issues should be tracked in the [GitHub issues](https://github.com/Azure/azure-functions-durable-extension/issues) list. If you are running into a problem and can't find the issue in GitHub, please open a new issue and include a detailed description of the problem. Even if you simply want to ask a question, feel free to open a GitHub issue and tag it as a question.

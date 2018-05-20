@@ -2,25 +2,23 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskLifeCycleNotificationTest
     {
@@ -43,243 +41,231 @@ namespace WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Fact]
-        public async Task OrchestrationStartAndCompleted()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationStartAndCompleted(bool extendedSessionsEnabled)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.SayHelloInline),
-            };
-
+            var functionName = nameof(TestOrchestrations.SayHelloInline);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted),
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint))
             {
                 await host.StartAsync();
-                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
-                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
-                    .Where(x => x is DurableTaskExtension)
-                    .ToList();
-                if (extensionProviders.Any())
-                {
-                    var extension = (DurableTaskExtension)extensionProviders.First();
-                    var mock = new Mock<HttpMessageHandler>();
-                    mock.Protected()
-                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
-                            {
-                                Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
-                                var values = request.Headers.GetValues("aeg-sas-key").ToList();
-                                Assert.Single(values);
-                                Assert.Equal(eventGridKeyValue, values[0]);
-                                Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
-                                var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                                dynamic content = JsonConvert.DeserializeObject(json);
-                                foreach (dynamic o in content)
-                                {
-                                    Assert.Equal("1.0", o.dataVersion.ToString());
-                                    Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.hubName.ToString());
-                                    Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
 
-                                    if (callCount == 0)
-                                    {
-                                        Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
-                                        Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                        Assert.Equal("0", o.data.eventType.ToString());
-                                    }
-                                    else if (callCount == 1)
-                                    {
-                                        Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
-                                        Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                        Assert.Equal("1", o.data.eventType.ToString());
-                                    }
-                                    else
-                                    {
-                                        Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
-                                    }
-                                }
+                string createdInstanceId = Guid.NewGuid().ToString("N");
 
-                                callCount++;
-                                var message = new HttpResponseMessage(HttpStatusCode.OK);
-                                message.Content = new StringContent("{\"message\":\"OK!\"}");
-                                return Task.FromResult(message);
-                            });
+                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                    (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
-                }
+                int callCount = 0;
+                List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
+                    host,
+                    functionName,
+                    createdInstanceId,
+                    eventGridKeyValue,
+                    eventGridEndpoint,
+                    responseGenerator,
+                    handler: (JObject eventPayload) =>
+                    {
+                        dynamic o = eventPayload;
+                        if (callCount == 0)
+                        {
+                            Assert.Equal("durable/orchestrator/Running", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
+                        }
+                        else if (callCount == 1)
+                        {
+                            Assert.Equal("durable/orchestrator/Completed", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Completed", (string)o.data.runtimeStatus);
+                        }
+                        else
+                        {
+                            Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        }
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                        callCount++;
+                    });
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    "World",
+                    this.output,
+                    createdInstanceId);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
+
+                // There should be one validator for each Event Grid request.
+                // Each validator is a delegate with several Assert statements.
+                Assert.NotEmpty(eventGridRequestValidators);
+                foreach (Action validator in eventGridRequestValidators)
+                {
+                    validator.Invoke();
+                }
+
                 Assert.Equal(2, callCount);
 
                 await host.StopAsync();
             }
         }
 
-        [Fact]
-        public async Task OrchestrationFailed()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationFailed(bool extendedSessionsEnabled)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.ThrowOrchestrator),
-            };
-
+            var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationFailed), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationFailed),
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint))
             {
                 await host.StartAsync();
 
-                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
-                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
-                    .Where(x => x is DurableTaskExtension)
-                    .ToList();
+                string createdInstanceId = Guid.NewGuid().ToString("N");
 
-                if (extensionProviders.Any())
-                {
-                    var extension = (DurableTaskExtension)extensionProviders.First();
-                    var mock = new Mock<HttpMessageHandler>();
-                    mock.Protected()
-                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                    (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+                int callCount = 0;
+                List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
+                    host,
+                    functionName,
+                    createdInstanceId,
+                    eventGridKeyValue,
+                    eventGridEndpoint,
+                    responseGenerator,
+                    handler: (JObject eventPayload) =>
+                    {
+                        dynamic o = eventPayload;
+                        if (callCount == 0)
                         {
-                            Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
-                            var values = request.Headers.GetValues("aeg-sas-key").ToList();
-                            Assert.Single(values);
-                            Assert.Equal(eventGridKeyValue, values[0]);
-                            Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
-                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                            dynamic content = JsonConvert.DeserializeObject(json);
-                            foreach (dynamic o in content)
-                            {
-                                Assert.Equal("1.0", o.dataVersion.ToString());
-                                Assert.Equal(nameof(this.OrchestrationFailed), o.data.hubName.ToString());
-                                Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
+                            Assert.Equal("durable/orchestrator/Running", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
+                        }
+                        else if (callCount == 1)
+                        {
+                            Assert.Equal("durable/orchestrator/Failed", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Failed", (string)o.data.runtimeStatus);
+                        }
+                        else
+                        {
+                            Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        }
 
-                                if (callCount == 0)
-                                {
-                                    Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
-                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("0", o.data.eventType.ToString());
-                                }
-                                else if (callCount == 1)
-                                {
-                                    Assert.Equal("durable/orchestrator/Failed", o.subject.ToString());
-                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("3", o.data.eventType.ToString());
-                                }
-                                else
-                                {
-                                    Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
-                                }
-                            }
-
-                            callCount++;
-                            var message = new HttpResponseMessage(HttpStatusCode.OK);
-                            message.Content = new StringContent("{\"message\":\"OK!\"}");
-                            return Task.FromResult(message);
-                        });
-
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
-                }
+                        callCount++;
+                    });
 
                 // Null input should result in ArgumentNullException in the orchestration code.
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    null,
+                    this.output,
+                    createdInstanceId);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
 
+                // There should be one validator for each Event Grid request.
+                // Each validator is a delegate with several Assert statements.
+                Assert.NotEmpty(eventGridRequestValidators);
+                foreach (Action validator in eventGridRequestValidators)
+                {
+                    validator.Invoke();
+                }
+
+                Assert.Equal(2, callCount);
                 await host.StopAsync();
             }
         }
 
-        [Fact]
-        public async Task OrchestrationTerminate()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationTerminate(bool extendedSessionsEnabled)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.Counter),
-            };
+            // Using the counter orchestration because it will wait indefinitely for input.
+            var functionName = nameof(TestOrchestrations.Counter);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationTerminate),
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint))
             {
                 await host.StartAsync();
-                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
-                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
-                    .Where(x => x is DurableTaskExtension)
-                    .ToList();
 
-                if (extensionProviders.Any())
-                {
-                    var extension = (DurableTaskExtension)extensionProviders.First();
-                    var mock = new Mock<HttpMessageHandler>();
-                    mock.Protected()
-                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                string createdInstanceId = Guid.NewGuid().ToString("N");
+
+                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                    (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+                int callCount = 0;
+                List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
+                    host,
+                    functionName,
+                    createdInstanceId,
+                    eventGridKeyValue,
+                    eventGridEndpoint,
+                    responseGenerator,
+                    handler: (JObject eventPayload) =>
+                    {
+                        dynamic o = eventPayload;
+                        if (callCount == 0)
                         {
-                            Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
-                            var values = request.Headers.GetValues("aeg-sas-key").ToList();
-                            Assert.Single(values);
-                            Assert.Equal(eventGridKeyValue, values[0]);
-                            Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
-                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                            dynamic content = JsonConvert.DeserializeObject(json);
-                            foreach (dynamic o in content)
-                            {
-                                Assert.Equal("1.0", o.dataVersion.ToString());
-                                Assert.Equal(nameof(this.OrchestrationTerminate), o.data.hubName.ToString());
-                                Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
+                            Assert.Equal("durable/orchestrator/Running", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
+                        }
+                        else if (callCount == 1)
+                        {
+                            Assert.Equal("durable/orchestrator/Terminated", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Terminated", (string)o.data.runtimeStatus);
+                        }
+                        else
+                        {
+                            Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        }
 
-                                if (callCount == 0)
-                                {
-                                    Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
-                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("0", o.data.eventType.ToString());
-                                }
-                                else if (callCount == 1)
-                                {
-                                    Assert.Equal("durable/orchestrator/Terminated", o.subject.ToString());
-                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("5", o.data.eventType.ToString());
-                                }
-                                else
-                                {
-                                    Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
-                                }
-                            }
+                        callCount++;
+                    });
 
-                            callCount++;
-                            var message = new HttpResponseMessage(HttpStatusCode.OK);
-                            message.Content = new StringContent("{\"message\":\"OK!\"}");
-                            return Task.FromResult(message);
-                        });
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    0,
+                    this.output,
+                    createdInstanceId);
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
-                }
-
-                // Using the counter orchestration because it will wait indefinitely for input.
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], 0, this.output);
-
-                // Need to wait for the instance to start before we can terminate it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
                 await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
-
                 await client.TerminateAsync("sayōnara");
 
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
@@ -287,85 +273,98 @@ namespace WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Terminated, status?.RuntimeStatus);
                 Assert.Equal("sayōnara", status?.Output);
 
+                // There should be one validator for each Event Grid request.
+                // Each validator is a delegate with several Assert statements.
+                Assert.NotEmpty(eventGridRequestValidators);
+                foreach (Action validator in eventGridRequestValidators)
+                {
+                    validator.Invoke();
+                }
+
+                // TODO: There should be two calls, but the termination notification is not being fired.
+                //       https://github.com/Azure/azure-functions-durable-extension/issues/286
+                Assert.Equal(1, callCount);
                 await host.StopAsync();
             }
         }
 
-        [Fact]
-        public async Task OrchestrationEventGridApiReturnBadStatus()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationEventGridApiReturnBadStatus(bool extendedSessionsEnabled)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.SayHelloInline),
-            };
-
+            var functionName = nameof(TestOrchestrations.SayHelloInline);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            var callCount = 0;
 
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationStartAndCompleted), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted),
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint))
             {
                 await host.StartAsync();
-                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
-                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
-                    .Where(x => x is DurableTaskExtension)
-                    .ToList();
 
-                if (extensionProviders.Any())
-                {
-                    var extension = (DurableTaskExtension)extensionProviders.First();
-                    var mock = new Mock<HttpMessageHandler>();
-                    mock.Protected()
-                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                string createdInstanceId = Guid.NewGuid().ToString("N");
+
+                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                    (HttpRequestMessage req) => req.CreateResponse(
+                        HttpStatusCode.InternalServerError,
+                        new { message = "Exception has been thrown" });
+
+                int callCount = 0;
+                List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
+                    host,
+                    functionName,
+                    createdInstanceId,
+                    eventGridKeyValue,
+                    eventGridEndpoint,
+                    responseGenerator,
+                    handler: (JObject eventPayload) =>
+                    {
+                        dynamic o = eventPayload;
+                        if (callCount == 0)
                         {
-                            Assert.True(request.Headers.Any(x => x.Key == "aeg-sas-key"));
-                            var values = request.Headers.GetValues("aeg-sas-key").ToList();
-                            Assert.Single(values);
-                            Assert.Equal(eventGridKeyValue, values[0]);
-                            Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
-                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                            dynamic content = JsonConvert.DeserializeObject(json);
-                            foreach (dynamic o in content)
-                            {
-                                Assert.Equal("1.0", o.dataVersion.ToString());
-                                Assert.Equal(nameof(this.OrchestrationStartAndCompleted), o.data.hubName.ToString());
-                                Assert.Equal(orchestratorFunctionNames[0], o.data.functionName.ToString());
+                            Assert.Equal("durable/orchestrator/Running", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Running", (string)o.data.runtimeStatus);
+                        }
+                        else if (callCount == 1)
+                        {
+                            Assert.Equal("durable/orchestrator/Completed", (string)o.subject);
+                            Assert.Equal("orchestratorEvent", (string)o.eventType);
+                            Assert.Equal("Completed", (string)o.data.runtimeStatus);
+                        }
+                        else
+                        {
+                            Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        }
 
-                                if (callCount == 0)
-                                {
-                                    Assert.Equal("durable/orchestrator/Running", o.subject.ToString());
-                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("0", o.data.eventType.ToString());
-                                }
-                                else if (callCount == 1)
-                                {
-                                    Assert.Equal("durable/orchestrator/Completed", o.subject.ToString());
-                                    Assert.Equal("orchestratorEvent", o.eventType.ToString());
-                                    Assert.Equal("1", o.data.eventType.ToString());
-                                }
-                                else
-                                {
-                                    Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
-                                }
-                            }
+                        callCount++;
+                    });
 
-                            callCount++;
-                            var message = new HttpResponseMessage(HttpStatusCode.InternalServerError);
-                            message.Content = new StringContent("{\"message\":\"Exception has been thrown\"}");
-                            return Task.FromResult(message);
-                        });
-
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
-                }
-
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    "World",
+                    this.output,
+                    createdInstanceId);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
+
+                // There should be one validator for each Event Grid request.
+                // Each validator is a delegate with several Assert statements.
+                Assert.NotEmpty(eventGridRequestValidators);
+                foreach (Action validator in eventGridRequestValidators)
+                {
+                    validator.Invoke();
+                }
+
                 Assert.Equal(2, callCount);
 
                 if (this.useTestLogger)
@@ -374,7 +373,9 @@ namespace WebJobs.Extensions.DurableTask.Tests
                         this.output,
                         this.loggerProvider,
                         "OrchestrationEventGridApiReturnBadStatus",
-                        orchestratorFunctionNames);
+                        client.InstanceId,
+                        extendedSessionsEnabled,
+                        new[] { functionName });
                 }
 
                 await host.StopAsync();
@@ -387,7 +388,13 @@ namespace WebJobs.Extensions.DurableTask.Tests
             string eventGridKeyValue = null;
             var eventGridKeySettingName = "";
             var eventGridEndpoint = "http://dymmy.com/";
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridKeyValue,  eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationTerminate),
+                false /* extendedSessionsEnabled */,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
                 Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridEndpoint} and {eventGridKeySettingName}.", ex.Message);
@@ -400,11 +407,78 @@ namespace WebJobs.Extensions.DurableTask.Tests
             string eventGridKeyValue = null;
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.OrchestrationTerminate), eventGridKeySettingName, eventGridKeyValue, eventGridEndpoint))
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationTerminate),
+                false /* extendedSessionsEnabled */,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
                 Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridKeySettingName} on AppSettings.", ex.Message);
             }
+        }
+
+        private List<Action> ConfigureEventGridMockHandler(
+            JobHost host,
+            string functionName,
+            string createdInstanceId,
+            string eventGridKeyValue,
+            string eventGridEndpoint,
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator,
+            Action<JObject> handler)
+        {
+            var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+            var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                .Where(x => x is DurableTaskExtension)
+                .ToList();
+
+            var assertBodies = new List<Action>();
+            var extension = (DurableTaskExtension)extensionProviders.First();
+            var mock = new Mock<HttpMessageHandler>();
+            mock.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                {
+                    // We can't assert here directly because any unhandled exceptions will cause
+                    // DTFx to abort the work item, which would make debugging failures extremely
+                    // difficult. Instead, we capture the asserts in a set of lambda expressions
+                    // which can be invoked on the main test thread later.
+                    assertBodies.Add(() =>
+                    {
+                        Assert.Contains(request.Headers, x => x.Key == "aeg-sas-key");
+                        var values = request.Headers.GetValues("aeg-sas-key").ToList();
+                        Assert.Single(values);
+                        Assert.Equal(eventGridKeyValue, values[0]);
+                        Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
+                        var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        this.output.WriteLine("Event Grid notification: " + json);
+
+                        JArray content = JArray.Parse(json);
+                        dynamic o = (JObject)Assert.Single(content);
+
+                        string instanceId = o.data.instanceId;
+                        Assert.NotNull(instanceId);
+                        if (instanceId != createdInstanceId)
+                        {
+                            // This might be from a previous or concurrent run
+                            return;
+                        }
+
+                        Assert.Equal("1.0", o.dataVersion.ToString());
+                        Assert.Equal(extension.HubName, o.data.hubName.ToString());
+                        Assert.Equal(functionName, o.data.functionName.ToString());
+
+                        handler(o);
+                    });
+
+                    return Task.FromResult(responseGenerator(request));
+                });
+
+            extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
+
+            return assertBodies;
         }
 
         [Fact]

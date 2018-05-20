@@ -14,11 +14,12 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Client for starting, querying, terminating, and raising events to new or existing orchestration instances.
+    /// Client for starting, querying, terminating, and raising events to orchestration instances.
     /// </summary>
     public class DurableOrchestrationClient : DurableOrchestrationClientBase
     {
         private const string DefaultVersion = "";
+        private const int MaxInstanceIdLength = 256;
 
         private static readonly JValue NullJValue = JValue.CreateNull();
 
@@ -51,9 +52,18 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
+        public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
         {
-            return await this.config.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, this.attribute, timeout ?? TimeSpan.FromSeconds(10), retryInterval ?? TimeSpan.FromSeconds(1));
+            return await this.config.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                this.attribute,
+                timeout,
+                retryInterval);
         }
 
         /// <inheritdoc />
@@ -66,13 +76,17 @@ namespace Microsoft.Azure.WebJobs
                 instanceId = Guid.NewGuid().ToString("N");
             }
 
+            if (instanceId.Length > MaxInstanceIdLength)
+            {
+                throw new ArgumentException($"Instance ID lengths must not exceed {MaxInstanceIdLength} characters.");
+            }
+
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName, DefaultVersion, instanceId, input);
 
             this.traceHelper.FunctionScheduled(
                 this.hubName,
                 orchestratorFunctionName,
-                DefaultVersion,
                 instanceId,
                 reason: "NewInstance",
                 functionType: FunctionType.Orchestrator,
@@ -102,7 +116,6 @@ namespace Microsoft.Azure.WebJobs
                 this.traceHelper.FunctionScheduled(
                     this.hubName,
                     state.Name,
-                    state.Version,
                     state.OrchestrationInstance.InstanceId,
                     reason: "RaiseEvent:" + eventName,
                     functionType: FunctionType.Orchestrator,
@@ -120,7 +133,7 @@ namespace Microsoft.Azure.WebJobs
             {
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
-                this.traceHelper.FunctionTerminated(this.hubName, state.Name, state.Version, instanceId, reason);
+                this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
             }
         }
 

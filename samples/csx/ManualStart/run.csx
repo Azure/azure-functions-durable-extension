@@ -1,10 +1,11 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+#r "Microsoft.Extensions.Logging"
 
 using System;
 
-public static async Task Run(string functionName, DurableOrchestrationClient starter, TraceWriter log)
+public static async Task Run(string functionName, DurableOrchestrationClient starter, ILogger log)
 {
-    log.Info($"Starting orchestration named: {functionName}");
+    log.LogInformation($"Starting orchestration named: {functionName}");
     string instanceId = await starter.StartNewAsync(functionName, null);
-    log.Info($"Started orchestration with ID = '{instanceId}'.");   
+    log.LogInformation($"Started orchestration with ID = '{instanceId}'.");   
 }

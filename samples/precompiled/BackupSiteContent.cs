@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace VSSample
@@ -43,11 +43,11 @@ namespace VSSample
         [FunctionName("E2_GetFileList")]
         public static string[] GetFileList(
             [ActivityTrigger] string rootDirectory, 
-            TraceWriter log)
+            ILogger log)
         {
-            log.Info($"Searching for files under '{rootDirectory}'...");
+            log.LogInformation($"Searching for files under '{rootDirectory}'...");
             string[] files = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
-            log.Info($"Found {files.Length} file(s) under {rootDirectory}.");
+            log.LogInformation($"Found {files.Length} file(s) under {rootDirectory}.");
 
             return files;
         }
@@ -56,7 +56,7 @@ namespace VSSample
         public static async Task<long> CopyFileToBlob(
             [ActivityTrigger] string filePath,
             Binder binder,
-            TraceWriter log)
+            ILogger log)
         {
             long byteCount = new FileInfo(filePath).Length;
 
@@ -66,7 +66,7 @@ namespace VSSample
                 .Replace('\\', '/');
             string outputLocation = $"backups/{blobPath}";
 
-            log.Info($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
+            log.LogInformation($"Copying '{filePath}' to '{outputLocation}'. Total bytes = {byteCount}.");
 
             // copy the file contents into a blob
             using (Stream source = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))

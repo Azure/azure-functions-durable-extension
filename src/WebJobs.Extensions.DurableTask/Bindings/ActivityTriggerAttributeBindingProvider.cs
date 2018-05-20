@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // The activity name defaults to the method name.
-            var activityName = new FunctionName(name, trigger.Version);
+            var activityName = new FunctionName(name);
             this.durableTaskConfig.RegisterActivity(activityName, null);
             var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName);
             return Task.FromResult<ITriggerBinding>(binding);

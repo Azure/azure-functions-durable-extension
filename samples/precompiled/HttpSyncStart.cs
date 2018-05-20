@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 
 namespace VSSample
 {
@@ -21,16 +21,16 @@ namespace VSSample
             HttpRequestMessage req,
             [OrchestrationClient] DurableOrchestrationClientBase starter,
             string functionName,
-            TraceWriter log)
+            ILogger log)
         {
             // Function input comes from the request content.
             dynamic eventData = await req.Content.ReadAsAsync<object>();
             string instanceId = await starter.StartNewAsync(functionName, eventData);
 
-            log.Info($"Started orchestration with ID = '{instanceId}'.");
+            log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
-            TimeSpan? timeout = GetTimeSpan(req, Timeout);
-            TimeSpan? retryInterval = GetTimeSpan(req, RetryInterval);
+            TimeSpan timeout = GetTimeSpan(req, Timeout) ?? TimeSpan.FromSeconds(30);
+            TimeSpan retryInterval = GetTimeSpan(req, RetryInterval) ?? TimeSpan.FromSeconds(1);
             
             return await starter.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 req,
