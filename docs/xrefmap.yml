@@ -23,20 +23,9 @@ references:
   name: Activity
   href: api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html#Microsoft_Azure_WebJobs_ActivityTriggerAttribute_Activity_
   commentId: Overload:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Activity
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Activity
   nameWithType: ActivityTriggerAttribute.Activity
-- uid: Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version
-  name: Version
-  href: api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html#Microsoft_Azure_WebJobs_ActivityTriggerAttribute_Version
-  commentId: P:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version
-  fullName: Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version
-  nameWithType: ActivityTriggerAttribute.Version
-- uid: Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version*
-  name: Version
-  href: api/Microsoft.Azure.WebJobs.ActivityTriggerAttribute.html#Microsoft_Azure_WebJobs_ActivityTriggerAttribute_Version_
-  commentId: Overload:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version
-  fullName: Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Version
-  nameWithType: ActivityTriggerAttribute.Version
 - uid: Microsoft.Azure.WebJobs.DurableActivityContext
   name: DurableActivityContext
   href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html
@@ -47,6 +36,7 @@ references:
   name: GetInput
   href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetInput_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableActivityContext.GetInput
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableActivityContext.GetInput
   nameWithType: DurableActivityContext.GetInput
 - uid: Microsoft.Azure.WebJobs.DurableActivityContext.GetInput``1
@@ -58,30 +48,6 @@ references:
   fullName.vb: Microsoft.Azure.WebJobs.DurableActivityContext.GetInput(Of T)()
   nameWithType: DurableActivityContext.GetInput<T>()
   nameWithType.vb: DurableActivityContext.GetInput(Of T)()
-- uid: Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson
-  name: GetInputAsJson()
-  href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetInputAsJson
-  commentId: M:Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson
-  fullName: Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson()
-  nameWithType: DurableActivityContext.GetInputAsJson()
-- uid: Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson*
-  name: GetInputAsJson
-  href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetInputAsJson_
-  commentId: Overload:Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson
-  fullName: Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson
-  nameWithType: DurableActivityContext.GetInputAsJson
-- uid: Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput
-  name: GetRawInput()
-  href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetRawInput
-  commentId: M:Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput
-  fullName: Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput()
-  nameWithType: DurableActivityContext.GetRawInput()
-- uid: Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput*
-  name: GetRawInput
-  href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_GetRawInput_
-  commentId: Overload:Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput
-  fullName: Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput
-  nameWithType: DurableActivityContext.GetRawInput
 - uid: Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId
   name: InstanceId
   href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_InstanceId
@@ -92,6 +58,7 @@ references:
   name: InstanceId
   href: api/Microsoft.Azure.WebJobs.DurableActivityContext.html#Microsoft_Azure_WebJobs_DurableActivityContext_InstanceId_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId
   nameWithType: DurableActivityContext.InstanceId
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient
@@ -110,18 +77,20 @@ references:
   name: CreateCheckStatusResponse
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_CreateCheckStatusResponse_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse
   nameWithType: DurableOrchestrationClient.CreateCheckStatusResponse
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)
-  name: GetStatusAsync(String)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String)
-  nameWithType: DurableOrchestrationClient.GetStatusAsync(String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)
+  name: GetStatusAsync(String, Boolean, Boolean)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String, System.Boolean, System.Boolean)
+  nameWithType: DurableOrchestrationClient.GetStatusAsync(String, Boolean, Boolean)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync*
   name: GetStatusAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync
   nameWithType: DurableOrchestrationClient.GetStatusAsync
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)
@@ -134,14 +103,9 @@ references:
   name: RaiseEventAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync
   nameWithType: DurableOrchestrationClient.RaiseEventAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.Object)
-  name: StartNewAsync(String, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_System_String_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String, System.Object)
-  nameWithType: DurableOrchestrationClient.StartNewAsync(String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)
   name: StartNewAsync(String, String, Object)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_System_String_System_String_System_Object_
@@ -152,8 +116,22 @@ references:
   name: StartNewAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_StartNewAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync
   nameWithType: DurableOrchestrationClient.StartNewAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName
+  name: TaskHubName
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_TaskHubName
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName
+  nameWithType: DurableOrchestrationClient.TaskHubName
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName*
+  name: TaskHubName
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_TaskHubName_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName
+  nameWithType: DurableOrchestrationClient.TaskHubName
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)
   name: TerminateAsync(String, String)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_TerminateAsync_System_String_System_String_
@@ -164,24 +142,160 @@ references:
   name: TerminateAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_TerminateAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync
   nameWithType: DurableOrchestrationClient.TerminateAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)
+  name: WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String, TimeSpan, TimeSpan)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_WaitForCompletionOrCreateCheckStatusResponseAsync_System_Net_Http_HttpRequestMessage_System_String_System_TimeSpan_System_TimeSpan_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage, System.String, System.TimeSpan, System.TimeSpan)
+  nameWithType: DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String, TimeSpan, TimeSpan)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync*
+  name: WaitForCompletionOrCreateCheckStatusResponseAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_WaitForCompletionOrCreateCheckStatusResponseAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync
+  nameWithType: DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase
+  name: DurableOrchestrationClientBase
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html
+  commentId: T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase
+  nameWithType: DurableOrchestrationClientBase
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)
+  name: CreateCheckStatusResponse(HttpRequestMessage, String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_CreateCheckStatusResponse_System_Net_Http_HttpRequestMessage_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage, System.String)
+  nameWithType: DurableOrchestrationClientBase.CreateCheckStatusResponse(HttpRequestMessage, String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse*
+  name: CreateCheckStatusResponse
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_CreateCheckStatusResponse_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse
+  nameWithType: DurableOrchestrationClientBase.CreateCheckStatusResponse
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)
+  name: GetStatusAsync(String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)
+  nameWithType: DurableOrchestrationClientBase.GetStatusAsync(String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean)
+  name: GetStatusAsync(String, Boolean)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_System_Boolean_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String, System.Boolean)
+  nameWithType: DurableOrchestrationClientBase.GetStatusAsync(String, Boolean)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)
+  name: GetStatusAsync(String, Boolean, Boolean)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_System_Boolean_System_Boolean_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String, System.Boolean, System.Boolean)
+  nameWithType: DurableOrchestrationClientBase.GetStatusAsync(String, Boolean, Boolean)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*
+  name: GetStatusAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync
+  nameWithType: DurableOrchestrationClientBase.GetStatusAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.Object)
+  name: RaiseEventAsync(String, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RaiseEventAsync_System_String_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String, System.String, System.Object)
+  nameWithType: DurableOrchestrationClientBase.RaiseEventAsync(String, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync*
+  name: RaiseEventAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RaiseEventAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync
+  nameWithType: DurableOrchestrationClientBase.RaiseEventAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.Object)
+  name: StartNewAsync(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_StartNewAsync_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String, System.Object)
+  nameWithType: DurableOrchestrationClientBase.StartNewAsync(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object)
+  name: StartNewAsync(String, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_StartNewAsync_System_String_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String, System.String, System.Object)
+  nameWithType: DurableOrchestrationClientBase.StartNewAsync(String, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync*
+  name: StartNewAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_StartNewAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync
+  nameWithType: DurableOrchestrationClientBase.StartNewAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName
+  name: TaskHubName
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TaskHubName
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName
+  nameWithType: DurableOrchestrationClientBase.TaskHubName
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName*
+  name: TaskHubName
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TaskHubName_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName
+  nameWithType: DurableOrchestrationClientBase.TaskHubName
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String,System.String)
+  name: TerminateAsync(String, String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TerminateAsync_System_String_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String,System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String, System.String)
+  nameWithType: DurableOrchestrationClientBase.TerminateAsync(String, String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync*
+  name: TerminateAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TerminateAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync
+  nameWithType: DurableOrchestrationClientBase.TerminateAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)
+  name: WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_WaitForCompletionOrCreateCheckStatusResponseAsync_System_Net_Http_HttpRequestMessage_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage, System.String)
+  nameWithType: DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)
+  name: WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String, TimeSpan)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_WaitForCompletionOrCreateCheckStatusResponseAsync_System_Net_Http_HttpRequestMessage_System_String_System_TimeSpan_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage, System.String, System.TimeSpan)
+  nameWithType: DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String, TimeSpan)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)
+  name: WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String, TimeSpan, TimeSpan)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_WaitForCompletionOrCreateCheckStatusResponseAsync_System_Net_Http_HttpRequestMessage_System_String_System_TimeSpan_System_TimeSpan_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage, System.String, System.TimeSpan, System.TimeSpan)
+  nameWithType: DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage, String, TimeSpan, TimeSpan)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync*
+  name: WaitForCompletionOrCreateCheckStatusResponseAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_WaitForCompletionOrCreateCheckStatusResponseAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync
+  nameWithType: DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext
   name: DurableOrchestrationContext
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html
   commentId: T:Microsoft.Azure.WebJobs.DurableOrchestrationContext
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext
   nameWithType: DurableOrchestrationContext
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object)
-  name: CallActivityAsync(String, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_System_String_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(System.String, System.Object)
-  nameWithType: DurableOrchestrationContext.CallActivityAsync(String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync*
   name: CallActivityAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync
   nameWithType: DurableOrchestrationContext.CallActivityAsync
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)
@@ -193,16 +307,11 @@ references:
   fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync(Of TResult)(System.String, System.Object)
   nameWithType: DurableOrchestrationContext.CallActivityAsync<TResult>(String, Object)
   nameWithType.vb: DurableOrchestrationContext.CallActivityAsync(Of TResult)(String, Object)
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
-  name: CallActivityWithRetryAsync(String, RetryOptions, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
-  nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync(String, RetryOptions, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync*
   name: CallActivityWithRetryAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallActivityWithRetryAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync
   nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
@@ -214,33 +323,13 @@ references:
   fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
   nameWithType: DurableOrchestrationContext.CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object)
   nameWithType.vb: DurableOrchestrationContext.CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object)
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object)
-  name: CallSubOrchestratorAsync(String, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String, System.Object)
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync(String, Object)
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.String,System.Object)
-  name: CallSubOrchestratorAsync(String, String, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_System_String_System_String_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String,System.String,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(System.String, System.String, System.Object)
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync(String, String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync*
   name: CallSubOrchestratorAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync
   nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object)
-  name: CallSubOrchestratorAsync<TResult>(String, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.Object)
-  name.vb: CallSubOrchestratorAsync(Of TResult)(String, Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(System.String, System.Object)
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(System.String, System.Object)
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(String, Object)
-  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)
   name: CallSubOrchestratorAsync<TResult>(String, String, Object)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorAsync__1_System_String_System_String_System_Object_
@@ -250,33 +339,13 @@ references:
   fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(System.String, System.String, System.Object)
   nameWithType: DurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(String, String, Object)
   nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorAsync(Of TResult)(String, String, Object)
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
-  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
-  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync*
   name: CallSubOrchestratorWithRetryAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync
   nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
-  name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
-  name.vb: CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
-  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
-  nameWithType: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object)
-  nameWithType.vb: DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
   name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, String, Object)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_
@@ -296,18 +365,14 @@ references:
   name: ContinueAsNew
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew
   nameWithType: DurableOrchestrationContext.ContinueAsNew
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)
-  name: CreateTimer(DateTime, CancellationToken)
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_System_DateTime_System_Threading_CancellationToken_
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime,System.Threading.CancellationToken)
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer(System.DateTime, System.Threading.CancellationToken)
-  nameWithType: DurableOrchestrationContext.CreateTimer(DateTime, CancellationToken)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer*
   name: CreateTimer
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CreateTimer_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer
   nameWithType: DurableOrchestrationContext.CreateTimer
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)
@@ -329,12 +394,14 @@ references:
   name: CurrentUtcDateTime
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_CurrentUtcDateTime_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime
   nameWithType: DurableOrchestrationContext.CurrentUtcDateTime
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput*
   name: GetInput
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInput_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput
   nameWithType: DurableOrchestrationContext.GetInput
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput``1
@@ -346,30 +413,6 @@ references:
   fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput(Of T)()
   nameWithType: DurableOrchestrationContext.GetInput<T>()
   nameWithType.vb: DurableOrchestrationContext.GetInput(Of T)()
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson
-  name: GetInputAsJson()
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInputAsJson
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson()
-  nameWithType: DurableOrchestrationContext.GetInputAsJson()
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson*
-  name: GetInputAsJson
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetInputAsJson_
-  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson
-  nameWithType: DurableOrchestrationContext.GetInputAsJson
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput
-  name: GetRawInput()
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetRawInput
-  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput()
-  nameWithType: DurableOrchestrationContext.GetRawInput()
-- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput*
-  name: GetRawInput
-  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_GetRawInput_
-  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput
-  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput
-  nameWithType: DurableOrchestrationContext.GetRawInput
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId
   name: InstanceId
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_InstanceId
@@ -380,6 +423,7 @@ references:
   name: InstanceId
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_InstanceId_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId
   nameWithType: DurableOrchestrationContext.InstanceId
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying
@@ -392,12 +436,27 @@ references:
   name: IsReplaying
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_IsReplaying_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying
   nameWithType: DurableOrchestrationContext.IsReplaying
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)
+  name: SetCustomStatus(Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetCustomStatus_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)
+  nameWithType: DurableOrchestrationContext.SetCustomStatus(Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus*
+  name: SetCustomStatus
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_SetCustomStatus_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus
+  nameWithType: DurableOrchestrationContext.SetCustomStatus
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent*
   name: WaitForExternalEvent
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent
   nameWithType: DurableOrchestrationContext.WaitForExternalEvent
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)
@@ -409,6 +468,262 @@ references:
   fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent(Of T)(System.String)
   nameWithType: DurableOrchestrationContext.WaitForExternalEvent<T>(String)
   nameWithType.vb: DurableOrchestrationContext.WaitForExternalEvent(Of T)(String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase
+  name: DurableOrchestrationContextBase
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html
+  commentId: T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase
+  nameWithType: DurableOrchestrationContextBase
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)
+  name: CallActivityAsync(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallActivityAsync(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync*
+  name: CallActivityAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync
+  nameWithType: DurableOrchestrationContextBase.CallActivityAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync``1(System.String,System.Object)
+  name: CallActivityAsync<TResult>(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync__1_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync``1(System.String,System.Object)
+  name.vb: CallActivityAsync(Of TResult)(String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync<TResult>(System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(Of TResult)(System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallActivityAsync<TResult>(String, Object)
+  nameWithType.vb: DurableOrchestrationContextBase.CallActivityAsync(Of TResult)(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallActivityWithRetryAsync(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallActivityWithRetryAsync(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync*
+  name: CallActivityWithRetryAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync
+  nameWithType: DurableOrchestrationContextBase.CallActivityWithRetryAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name.vb: CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallActivityWithRetryAsync<TResult>(String, RetryOptions, Object)
+  nameWithType.vb: DurableOrchestrationContextBase.CallActivityWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.Object)
+  name: CallSubOrchestratorAsync(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorAsync(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.String,System.Object)
+  name: CallSubOrchestratorAsync(String, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_System_String_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String, System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorAsync(String, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync*
+  name: CallSubOrchestratorAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.Object)
+  name: CallSubOrchestratorAsync<TResult>(String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync__1_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.Object)
+  name.vb: CallSubOrchestratorAsync(Of TResult)(String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync<TResult>(System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(Of TResult)(System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorAsync<TResult>(String, Object)
+  nameWithType.vb: DurableOrchestrationContextBase.CallSubOrchestratorAsync(Of TResult)(String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)
+  name: CallSubOrchestratorAsync<TResult>(String, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync__1_System_String_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)
+  name.vb: CallSubOrchestratorAsync(Of TResult)(String, String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync<TResult>(System.String, System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(Of TResult)(System.String, System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorAsync<TResult>(String, String, Object)
+  nameWithType.vb: DurableOrchestrationContextBase.CallSubOrchestratorAsync(Of TResult)(String, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  name: CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync*
+  name: CallSubOrchestratorWithRetryAsync
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)
+  name.vb: CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, Object)
+  nameWithType.vb: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  name: CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, String, Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)
+  name.vb: CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, String, Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync<TResult>(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(Of TResult)(System.String, Microsoft.Azure.WebJobs.RetryOptions, System.String, System.Object)
+  nameWithType: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync<TResult>(String, RetryOptions, String, Object)
+  nameWithType.vb: DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(Of TResult)(String, RetryOptions, String, Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)
+  name: ContinueAsNew(Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)
+  nameWithType: DurableOrchestrationContextBase.ContinueAsNew(Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew*
+  name: ContinueAsNew
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew
+  nameWithType: DurableOrchestrationContextBase.ContinueAsNew
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime,System.Threading.CancellationToken)
+  name: CreateTimer(DateTime, CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_System_DateTime_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime,System.Threading.CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime, System.Threading.CancellationToken)
+  nameWithType: DurableOrchestrationContextBase.CreateTimer(DateTime, CancellationToken)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer*
+  name: CreateTimer
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer
+  nameWithType: DurableOrchestrationContextBase.CreateTimer
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)
+  name: CreateTimer<T>(DateTime, T, CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)
+  name.vb: CreateTimer(Of T)(DateTime, T, CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer<T>(System.DateTime, T, System.Threading.CancellationToken)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(Of T)(System.DateTime, T, System.Threading.CancellationToken)
+  nameWithType: DurableOrchestrationContextBase.CreateTimer<T>(DateTime, T, CancellationToken)
+  nameWithType.vb: DurableOrchestrationContextBase.CreateTimer(Of T)(DateTime, T, CancellationToken)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime
+  name: CurrentUtcDateTime
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CurrentUtcDateTime
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime
+  nameWithType: DurableOrchestrationContextBase.CurrentUtcDateTime
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime*
+  name: CurrentUtcDateTime
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CurrentUtcDateTime_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime
+  nameWithType: DurableOrchestrationContextBase.CurrentUtcDateTime
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput*
+  name: GetInput
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_GetInput_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput
+  nameWithType: DurableOrchestrationContextBase.GetInput
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput``1
+  name: GetInput<T>()
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_GetInput__1
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput``1
+  name.vb: GetInput(Of T)()
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput<T>()
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput(Of T)()
+  nameWithType: DurableOrchestrationContextBase.GetInput<T>()
+  nameWithType.vb: DurableOrchestrationContextBase.GetInput(Of T)()
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId
+  name: InstanceId
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_InstanceId
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId
+  nameWithType: DurableOrchestrationContextBase.InstanceId
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId*
+  name: InstanceId
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_InstanceId_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId
+  nameWithType: DurableOrchestrationContextBase.InstanceId
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying
+  name: IsReplaying
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_IsReplaying
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying
+  nameWithType: DurableOrchestrationContextBase.IsReplaying
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying*
+  name: IsReplaying
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_IsReplaying_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying
+  nameWithType: DurableOrchestrationContextBase.IsReplaying
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId
+  name: ParentInstanceId
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ParentInstanceId
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId
+  nameWithType: DurableOrchestrationContextBase.ParentInstanceId
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId*
+  name: ParentInstanceId
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ParentInstanceId_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId
+  nameWithType: DurableOrchestrationContextBase.ParentInstanceId
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)
+  name: SetCustomStatus(Object)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_System_Object_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)
+  nameWithType: DurableOrchestrationContextBase.SetCustomStatus(Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus*
+  name: SetCustomStatus
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus
+  nameWithType: DurableOrchestrationContextBase.SetCustomStatus
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent*
+  name: WaitForExternalEvent
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent
+  nameWithType: DurableOrchestrationContextBase.WaitForExternalEvent
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String)
+  name: WaitForExternalEvent<T>(String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String)
+  name.vb: WaitForExternalEvent(Of T)(String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent<T>(System.String)
+  fullName.vb: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(Of T)(System.String)
+  nameWithType: DurableOrchestrationContextBase.WaitForExternalEvent<T>(String)
+  nameWithType.vb: DurableOrchestrationContextBase.WaitForExternalEvent(Of T)(String)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus
   name: DurableOrchestrationStatus
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html
@@ -425,8 +740,35 @@ references:
   name: CreatedTime
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CreatedTime_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CreatedTime
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CreatedTime
   nameWithType: DurableOrchestrationStatus.CreatedTime
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus
+  name: CustomStatus
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus
+  nameWithType: DurableOrchestrationStatus.CustomStatus
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus*
+  name: CustomStatus
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_CustomStatus_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.CustomStatus
+  nameWithType: DurableOrchestrationStatus.CustomStatus
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History
+  name: History
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History
+  commentId: P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History
+  nameWithType: DurableOrchestrationStatus.History
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History*
+  name: History
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.History
+  nameWithType: DurableOrchestrationStatus.History
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input
   name: Input
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Input
@@ -437,6 +779,7 @@ references:
   name: Input
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Input_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Input
   nameWithType: DurableOrchestrationStatus.Input
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId
@@ -449,6 +792,7 @@ references:
   name: InstanceId
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_InstanceId_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.InstanceId
   nameWithType: DurableOrchestrationStatus.InstanceId
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime
@@ -461,6 +805,7 @@ references:
   name: LastUpdatedTime
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_LastUpdatedTime_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.LastUpdatedTime
   nameWithType: DurableOrchestrationStatus.LastUpdatedTime
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name
@@ -473,6 +818,7 @@ references:
   name: Name
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Name_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name
   nameWithType: DurableOrchestrationStatus.Name
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output
@@ -485,6 +831,7 @@ references:
   name: Output
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_Output_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Output
   nameWithType: DurableOrchestrationStatus.Output
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus
@@ -497,6 +844,7 @@ references:
   name: RuntimeStatus
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html#Microsoft_Azure_WebJobs_DurableOrchestrationStatus_RuntimeStatus_
   commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationStatus.RuntimeStatus
   nameWithType: DurableOrchestrationStatus.RuntimeStatus
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -521,6 +869,7 @@ references:
   name: AzureStorageConnectionStringName
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_AzureStorageConnectionStringName_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.AzureStorageConnectionStringName
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.AzureStorageConnectionStringName
   nameWithType: DurableTaskExtension.AzureStorageConnectionStringName
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueBatchSize
@@ -533,6 +882,7 @@ references:
   name: ControlQueueBatchSize
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_ControlQueueBatchSize_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueBatchSize
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueBatchSize
   nameWithType: DurableTaskExtension.ControlQueueBatchSize
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueVisibilityTimeout
@@ -545,20 +895,22 @@ references:
   name: ControlQueueVisibilityTimeout
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_ControlQueueVisibilityTimeout_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueVisibilityTimeout
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ControlQueueVisibilityTimeout
   nameWithType: DurableTaskExtension.ControlQueueVisibilityTimeout
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
-  name: DisableHttpManagementApis
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DisableHttpManagementApis
-  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
-  nameWithType: DurableTaskExtension.DisableHttpManagementApis
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis*
-  name: DisableHttpManagementApis
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DisableHttpManagementApis_
-  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DisableHttpManagementApis
-  nameWithType: DurableTaskExtension.DisableHttpManagementApis
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync
+  name: DeleteTaskHubAsync()
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DeleteTaskHubAsync
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync()
+  nameWithType: DurableTaskExtension.DeleteTaskHubAsync()
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync*
+  name: DeleteTaskHubAsync
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DeleteTaskHubAsync_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync
+  nameWithType: DurableTaskExtension.DeleteTaskHubAsync
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})
   name: INameVersionObjectManager<TaskActivity>.Add(ObjectCreator<TaskActivity>)
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_DurableTask_Core_ObjectCreator_DurableTask_Core_TaskActivity__
@@ -572,6 +924,7 @@ references:
   name: INameVersionObjectManager<TaskActivity>.Add
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__Add_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add
+  isSpec: "True"
   name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.Add
   nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskActivity>.Add
@@ -588,6 +941,7 @@ references:
   name: INameVersionObjectManager<TaskActivity>.GetObject
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskActivity__GetObject_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#GetObject
+  isSpec: "True"
   name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskActivity>.GetObject
   nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskActivity>.GetObject
@@ -605,6 +959,7 @@ references:
   name: INameVersionObjectManager<TaskOrchestration>.Add
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__Add_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#Add
+  isSpec: "True"
   name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.Add
   nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskOrchestration>.Add
@@ -621,10 +976,76 @@ references:
   name: INameVersionObjectManager<TaskOrchestration>.GetObject
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_DurableTask_Core_INameVersionObjectManager_DurableTask_Core_TaskOrchestration__GetObject_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject
+  isSpec: "True"
   name.vb: DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject
   nameWithType: DurableTaskExtension.INameVersionObjectManager<TaskOrchestration>.GetObject
   nameWithType.vb: DurableTaskExtension.DurableTask.Core.INameVersionObjectManager<DurableTask.Core.TaskOrchestration>.GetObject
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName
+  name: EventGridKeySettingName
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridKeySettingName
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName
+  nameWithType: DurableTaskExtension.EventGridKeySettingName
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName*
+  name: EventGridKeySettingName
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridKeySettingName_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName
+  nameWithType: DurableTaskExtension.EventGridKeySettingName
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint
+  name: EventGridTopicEndpoint
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridTopicEndpoint
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint
+  nameWithType: DurableTaskExtension.EventGridTopicEndpoint
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint*
+  name: EventGridTopicEndpoint
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridTopicEndpoint_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint
+  nameWithType: DurableTaskExtension.EventGridTopicEndpoint
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+  name: ExtendedSessionIdleTimeoutInSeconds
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_ExtendedSessionIdleTimeoutInSeconds
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+  nameWithType: DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds*
+  name: ExtendedSessionIdleTimeoutInSeconds
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_ExtendedSessionIdleTimeoutInSeconds_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+  nameWithType: DurableTaskExtension.ExtendedSessionIdleTimeoutInSeconds
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled
+  name: ExtendedSessionsEnabled
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_ExtendedSessionsEnabled
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled
+  nameWithType: DurableTaskExtension.ExtendedSessionsEnabled
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled*
+  name: ExtendedSessionsEnabled
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_ExtendedSessionsEnabled_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled
+  nameWithType: DurableTaskExtension.ExtendedSessionsEnabled
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)
+  name: GetClient(OrchestrationClientAttribute)
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_GetClient_Microsoft_Azure_WebJobs_OrchestrationClientAttribute_
+  commentId: M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)
+  nameWithType: DurableTaskExtension.GetClient(OrchestrationClientAttribute)
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient*
+  name: GetClient
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_GetClient_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient
+  nameWithType: DurableTaskExtension.GetClient
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName
   name: HubName
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_HubName
@@ -635,32 +1056,35 @@ references:
   name: HubName
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_HubName_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName
   nameWithType: DurableTaskExtension.HubName
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-  name: MaxConcurrentTaskActivityWorkItems
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentTaskActivityWorkItems
-  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-  nameWithType: DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems*
-  name: MaxConcurrentTaskActivityWorkItems
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentTaskActivityWorkItems_
-  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-  nameWithType: DurableTaskExtension.MaxConcurrentTaskActivityWorkItems
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
-  name: MaxConcurrentTaskOrchestrationWorkItems
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentTaskOrchestrationWorkItems
-  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
-  nameWithType: DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
-- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems*
-  name: MaxConcurrentTaskOrchestrationWorkItems
-  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentTaskOrchestrationWorkItems_
-  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
-  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
-  nameWithType: DurableTaskExtension.MaxConcurrentTaskOrchestrationWorkItems
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions
+  name: MaxConcurrentActivityFunctions
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentActivityFunctions
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions
+  nameWithType: DurableTaskExtension.MaxConcurrentActivityFunctions
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions*
+  name: MaxConcurrentActivityFunctions
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentActivityFunctions_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions
+  nameWithType: DurableTaskExtension.MaxConcurrentActivityFunctions
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions
+  name: MaxConcurrentOrchestratorFunctions
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentOrchestratorFunctions
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions
+  nameWithType: DurableTaskExtension.MaxConcurrentOrchestratorFunctions
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions*
+  name: MaxConcurrentOrchestratorFunctions
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentOrchestratorFunctions_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentOrchestratorFunctions
+  nameWithType: DurableTaskExtension.MaxConcurrentOrchestratorFunctions
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)
   name: IExtensionConfigProvider.Initialize(ExtensionConfigContext)
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_Microsoft_Azure_WebJobs_Host_Config_ExtensionConfigContext_
@@ -673,6 +1097,7 @@ references:
   name: IExtensionConfigProvider.Initialize
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_Host_Config_IExtensionConfigProvider_Initialize_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize
+  isSpec: "True"
   name.vb: Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider.Initialize
   nameWithType: DurableTaskExtension.IExtensionConfigProvider.Initialize
@@ -690,6 +1115,7 @@ references:
   name: IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_Microsoft_Azure_WebJobs_IAsyncConverter_System_Net_Http_HttpRequestMessage_System_Net_Http_HttpResponseMessage__ConvertAsync_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync
+  isSpec: "True"
   name.vb: Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage, System.Net.Http.HttpResponseMessage>.ConvertAsync
   fullName.vb: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft.Azure.WebJobs.IAsyncConverter<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage>.ConvertAsync
@@ -705,8 +1131,22 @@ references:
   name: NotificationUrl
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_NotificationUrl_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NotificationUrl
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NotificationUrl
   nameWithType: DurableTaskExtension.NotificationUrl
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount
+  name: PartitionCount
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_PartitionCount
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount
+  nameWithType: DurableTaskExtension.PartitionCount
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount*
+  name: PartitionCount
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_PartitionCount_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.PartitionCount
+  nameWithType: DurableTaskExtension.PartitionCount
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.TraceInputsAndOutputs
   name: TraceInputsAndOutputs
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_TraceInputsAndOutputs
@@ -717,6 +1157,7 @@ references:
   name: TraceInputsAndOutputs
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_TraceInputsAndOutputs_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.TraceInputsAndOutputs
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.TraceInputsAndOutputs
   nameWithType: DurableTaskExtension.TraceInputsAndOutputs
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.WorkItemQueueVisibilityTimeout
@@ -729,6 +1170,7 @@ references:
   name: WorkItemQueueVisibilityTimeout
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_WorkItemQueueVisibilityTimeout_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.WorkItemQueueVisibilityTimeout
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.WorkItemQueueVisibilityTimeout
   nameWithType: DurableTaskExtension.WorkItemQueueVisibilityTimeout
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions
@@ -747,6 +1189,7 @@ references:
   name: UseDurableTask
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_UseDurableTask_
   commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask
   nameWithType: DurableTaskJobHostConfigurationExtensions.UseDurableTask
 - uid: Microsoft.Azure.WebJobs.FunctionFailedException
@@ -771,6 +1214,7 @@ references:
   name: ConnectionName
   href: api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html#Microsoft_Azure_WebJobs_OrchestrationClientAttribute_ConnectionName_
   commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.ConnectionName
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.ConnectionName
   nameWithType: OrchestrationClientAttribute.ConnectionName
 - uid: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.Equals(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)
@@ -789,6 +1233,7 @@ references:
   name: Equals
   href: api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html#Microsoft_Azure_WebJobs_OrchestrationClientAttribute_Equals_
   commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.Equals
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.Equals
   nameWithType: OrchestrationClientAttribute.Equals
 - uid: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.GetHashCode
@@ -801,6 +1246,7 @@ references:
   name: GetHashCode
   href: api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html#Microsoft_Azure_WebJobs_OrchestrationClientAttribute_GetHashCode_
   commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.GetHashCode
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.GetHashCode
   nameWithType: OrchestrationClientAttribute.GetHashCode
 - uid: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub
@@ -813,6 +1259,7 @@ references:
   name: TaskHub
   href: api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html#Microsoft_Azure_WebJobs_OrchestrationClientAttribute_TaskHub_
   commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub
   nameWithType: OrchestrationClientAttribute.TaskHub
 - uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus
@@ -879,20 +1326,9 @@ references:
   name: Orchestration
   href: api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html#Microsoft_Azure_WebJobs_OrchestrationTriggerAttribute_Orchestration_
   commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Orchestration
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Orchestration
   nameWithType: OrchestrationTriggerAttribute.Orchestration
-- uid: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version
-  name: Version
-  href: api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html#Microsoft_Azure_WebJobs_OrchestrationTriggerAttribute_Version
-  commentId: P:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version
-  fullName: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version
-  nameWithType: OrchestrationTriggerAttribute.Version
-- uid: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version*
-  name: Version
-  href: api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html#Microsoft_Azure_WebJobs_OrchestrationTriggerAttribute_Version_
-  commentId: Overload:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version
-  fullName: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Version
-  nameWithType: OrchestrationTriggerAttribute.Version
 - uid: Microsoft.Azure.WebJobs.RetryOptions
   name: RetryOptions
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html
@@ -909,6 +1345,7 @@ references:
   name: RetryOptions
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions__ctor_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.#ctor
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.RetryOptions
   nameWithType: RetryOptions.RetryOptions
 - uid: Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient
@@ -921,6 +1358,7 @@ references:
   name: BackoffCoefficient
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions_BackoffCoefficient_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient
   nameWithType: RetryOptions.BackoffCoefficient
 - uid: Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval
@@ -933,6 +1371,7 @@ references:
   name: FirstRetryInterval
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions_FirstRetryInterval_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval
   nameWithType: RetryOptions.FirstRetryInterval
 - uid: Microsoft.Azure.WebJobs.RetryOptions.Handle
@@ -945,6 +1384,7 @@ references:
   name: Handle
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions_Handle_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.Handle
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.Handle
   nameWithType: RetryOptions.Handle
 - uid: Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts
@@ -957,6 +1397,7 @@ references:
   name: MaxNumberOfAttempts
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions_MaxNumberOfAttempts_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts
   nameWithType: RetryOptions.MaxNumberOfAttempts
 - uid: Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval
@@ -969,6 +1410,7 @@ references:
   name: MaxRetryInterval
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions_MaxRetryInterval_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval
   nameWithType: RetryOptions.MaxRetryInterval
 - uid: Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout
@@ -981,6 +1423,7 @@ references:
   name: RetryTimeout
   href: api/Microsoft.Azure.WebJobs.RetryOptions.html#Microsoft_Azure_WebJobs_RetryOptions_RetryTimeout_
   commentId: Overload:Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout
   nameWithType: RetryOptions.RetryTimeout
 - uid: Microsoft.Azure.WebJobs.StartOrchestrationArgs
@@ -1005,6 +1448,7 @@ references:
   name: StartOrchestrationArgs
   href: api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html#Microsoft_Azure_WebJobs_StartOrchestrationArgs__ctor_
   commentId: Overload:Microsoft.Azure.WebJobs.StartOrchestrationArgs.#ctor
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.StartOrchestrationArgs.StartOrchestrationArgs
   nameWithType: StartOrchestrationArgs.StartOrchestrationArgs
 - uid: Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName
@@ -1017,6 +1461,7 @@ references:
   name: FunctionName
   href: api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html#Microsoft_Azure_WebJobs_StartOrchestrationArgs_FunctionName_
   commentId: Overload:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName
   nameWithType: StartOrchestrationArgs.FunctionName
 - uid: Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input
@@ -1029,6 +1474,7 @@ references:
   name: Input
   href: api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html#Microsoft_Azure_WebJobs_StartOrchestrationArgs_Input_
   commentId: Overload:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input
   nameWithType: StartOrchestrationArgs.Input
 - uid: Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId
@@ -1041,5 +1487,6 @@ references:
   name: InstanceId
   href: api/Microsoft.Azure.WebJobs.StartOrchestrationArgs.html#Microsoft_Azure_WebJobs_StartOrchestrationArgs_InstanceId_
   commentId: Overload:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId
+  isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId
   nameWithType: StartOrchestrationArgs.InstanceId

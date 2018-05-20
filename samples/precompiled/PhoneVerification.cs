@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 #if NETSTANDARD2_0
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
@@ -75,7 +75,7 @@ namespace VSSample
         [FunctionName("E4_SendSmsChallenge")]
         public static int SendSmsChallenge(
             [ActivityTrigger] string phoneNumber,
-            TraceWriter log,
+            ILogger log,
             [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")]
 #if NETSTANDARD2_0
                 out CreateMessageOptions message)
@@ -87,7 +87,7 @@ namespace VSSample
             var rand = new Random(Guid.NewGuid().GetHashCode());
             int challengeCode = rand.Next(10000);
 
-            log.Info($"Sending verification code {challengeCode} to {phoneNumber}.");
+            log.LogInformation($"Sending verification code {challengeCode} to {phoneNumber}.");
 
 #if NETSTANDARD2_0
             message = new CreateMessageOptions(new PhoneNumber(phoneNumber));

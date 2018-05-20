@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // The orchestration name defaults to the method name.
-            var orchestratorName = new FunctionName(name, trigger.Version);
+            var orchestratorName = new FunctionName(name);
             this.config.RegisterOrchestrator(orchestratorName, null);
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
@@ -60,16 +61,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
-            private static readonly IReadOnlyDictionary<string, Type> StaticBindingContract =
-                new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
-                {
-                    // This binding supports return values of any type
-                    { "$return", typeof(object).MakeByRefType() },
-                };
-
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
+            private readonly IReadOnlyDictionary<string, Type> contract;
 
             public OrchestrationTriggerBinding(
                 DurableTaskExtension config,
@@ -79,21 +74,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config = config;
                 this.parameterInfo = parameterInfo;
                 this.orchestratorName = orchestratorName;
+                this.contract = GetBindingDataContract(parameterInfo);
             }
 
             public Type TriggerValueType => typeof(DurableOrchestrationContext);
 
-            public IReadOnlyDictionary<string, Type> BindingDataContract => StaticBindingContract;
+            public IReadOnlyDictionary<string, Type> BindingDataContract => this.contract;
+
+            private static IReadOnlyDictionary<string, Type> GetBindingDataContract(ParameterInfo parameterInfo)
+            {
+                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                };
+
+                // allow binding to the parameter name
+                contract[parameterInfo.Name] = parameterInfo.ParameterType;
+
+                return contract;
+            }
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                // No conversions
-                var inputValueProvider = new ObjectValueProvider(value, this.TriggerValueType);
+                var orchestrationContext = (DurableOrchestrationContext)value;
+                Type destinationType = this.parameterInfo.ParameterType;
+
+                object convertedValue = null;
+                if (destinationType == typeof(DurableOrchestrationContext))
+                {
+                    convertedValue = orchestrationContext;
+                }
+                else if (destinationType == typeof(string))
+                {
+                    convertedValue = OrchestrationContextToString(orchestrationContext);
+                }
+
+                var inputValueProvider = new ObjectValueProvider(
+                    convertedValue ?? value,
+                    this.parameterInfo.ParameterType);
+
+                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                bindingData[this.parameterInfo.Name] = convertedValue;
 
                 // We don't specify any return value binding because we process the return value
                 // earlier in the pipeline via the InvokeHandler extensibility.
-                var triggerData = new TriggerData(inputValueProvider, bindingData: null);
+                var triggerData = new TriggerData(inputValueProvider, bindingData);
                 return Task.FromResult<ITriggerData>(triggerData);
+            }
+
+            public ParameterDescriptor ToParameterDescriptor()
+            {
+                return new ParameterDescriptor { Name = this.parameterInfo.Name };
             }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "The caller is responsible for disposing")]
@@ -104,7 +136,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                this.config.RegisterOrchestrator(this.orchestratorName, context.Executor);
+                // The current assumption is that in-proc (.NET) apps always use
+                // DurableOrchestrationContextBase or some derivative. Non-.NET apps
+                // which cannot use these types are therefore assumed to be "out-of-proc".
+                // We may need to revisit this assumption when Functions v2 adds support
+                // for "out-of-proc" .NET.
+                var isOutOfProc = !typeof(DurableOrchestrationContextBase).IsAssignableFrom(this.parameterInfo.ParameterType);
+                this.config.RegisterOrchestrator(this.orchestratorName, new OrchestratorInfo(context.Executor, isOutOfProc));
 
                 var listener = new DurableTaskListener(
                     this.config,
@@ -114,9 +152,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IListener>(listener);
             }
 
-            public ParameterDescriptor ToParameterDescriptor()
+            private static string OrchestrationContextToString(DurableOrchestrationContext arg)
             {
-                return new ParameterDescriptor { Name = this.parameterInfo.Name };
+                var history = JArray.FromObject(arg.History);
+                var input = arg.GetInputAsJson();
+
+                var contextObject = new JObject(
+                    new JProperty("history", history),
+                    new JProperty("input", input));
+                return contextObject.ToString();
             }
         }
     }

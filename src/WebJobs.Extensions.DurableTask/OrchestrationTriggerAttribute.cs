@@ -22,29 +22,12 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets or sets the name of the orchestrator function.
         /// </summary>
+        /// <remarks>
+        /// If not specified, the function name is used as the name of the orchestration.
+        /// </remarks>
         /// <value>
         /// The name of the orchestrator function or <c>null</c> to use the function name.
         /// </value>
         public string Orchestration { get; set; }
-
-        /// <summary>
-        /// Gets or sets the version of the orchestrator function.
-        /// </summary>
-        /// <value>
-        /// The version of the orchestrator function.
-        /// </value>
-        public string Version { get; set; }
-
-        // Remove this with https://github.com/Azure/azure-webjobs-sdk-script/issues/1422
-        internal static void ApplyReturn(object context, object returnValue)
-        {
-            DurableOrchestrationContext orchestrationContext = context as DurableOrchestrationContext;
-            if (orchestrationContext == null)
-            {
-                throw new InvalidOperationException($"Only .NET {nameof(DurableOrchestrationContext)} trigger parameters are supported at this time.");
-            }
-
-            orchestrationContext.SetOutput(returnValue);
-        }
     }
 }

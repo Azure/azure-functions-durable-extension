@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Parameter data for activity bindings that are scheduled by their parent orchestrations.
+    /// The default parameter type for activity functions.
     /// </summary>
     public class DurableActivityContext
     {
@@ -29,8 +29,8 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the instance ID of the currently executing orchestration.
         /// </summary>
         /// <remarks>
-        /// The instance ID is generated and fixed when the parent orchestrator function is scheduled. It can be either
-        /// auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+        /// The instance ID is fixed when the parent orchestrator function is scheduled. It can be either
+        /// auto-generated, in which case it is formatted as a GUID, or it can be an arbitrary string value.
         /// </remarks>
         /// <value>
         /// The ID of the current orchestration instance.
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The raw JSON-formatted activity input as a string value.
         /// </returns>
-        public string GetRawInput()
+        internal string GetRawInput()
         {
             return this.serializedInput;
         }
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>
         /// The parsed <c>JToken</c> representation of the activity input.
         /// </returns>
-        public JToken GetInputAsJson()
+        internal JToken GetInputAsJson()
         {
             if (this.serializedInput != null && this.parsedJsonInput == null)
             {

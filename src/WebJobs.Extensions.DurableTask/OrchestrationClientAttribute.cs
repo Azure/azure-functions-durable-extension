@@ -9,7 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Attribute used to bind a function parameter to a Durable Functions client object.
+    /// Attribute used to bind a function parameter to a <see cref="DurableOrchestrationClient"/> instance.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("TaskHub={TaskHub}, ConnectionName={ConnectionName}")]
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs
     public sealed class OrchestrationClientAttribute : Attribute, IEquatable<OrchestrationClientAttribute>
     {
         /// <summary>
-        /// Optional. Gets or sets the name of the task hub to be operated on.
+        /// Optional. Gets or sets the name of the task hub in which the orchestration data lives.
         /// </summary>
         /// <value>The task hub used by this binding.</value>
         /// <remarks>

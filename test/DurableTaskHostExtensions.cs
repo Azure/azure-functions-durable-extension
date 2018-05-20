@@ -15,13 +15,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this JobHost host,
             string functionName,
             object input,
-            ITestOutputHelper output)
+            ITestOutputHelper output,
+            string instanceId = null)
         {
             var startFunction = typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
             var clientRef = new TestOrchestratorClient[1];
             var args = new Dictionary<string, object>
             {
                 { "functionName", functionName },
+                { "instanceId", instanceId },
                 { "input", input },
                 { "clientRef", clientRef },
             };
@@ -48,12 +50,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public static async Task StartFunction(
                 [OrchestrationClient] DurableOrchestrationClient client,
                 string functionName,
+                string instanceId,
                 object input,
                 TestOrchestratorClient[] clientRef)
             {
                 DateTime instanceCreationTime = DateTime.UtcNow;
 
-                string instanceId = await client.StartNewAsync(functionName, input);
+                instanceId = await client.StartNewAsync(functionName, instanceId, input);
                 clientRef[0] = new TestOrchestratorClient(
                     client,
                     functionName,

@@ -9,6 +9,10 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Represents the status of a durable orchestration instance.
     /// </summary>
+    /// <remarks>
+    /// An external client can fetch the status of an orchestration instance using
+    /// <see cref="DurableOrchestrationClient.GetStatusAsync"/>.
+    /// </remarks>
     public class DurableOrchestrationStatus
     {
         /// <summary>
@@ -27,20 +31,24 @@ namespace Microsoft.Azure.WebJobs
         /// auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
         /// </remarks>
         /// <value>
-        /// The ID of the queried instance.
+        /// The unique ID of the instance.
         /// </value>
         public string InstanceId { get; internal set; }
 
         /// <summary>
-        /// Gets the time at which the queried orchestration instance was created.
+        /// Gets the time at which the orchestration instance was created.
         /// </summary>
+        /// <remarks>
+        /// If the orchestration instance is in the <see cref="OrchestrationRuntimeStatus.Pending"/>
+        /// status, this time represents the time at which the orchestration instance was scheduled.
+        /// </remarks>
         /// <value>
-        /// The creation time in UTC.
+        /// The instance creation time in UTC.
         /// </value>
         public DateTime CreatedTime { get; internal set; }
 
         /// <summary>
-        /// Gets the time at which the queried orchestration instance last updated its execution history.
+        /// Gets the time at which the orchestration instance last updated its execution history.
         /// </summary>
         /// <value>
         /// The last-updated time in UTC.
@@ -48,10 +56,10 @@ namespace Microsoft.Azure.WebJobs
         public DateTime LastUpdatedTime { get; internal set; }
 
         /// <summary>
-        /// Gets the input of the queried orchestrator function instance.
+        /// Gets the input of the orchestrator function instance.
         /// </summary>
         /// <value>
-        /// The input as a <c>JToken</c> or <c>null</c> if no input was provided.
+        /// The input as either a <c>JToken</c> or <c>null</c> if no input was provided.
         /// </value>
         public JToken Input { get; internal set; }
 
@@ -59,7 +67,7 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the output of the queried orchestration instance.
         /// </summary>
         /// <value>
-        /// The output as a <c>JToken</c> object or <c>null</c> if it has not yet completed.
+        /// The output as either a <c>JToken</c> object or <c>null</c> if it has not yet completed.
         /// </value>
         public JToken Output { get; internal set; }
 
@@ -72,16 +80,24 @@ namespace Microsoft.Azure.WebJobs
         public OrchestrationRuntimeStatus RuntimeStatus { get; internal set; }
 
         /// <summary>
-        /// Gets a custom status payload that was assigned by the orchestrator function.
+        /// Gets the custom status payload (if any) that was set by the orchestrator function.
         /// </summary>
+        /// <remarks>
+        /// Orchestrator functions can set a custom status using <see cref="DurableOrchestrationContext.SetCustomStatus"/>.
+        /// </remarks>
         /// <value>
-        /// The custom status as a <c>JToken</c> object or <c>null</c> if no custom status has been set.
+        /// The custom status as either a <c>JToken</c> object or <c>null</c> if no custom status has been set.
         /// </value>
         public JToken CustomStatus { get; internal set; }
 
         /// <summary>
-        /// Gets the execution history of the queried orchestrator function instance.
+        /// Gets the execution history of the orchestration instance.
         /// </summary>
+        /// <remarks>
+        /// The history log can be large and is therefore <c>null</c> by default.
+        /// It is populated only when explicitly requested in the call to
+        /// <see cref="DurableOrchestrationClient.GetStatusAsync"/>.
+        /// </remarks>
         /// <value>
         /// The output as a <c>JArray</c> object or <c>null</c>.
         /// </value>
