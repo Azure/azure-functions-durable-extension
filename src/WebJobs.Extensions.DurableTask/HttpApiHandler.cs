@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            CheckStatus checkStatus = this.GetClientResponseLinks(request.RequestUri, this.config.NotificationUrl, instanceId, attribute.TaskHub, attribute.ConnectionName);
+            CheckStatus checkStatus = this.GetClientResponseLinks(request.RequestUri, this.config.NotificationUrl, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
             return this.CreateCheckStatusResponseMessage(request, checkStatus.Id, checkStatus.StatusQueryGetUri, checkStatus.SendEventPostUri, checkStatus.TerminatePostUri);
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            CheckStatus checkStatus = this.GetClientResponseLinks(request.RequestUri, this.config.NotificationUrl, instanceId, attribute.TaskHub, attribute.ConnectionName);
+            CheckStatus checkStatus = this.GetClientResponseLinks(request.RequestUri, this.config.NotificationUrl, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
 
             DurableOrchestrationClientBase client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
