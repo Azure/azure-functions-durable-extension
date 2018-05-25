@@ -4,6 +4,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -32,6 +33,13 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         public abstract HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
+
+        /// <summary>
+        /// Creates a <see cref="CheckStatus"/> object that is useful for checking the status of the specified instance.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+        /// <returns>Instance of <see cref="CheckStatus"/></returns>
+        public abstract CheckStatus CreateCheckStatus(string instanceId);
 
         /// <inheritdoc />
         public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(

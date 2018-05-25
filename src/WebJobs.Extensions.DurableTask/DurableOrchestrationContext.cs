@@ -299,6 +299,16 @@ namespace Microsoft.Azure.WebJobs
             this.ContinuedAsNew = true;
         }
 
+        /// <inheritdoc />
+        public override CheckStatus CreateCheckStatus(string instanceId)
+        {
+            CheckStatus checkStatus = this.config.CreateCheckStatus(
+                instanceId,
+                this.config.HubName,
+                this.config.AzureStorageConnectionStringName);
+            return checkStatus;
+        }
+
         private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
             string functionName,
             FunctionType functionType,

@@ -52,6 +52,12 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override CheckStatus CreateCheckStatus(string instanceId)
+        {
+            return this.config.CreateCheckStatus(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
+        }
+
+        /// <inheritdoc />
         public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,

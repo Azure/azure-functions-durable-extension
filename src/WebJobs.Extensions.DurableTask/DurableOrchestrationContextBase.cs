@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -395,5 +396,12 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         public abstract void SetCustomStatus(object customStatusObject);
+
+        /// <summary>
+        /// Creates a <see cref="CheckStatus"/> object that is useful for checking the status of the specified instance.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+        /// <returns>Instance of <see cref="CheckStatus"/></returns>
+        public abstract CheckStatus CreateCheckStatus(string instanceId);
     }
 }

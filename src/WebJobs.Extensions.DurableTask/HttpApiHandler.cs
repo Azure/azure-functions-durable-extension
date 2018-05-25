@@ -16,11 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class HttpApiHandler
     {
-        private const string InstancesControllerSegment = "/instances/";
-        private const string TaskHubParameter = "taskHub";
-        private const string ConnectionParameter = "connection";
-        private const string RaiseEventOperation = "raiseEvent";
-        private const string TerminateOperation = "terminate";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
 
@@ -38,8 +33,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
-            return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+            CheckStatus checkStatus = this.GetClientResponseLinks(request.RequestUri, this.config.NotificationUrl, instanceId, attribute.TaskHub, attribute.ConnectionName);
+            return this.CreateCheckStatusResponseMessage(request, checkStatus.Id, checkStatus.StatusQueryGetUri, checkStatus.SendEventPostUri, checkStatus.TerminatePostUri);
+        }
+
+        internal CheckStatus CreateCheckStatus(
+            string instanceId,
+            string taskHub,
+            string connectionName)
+        {
+            CheckStatus checkStatus = this.GetClientResponseLinks(null, this.config.NotificationUrl, instanceId, taskHub, connectionName);
+            return checkStatus;
         }
 
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -54,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+            CheckStatus checkStatus = this.GetClientResponseLinks(request.RequestUri, this.config.NotificationUrl, instanceId, attribute.TaskHub, attribute.ConnectionName);
 
             DurableOrchestrationClientBase client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -84,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+                    return this.CreateCheckStatusResponseMessage(request, instanceId, checkStatus.StatusQueryGetUri, checkStatus.SendEventPostUri, checkStatus.TerminatePostUri);
                 }
             }
         }
@@ -92,13 +96,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
         {
             string path = request.RequestUri.AbsolutePath.TrimEnd('/');
-            int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
+            int i = path.IndexOf(CheckStatusConstants.InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            i += InstancesControllerSegment.Length;
+            i += CheckStatusConstants.InstancesControllerSegment.Length;
             int nextSlash = path.IndexOf('/', i);
 
             if (nextSlash < 0)
@@ -117,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (nextSlash < 0)
                 {
                     string operation = path.Substring(i);
-                    if (string.Equals(operation, TerminateOperation, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(operation, CheckStatusConstants.TerminateOperation, StringComparison.OrdinalIgnoreCase))
                     {
                         return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
                     }
@@ -125,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     string operation = path.Substring(i, nextSlash - i);
-                    if (string.Equals(operation, RaiseEventOperation, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(operation, CheckStatusConstants.RaiseEventOperation, StringComparison.OrdinalIgnoreCase))
                     {
                         i = nextSlash + 1;
                         nextSlash = path.IndexOf('/', i);
@@ -304,13 +308,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             foreach (var key in pairs.AllKeys)
             {
                 if (taskHub == null
-                    && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
+                    && key.Equals(CheckStatusConstants.TaskHubParameter, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     taskHub = pairs[key];
                 }
                 else if (connectionName == null
-                    && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
+                    && key.Equals(CheckStatusConstants.ConnectionParameter, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     connectionName = pairs[key];
@@ -332,39 +336,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.config.GetClient(attribute);
         }
 
-        private void GetClientResponseLinks(
-            HttpRequestMessage request,
+        private CheckStatus GetClientResponseLinks(
+            Uri requestUri,
+            Uri notificationUri,
             string instanceId,
-            OrchestrationClientAttribute attribute,
-            out string statusQueryGetUri,
-            out string sendEventPostUri,
-            out string terminatePostUri)
+            string taskHubName,
+            string connectionName)
         {
-            if (this.config.NotificationUrl == null)
-            {
-                throw new InvalidOperationException("Webhooks are not configured");
-            }
+            CheckStatus checkStatus = new CheckStatus(
+                requestUri,
+                notificationUri,
+                instanceId,
+                taskHubName ?? this.config.HubName,
+                connectionName ?? this.config.AzureStorageConnectionStringName);
 
-            Uri notificationUri = this.config.NotificationUrl;
-
-            // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
-            string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
-            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
-
-            string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? this.config.HubName);
-            string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
-
-            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
-            if (!string.IsNullOrEmpty(notificationUri.Query))
-            {
-                // This is expected to include the auto-generated system key for this extension.
-                querySuffix += "&" + notificationUri.Query.TrimStart('?');
-            }
-
-            statusQueryGetUri = instancePrefix + "?" + querySuffix;
-            sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
-            terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
+            return checkStatus;
         }
 
         private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
