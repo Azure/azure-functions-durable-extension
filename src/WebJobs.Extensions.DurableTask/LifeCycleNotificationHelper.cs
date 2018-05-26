@@ -324,7 +324,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        response = null;
                         response = await base.SendAsync(request, cancellationToken);
                         if (response.IsSuccessStatusCode)
                         {
