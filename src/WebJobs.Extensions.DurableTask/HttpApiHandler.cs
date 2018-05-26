@@ -358,12 +358,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
+
             string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.HubName);
             string connection = WebUtility.UrlEncode(connectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
-            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
 
+            string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
             if (!string.IsNullOrEmpty(notificationUri.Query))
             {
                 // This is expected to include the auto-generated system key for this extension.
