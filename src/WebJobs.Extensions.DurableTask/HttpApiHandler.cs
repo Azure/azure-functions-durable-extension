@@ -364,7 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connection = WebUtility.UrlEncode(connectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
 
-            if (!string.IsNullOrEmpty(notificationUri.Query)) 
+            if (!string.IsNullOrEmpty(notificationUri.Query))
             {
                 // This is expected to include the auto-generated system key for this extension.
                 querySuffix += "&" + notificationUri.Query.TrimStart('?');
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Id = instanceId,
                 StatusQueryGetUri = instancePrefix + "?" + querySuffix,
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
-                TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix
+                TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
             };
 
             return checkStatus;
