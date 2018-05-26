@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string RandomInstanceId = "9b59154ae666471993659902ed0ba749";
         public const string TaskHub = "SampleHubVS";
         public const string ConnectionName = "Storage";
+        public const string CustomConnectionName = "TestConnection";
         public const string SampleData = "SampleData";
     }
 }

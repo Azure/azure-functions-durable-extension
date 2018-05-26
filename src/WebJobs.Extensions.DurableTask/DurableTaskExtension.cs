@@ -634,8 +634,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatus(instanceId, taskHubName, connectionName);
         }
 
-
-
         // Get a response that will wait for response from the durable function for predefined period of time before
         // pointing to our webhook handler.
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(

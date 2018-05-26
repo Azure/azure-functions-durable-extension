@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void CreateCheckStatus_Returns_Corrent_CheckStatus_based_on_custom_connection_value()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, null, "TestConnection");
+            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, null, TestConstants.CustomConnectionName);
             Assert.NotNull(checkStatus);
             Assert.Equal(checkStatus.Id, TestConstants.InstanceId);
             Assert.Equal(
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void CreateCheckStatus_Returns_Corrent_CheckStatus_based_on_custom_values()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, TestConstants.TaskHub, "TestConnection");
+            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName);
             Assert.NotNull(checkStatus);
             Assert.Equal(checkStatus.Id, TestConstants.InstanceId);
             Assert.Equal(

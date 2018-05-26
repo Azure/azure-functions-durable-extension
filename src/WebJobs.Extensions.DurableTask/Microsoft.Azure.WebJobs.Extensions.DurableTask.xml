@@ -22,16 +22,6 @@
             Data structure containing status, terminate and send external event HTTP endpoints
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus.#ctor(System.Uri,System.Uri,System.String,System.String,System.String)">
-            <summary>
-            Check Status constructor
-            </summary>
-            <param name="requestUri">Request Uri</param>
-            <param name="notificationUri">Notification Uri</param>
-            <param name="instanceId">Orchestration instance id</param>
-            <param name="taskHubName">Task hub name</param>
-            <param name="connectionName">Property name for Azure Storage Connection String</param>
-        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus.Id">
             <summary>
             Instance ID
