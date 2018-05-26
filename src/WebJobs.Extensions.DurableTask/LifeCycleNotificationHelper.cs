@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,18 +37,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.useTrace = true;
 
-                    var retryStatusCode = string.IsNullOrEmpty(config.EventGridPublishRetryHttpStatus) ? Array.Empty<int>() :
-                        config.EventGridPublishRetryHttpStatus.Split(',')
-                        .Select(x =>
-                        {
-                            if (int.TryParse(x, out var statusCode))
-                            {
-                                return statusCode;
-                            }
-
-                            return 0;
-                        })
-                        .Where(x => x > 0).ToArray();
+                    var retryStatusCode = config.EventGridPublishRetryHttpStatus?
+                                              .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
+                                              .Select(x => (HttpStatusCode) x)
+                                              .ToArray()
+                                          ?? Array.Empty<HttpStatusCode>();
 
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
                     // For more detail about the Event Grid, please refer this document.
@@ -56,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var handler = new HttpRetryMessageHandler(
                         new HttpClientHandler(),
                         config.EventGridPublishRetryCount,
-                        retryAttempt => TimeSpan.FromSeconds(config.EventGridPublishRetryInterval),
+                        config.EventGridPublishRetryInterval,
                         retryStatusCode);
 
                     httpClient = new HttpClient(handler);
@@ -107,7 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     hubName,
                     functionName,
                     functionState,
-                    version,
                     instanceId,
                     e.StackTrace,
                     e,
@@ -311,14 +304,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal class HttpRetryMessageHandler : DelegatingHandler
         {
             private readonly int maxRetryCount;
-            private readonly Func<int, TimeSpan> retryWaitSpanFunc;
-            private int[] retryTargetStatus;
+            private readonly TimeSpan retryWaitSpan;
+            private readonly HttpStatusCode[] retryTargetStatus;
 
-            public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, Func<int, TimeSpan> retryWaitSpanFunc, int[] retryTargetStatusCode)
+            public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, TimeSpan retryWaitSpan, HttpStatusCode[] retryTargetStatusCode)
                 : base(messageHandler)
             {
                 this.maxRetryCount = maxRetryCount;
-                this.retryWaitSpanFunc = retryWaitSpanFunc;
+                this.retryWaitSpan = retryWaitSpan;
                 this.retryTargetStatus = retryTargetStatusCode;
             }
 
@@ -339,8 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                         else if (response.StatusCode != HttpStatusCode.ServiceUnavailable)
                         {
-                            var statusCode = (int) response.StatusCode;
-                            if (this.retryTargetStatus.All(x => x != statusCode))
+                            if (this.retryTargetStatus.All(x => x != response.StatusCode))
                             {
                                 return response;
                             }
@@ -353,7 +345,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     tryCount++;
 
-                    await Task.Delay(this.retryWaitSpanFunc(tryCount), cancellationToken);
+                    await Task.Delay(this.retryWaitSpan, cancellationToken);
 
                 } while (this.maxRetryCount >= tryCount);
 
@@ -363,19 +355,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    throw lastException;
+                    ExceptionDispatchInfo.Capture(lastException).Throw();
+                    return null;
                 }
-            }
-        }
-
-        public class LifeCyclePublishingException : Exception
-        {
-            public HttpStatusCode StatusCode { get; }
-
-            public LifeCyclePublishingException(string message, HttpStatusCode statusCode)
-                : base(message)
-            {
-                this.StatusCode = statusCode;
             }
         }
     }
