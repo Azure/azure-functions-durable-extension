@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private static HttpClient httpClient = null;
+        private static HttpMessageHandler httpMessageHandler = null;
 
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
         {
@@ -47,21 +48,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // For more detail about the Event Grid, please refer this document.
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    var handler = new HttpRetryMessageHandler(
+                    this.HttpMessageHandler = new HttpRetryMessageHandler(
                         new HttpClientHandler(),
                         config.EventGridPublishRetryCount,
                         config.EventGridPublishRetryInterval,
                         retryStatusCode);
 
-                    httpClient = new HttpClient(handler);
-                    if (!string.IsNullOrEmpty(this.eventGridKeyValue))
-                    {
-                        httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
-                    }
-                    else
+                    if (string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
                         throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridKeySettingName} on AppSettings.");
-                     }
+                    }
                 }
                 else
                 {
@@ -70,10 +66,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void SetHttpMessageHandler(HttpMessageHandler handler)
+        public HttpMessageHandler HttpMessageHandler
         {
-            httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+            get => httpMessageHandler;
+            set
+            {
+                httpMessageHandler = value;
+                httpClient = new HttpClient(httpMessageHandler);
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+            }
         }
 
         private async Task SendNotificationAsync(
@@ -306,6 +307,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly int maxRetryCount;
             private readonly TimeSpan retryWaitSpan;
             private readonly HttpStatusCode[] retryTargetStatus;
+
+            public int MaxRetryCount => this.maxRetryCount;
+
+            public TimeSpan RetryWaitSpan => this.retryWaitSpan;
+
+            public HttpStatusCode[] RetryTargetStatus => this.retryTargetStatus;
 
             public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, TimeSpan retryWaitSpan, HttpStatusCode[] retryTargetStatusCode)
                 : base(messageHandler)

@@ -21,11 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
             string eventGridKeyValue = null,
-            string eventGridTopicEndpoint = null)
+            string eventGridTopicEndpoint = null,
+            int? eventGridRetryCount = null,
+            TimeSpan? eventGridRetryInterval = null,
+            int[] eventGridRetryHttpStatus = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
-            config.UseDurableTask(new DurableTaskExtension
+            var durableTaskExtension = new DurableTaskExtension
             {
                 HubName = taskHub.Replace("_", "") + (enableExtendedSessions ? "EX" : ""),
                 TraceInputsAndOutputs = true,
@@ -34,7 +37,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
-            });
+            };
+            if (eventGridRetryCount.HasValue)
+            {
+                durableTaskExtension.EventGridPublishRetryCount = eventGridRetryCount.Value;
+            }
+
+            if (eventGridRetryInterval.HasValue)
+            {
+                durableTaskExtension.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
+            }
+
+            if (eventGridRetryHttpStatus != null)
+            {
+                durableTaskExtension.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
+            }
+
+            config.UseDurableTask(durableTaskExtension);
 
             // Mock INameResolver for not setting EnvironmentVariables.
             if (eventGridKeyValue != null)

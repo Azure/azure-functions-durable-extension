@@ -476,7 +476,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return Task.FromResult(responseGenerator(request));
                 });
 
-            extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
+            extension.LifeCycleNotificationHelper.HttpMessageHandler = mock.Object;
 
             return assertBodies;
         }
@@ -543,12 +543,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             throw new Exception("subject is fault type");
                         });
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
                         new LifeCycleNotificationHelper.HttpRetryMessageHandler(
                             mock.Object,
                             5,
                             TimeSpan.FromMilliseconds(1000),
-                            Array.Empty<HttpStatusCode>()));
+                            Array.Empty<HttpStatusCode>());
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
@@ -624,12 +624,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             throw new Exception("subject is fault type");
                         });
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
                         new LifeCycleNotificationHelper.HttpRetryMessageHandler(
                             mock.Object,
                             5,
                             TimeSpan.FromMilliseconds(1000),
-                            Array.Empty<HttpStatusCode>()));
+                            Array.Empty<HttpStatusCode>());
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
@@ -696,12 +696,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             throw new Exception("subject is fault type");
                         });
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
                         new LifeCycleNotificationHelper.HttpRetryMessageHandler(
                             mock.Object,
                             retryCount,
                             TimeSpan.FromMilliseconds(1000),
-                            Array.Empty<HttpStatusCode>()));
+                            Array.Empty<HttpStatusCode>());
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
@@ -768,12 +768,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             throw new Exception("subject is fault type");
                         });
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
                         new LifeCycleNotificationHelper.HttpRetryMessageHandler(
                             mock.Object,
                             5,
                             TimeSpan.FromMilliseconds(1000),
-                            Array.Empty<HttpStatusCode>()));
+                            Array.Empty<HttpStatusCode>());
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
@@ -865,12 +865,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             throw new Exception("subject is fault type");
                         });
 
-                    extension.LifeCycleNotificationHelper.SetHttpMessageHandler(
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
                         new LifeCycleNotificationHelper.HttpRetryMessageHandler(
                             mock.Object,
                             5,
                             TimeSpan.FromMilliseconds(1000),
-                            new[] { (HttpStatusCode)400, (HttpStatusCode)401, (HttpStatusCode)404 }));
+                            new[] { (HttpStatusCode)400, (HttpStatusCode)401, (HttpStatusCode)404 });
                 }
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
@@ -880,6 +880,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
                 Assert.Equal(5, callCount);
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        public async Task OrchestrationEventGridApiConfigureCheck()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var retryCount = 5;
+            var retryInterval = TimeSpan.FromSeconds(10);
+            var retryStatus = new[] { 400, 401 };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), 
+                false,
+                eventGridKeySettingName,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                retryCount,
+                retryInterval,
+                retryStatus))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+                var extension = (DurableTaskExtension)extensionProviders.First();
+                var handler =
+                    (LifeCycleNotificationHelper.HttpRetryMessageHandler) extension.LifeCycleNotificationHelper
+                        .HttpMessageHandler;
+
+                Assert.Equal(retryCount, handler.MaxRetryCount);
+                Assert.Equal(retryInterval, handler.RetryWaitSpan);
+                Assert.Equal(retryStatus.Select(x => (HttpStatusCode)x), handler.RetryTargetStatus);
                 await host.StopAsync();
             }
         }
