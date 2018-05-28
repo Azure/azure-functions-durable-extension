@@ -398,7 +398,7 @@ namespace Microsoft.Azure.WebJobs
         public abstract void SetCustomStatus(object customStatusObject);
 
         /// <summary>
-        /// Creates a <see cref="HttpManagementPayload"/> object that is useful for checking the status of the specified instance.
+        /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
         /// <returns>Instance of <see cref="HttpManagementPayload"/></returns>
