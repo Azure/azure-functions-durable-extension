@@ -1674,7 +1674,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [InlineData(true)]
-        [InlineData(false)]
         public async Task OrchestrationClient_Gets_HttpManagementPayload(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
