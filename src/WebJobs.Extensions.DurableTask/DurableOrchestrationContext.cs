@@ -299,16 +299,6 @@ namespace Microsoft.Azure.WebJobs
             this.ContinuedAsNew = true;
         }
 
-        /// <inheritdoc />
-        public override HttpManagementPayload CreateHttpManagementPayload(string instanceId)
-        {
-            HttpManagementPayload httpManagementPayload = this.config.CreateHttpManagementPayload(
-                instanceId,
-                this.config.HubName,
-                this.config.AzureStorageConnectionStringName);
-            return httpManagementPayload;
-        }
-
         private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
             string functionName,
             FunctionType functionType,

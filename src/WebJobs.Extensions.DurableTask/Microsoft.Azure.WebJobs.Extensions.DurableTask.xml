@@ -637,9 +637,6 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateHttpManagementPayload(System.String)">
-            <inheritdoc />
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
             <summary>
             Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>.
@@ -1001,13 +998,6 @@
             value must not exceed 16 KB of UTF-16 encoded text.
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateHttpManagementPayload(System.String)">
-            <summary>
-            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/></returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>

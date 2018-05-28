@@ -396,12 +396,5 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         public abstract void SetCustomStatus(object customStatusObject);
-
-        /// <summary>
-        /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
-        /// </summary>
-        /// <param name="instanceId">The ID of the orchestration instance to check.</param>
-        /// <returns>Instance of <see cref="HttpManagementPayload"/></returns>
-        public abstract HttpManagementPayload CreateHttpManagementPayload(string instanceId);
     }
 }

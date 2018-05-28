@@ -19,12 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
-        public static HttpManagementPayload GetHttpManagementPayload([OrchestrationTrigger] DurableOrchestrationContext ctx)
-        {
-            HttpManagementPayload httpManagementPayload = ctx.CreateHttpManagementPayload(ctx.InstanceId);
-            return httpManagementPayload;
-        }
-
         public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();

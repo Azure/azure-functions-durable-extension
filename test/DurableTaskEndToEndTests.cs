@@ -1586,50 +1586,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task Orchestrator_Retreives_HttpManagementPayload(bool extendedSessions)
-        {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.GetHttpManagementPayload),
-            };
-
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerFactory,
-                nameof(this.Orchestrator_Retreives_HttpManagementPayload),
-                extendedSessions,
-                notificationUrl: new Uri(TestConstants.NotificationUrl)))
-            {
-                await host.StartAsync();
-
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions,
-                    "OrchestratorRetreivesHttpManagementPayload");
-
-                await host.StopAsync();
-
-                if (this.useTestLogger)
-                {
-                    TestHelpers.AssertLogMessageSequence(
-                        this.output,
-                        this.loggerProvider,
-                        "Orchestrator_Retrieves_HttpManagementPayload",
-                        client.InstanceId,
-                        extendedSessions,
-                        orchestratorFunctionNames);
-                }
-            }
-        }
-
-        /// <summary>
-        /// End-to-end test which validates that Orchestrator can get instance of HttpManagementPayload.
-        /// </summary>
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
         public async Task Activity_Gets_HttpManagementPayload(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
