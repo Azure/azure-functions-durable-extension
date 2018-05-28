@@ -86,9 +86,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await input.CopyToAsync(output);
         }
 
-        public static HttpManagementPayload GetAndPassHttpManagementPayload([ActivityTrigger] DurableActivityContext ctx)
+        public static HttpManagementPayload GetAndPassHttpManagementPayload(
+            [ActivityTrigger] DurableActivityContext ctx,
+            [OrchestrationClient] DurableOrchestrationClient client)
         {
-            HttpManagementPayload httpManagementPayload = ctx.GetInput<HttpManagementPayload>();
+            HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(ctx.InstanceId);
             return httpManagementPayload;
         }
 
