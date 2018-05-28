@@ -35,11 +35,11 @@ namespace Microsoft.Azure.WebJobs
         public abstract HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
 
         /// <summary>
-        /// Creates a <see cref="CheckStatus"/> object that is useful for checking the status of the specified instance.
+        /// Creates a <see cref="HttpManagementPayload"/> object that is useful for checking the status of the specified instance.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
-        /// <returns>Instance of <see cref="CheckStatus"/></returns>
-        public abstract CheckStatus CreateCheckStatus(string instanceId);
+        /// <returns>Instance of <see cref="HttpManagementPayload"/></returns>
+        public abstract HttpManagementPayload CreateHttpManagementPayload(string instanceId);
 
         /// <inheritdoc />
         public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(

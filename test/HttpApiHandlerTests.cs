@@ -74,75 +74,75 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        public void CreateCheckStatus_Returns_Corrent_CheckStatus_based_on_default_values()
+        public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_default_values()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, null, null);
-            Assert.NotNull(checkStatus);
-            Assert.Equal(checkStatus.Id, TestConstants.InstanceId);
+            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, null, null);
+            Assert.NotNull(httpManagementPayload);
+            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
-                checkStatus.StatusQueryGetUri);
+                httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
-                checkStatus.SendEventPostUri);
+                httpManagementPayload.SendEventPostUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
-                checkStatus.TerminatePostUri);
+                httpManagementPayload.TerminatePostUri);
         }
 
         [Fact]
         public void CreateCheckStatus_Returns_Corrent_CheckStatus_based_on_custom_taskhub_value()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, TestConstants.TaskHub, null);
-            Assert.NotNull(checkStatus);
-            Assert.Equal(checkStatus.Id, TestConstants.InstanceId);
+            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, null);
+            Assert.NotNull(httpManagementPayload);
+            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                checkStatus.StatusQueryGetUri);
+                httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                checkStatus.SendEventPostUri);
+                httpManagementPayload.SendEventPostUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey",
-                checkStatus.TerminatePostUri);
+                httpManagementPayload.TerminatePostUri);
         }
 
         [Fact]
         public void CreateCheckStatus_Returns_Corrent_CheckStatus_based_on_custom_connection_value()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, null, TestConstants.CustomConnectionName);
-            Assert.NotNull(checkStatus);
-            Assert.Equal(checkStatus.Id, TestConstants.InstanceId);
+            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, null, TestConstants.CustomConnectionName);
+            Assert.NotNull(httpManagementPayload);
+            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
-                checkStatus.StatusQueryGetUri);
+                httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
-                checkStatus.SendEventPostUri);
+                httpManagementPayload.SendEventPostUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
-                checkStatus.TerminatePostUri);
+                httpManagementPayload.TerminatePostUri);
         }
 
         [Fact]
         public void CreateCheckStatus_Returns_Corrent_CheckStatus_based_on_custom_values()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            CheckStatus checkStatus = httpApiHandler.CreateCheckStatus(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName);
-            Assert.NotNull(checkStatus);
-            Assert.Equal(checkStatus.Id, TestConstants.InstanceId);
+            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName);
+            Assert.NotNull(httpManagementPayload);
+            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
-                checkStatus.StatusQueryGetUri);
+                httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
-                checkStatus.SendEventPostUri);
+                httpManagementPayload.SendEventPostUri);
             Assert.Equal(
                 "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=TestConnection&code=mykey",
-                checkStatus.TerminatePostUri);
+                httpManagementPayload.TerminatePostUri);
         }
 
         [Fact]

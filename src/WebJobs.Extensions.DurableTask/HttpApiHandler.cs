@@ -38,17 +38,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            CheckStatus checkStatus = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
-            return this.CreateCheckStatusResponseMessage(request, checkStatus.Id, checkStatus.StatusQueryGetUri, checkStatus.SendEventPostUri, checkStatus.TerminatePostUri);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
+            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
         }
 
-        internal CheckStatus CreateCheckStatus(
+        internal HttpManagementPayload CreateHttpManagementPayload(
             string instanceId,
             string taskHub,
             string connectionName)
         {
-            CheckStatus checkStatus = this.GetClientResponseLinks(null, instanceId, taskHub, connectionName);
-            return checkStatus;
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(null, instanceId, taskHub, connectionName);
+            return httpManagementPayload;
         }
 
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            CheckStatus checkStatus = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
 
             DurableOrchestrationClientBase client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    return this.CreateCheckStatusResponseMessage(request, instanceId, checkStatus.StatusQueryGetUri, checkStatus.SendEventPostUri, checkStatus.TerminatePostUri);
+                    return this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
                 }
             }
         }
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.config.GetClient(attribute);
         }
 
-        private CheckStatus GetClientResponseLinks(
+        private HttpManagementPayload GetClientResponseLinks(
             HttpRequestMessage request,
             string instanceId,
             string taskHubName,
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 querySuffix += "&" + notificationUri.Query.TrimStart('?');
             }
 
-            CheckStatus checkStatus = new CheckStatus
+            HttpManagementPayload httpManagementPayload = new HttpManagementPayload
             {
                 Id = instanceId,
                 StatusQueryGetUri = instancePrefix + "?" + querySuffix,
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
             };
 
-            return checkStatus;
+            return httpManagementPayload;
         }
 
         private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)

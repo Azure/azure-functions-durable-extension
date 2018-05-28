@@ -300,13 +300,13 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override CheckStatus CreateCheckStatus(string instanceId)
+        public override HttpManagementPayload CreateHttpManagementPayload(string instanceId)
         {
-            CheckStatus checkStatus = this.config.CreateCheckStatus(
+            HttpManagementPayload httpManagementPayload = this.config.CreateHttpManagementPayload(
                 instanceId,
                 this.config.HubName,
                 this.config.AzureStorageConnectionStringName);
-            return checkStatus;
+            return httpManagementPayload;
         }
 
         private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(

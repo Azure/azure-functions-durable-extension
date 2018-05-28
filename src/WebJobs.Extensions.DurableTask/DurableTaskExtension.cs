@@ -626,12 +626,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // Get a data structure containing status, terminate and send external event HTTP.
-        internal CheckStatus CreateCheckStatus(
+        internal HttpManagementPayload CreateHttpManagementPayload(
             string instanceId,
             string taskHubName,
             string connectionName)
         {
-            return this.httpApiHandler.CreateCheckStatus(instanceId, taskHubName, connectionName);
+            return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
         }
 
         // Get a response that will wait for response from the durable function for predefined period of time before

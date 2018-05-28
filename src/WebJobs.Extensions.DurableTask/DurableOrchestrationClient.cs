@@ -52,9 +52,9 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override CheckStatus CreateCheckStatus(string instanceId)
+        public override HttpManagementPayload CreateHttpManagementPayload(string instanceId)
         {
-            return this.config.CreateCheckStatus(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
+            return this.config.CreateHttpManagementPayload(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
         }
 
         /// <inheritdoc />

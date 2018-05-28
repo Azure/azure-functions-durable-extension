@@ -17,31 +17,6 @@
             The name of the activity function or <c>null</c> to use the function name.
             </value>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus">
-            <summary>
-            Data structure containing status, terminate and send external event HTTP endpoints
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus.Id">
-            <summary>
-            Instance ID
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus.StatusQueryGetUri">
-            <summary>
-            Status endpoint
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus.SendEventPostUri">
-            <summary>
-            Send external event endpoint
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus.TerminatePostUri">
-            <summary>
-            Terminate endpoint
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension">
             <summary>
             Configuration for the Durable Functions extension.
@@ -281,6 +256,31 @@
             The type of a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
+            <summary>
+            Data structure containing status, terminate and send external event HTTP endpoints
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id">
+            <summary>
+            Instance ID
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri">
+            <summary>
+            Status endpoint
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri">
+            <summary>
+            Send external event endpoint
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri">
+            <summary>
+            Terminate endpoint
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.
@@ -404,7 +404,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatus(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload(System.String)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
@@ -448,12 +448,12 @@
             <param name="instanceId">The ID of the orchestration instance to check.</param>
             <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatus(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)">
             <summary>
-            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus"/> object that is useful for checking the status of the specified instance.
+            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that is useful for checking the status of the specified instance.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus"/></returns>
+            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/></returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
@@ -637,7 +637,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateCheckStatus(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateHttpManagementPayload(System.String)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
@@ -1002,12 +1002,12 @@
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateCheckStatus(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateHttpManagementPayload(System.String)">
             <summary>
-            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus"/> object that is useful for checking the status of the specified instance.
+            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that is useful for checking the status of the specified instance.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CheckStatus"/></returns>
+            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/></returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
