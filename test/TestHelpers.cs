@@ -21,7 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
             string eventGridKeyValue = null,
-            string eventGridTopicEndpoint = null)
+            string eventGridTopicEndpoint = null,
+            Uri notificationUrl = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
+                NotificationUrl = notificationUrl,
             });
 
             // Mock INameResolver for not setting EnvironmentVariables.
@@ -188,6 +190,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "OrchestrationEventGridApiReturnBadStatus":
                     messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
                     break;
+                case "Orchestrator_Retrieves_HttpManagementPayload":
+                    messages = GetLogs_Orchestrator_Retreives_HttpManagementPayload(instanceId, orchestratorFunctionNames, extendedSessions);
+                    break;
                 default:
                     break;
             }
@@ -231,6 +236,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",
                 $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_Orchestrator_Retreives_HttpManagementPayload(string instanceId, string[] functionNames, bool extendedSessions)
+        {
+            string taskHubName = extendedSessions
+                ? "OrchestratorRetreivesHttpManagementPayloadEX"
+                : "OrchestratorRetreivesHttpManagementPayload";
+            var list = new List<string>()
+            {
+                $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 0.",
+                $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: null. State: Started. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 1.",
+                $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: {{\"id\":\"{instanceId}\",\"statusQueryGetUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"sendEventPostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"terminatePostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey\"}}. State: Completed. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 2.",
             };
 
             return list;
