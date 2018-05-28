@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class HttpApiHandlerTests
     {
+        private static string NotifucaitonUrl = TestConstants.NotificationUrl.Split('?')?.FirstOrDefault();
+
         [Fact]
         private void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
@@ -63,13 +66,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.InstanceId);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["statusQueryGetUri"]);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["sendEventPostUri"]);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["terminatePostUri"]);
         }
 
@@ -81,13 +84,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                 httpManagementPayload.SendEventPostUri);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
         }
 
@@ -99,13 +102,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.SendEventPostUri);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/7b59154ae666471993659902ed0ba742/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
         }
 
@@ -170,13 +173,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.RandomInstanceId);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["statusQueryGetUri"]);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{eventName}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["sendEventPostUri"]);
             Assert.Equal(
-                "http://localhost:7071/admin/extensions/DurableTaskExtension/instances/9b59154ae666471993659902ed0ba749/terminate?reason={text}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                $"{NotifucaitonUrl}/instances/9b59154ae666471993659902ed0ba749/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["terminatePostUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
         }
