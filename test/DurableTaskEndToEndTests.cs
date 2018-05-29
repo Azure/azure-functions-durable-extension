@@ -1581,7 +1581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates that Orchestrator can get instance of HttpManagementPayload.
+        /// End-to-end test which validates that Activity function can get an instance of HttpManagementPayload and return via the orchestrator.
         /// </summary>
         [Theory]
         [InlineData(true)]
