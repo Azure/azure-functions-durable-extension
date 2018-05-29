@@ -1591,7 +1591,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string[] orchestratorFunctionNames =
             {
                 nameof(TestOrchestrations.ReturnHttpManagementPayload),
-                nameof(TestActivities.GetAndPassHttpManagementPayload),
+                nameof(TestActivities.GetAndReturnHttpManagementPayload),
             };
 
             using (var host = TestHelpers.GetJobHost(
@@ -1611,17 +1611,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "ActivityGetsHttpManagementPayload");
 
                 await host.StopAsync();
-
-                if (this.useTestLogger)
-                {
-                    TestHelpers.AssertLogMessageSequence(
-                        this.output,
-                        this.loggerProvider,
-                        "Activity_Gets_HttpManagementPayload",
-                        client.InstanceId,
-                        extendedSessions,
-                        orchestratorFunctionNames);
-                }
             }
         }
 

@@ -190,9 +190,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "OrchestrationEventGridApiReturnBadStatus":
                     messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
                     break;
-                case "Activity_Gets_HttpManagementPayload":
-                    messages = GetLogs_Activity_Gets_HttpManagementPayload(instanceId, orchestratorFunctionNames, extendedSessions);
-                    break;
                 default:
                     break;
             }
@@ -237,46 +234,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",
                 $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
             };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_Activity_Gets_HttpManagementPayload(string instanceId, string[] functionNames, bool extendedSessions)
-        {
-            string taskHubName = extendedSessions
-                ? "ActivityGetsHttpManagementPayloadEX"
-                : "ActivityGetsHttpManagementPayload";
-
-            List<string> list;
-
-            if (extendedSessions)
-            {
-                list = new List<string>()
-                {
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 0.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: null. State: Started. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 1.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' scheduled. Reason: ReturnHttpManagementPayload. IsReplay: False. State: Scheduled. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 2.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False. State: Awaited. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 3.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' started. IsReplay: False. Input: [null]. State: Started. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 4.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: {{\"id\":\"{instanceId}\",\"statusQueryGetUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"sendEventPostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"terminatePostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey\"}}. State: Completed. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 5.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: {{\"id\":\"{instanceId}\",\"statusQueryGetUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"sendEventPostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"terminatePostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey\"}}. State: Completed. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 6.",
-                };
-            }
-            else
-            {
-                list = new List<string>()
-                {
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 0.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: null. State: Started. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 1.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' scheduled. Reason: ReturnHttpManagementPayload. IsReplay: False. State: Scheduled. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 2.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False. State: Awaited. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 3.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' started. IsReplay: False. Input: [null]. State: Started. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 4.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: {{\"id\":\"{instanceId}\",\"statusQueryGetUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"sendEventPostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"terminatePostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey\"}}. State: Completed. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 5.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: null. State: Started. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 6.",
-                    $"{instanceId}: Function '{functionNames[1]} ({FunctionType.Activity})' scheduled. Reason: ReturnHttpManagementPayload. IsReplay: True. State: Scheduled. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 7.",
-                    $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: {{\"id\":\"{instanceId}\",\"statusQueryGetUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"sendEventPostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey\",\"terminatePostUri\":\"{TestConstants.NotificationUrlBase}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey\"}}. State: Completed. HubName: {taskHubName}. AppName: . SlotName: . ExtensionVersion: 1.4.1.0. SequenceNumber: 8.",
-                };
-            }
 
             return list;
         }
