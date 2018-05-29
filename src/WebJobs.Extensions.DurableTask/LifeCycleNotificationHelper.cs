@@ -71,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             get => httpMessageHandler;
             set
             {
+                httpClient?.Dispose();
                 httpMessageHandler = value;
                 httpClient = new HttpClient(httpMessageHandler);
                 httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
