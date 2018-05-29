@@ -1189,6 +1189,19 @@
             </summary>
             <returns>The name and optional version of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.ILoggerExtensions">
+            <summary>
+            ILogger extension methods.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.ILoggerExtensions.LogInformationOnce(Microsoft.Extensions.Logging.ILogger,Microsoft.Azure.WebJobs.DurableOrchestrationContextBase,System.String)">
+            <summary>
+            Log Information only once when the IsReplaying is set to false.
+            </summary>
+            <param name="logger">Instance of <see cref="T:Microsoft.Extensions.Logging.ILogger"/></param>
+            <param name="contextBase">Instance of <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase"/></param>
+            <param name="message">Information message</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute">
             <summary>
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/> instance.
