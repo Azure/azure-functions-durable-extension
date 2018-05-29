@@ -1619,8 +1619,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions,
-                    "ActivityGetsHttpManagementPayload");
+                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
 
                 await host.StopAsync();
             }
@@ -1650,8 +1649,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions,
-                    "OrchestrationClientGetsHttpManagementPayload");
+                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);

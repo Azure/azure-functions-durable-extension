@@ -398,9 +398,9 @@ namespace Microsoft.Azure.WebJobs
         public abstract void SetCustomStatus(object customStatusObject);
 
         /// <summary>
-        /// Logs message only on first execution and skipping any following replay calls
+        /// Method that will execute the passed delegate only once, when IsReply value is set to false.
         /// </summary>
-        /// <param name="delegage">Delegate that is logger method to be executed</param>
-        public abstract void LogMessage(Delegate delegage);
+        /// <param name="delegage">Delegate to be executed</param>
+        public abstract void RunOnce(Delegate delegage);
     }
 }

@@ -648,7 +648,7 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.LogMessage(System.Delegate)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.RunOnce(System.Delegate)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
@@ -1013,11 +1013,11 @@
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.LogMessage(System.Delegate)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.RunOnce(System.Delegate)">
             <summary>
-            Logs message only on first execution and skipping any following replay calls
+            Method that will execute the passed delegate only once, when IsReply value is set to false.
             </summary>
-            <param name="delegage">Delegate that is logger method to be executed</param>
+            <param name="delegage">Delegate to be executed</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>

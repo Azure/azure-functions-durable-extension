@@ -300,7 +300,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override void LogMessage(Delegate d)
+        public override void RunOnce(Delegate d)
         {
             if (!this.IsReplaying)
             {

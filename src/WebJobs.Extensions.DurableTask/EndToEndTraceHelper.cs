@@ -295,7 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionState,
                 instanceId,
                 details,
-                (int) statusCode,
+                (int)statusCode,
                 reason,
                 functionType,
                 ExtensionVersion,
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' sent a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
-                    instanceId, functionName, functionType, functionState, (int) statusCode, details, hubName,
+                    instanceId, functionName, functionType, functionState, (int)statusCode, details, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, latencyMs);
             }
         }
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionState,
                 instanceId,
                 details,
-                (int) statusCode,
+                (int)statusCode,
                 reason,
                 functionType,
                 ExtensionVersion,
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.logger.LogError(
                     "{instanceId}: Function '{functionName} ({functionType})' failed to send a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
-                    instanceId, functionName, functionType, functionState, (int) statusCode, details, hubName,
+                    instanceId, functionName, functionType, functionState, (int)statusCode, details, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, latencyMs);
             }
         }
