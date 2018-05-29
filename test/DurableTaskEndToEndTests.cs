@@ -143,6 +143,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates skipping logs for replay events by a simple orchestrator function that calls a single activity function.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task HelloWorldOrchestration_Activity_Skip_Logs_For_Replay_Events(bool extendedSessions)
+        {
+            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, logReplayEvents: false);
+        }
+
+        /// <summary>
         ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information is provided.
         /// </summary>
         [Theory]
@@ -164,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true, true);
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -176,7 +187,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.HelloWorldOrchestration_Activity),
-                extendedSessions))
+                extendedSessions,
+                logReplayEvents: logReplayEvents))
             {
                 await host.StartAsync();
 
@@ -232,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TestHelpers.AssertLogMessageSequence(
                         this.output,
                         this.loggerProvider,
-                        "HelloWorldOrchestration_Activity",
+                        logReplayEvents ? "HelloWorldOrchestration_Activity" : "HelloWorldOrchestration_Activity_Skip_Replay_Events",
                         client.InstanceId,
                         extendedSessions,
                         orchestratorFunctionNames,

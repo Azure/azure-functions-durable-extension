@@ -21,7 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
             string eventGridKeyValue = null,
-            string eventGridTopicEndpoint = null)
+            string eventGridTopicEndpoint = null,
+            bool logReplayEvents = true)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
@@ -34,6 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
+                LogReplayEvents = logReplayEvents,
+
             });
 
             // Mock INameResolver for not setting EnvironmentVariables.
@@ -155,6 +158,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "HelloWorldOrchestration_Activity":
                     messages = GetLogs_HelloWorldOrchestration_Activity(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
                     break;
+                case "HelloWorldOrchestration_Activity_Skip_Replay_Events":
+                    messages = GetLogs_HelloWorldOrchestration_Activity_Skip_Replays(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
+                    break;
                 case "TerminateOrchestration":
                     messages = GetLogs_TerminateOrchestration(instanceIds[0], orchestratorFunctionNames);
                     break;
@@ -187,6 +193,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
                 case "OrchestrationEventGridApiReturnBadStatus":
                     messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
+                    break;
+                case "HelloWorldOrchestration_Inline_Skip_Replay_Events":
+                    messages = GetLogs_HelloWorldOrchestration_Activity_Skip_Replays(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
                     break;
                 default:
                     break;
@@ -261,6 +270,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"World\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: {orchestratorFunctionNames[0]}. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_HelloWorldOrchestration_Activity_Skip_Replays(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: {orchestratorFunctionNames[0]}. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"World\"]",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
             };
 
