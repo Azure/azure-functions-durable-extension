@@ -21,7 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
             string eventGridKeyValue = null,
-            string eventGridTopicEndpoint = null)
+            string eventGridTopicEndpoint = null,
+            Uri notificationUrl = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
+                NotificationUrl = notificationUrl,
             });
 
             // Mock INameResolver for not setting EnvironmentVariables.

@@ -256,6 +256,31 @@
             The type of a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
+            <summary>
+            Data structure containing status, terminate and send external event HTTP endpoints
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id">
+            <summary>
+            Instance ID
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri">
+            <summary>
+            Status endpoint
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri">
+            <summary>
+            Send external event endpoint
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri">
+            <summary>
+            Terminate endpoint
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.
@@ -379,6 +404,9 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload(System.String)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
             <inheritdoc />
         </member>
@@ -419,6 +447,13 @@
             <param name="request">The HTTP request that triggered the current orchestration instance.</param>
             <param name="instanceId">The ID of the orchestration instance to check.</param>
             <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)">
+            <summary>
+            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to check.</param>
+            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/></returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
@@ -959,7 +994,7 @@
             </summary>
             <remarks>
             The <paramref name="customStatusObject"/> value is serialized to JSON and will
-            be made available to the orchestration status query APIs. The serialized JSON 
+            be made available to the orchestration status query APIs. The serialized JSON
             value must not exceed 16 KB of UTF-16 encoded text.
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>

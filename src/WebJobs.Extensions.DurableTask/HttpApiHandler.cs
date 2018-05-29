@@ -38,8 +38,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
-            return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
+            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
+        }
+
+        internal HttpManagementPayload CreateHttpManagementPayload(
+            string instanceId,
+            string taskHub,
+            string connectionName)
+        {
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(null, instanceId, taskHub, connectionName);
+            return httpManagementPayload;
         }
 
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -54,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            this.GetClientResponseLinks(request, instanceId, attribute, out var statusQueryGetUri, out var sendEventPostUri, out var terminatePostUri);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
 
             DurableOrchestrationClientBase client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -84,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    return this.CreateCheckStatusResponseMessage(request, instanceId, statusQueryGetUri, sendEventPostUri, terminatePostUri);
+                    return this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
                 }
             }
         }
@@ -332,13 +341,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.config.GetClient(attribute);
         }
 
-        private void GetClientResponseLinks(
+        private HttpManagementPayload GetClientResponseLinks(
             HttpRequestMessage request,
             string instanceId,
-            OrchestrationClientAttribute attribute,
-            out string statusQueryGetUri,
-            out string sendEventPostUri,
-            out string terminatePostUri)
+            string taskHubName,
+            string connectionName)
         {
             if (this.config.NotificationUrl == null)
             {
@@ -346,14 +353,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             Uri notificationUri = this.config.NotificationUrl;
+            Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
-            string hostUrl = request.RequestUri.GetLeftPart(UriPartial.Authority);
+            string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
-            string taskHub = WebUtility.UrlEncode(attribute.TaskHub ?? this.config.HubName);
-            string connection = WebUtility.UrlEncode(attribute.ConnectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
+            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.HubName);
+            string connection = WebUtility.UrlEncode(connectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
 
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
             if (!string.IsNullOrEmpty(notificationUri.Query))
@@ -362,9 +370,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 querySuffix += "&" + notificationUri.Query.TrimStart('?');
             }
 
-            statusQueryGetUri = instancePrefix + "?" + querySuffix;
-            sendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix;
-            terminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix;
+            HttpManagementPayload httpManagementPayload = new HttpManagementPayload
+            {
+                Id = instanceId,
+                StatusQueryGetUri = instancePrefix + "?" + querySuffix,
+                SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
+                TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
+            };
+
+            return httpManagementPayload;
         }
 
         private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
