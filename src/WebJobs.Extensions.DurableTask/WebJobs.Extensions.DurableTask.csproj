@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="DurableTask.AzureStorage" Version="1.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">

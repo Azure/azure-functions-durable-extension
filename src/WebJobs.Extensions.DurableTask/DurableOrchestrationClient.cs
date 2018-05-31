@@ -5,9 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -40,6 +44,38 @@ namespace Microsoft.Azure.WebJobs
             this.config = config;
             this.hubName = config.HubName;
             this.attribute = attribute;
+        }
+
+        /// <summary>
+        /// Constructor for <see cref="DurableOrchestrationClient"/>
+        /// </summary>
+        /// <param name="connectionName">Azure Storage connection name.</param>
+        /// <param name="taskHubName">Name of task hub.</param>
+        public DurableOrchestrationClient(string connectionName, string taskHubName)
+        {
+            this.config = new DurableTaskExtension();
+            JobHostConfiguration jobHostConfiguration =
+                new JobHostConfiguration(connectionName)
+                {
+                    LoggerFactory = new LoggerFactory(),
+                };
+            ExtensionConfigContext extensionConfigContext = new ExtensionConfigContext
+            {
+                Config = new JobHostConfiguration(connectionName),
+            };
+            ((IExtensionConfigProvider)this.config).Initialize(extensionConfigContext);
+            this.attribute = new OrchestrationClientAttribute
+            {
+                TaskHub = taskHubName ?? this.config.HubName,
+                ConnectionName = connectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage,
+            };
+            AzureStorageOrchestrationServiceSettings settings = this.config.GetOrchestrationServiceSettings(this.attribute);
+            var serviceClient = new AzureStorageOrchestrationService(settings);
+            this.client = new TaskHubClient(serviceClient);
+
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            this.traceHelper = new EndToEndTraceHelper(jobHostConfiguration, loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask")));
+            this.hubName = taskHubName;
         }
 
         /// <inheritdoc />

@@ -16,17 +16,18 @@ namespace VSSample
         [FunctionName("HttpStart")]
         public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}")] HttpRequestMessage req,
-            [OrchestrationClient] DurableOrchestrationClientBase starter,
             string functionName,
             ILogger log)
         {
+            DurableOrchestrationClient durableOrchestrationClient = new DurableOrchestrationClient(null, null);
+            var instanceId = await durableOrchestrationClient.StartNewAsync(functionName, null);
             // Function input comes from the request content.
-            dynamic eventData = await req.Content.ReadAsAsync<object>();
-            string instanceId = await starter.StartNewAsync(functionName, eventData);
+            // dynamic eventData = await req.Content.ReadAsAsync<object>();
+            // string instanceId = await starter.StartNewAsync(functionName, eventData);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
-            var res = starter.CreateCheckStatusResponse(req, instanceId);
+            var res = durableOrchestrationClient.CreateCheckStatusResponse(req, instanceId);
             res.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return res;
         }

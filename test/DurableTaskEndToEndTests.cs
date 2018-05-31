@@ -1660,6 +1660,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        public async Task Create_DurableOrchestrationClient()
+        {
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.Create_DurableOrchestrationClient),
+                false,
+                notificationUrl: new Uri(TestConstants.NotificationUrl)))
+            {
+                await host.StartAsync();
+
+                DurableOrchestrationClient durableOrchestrationClient = new DurableOrchestrationClient(null, null);
+                string instanceId =
+                    await durableOrchestrationClient.StartNewAsync(nameof(TestOrchestrations.SayHelloInline), null);
+                HttpManagementPayload httpManagementPayload =
+                    durableOrchestrationClient.CreateHttpManagementPayload(instanceId);
+                await Task.Delay(3000);
+                var status = await durableOrchestrationClient.GetStatusAsync(instanceId);
+
+                await host.StopAsync();
+            }
+
+        }
+
         private void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
         {
             Assert.NotNull(httpManagementPayload);

@@ -398,6 +398,13 @@
             Client for starting, querying, terminating, and raising events to orchestration instances.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.#ctor(System.String,System.String)">
+            <summary>
+            Constructor for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>
+            </summary>
+            <param name="connectionName">Azure Storage connection name.</param>
+            <param name="taskHubName">Name of task hub.</param>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName">
             <inheritdoc />
         </member>
