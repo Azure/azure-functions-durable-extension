@@ -182,10 +182,8 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets all the status of the orchestration instances.
         /// </summary>
-        /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
-        /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="cancellationToken">Cancel your request by this token</param>
         /// <returns>Returns orchestration status for all instances.</returns>
-        public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(bool showHistory = false, bool showHistoryOutput = false, CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }
