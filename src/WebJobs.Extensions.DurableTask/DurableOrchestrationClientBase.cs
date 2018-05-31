@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets all the status of the orchestration instances.
         /// </summary>
-        /// <param name="cancellationToken">Cancel your request by this token</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
