@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
@@ -115,7 +116,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string instanceId = path.Substring(i);
                 if (request.Method == HttpMethod.Get)
                 {
-                    return await this.HandleGetStatusRequestAsync(request, instanceId);
+                    if (instanceId == string.Empty)
+                    {
+                        return await this.HandleGetStatusRequestAsync(request);
+                    }
+                    else
+                    {
+                        return await this.HandleGetStatusRequestAsync(request, instanceId);
+                    }
                 }
             }
             else if (request.Method == HttpMethod.Post)
@@ -148,6 +156,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
+        }
+
+        private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
+            HttpRequestMessage request)
+        {
+            try
+            {
+                DurableOrchestrationClientBase client = this.GetClient(request);
+                var status = await client.GetStatusAsync();
+
+                var results = new List<StatusResponsePayload>(status.Count);
+                foreach (var state in status)
+                {
+                    results.Add(this.ConvertFrom(state));
+                }
+
+                return request.CreateResponse(HttpStatusCode.OK, results);
+            }
+            catch (Exception e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error", e);
+            }
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
@@ -201,16 +231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var response =
                 request.CreateResponse(
                 statusCode,
-                new StatusResponsePayload
-                {
-                    RuntimeStatus = status.RuntimeStatus.ToString(),
-                    Input = status.Input,
-                    CustomStatus = status.CustomStatus,
-                    Output = status.Output,
-                    CreatedTime = status.CreatedTime.ToString("s") + "Z",
-                    LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
-                    HistoryEvents = status.History,
-                });
+                this.ConvertFrom(status));
 
             if (location != null)
             {
@@ -224,6 +245,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return response;
+        }
+
+        private StatusResponsePayload ConvertFrom(DurableOrchestrationStatus status)
+        {
+            return new StatusResponsePayload
+            {
+                RuntimeStatus = status.RuntimeStatus.ToString(),
+                Input = status.Input,
+                CustomStatus = status.CustomStatus,
+                Output = status.Output,
+                CreatedTime = status.CreatedTime.ToString("s") + "Z",
+                LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
+                HistoryEvents = status.History,
+            };
         }
 
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
