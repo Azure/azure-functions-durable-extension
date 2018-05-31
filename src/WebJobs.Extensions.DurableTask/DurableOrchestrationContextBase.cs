@@ -396,11 +396,5 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         public abstract void SetCustomStatus(object customStatusObject);
-
-        /// <summary>
-        /// Method that will execute the passed delegate only once, when IsReply value is set to false.
-        /// </summary>
-        /// <param name="delegage">Delegate to be executed</param>
-        public abstract void RunOnce(Delegate delegage);
     }
 }

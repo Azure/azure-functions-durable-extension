@@ -299,15 +299,6 @@ namespace Microsoft.Azure.WebJobs
             this.ContinuedAsNew = true;
         }
 
-        /// <inheritdoc />
-        public override void RunOnce(Delegate d)
-        {
-            if (!this.IsReplaying)
-            {
-                d.DynamicInvoke();
-            }
-        }
-
         private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
             string functionName,
             FunctionType functionType,

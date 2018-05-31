@@ -380,8 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ShouldReplayEventsBeLogged(bool isReplay)
         {
-            return this.durableTaskExtension.LogReplayEvents ||
-                   (!this.durableTaskExtension.LogReplayEvents && !isReplay);
+            return this.durableTaskExtension.LogReplayEvents || !isReplay;
         }
 #pragma warning restore SA1117 // Parameters should be on same line or separate lines
     }

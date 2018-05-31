@@ -648,9 +648,6 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.RunOnce(System.Delegate)">
-            <inheritdoc />
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
             <summary>
             Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>.
@@ -1013,12 +1010,6 @@
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.RunOnce(System.Delegate)">
-            <summary>
-            Method that will execute the passed delegate only once, when IsReply value is set to false.
-            </summary>
-            <param name="delegage">Delegate to be executed</param>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
             Represents the status of a durable orchestration instance.
@@ -1188,19 +1179,6 @@
             Gets the string value of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.
             </summary>
             <returns>The name and optional version of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.</returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.ILoggerExtensions">
-            <summary>
-            ILogger extension methods.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ILoggerExtensions.LogInformationOnce(Microsoft.Extensions.Logging.ILogger,Microsoft.Azure.WebJobs.DurableOrchestrationContextBase,System.String)">
-            <summary>
-            Log Information only once when the IsReplaying is set to false.
-            </summary>
-            <param name="logger">Instance of <see cref="T:Microsoft.Extensions.Logging.ILogger"/></param>
-            <param name="contextBase">Instance of <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase"/></param>
-            <param name="message">Information message</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute">
             <summary>
