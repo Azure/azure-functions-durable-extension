@@ -105,6 +105,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
+                // Retrive All Status in case of the request URL ends e.g. /instances/
+                if (request.Method == HttpMethod.Get
+                    && path.IndexOf(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return await this.HandleGetStatusRequestAsync(request);
+                }
+
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
@@ -116,14 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string instanceId = path.Substring(i);
                 if (request.Method == HttpMethod.Get)
                 {
-                    if (instanceId == string.Empty)
-                    {
-                        return await this.HandleGetStatusRequestAsync(request);
-                    }
-                    else
-                    {
                         return await this.HandleGetStatusRequestAsync(request, instanceId);
-                    }
                 }
             }
             else if (request.Method == HttpMethod.Post)
@@ -251,6 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return new StatusResponsePayload
             {
+                InstanceId = status.InstanceId,
                 RuntimeStatus = status.RuntimeStatus.ToString(),
                 Input = status.Input,
                 CustomStatus = status.CustomStatus,
