@@ -143,14 +143,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates skipping logs for replay events by a simple orchestrator function that calls a single activity function.
+        /// End-to-end test which validates logs for replay events by a simple orchestrator function that calls a single activity function.
         /// </summary>
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task HelloWorldOrchestration_Activity_Skip_Logs_For_Replay_Events(bool extendedSessions)
+        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, logReplayEvents: false);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(false, logReplayEvents: logReplayEvents);
         }
 
         /// <summary>
@@ -244,11 +244,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TestHelpers.AssertLogMessageSequence(
                         this.output,
                         this.loggerProvider,
-                        logReplayEvents ? "HelloWorldOrchestration_Activity" : "HelloWorldOrchestration_Activity_Skip_Replay_Events",
+                        "HelloWorldOrchestration_Activity",
                         client.InstanceId,
                         extendedSessions,
                         orchestratorFunctionNames,
-                        activityFunctionName);
+                        activityFunctionName,
+                        logReplayEvents);
                 }
             }
         }
