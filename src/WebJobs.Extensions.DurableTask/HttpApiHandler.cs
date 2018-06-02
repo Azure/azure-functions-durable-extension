@@ -162,10 +162,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
-            var status = await client.GetStatusAsync();
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync();
 
-            var results = new List<StatusResponsePayload>(status.Count);
-            foreach (var state in status)
+            var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
+            foreach (var state in statusForAllInstances)
             {
                 results.Add(this.ConvertFrom(state));
             }
