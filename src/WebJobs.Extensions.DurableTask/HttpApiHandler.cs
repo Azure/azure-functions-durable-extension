@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string instanceId = path.Substring(i);
                 if (request.Method == HttpMethod.Get)
                 {
-                        return await this.HandleGetStatusRequestAsync(request, instanceId);
+                    return await this.HandleGetStatusRequestAsync(request, instanceId);
                 }
             }
             else if (request.Method == HttpMethod.Post)
