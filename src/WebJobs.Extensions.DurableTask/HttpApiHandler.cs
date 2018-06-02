@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Retrive All Status in case of the request URL ends e.g. /instances/
                 if (request.Method == HttpMethod.Get
-                    && path.IndexOf(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) >= 0)
+                    && path.Equals(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                 {
                     return await this.HandleGetStatusRequestAsync(request);
                 }
