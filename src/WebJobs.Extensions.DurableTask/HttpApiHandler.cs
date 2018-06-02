@@ -161,23 +161,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request)
         {
-            try
-            {
-                DurableOrchestrationClientBase client = this.GetClient(request);
-                var status = await client.GetStatusAsync();
+            DurableOrchestrationClientBase client = this.GetClient(request);
+            var status = await client.GetStatusAsync();
 
-                var results = new List<StatusResponsePayload>(status.Count);
-                foreach (var state in status)
-                {
-                    results.Add(this.ConvertFrom(state));
-                }
-
-                return request.CreateResponse(HttpStatusCode.OK, results);
-            }
-            catch (Exception e)
+            var results = new List<StatusResponsePayload>(status.Count);
+            foreach (var state in status)
             {
-                return request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error", e);
+                results.Add(this.ConvertFrom(state));
             }
+
+            return request.CreateResponse(HttpStatusCode.OK, results);
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
