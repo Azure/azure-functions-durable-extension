@@ -304,6 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
                 });
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
 
             Assert.Equal("01", actual[0].InstanceId);
