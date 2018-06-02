@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// InstanceId.
         /// </summary>
         [DataMember(Name = "instanceId")]
-        public JToken InstanceId { get; set; }
+        public string InstanceId { get; set; }
 
         /// <summary>
         /// Runtime status.
