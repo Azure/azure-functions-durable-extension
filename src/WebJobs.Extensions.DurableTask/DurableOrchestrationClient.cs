@@ -54,14 +54,15 @@ namespace Microsoft.Azure.WebJobs
         public DurableOrchestrationClient(string connectionName, string taskHubName)
         {
             this.config = new DurableTaskExtension();
+            ILoggerFactory loggerFactory = new LoggerFactory();
             JobHostConfiguration jobHostConfiguration =
                 new JobHostConfiguration(connectionName)
                 {
-                    LoggerFactory = new LoggerFactory(),
+                    LoggerFactory = loggerFactory,
                 };
             ExtensionConfigContext extensionConfigContext = new ExtensionConfigContext
             {
-                Config = new JobHostConfiguration(connectionName),
+                Config = jobHostConfiguration,
             };
             ((IExtensionConfigProvider)this.config).Initialize(extensionConfigContext);
             this.attribute = new OrchestrationClientAttribute
@@ -72,8 +73,6 @@ namespace Microsoft.Azure.WebJobs
             AzureStorageOrchestrationServiceSettings settings = this.config.GetOrchestrationServiceSettings(this.attribute);
             var serviceClient = new AzureStorageOrchestrationService(settings);
             this.client = new TaskHubClient(serviceClient);
-
-            ILoggerFactory loggerFactory = new LoggerFactory();
             this.traceHelper = new EndToEndTraceHelper(jobHostConfiguration, loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask")));
             this.hubName = taskHubName;
         }
