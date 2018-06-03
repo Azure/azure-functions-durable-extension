@@ -185,6 +185,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string EventGridKeySettingName { get; set; }
 
         /// <summary>
+        /// Gets or sets the Event Grid publish request retry count.
+        /// </summary>
+        public int EventGridPublishRetryCount { get; set; }
+
+        /// <summary>
+        /// Gets orsets the Event Grid publish request retry interval.
+        /// </summary>
+        public TimeSpan EventGridPublishRetryInterval { get; set; } = TimeSpan.FromMinutes(5);
+
+        /// <summary>
+        /// Gets or sets the Event Grid publish request http status.
+        /// </summary>
+        /// <example>400,403</example>
+        public int[] EventGridPublishRetryHttpStatus { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>

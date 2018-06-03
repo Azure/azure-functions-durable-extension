@@ -3,8 +3,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Newtonsoft.Json;
@@ -18,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private static HttpClient httpClient = null;
+        private static HttpMessageHandler httpMessageHandler = null;
 
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
         {
@@ -33,19 +38,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.useTrace = true;
 
+                    var retryStatusCode = config.EventGridPublishRetryHttpStatus?
+                                              .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
+                                              .Select(x => (HttpStatusCode) x)
+                                              .ToArray()
+                                          ?? Array.Empty<HttpStatusCode>();
+
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
                     // For more detail about the Event Grid, please refer this document.
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    httpClient = new HttpClient();
-                    if (!string.IsNullOrEmpty(this.eventGridKeyValue))
-                    {
-                        httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
-                    }
-                    else
+                    this.HttpMessageHandler = new HttpRetryMessageHandler(
+                        new HttpClientHandler(),
+                        config.EventGridPublishRetryCount,
+                        config.EventGridPublishRetryInterval,
+                        retryStatusCode);
+
+                    if (string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
                         throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridKeySettingName} on AppSettings.");
-                     }
+                    }
                 }
                 else
                 {
@@ -54,10 +66,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void SetHttpMessageHandler(HttpMessageHandler handler)
+        public HttpMessageHandler HttpMessageHandler
         {
-            httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+            get => httpMessageHandler;
+            set
+            {
+                httpClient?.Dispose();
+                httpMessageHandler = value;
+                httpClient = new HttpClient(httpMessageHandler);
+                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+            }
         }
 
         private async Task SendNotificationAsync(
@@ -74,7 +92,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Details about the Event Grid REST API
             // https://docs.microsoft.com/en-us/rest/api/eventgrid/
-            using (HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content))
+            HttpResponseMessage result = null;
+            try
+            {
+                result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
+            }
+            catch (Exception e)
+            {
+                this.config.TraceHelper.EventGridException(
+                    hubName,
+                    functionName,
+                    functionState,
+                    instanceId,
+                    e.StackTrace,
+                    e,
+                    reason,
+                    stopWatch.ElapsedMilliseconds);
+                return;
+            }
+
+            using (result)
             {
                 var body = await result.Content.ReadAsStringAsync();
                 if (result.IsSuccessStatusCode)
@@ -264,6 +301,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty(PropertyName = "dataVersion")]
             public string DataVersion { get; set; }
+        }
+
+        internal class HttpRetryMessageHandler : DelegatingHandler
+        {
+            private readonly int maxRetryCount;
+            private readonly TimeSpan retryWaitSpan;
+            private readonly HttpStatusCode[] retryTargetStatus;
+
+            public int MaxRetryCount => this.maxRetryCount;
+
+            public TimeSpan RetryWaitSpan => this.retryWaitSpan;
+
+            public HttpStatusCode[] RetryTargetStatus => this.retryTargetStatus;
+
+            public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, TimeSpan retryWaitSpan, HttpStatusCode[] retryTargetStatusCode)
+                : base(messageHandler)
+            {
+                this.maxRetryCount = maxRetryCount;
+                this.retryWaitSpan = retryWaitSpan;
+                this.retryTargetStatus = retryTargetStatusCode;
+            }
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var tryCount = 0;
+                Exception lastException = null;
+                HttpResponseMessage response = null;
+                do
+                {
+                    try
+                    {
+                        response = await base.SendAsync(request, cancellationToken);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            return response;
+                        }
+                        else if (response.StatusCode != HttpStatusCode.ServiceUnavailable)
+                        {
+                            if (this.retryTargetStatus.All(x => x != response.StatusCode))
+                            {
+                                return response;
+                            }
+                        }
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        lastException = e;
+                    }
+
+                    tryCount++;
+
+                    await Task.Delay(this.retryWaitSpan, cancellationToken);
+
+                } while (this.maxRetryCount >= tryCount);
+
+                if (response != null)
+                {
+                    return response;
+                }
+                else
+                {
+                    ExceptionDispatchInfo.Capture(lastException).Throw();
+                    return null;
+                }
+            }
         }
     }
 }

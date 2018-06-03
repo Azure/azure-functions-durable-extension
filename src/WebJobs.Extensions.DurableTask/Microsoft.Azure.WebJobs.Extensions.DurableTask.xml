@@ -154,6 +154,22 @@
             The name of the app setting that stores the Azure Event Grid key.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount">
+            <summary>
+            Gets or sets the Event Grid publish request retry count.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval">
+            <summary>
+            Gets orsets the Event Grid publish request retry interval.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus">
+            <summary>
+            Gets or sets the Event Grid publish request http status.
+            </summary>
+            <example>400,403</example>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled">
             <summary>
             Gets or sets a flag indicating whether to enable extended sessions.
