@@ -52,6 +52,12 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override HttpManagementPayload CreateHttpManagementPayload(string instanceId)
+        {
+            return this.config.CreateHttpManagementPayload(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
+        }
+
+        /// <inheritdoc />
         public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,

@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -390,7 +391,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <remarks>
         /// The <paramref name="customStatusObject"/> value is serialized to JSON and will
-        /// be made available to the orchestration status query APIs. The serialized JSON 
+        /// be made available to the orchestration status query APIs. The serialized JSON
         /// value must not exceed 16 KB of UTF-16 encoded text.
         /// </remarks>
         /// <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>

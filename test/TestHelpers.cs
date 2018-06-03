@@ -24,7 +24,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string eventGridTopicEndpoint = null,
             int? eventGridRetryCount = null,
             TimeSpan? eventGridRetryInterval = null,
-            int[] eventGridRetryHttpStatus = null)
+            int[] eventGridRetryHttpStatus = null,
+            Uri notificationUrl = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
+                NotificationUrl = notificationUrl,
             };
             if (eventGridRetryCount.HasValue)
             {
