@@ -8,6 +8,8 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -15,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json.Linq;
+using WebJobs.Extensions.DurableTask.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -63,8 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string createdInstanceId = Guid.NewGuid().ToString("N");
 
-                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
-                    (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+                Func<HttpRequest, Task<HttpResponse>> responseGenerator =
+                    HttpTestUtility.GetSimpleResponse;
 
                 int callCount = 0;
                 List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
@@ -144,8 +147,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string createdInstanceId = Guid.NewGuid().ToString("N");
 
-                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
-                    (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+                Func<HttpRequest, Task<HttpResponse>> responseGenerator =
+                    (HttpRequest req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
                 int callCount = 0;
                 List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
@@ -225,8 +228,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string createdInstanceId = Guid.NewGuid().ToString("N");
 
-                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
-                    (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+                Func<HttpRequest, Task<HttpResponse>> responseGenerator =
+                    HttpTestUtility.GetSimpleResponse;
 
                 int callCount = 0;
                 List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
@@ -310,10 +313,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string createdInstanceId = Guid.NewGuid().ToString("N");
 
-                Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
-                    (HttpRequestMessage req) => req.CreateResponse(
-                        HttpStatusCode.InternalServerError,
-                        new { message = "Exception has been thrown" });
+                Func<HttpRequest, Task<HttpResponse>> responseGenerator =
+                    HttpTestUtility.GetSimpleErrorResponse;
 
                 int callCount = 0;
                 List<Action> eventGridRequestValidators = this.ConfigureEventGridMockHandler(
@@ -426,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string createdInstanceId,
             string eventGridKeyValue,
             string eventGridEndpoint,
-            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator,
+            Func<HttpRequest, Task<HttpResponse>> responseGenerator,
             Action<JObject> handler)
         {
             var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
@@ -438,8 +439,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var extension = (DurableTaskExtension)extensionProviders.First();
             var mock = new Mock<HttpMessageHandler>();
             mock.Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                .Setup<Task<HttpResponse>>("SendAsync", ItExpr.IsAny<HttpRequest>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequest request, CancellationToken cancellationToken) =>
                 {
                     // We can't assert here directly because any unhandled exceptions will cause
                     // DTFx to abort the work item, which would make debugging failures extremely
@@ -448,11 +449,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     assertBodies.Add(() =>
                     {
                         Assert.Contains(request.Headers, x => x.Key == "aeg-sas-key");
-                        var values = request.Headers.GetValues("aeg-sas-key").ToList();
+                        var values = request.Headers["aeg-sas-key"].ToList();
                         Assert.Single(values);
                         Assert.Equal(eventGridKeyValue, values[0]);
-                        Assert.Equal(eventGridEndpoint, request.RequestUri.ToString());
-                        var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        Assert.Equal(eventGridEndpoint, request.Path.ToString());
+                        var json = HttpTestUtility.GetRequestBody(request).GetAwaiter().GetResult();
                         this.output.WriteLine("Event Grid notification: " + json);
 
                         JArray content = JArray.Parse(json);
@@ -473,7 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         handler(o);
                     });
 
-                    return Task.FromResult(responseGenerator(request));
+                    return responseGenerator(request);
                 });
 
             extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);

@@ -4,6 +4,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
@@ -25,14 +26,14 @@ namespace Microsoft.Azure.WebJobs
         /// Creates an HTTP response that is useful for checking the status of the specified instance.
         /// </summary>
         /// <remarks>
-        /// The payload of the returned <see cref="HttpResponseMessage"/> contains HTTP API URLs that can
+        /// The payload of the returned <see cref="HttpRequest"/> contains HTTP API URLs that can
         /// be used to query the status of the orchestration, raise events to the orchestration, or
         /// terminate the orchestration.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current orchestration instance.</param>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-        public abstract HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
+        public abstract Task<HttpResponse> CreateCheckStatusResponse(HttpRequest request, string instanceId);
 
         /// <summary>
         /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
@@ -42,8 +43,8 @@ namespace Microsoft.Azure.WebJobs
         public abstract HttpManagementPayload CreateHttpManagementPayload(string instanceId);
 
         /// <inheritdoc />
-        public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
+        public virtual Task<HttpResponse> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId)
         {
             return this.WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -53,8 +54,8 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
+        public virtual Task<HttpResponse> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId,
             TimeSpan timeout)
         {
@@ -80,8 +81,8 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        public abstract Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
+        public abstract Task<HttpResponse> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId,
             TimeSpan timeout,
             TimeSpan retryInterval);

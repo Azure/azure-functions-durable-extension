@@ -4,10 +4,16 @@
 using System;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,13 +39,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger = logger;
         }
 
-        internal HttpResponseMessage CreateCheckStatusResponse(
-            HttpRequestMessage request,
+        internal async Task<HttpResponse> CreateCheckStatusResponse(
+            HttpRequest request,
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
-            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
+            return await this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -51,8 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return httpManagementPayload;
         }
 
-        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
+        internal async Task<HttpResponse> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId,
             OrchestrationClientAttribute attribute,
             TimeSpan timeout,
@@ -74,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
                     {
-                        return request.CreateResponse(HttpStatusCode.OK, status.Output);
+                        return await request.CreateResponse(HttpStatusCode.OK, status.Output);
                     }
 
                     if (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
@@ -93,14 +99,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    return this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
+                    return await this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
                 }
             }
         }
 
-        public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
+        public async Task<HttpResponse> HandleRequestAsync(HttpRequest request)
         {
-            string path = request.RequestUri.AbsolutePath.TrimEnd('/');
+            string path = request.Path.ToString().TrimEnd('/');
             int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
@@ -113,12 +119,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (nextSlash < 0)
             {
                 string instanceId = path.Substring(i);
-                if (request.Method == HttpMethod.Get)
+                if (request.Method == "Get")
                 {
                     return await this.HandleGetStatusRequestAsync(request, instanceId);
                 }
             }
-            else if (request.Method == HttpMethod.Post)
+            else if (request.Method == "Post")
             {
                 string instanceId = path.Substring(i, nextSlash - i);
                 i = nextSlash + 1;
@@ -147,11 +153,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            return request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
+            return await request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
         }
 
-        private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
-            HttpRequestMessage request,
+        private async Task<HttpResponse> HandleGetStatusRequestAsync(
+            HttpRequest request,
             string instanceId)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
@@ -175,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case OrchestrationRuntimeStatus.Pending:
                 case OrchestrationRuntimeStatus.ContinuedAsNew:
                     statusCode = HttpStatusCode.Accepted;
-                    location = request.RequestUri;
+                    location = new Uri(request.GetDisplayUrl());
                     break;
 
                 // The orchestration has failed - return 500 w/out Location header
@@ -199,7 +205,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var response =
-                request.CreateResponse(
+                await request.CreateResponse(
                 statusCode,
                 new StatusResponsePayload
                 {
@@ -214,13 +220,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (location != null)
             {
-                response.Headers.Location = location;
+               response.Headers.Add("Location", location.ToString());
             }
 
             if (statusCode == HttpStatusCode.Accepted)
             {
                 // Ask for 5 seconds before retry. Some clients will otherwise retry in a tight loop.
-                response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
+                RetryConditionHeaderValue retryConditionHeaderValue =
+                    new RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
+                response.Headers.Add("RetryAfter", retryConditionHeaderValue.ToString());
             }
 
             return response;
@@ -232,8 +240,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return bool.TryParse(value, out bool parsedValue) && parsedValue;
         }
 
-        private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
-            HttpRequestMessage request,
+        private async Task<HttpResponse> HandleTerminateInstanceRequestAsync(
+            HttpRequest request,
             string instanceId)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
@@ -260,8 +268,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        private async Task<HttpResponseMessage> HandleRaiseEventRequestAsync(
-            HttpRequestMessage request,
+        private async Task<HttpResponse> HandleRaiseEventRequestAsync(
+            HttpRequest request,
             string instanceId,
             string eventName)
         {
@@ -282,29 +290,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return request.CreateResponse(HttpStatusCode.Gone);
             }
 
-            string mediaType = request.Content.Headers.ContentType?.MediaType;
+            string mediaType = request.Headers["ContentType"];
             if (!string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
+                return await request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
             }
 
-            string stringData = await request.Content.ReadAsStringAsync();
+            long bodyLength = request.Body.Length;
+            byte[] buffer = new byte[bodyLength];
+
+            await request.Body.ReadAsync(buffer, 0, (int)bodyLength);
+
+            string stringData;
+            using (StreamReader reader = new StreamReader(request.Body, Encoding.UTF8, true, 1024, true))
+            {
+                stringData = await reader.ReadToEndAsync();
+            }
 
             object eventData;
             try
             {
-                eventData = !string.IsNullOrEmpty(stringData) ? JToken.Parse(stringData) : null;
+               eventData = !string.IsNullOrEmpty(stringData) ? JToken.Parse(stringData) : null;
             }
             catch (JsonReaderException e)
             {
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
+                return await request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
             }
 
             await client.RaiseEventAsync(instanceId, eventName, eventData);
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        private DurableOrchestrationClientBase GetClient(HttpRequestMessage request)
+        private DurableOrchestrationClientBase GetClient(HttpRequest request)
         {
             string taskHub = null;
             string connectionName = null;
@@ -342,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         private HttpManagementPayload GetClientResponseLinks(
-            HttpRequestMessage request,
+            HttpRequest request,
             string instanceId,
             string taskHubName,
             string connectionName)
@@ -353,7 +370,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             Uri notificationUri = this.config.NotificationUrl;
-            Uri baseUri = request?.RequestUri ?? notificationUri;
+            Uri baseUri;
+            if (request?.GetDisplayUrl() != null)
+            {
+                baseUri = new Uri(request.GetDisplayUrl());
+            }
+            else
+            {
+                baseUri = notificationUri;
+            }
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
@@ -381,21 +406,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return httpManagementPayload;
         }
 
-        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
+        private async Task<HttpResponse> CreateCheckStatusResponseMessage(HttpRequest request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
         {
-            var response = request.CreateResponse(
-                HttpStatusCode.Accepted,
-                new
-                {
-                    id = instanceId,
-                    statusQueryGetUri,
-                    sendEventPostUri,
-                    terminatePostUri,
-                });
+            dynamic httpWebhooks = new
+            {
+                id = instanceId,
+                statusQueryGetUri,
+                sendEventPostUri,
+                terminatePostUri,
+            };
+            var response = new DefaultHttpResponse(request.HttpContext)
+            {
+                StatusCode = 202,
+                ContentType = "application/json",
+            };
+            response.Headers.Add("Help-Link", "http://www.pagueveloz.com.br/help");
 
-            // Implement the async HTTP 202 pattern.
-            response.Headers.Location = new Uri(statusQueryGetUri);
-            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
+            var json = JsonConvert.SerializeObject(httpWebhooks, Formatting.None);
+            response.Body = new MemoryStream();
+            await HttpResponseWritingExtensions.WriteAsync(response, json, Encoding.UTF8);
             return response;
         }
     }

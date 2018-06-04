@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -46,9 +47,9 @@ namespace Microsoft.Azure.WebJobs
         public override string TaskHubName => this.hubName;
 
         /// <inheritdoc />
-        public override HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
+        public override async Task<HttpResponse> CreateCheckStatusResponse(HttpRequest request, string instanceId)
         {
-            return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
+            return await this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
         }
 
         /// <inheritdoc />
@@ -58,8 +59,8 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
+        public override async Task<HttpResponse> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId,
             TimeSpan timeout,
             TimeSpan retryInterval)

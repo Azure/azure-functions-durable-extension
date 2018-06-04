@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Middleware;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskExtension :
         IExtensionConfigProvider,
-        IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
+        IAsyncConverter<HttpRequest, HttpResponse>,
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
@@ -617,12 +618,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // Get a response that will point to our webhook handler.
-        internal HttpResponseMessage CreateCheckStatusResponse(
-            HttpRequestMessage request,
+        internal async Task<HttpResponse> CreateCheckStatusResponse(
+            HttpRequest request,
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+            return await this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
 
         // Get a data structure containing status, terminate and send external event HTTP.
@@ -636,8 +637,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // Get a response that will wait for response from the durable function for predefined period of time before
         // pointing to our webhook handler.
-        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
+        internal async Task<HttpResponse> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId,
             OrchestrationClientAttribute attribute,
             TimeSpan timeout,
@@ -652,8 +653,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(
-            HttpRequestMessage request,
+        Task<HttpResponse> IAsyncConverter<HttpRequest, HttpResponse>.ConvertAsync(
+            HttpRequest request,
             CancellationToken cancellationToken)
         {
             return this.httpApiHandler.HandleRequestAsync(request);

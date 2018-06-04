@@ -2,13 +2,19 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Dynamitey.DynamicObjects;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using WebJobs.Extensions.DurableTask.Tests;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -16,10 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class HttpApiHandlerTests
     {
         [Fact]
-        private void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
+        private async Task CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension(), null);
-            var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new DefaultHttpRequest(new DefaultHttpContext()), string.Empty, null));
             Assert.Equal("Webhooks are not configured", ex.Message);
         }
 
@@ -28,10 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
             var ex = await Assert.ThrowsAsync<ArgumentException>(() => httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
-                new HttpRequestMessage
-                {
-                    RequestUri = new Uri(TestConstants.RequestUri),
-                },
+                HttpTestUtility.GetSampleHttpRequest(),
                 TestConstants.InstanceId,
                 new OrchestrationClientAttribute
                 {
@@ -47,19 +50,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task CreateCheckStatusResponse_Returns_Corrent_HTTP_202_Response()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            var httpResponseMessage = httpApiHandler.CreateCheckStatusResponse(
-                new HttpRequestMessage
-                {
-                    RequestUri = new Uri(TestConstants.RequestUri),
-                },
+            var httpResponse = await httpApiHandler.CreateCheckStatusResponse(
+                HttpTestUtility.GetSampleHttpRequest(),
                 TestConstants.InstanceId,
                 new OrchestrationClientAttribute
                 {
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 });
-            Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
-            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            Assert.Equal(202, httpResponse.StatusCode);
+            var content = await HttpTestUtility.GetResponseBody(httpResponse);
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.InstanceId);
             Assert.Equal(
@@ -151,11 +151,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
             var stopWatch = Stopwatch.StartNew();
-            var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
-                new HttpRequestMessage
-                {
-                    RequestUri = new Uri(TestConstants.RequestUri),
-                },
+            var httpResponse = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                HttpTestUtility.GetSampleHttpRequest(),
                 TestConstants.RandomInstanceId,
                 new OrchestrationClientAttribute
                 {
@@ -165,8 +162,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10));
             stopWatch.Stop();
-            Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
-            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            Assert.Equal(202, httpResponse.StatusCode);
+            var content = await HttpTestUtility.GetResponseBody(httpResponse);
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.RandomInstanceId);
             Assert.Equal(
@@ -185,11 +182,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response()
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
-                new HttpRequestMessage
-                {
-                    RequestUri = new Uri(TestConstants.RequestUri),
-                },
+            var httpResponse = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                HttpTestUtility.GetSampleHttpRequest(),
                 TestConstants.IntanceIdFactComplete,
                 new OrchestrationClientAttribute
                 {
@@ -198,8 +192,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10));
-            Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
-            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            Assert.Equal(200, httpResponse.StatusCode);
+            var content = await HttpTestUtility.GetResponseBody(httpResponse);
             var value = JsonConvert.DeserializeObject<string>(content);
             Assert.Equal("Hello Tokyo!", value);
         }
@@ -209,11 +203,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
             var stopwatch = Stopwatch.StartNew();
-            var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
-                new HttpRequestMessage
-                {
-                    RequestUri = new Uri(TestConstants.RequestUri),
-                },
+            var httpResponse = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                HttpTestUtility.GetSampleHttpRequest(),
                 TestConstants.InstanceIdIterations,
                 new OrchestrationClientAttribute
                 {
@@ -223,8 +214,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));
             stopwatch.Stop();
-            Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
-            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            Assert.Equal(200, httpResponse.StatusCode);
+            var content = await HttpTestUtility.GetResponseBody(httpResponse);
             var value = JsonConvert.DeserializeObject<string>(content);
             Assert.Equal("Hello Tokyo!", value);
             Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
@@ -233,7 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Failed()
         {
-            await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed, HttpStatusCode.InternalServerError);
+            await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed, 500);
         }
 
         [Fact]
@@ -248,14 +239,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
         }
 
-        private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus, HttpStatusCode httpStatusCode = HttpStatusCode.OK)
+        private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus, int httpStatusCode = 200)
         {
             var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
-            var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
-                new HttpRequestMessage
-                {
-                    RequestUri = new Uri(TestConstants.RequestUri),
-                },
+            var httpResponse = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                HttpTestUtility.GetSampleHttpRequest(),
                 instanceId,
                 new OrchestrationClientAttribute
                 {
@@ -264,8 +252,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));
-            Assert.Equal(httpResponseMessage.StatusCode, httpStatusCode);
-            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            Assert.Equal(httpResponse.StatusCode, httpStatusCode);
+            var content = await HttpTestUtility.GetResponseBody(httpResponse);
             var response = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
         }
@@ -303,12 +291,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             terminateRequestUriBuilder.Query = $"reason={testReason}&{terminateRequestUriBuilder.Query.TrimStart('?')}";
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            await httpApiHandler.HandleRequestAsync(
-                new HttpRequestMessage
+            DefaultHttpRequest defaultHttpRequest = new DefaultHttpRequest(new DefaultHttpContext())
+            {
+                Method = "Post",
+                Path = new PathString($"/Instances/{testInstanceId}/terminate"),
+                Query = new QueryCollection(new Dictionary<string, StringValues>
                 {
-                    Method = HttpMethod.Post,
-                    RequestUri = terminateRequestUriBuilder.Uri,
-                });
+                    {"reason", testReason},
+                    {"code", "mykey"},
+                }),
+                Host = new HostString(TestConstants.RequestUriHost),
+            };
+
+            await httpApiHandler.HandleRequestAsync(
+                defaultHttpRequest);
 
             Assert.Equal(testInstanceId, actualInstanceId);
             Assert.Equal(testReason, actualReason);

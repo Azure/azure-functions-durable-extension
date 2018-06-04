@@ -3,47 +3,56 @@
 
 using System;
 using System.Collections.Specialized;
+using System.IO;
 using System.Net;
-using System.Net.Http;
-using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal static class HttpRequestMessageExtensions
     {
-        public static HttpResponseMessage CreateResponse(this HttpRequestMessage request, HttpStatusCode statusCode)
+        public static HttpResponse CreateResponse(this HttpRequest request, HttpStatusCode statusCode)
         {
-            return new HttpResponseMessage
-            {
-                RequestMessage = request,
-                StatusCode = statusCode,
-            };
+            DefaultHttpResponse defaultHttpResponse =
+                new DefaultHttpResponse(request.HttpContext)
+                {
+                    StatusCode = (int)statusCode,
+                };
+            return defaultHttpResponse;
         }
 
-        public static HttpResponseMessage CreateResponse<T>(this HttpRequestMessage request, HttpStatusCode statusCode, T value)
+        public static async Task<HttpResponse> CreateResponse<T>(this HttpRequest request, HttpStatusCode statusCode, T value)
         {
-            return new HttpResponseMessage
-            {
-                Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json"),
-                RequestMessage = request,
-                StatusCode = statusCode,
-            };
+            DefaultHttpResponse defaultHttpResponse =
+                new DefaultHttpResponse(request.HttpContext)
+                {
+                    StatusCode = (int)statusCode,
+                    ContentType = "application/json",
+                };
+            defaultHttpResponse.Body = new MemoryStream();
+            await defaultHttpResponse.WriteAsync(JsonConvert.SerializeObject(value));
+            return defaultHttpResponse;
         }
 
-        public static HttpResponseMessage CreateErrorResponse(this HttpRequestMessage request, HttpStatusCode statusCode, string message)
+        public static async  Task<HttpResponse> CreateErrorResponse(this HttpRequest request, HttpStatusCode statusCode, string message)
         {
             var error = new { Message = message };
 
-            return new HttpResponseMessage
-            {
-                Content = new StringContent(JsonConvert.SerializeObject(error), Encoding.UTF8, "application/json"),
-                RequestMessage = request,
-                StatusCode = statusCode,
-            };
+            DefaultHttpResponse defaultHttpResponse =
+                new DefaultHttpResponse(request.HttpContext)
+                {
+                    StatusCode = (int)statusCode,
+                    ContentType = "application/json",
+                };
+            defaultHttpResponse.Body = new MemoryStream();
+            await defaultHttpResponse.WriteAsync(JsonConvert.SerializeObject(error));
+            return defaultHttpResponse;
         }
 
-        public static HttpResponseMessage CreateErrorResponse(this HttpRequestMessage request, HttpStatusCode statusCode, string message, Exception e)
+        public static async Task<HttpResponse> CreateErrorResponse(this HttpRequest request, HttpStatusCode statusCode, string message, Exception e)
         {
             var error = new
             {
@@ -53,18 +62,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 StackTrace = e.StackTrace,
             };
 
-            return new HttpResponseMessage
-            {
-                Content = new StringContent(JsonConvert.SerializeObject(error), Encoding.UTF8, "application/json"),
-                RequestMessage = request,
-                StatusCode = statusCode,
-            };
+            DefaultHttpResponse defaultHttpResponse =
+                new DefaultHttpResponse(request.HttpContext)
+                {
+                    StatusCode = (int)statusCode,
+                    ContentType = "application/json",
+                };
+            defaultHttpResponse.Body = new MemoryStream();
+            await defaultHttpResponse.WriteAsync(JsonConvert.SerializeObject(error));
+            return defaultHttpResponse;
         }
 
-        public static NameValueCollection GetQueryNameValuePairs(this HttpRequestMessage request)
+        public static NameValueCollection GetQueryNameValuePairs(this HttpRequest request)
         {
             var values = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
-            var s = request.RequestUri.Query;
+            var s = request.QueryString.ToString();
             var separator = '&';
 
             int l = (s != null) ? s.Length : 0;
