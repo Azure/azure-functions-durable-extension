@@ -234,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets if logs for replay events need to be recorded.
         /// </summary>
         /// <remarks>
-        /// The default value is false that prevents logging the replay events.
+        /// The default value is false, which disables the logging of replay events.
         /// </remarks>
         /// <value>
         /// Boolean value specifying if the replay events should be logged.
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JobHostConfiguration hostConfig = context.Config;
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger, this);
+            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger, this.LogReplayEvents);
             this.httpApiHandler = new HttpApiHandler(this, logger);
 
             this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
