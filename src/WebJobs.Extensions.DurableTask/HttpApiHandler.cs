@@ -6,9 +6,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -296,11 +294,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return await request.CreateErrorResponse(HttpStatusCode.BadRequest, "Only application/json request content is supported");
             }
 
-            long bodyLength = request.Body.Length;
-            byte[] buffer = new byte[bodyLength];
-
-            await request.Body.ReadAsync(buffer, 0, (int)bodyLength);
-
             string stringData;
             using (StreamReader reader = new StreamReader(request.Body, Encoding.UTF8, true, 1024, true))
             {
@@ -420,9 +413,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 StatusCode = 202,
                 ContentType = "application/json",
             };
-            response.Headers.Add("Help-Link", "http://www.pagueveloz.com.br/help");
 
-            var json = JsonConvert.SerializeObject(httpWebhooks, Formatting.None);
+            var json = JsonConvert.SerializeObject(httpWebhooks);
             response.Body = new MemoryStream();
             await HttpResponseWritingExtensions.WriteAsync(response, json, Encoding.UTF8);
             return response;
