@@ -1,11 +1,12 @@
 {
-    "name": "durable-functions-samples-js",
+    "name": "durable-functions-samples",
     "version": "0.0.1",
     "dependencies": {
         "azure-storage": "^2.8.2",
         "durable-functions": "^0.0.3",
         "moment": "^2.22.1",
         "readdirp": "^2.1.0",
+        "seedrandom": "^2.4.3",
         "uuid": "^3.2.1"
     }
 }
