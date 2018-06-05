@@ -29,7 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.2" />
+    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.3" />
+    <PackageReference Include="DurableTask.Core" Version="2.0.0.6" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
