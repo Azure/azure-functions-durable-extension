@@ -246,10 +246,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.loggerProvider,
                         "HelloWorldOrchestration_Activity",
                         client.InstanceId,
-                        extendedSessions,
+                        extendedSessions || !logReplayEvents,
                         orchestratorFunctionNames,
-                        activityFunctionName,
-                        logReplayEvents);
+                        activityFunctionName);
                 }
             }
         }
