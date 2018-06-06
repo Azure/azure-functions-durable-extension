@@ -25,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int? eventGridRetryCount = null,
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
+            bool logReplayEvents = true,
             Uri notificationUrl = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
+                LogReplayEvents = logReplayEvents,
                 NotificationUrl = notificationUrl,
             };
             if (eventGridRetryCount.HasValue)
@@ -79,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TestLoggerProvider loggerProvider,
             string testName,
             string instanceId,
-            bool extendedSessions,
+            bool filterOutReplayLogs,
             string[] orchestratorFunctionNames,
             string activityFunctionName = null)
         {
@@ -91,8 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 testName,
                 messageIds,
                 orchestratorFunctionNames,
-                instanceId,
-                extendedSessions,
+                filterOutReplayLogs,
                 activityFunctionName,
                 timeStamp);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
@@ -161,7 +162,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string testName,
             List<string> instanceIds,
             string[] orchestratorFunctionNames,
-            string instanceId,
             bool extendedSessions,
             string activityFunctionName = null,
             string timeStamp = null,
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static List<string> GetLogs_HelloWorldOrchestration_Activity(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
         {
-            var list = new List<string>()
+            var list = new List<string>
             {
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",

@@ -230,6 +230,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
 
+        /// <summary>
+        /// Gets or sets if logs for replay events need to be recorded.
+        /// </summary>
+        /// <remarks>
+        /// The default value is false, which disables the logging of replay events.
+        /// </remarks>
+        /// <value>
+        /// Boolean value specifying if the replay events should be logged.
+        /// </value>
+        public bool LogReplayEvents { get; set; }
+
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
@@ -248,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JobHostConfiguration hostConfig = context.Config;
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
+            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger, this.LogReplayEvents);
             this.httpApiHandler = new HttpApiHandler(this, logger);
 
             this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);

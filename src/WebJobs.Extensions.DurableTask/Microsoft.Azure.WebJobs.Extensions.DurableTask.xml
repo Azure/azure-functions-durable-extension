@@ -200,6 +200,17 @@
             The number of seconds before an idle session times out.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents">
+            <summary>
+            Gets or sets if logs for replay events need to be recorded.
+            </summary>
+            <remarks>
+            The default value is false, which disables the logging of replay events.
+            </remarks>
+            <value>
+            Boolean value specifying if the replay events should be logged.
+            </value>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
             Internal initialization call from the WebJobs host.
