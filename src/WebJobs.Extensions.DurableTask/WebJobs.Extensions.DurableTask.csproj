@@ -11,10 +11,6 @@
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.2" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta006" />
   </ItemGroup>
@@ -30,6 +26,10 @@
   <ItemGroup>
     <AdditionalFiles Include="..\..\.stylecop\stylecop.json" />
     <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.3" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->

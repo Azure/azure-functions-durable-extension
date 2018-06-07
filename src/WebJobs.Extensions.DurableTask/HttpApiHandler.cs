@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
@@ -104,6 +105,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
+                // Retrive All Status in case of the request URL ends e.g. /instances/
+                if (request.Method == HttpMethod.Get
+                    && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                {
+                    return await this.HandleGetStatusRequestAsync(request);
+                }
+
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
@@ -148,6 +156,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
+        }
+
+        private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
+            HttpRequestMessage request)
+        {
+            DurableOrchestrationClientBase client = this.GetClient(request);
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync();
+
+            var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
+            foreach (var state in statusForAllInstances)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            return request.CreateResponse(HttpStatusCode.OK, results);
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
@@ -201,16 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var response =
                 request.CreateResponse(
                 statusCode,
-                new StatusResponsePayload
-                {
-                    RuntimeStatus = status.RuntimeStatus.ToString(),
-                    Input = status.Input,
-                    CustomStatus = status.CustomStatus,
-                    Output = status.Output,
-                    CreatedTime = status.CreatedTime.ToString("s") + "Z",
-                    LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
-                    HistoryEvents = status.History,
-                });
+                this.ConvertFrom(status));
 
             if (location != null)
             {
@@ -224,6 +238,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return response;
+        }
+
+        private StatusResponsePayload ConvertFrom(DurableOrchestrationStatus status)
+        {
+            return new StatusResponsePayload
+            {
+                InstanceId = status.InstanceId,
+                RuntimeStatus = status.RuntimeStatus.ToString(),
+                Input = status.Input,
+                CustomStatus = status.CustomStatus,
+                Output = status.Output,
+                CreatedTime = status.CreatedTime.ToString("s") + "Z",
+                LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
+                HistoryEvents = status.History,
+            };
         }
 
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)

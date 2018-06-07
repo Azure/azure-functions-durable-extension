@@ -334,6 +334,11 @@
             Response for Orchestration Status Query.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.InstanceId">
+            <summary>
+            InstanceId.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.RuntimeStatus">
             <summary>
             Runtime status.
@@ -447,6 +452,9 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
@@ -585,6 +593,13 @@
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
             <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all the status of the orchestration instances.
+            </summary>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+            <returns>Returns orchestration status for all instances.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
             <summary>

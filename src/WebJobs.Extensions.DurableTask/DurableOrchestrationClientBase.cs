@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -176,5 +178,12 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
         public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput);
+
+        /// <summary>
+        /// Gets all the status of the orchestration instances.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <returns>Returns orchestration status for all instances.</returns>
+        public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }
