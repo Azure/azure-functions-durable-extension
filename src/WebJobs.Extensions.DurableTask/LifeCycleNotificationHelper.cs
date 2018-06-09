@@ -26,6 +26,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
+        public string EventGridKeyValue => this.eventGridKeyValue;
+
+        public string EventGridTopicEndpoint => this.eventGridTopicEndpoint;
+
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
