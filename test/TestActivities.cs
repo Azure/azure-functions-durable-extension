@@ -86,6 +86,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await input.CopyToAsync(output);
         }
 
+        public static HttpManagementPayload GetAndReturnHttpManagementPayload(
+            [ActivityTrigger] DurableActivityContext ctx,
+            [OrchestrationClient] DurableOrchestrationClient client)
+        {
+            HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(ctx.InstanceId);
+            return httpManagementPayload;
+        }
+
         public static Guid NewGuid([ActivityTrigger] DurableActivityContext ctx)
         {
             return Guid.NewGuid();

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.IO;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -102,6 +103,17 @@ namespace Microsoft.Azure.WebJobs
             }
 
             string serializedValue = jToken.ToString(Formatting.None);
+
+            // Object inputs for out-of-proc activities are passed in their JSON-stringified form with a destination
+            // type of System.String. Unfortunately, deserializing a JSON string to a string causes
+            // MessagePayloadDataConverter to throw an exception. This is a workaround for that case. All other
+            // inputs with destination System.String (in-proc: JSON and not JSON; out-of-proc: not-JSON) inputs with
+            // destination System.String should cast to JValues and be handled above.)
+            if (destinationType.Equals(typeof(string)))
+            {
+                return serializedValue;
+            }
+
             return MessagePayloadDataConverter.Default.Deserialize(serializedValue, destinationType);
         }
 
