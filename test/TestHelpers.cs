@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string taskHub,
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
-            string eventGridKeyValue = null,
+            INameResolver nameResolver = null,
             string eventGridTopicEndpoint = null,
             int? eventGridRetryCount = null,
             TimeSpan? eventGridRetryInterval = null,
@@ -60,9 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.UseDurableTask(durableTaskExtension);
 
             // Mock INameResolver for not setting EnvironmentVariables.
-            if (eventGridKeyValue != null)
+            if (nameResolver != null)
             {
-                config.AddService<INameResolver>(new MockNameResolver(eventGridKeyValue));
+                config.AddService<INameResolver>(nameResolver);
             }
 
             // Performance is *significantly* worse when dashboard logging is enabled, at least
@@ -494,21 +494,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
-        }
-
-        private class MockNameResolver : INameResolver
-        {
-            private string value;
-
-            public MockNameResolver(string value)
-            {
-                this.value = value;
-            }
-
-            public string Resolve(string name)
-            {
-                return this.value;
-            }
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Newtonsoft.Json;
 
@@ -21,8 +22,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ExtensionConfigContext extensionConfigContext;
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
+        private readonly string eventGridTopicEndpoint;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
+
+        public string EventGridKeyValue => this.eventGridKeyValue;
+
+        public string EventGridTopicEndpoint => this.eventGridTopicEndpoint;
 
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
         {
@@ -31,8 +37,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
             this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
+            this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
+            if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endpoint))
+            {
+                this.eventGridTopicEndpoint = endpoint;
+            }
 
-            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint))
+            if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
             {
                 if (!string.IsNullOrEmpty(config.EventGridKeySettingName))
                 {
@@ -95,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage result = null;
             try
             {
-                result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
+                result = await httpClient.PostAsync(this.eventGridTopicEndpoint, content);
             }
             catch (Exception e)
             {
