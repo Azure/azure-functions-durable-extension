@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Newtonsoft.Json;
 
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ExtensionConfigContext extensionConfigContext;
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
+        private readonly string eventGridTopicEndpoint;
         private static HttpClient httpClient = null;
 
         public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
@@ -27,7 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
             this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
 
-            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint))
+            this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
+            if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endPoint))
+            {
+                this.eventGridTopicEndpoint = endPoint;
+            }
+
+            if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
             {
                 if (!string.IsNullOrEmpty(config.EventGridKeySettingName))
                 {
@@ -45,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     else
                     {
                         throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridKeySettingName} on AppSettings.");
-                     }
+                    }
                 }
                 else
                 {
@@ -74,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Details about the Event Grid REST API
             // https://docs.microsoft.com/en-us/rest/api/eventgrid/
-            using (HttpResponseMessage result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content))
+            using (HttpResponseMessage result = await httpClient.PostAsync(this.eventGridTopicEndpoint, content))
             {
                 var body = await result.Content.ReadAsStringAsync();
                 if (result.IsSuccessStatusCode)

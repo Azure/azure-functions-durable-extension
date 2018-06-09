@@ -250,6 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
+                .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
@@ -622,6 +623,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationClientAttribute attribute)
         {
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+        }
+
+        // Get a data structure containing status, terminate and send external event HTTP.
+        internal HttpManagementPayload CreateHttpManagementPayload(
+            string instanceId,
+            string taskHubName,
+            string connectionName)
+        {
+            return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
         }
 
         // Get a response that will wait for response from the durable function for predefined period of time before
