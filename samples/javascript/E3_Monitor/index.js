@@ -10,7 +10,7 @@ module.exports = df(function*(context) {
 
     const endTime = moment.utc(context.df.currentUtcDateTime).add(6, 'h');
     context.log("Instantiating monitor for " + input.location.city + ", " + input.location.state
-        + ". Expires: " + (endTime) + "."); // tostring in JavaScript?
+        + ". Expires: " + (endTime) + ".");
 
     while (moment.utc(context.df.currentUtcDateTime).isBefore(endTime)) {
         // Check the weather
