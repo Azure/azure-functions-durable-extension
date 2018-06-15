@@ -4,6 +4,6 @@
         "AzureWebJobsStorage": "UseDevelopmentStorage=true",
         "TwilioAccountSid": "<Put your Twilio Account SID here>",
         "TwilioAuthToken": "<Put your Twilio Auth Token here>",
-        "TwilioPhoneNumber": "<Put your Twilio Phone Number here>"
+        "TwilioPhoneNumber": "<Put your Twilio Phone Number here in E.164 format>"
     }
 }
