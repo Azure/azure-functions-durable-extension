@@ -48,9 +48,9 @@ namespace Microsoft.Azure.WebJobs
         /// or contains the payload containing the output of the completed orchestration.
         /// </summary>
         /// <remarks>
-        /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+        /// If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-        /// complete within the specified timeout, then the HTTP response will be identical to that of the
+        /// complete within this timeout, then the HTTP response will be identical to that of the
         /// <see cref="CreateCheckStatusResponse"/> API.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
