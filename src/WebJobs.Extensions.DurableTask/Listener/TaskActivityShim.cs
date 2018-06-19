@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     throw new TaskFailureException(
                         $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
-                        Utils.SerializeCause(exceptionToReport, MessagePayloadDataConverter.Default));
+                        Utils.SerializeCause(exceptionToReport, MessagePayloadDataConverter.ErrorConverter));
                 }
             }
 

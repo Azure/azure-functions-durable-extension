@@ -187,17 +187,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or sets the Event Grid publish request retry count.
         /// </summary>
+        /// <value>The number of retry attempts.</value>
         public int EventGridPublishRetryCount { get; set; }
 
         /// <summary>
         /// Gets orsets the Event Grid publish request retry interval.
         /// </summary>
+        /// <value>A <see cref="TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
         public TimeSpan EventGridPublishRetryInterval { get; set; } = TimeSpan.FromMinutes(5);
 
         /// <summary>
         /// Gets or sets the Event Grid publish request http status.
         /// </summary>
-        /// <example>400,403</example>
+        /// <value>A list of HTTP status codes, e.g. 400, 403.</value>
         public int[] EventGridPublishRetryHttpStatus { get; set; }
 
         /// <summary>

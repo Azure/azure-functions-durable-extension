@@ -158,17 +158,19 @@
             <summary>
             Gets or sets the Event Grid publish request retry count.
             </summary>
+            <value>The number of retry attempts.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval">
             <summary>
             Gets orsets the Event Grid publish request retry interval.
             </summary>
+            <value>A <see cref="T:System.TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus">
             <summary>
             Gets or sets the Event Grid publish request http status.
             </summary>
-            <example>400,403</example>
+            <value>A list of HTTP status codes, e.g. 400, 403.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ExtendedSessionsEnabled">
             <summary>
@@ -285,27 +287,27 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
             <summary>
-            Data structure containing status, terminate and send external event HTTP endpoints
+            Data structure containing status, terminate and send external event HTTP endpoints.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id">
             <summary>
-            Instance ID
+            Gets the ID of the orchestration instance.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri">
             <summary>
-            Status endpoint
+            Gets the HTTP GET status query endpoint URL.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri">
             <summary>
-            Send external event endpoint
+            Gets the HTTP POST external event sending endpoint URL.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri">
             <summary>
-            Terminate endpoint
+            Gets the HTTP POST instance termination endpoint.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
@@ -459,7 +461,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
             <summary>
-            Abstract class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>
+            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName">
@@ -488,13 +490,38 @@
             Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/></returns>
+            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> class.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)">
-            <inheritdoc />
+            <summary>
+            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+            or contains the payload containing the output of the completed orchestration.
+            </summary>
+            <remarks>
+            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+            complete within the specified timeout, then the HTTP response will be identical to that of the
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
+            </remarks>
+            <param name="request">The HTTP request that triggered the current function.</param>
+            <param name="instanceId">The unique ID of the instance to check.</param>
+            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)">
-            <inheritdoc />
+            <summary>
+            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+            or contains the payload containing the output of the completed orchestration.
+            </summary>
+            <remarks>
+            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+            complete within the specified timeout, then the HTTP response will be identical to that of the
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
+            </remarks>
+            <param name="request">The HTTP request that triggered the current function.</param>
+            <param name="instanceId">The unique ID of the instance to check.</param>
+            <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
             <summary>

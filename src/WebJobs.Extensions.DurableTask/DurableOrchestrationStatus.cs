@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     /// <remarks>
     /// An external client can fetch the status of an orchestration instance using
-    /// <see cref="DurableOrchestrationClient.GetStatusAsync"/>.
+    /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool)"/>.
     /// </remarks>
     public class DurableOrchestrationStatus
     {
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs
         /// <remarks>
         /// The history log can be large and is therefore <c>null</c> by default.
         /// It is populated only when explicitly requested in the call to
-        /// <see cref="DurableOrchestrationClient.GetStatusAsync"/>.
+        /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool)"/>.
         /// </remarks>
         /// <value>
         /// The output as a <c>JArray</c> object or <c>null</c>.
