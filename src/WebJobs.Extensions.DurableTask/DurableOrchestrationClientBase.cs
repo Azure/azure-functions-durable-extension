@@ -11,7 +11,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Abstract class for <see cref="DurableOrchestrationClient"/>
+    /// Abstract base class for <see cref="DurableOrchestrationClient"/>.
     /// </summary>
     public abstract class DurableOrchestrationClientBase
     {
@@ -40,10 +40,22 @@ namespace Microsoft.Azure.WebJobs
         /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
-        /// <returns>Instance of <see cref="HttpManagementPayload"/></returns>
+        /// <returns>Instance of the <see cref="HttpManagementPayload"/> class.</returns>
         public abstract HttpManagementPayload CreateHttpManagementPayload(string instanceId);
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+        /// or contains the payload containing the output of the completed orchestration.
+        /// </summary>
+        /// <remarks>
+        /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+        /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+        /// complete within the specified timeout, then the HTTP response will be identical to that of the
+        /// <see cref="CreateCheckStatusResponse"/> API.
+        /// </remarks>
+        /// <param name="request">The HTTP request that triggered the current function.</param>
+        /// <param name="instanceId">The unique ID of the instance to check.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId)
@@ -54,7 +66,20 @@ namespace Microsoft.Azure.WebJobs
                 timeout: TimeSpan.FromSeconds(10));
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+        /// or contains the payload containing the output of the completed orchestration.
+        /// </summary>
+        /// <remarks>
+        /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+        /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+        /// complete within the specified timeout, then the HTTP response will be identical to that of the
+        /// <see cref="CreateCheckStatusResponse"/> API.
+        /// </remarks>
+        /// <param name="request">The HTTP request that triggered the current function.</param>
+        /// <param name="instanceId">The unique ID of the instance to check.</param>
+        /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         public virtual Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
