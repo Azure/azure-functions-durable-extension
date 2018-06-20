@@ -144,6 +144,25 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override async Task RewindAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
+            if (state.OrchestrationStatus == OrchestrationStatus.Running ||
+                state.OrchestrationStatus == OrchestrationStatus.Pending ||
+                state.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
+            {
+                throw new ArgumentException("Orchestration hasn't failed");
+            }
+            else if (state.OrchestrationStatus == OrchestrationStatus.Failed)
+            {
+                await this.client.RewindInstanceAsync(state.OrchestrationInstance, reason);
+
+                // TODO: implement tracing
+                // this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
+            }
+        }
+
+        /// <inheritdoc />
         public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);

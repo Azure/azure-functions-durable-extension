@@ -62,6 +62,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.TerminateAsync(this.instanceId, reason);
         }
 
+        public async Task RewindAsync(string reason)
+        {
+            await this.innerClient.RewindAsync(this.instanceId, reason);
+        }
+
         public async Task<DurableOrchestrationStatus> WaitForStartupAsync(TimeSpan timeout, ITestOutputHelper output)
         {
             Stopwatch sw = Stopwatch.StartNew();

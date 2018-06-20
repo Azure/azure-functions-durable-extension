@@ -586,6 +586,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the Rewind functionality.
+        /// </summary>
+        [Theory]
+        //[InlineData(true)]
+        [InlineData(false)]
+        public async Task RewindOrchestration(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.RewindOrchestration),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                // Using the counter orchestration because it will wait indefinitely for input.
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "Catherine", this.output);
+
+                // Need to wait for the instance to start before we can terminate it.
+                // TODO: This requirement may not be ideal and should be revisited.
+                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+
+                var statusFail = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, statusFail?.RuntimeStatus);
+
+                TestOrchestrations.ShouldFail = false;
+
+                await client.RewindAsync("rewind!");
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Hello, Catherine!", status?.Output);
+
+                await host.StopAsync();
+
+                // HACK: I think expected logs are hard-coded for original orchestrators/activities
+                //if (this.useTestLogger)
+                //{
+                //    TestHelpers.AssertLogMessageSequence(
+                //        this.output,
+                //        this.loggerProvider,
+                //        "RewindOrchestration",
+                //        client.InstanceId,
+                //        extendedSessions,
+                //        orchestratorFunctionNames);
+                //}
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the cancellation of durable timers.
         /// </summary>
         [Theory]

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class TestOrchestrations
     {
         public const char BigValueChar = '*';
+        public static bool ShouldFail = true;
 
         public static string SayHelloInline([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
@@ -23,6 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string input = ctx.GetInput<string>();
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            if (ShouldFail)
+            {
+                ShouldFail = false;
+                throw new Exception("Simulating Orchestration failure...");
+            }
+
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             return output;
         }
 

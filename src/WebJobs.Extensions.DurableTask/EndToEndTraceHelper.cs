@@ -224,6 +224,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void FunctionRewound(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason)
+        {
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.FunctionRewound(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                reason,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: false);
+
+            if (this.ShouldLogEvent(isReplay: false))
+            {
+                this.logger.LogWarning(
+                    "{instanceId}: Function '{functionName} ({functionType})' was rewound. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, reason, FunctionState.Rewound, hubName, LocalAppName,
+                    LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
         public void FunctionFailed(
             string hubName,
             string functionName,

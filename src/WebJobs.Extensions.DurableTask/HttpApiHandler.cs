@@ -131,6 +131,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
                     }
+                    else if (string.Equals(operation, RewindOperation, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return await this.HandleRewindInstanceRequestAsync(request, instanceId);
+                    }
                 }
                 else
                 {
@@ -257,6 +261,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.TerminateAsync(instanceId, reason);
+
+            return request.CreateResponse(HttpStatusCode.Accepted);
+        }
+
+        private async Task<HttpResponseMessage> HandleRewindInstanceRequestAsync(
+           HttpRequestMessage request,
+           string instanceId)
+        {
+            DurableOrchestrationClientBase client = this.GetClient(request);
+
+            var status = await client.GetStatusAsync(instanceId);
+            if (status == null)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            switch (status.RuntimeStatus)
+            {
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.Gone);
+            }
+
+            string reason = request.GetQueryNameValuePairs()["reason"];
+
+            await client.RewindAsync(instanceId, reason);
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
