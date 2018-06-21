@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -49,6 +51,12 @@ namespace Microsoft.Azure.WebJobs
         public override HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
+        }
+
+        /// <inheritdoc />
+        public override HttpManagementPayload CreateHttpManagementPayload(string instanceId)
+        {
+            return this.config.CreateHttpManagementPayload(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
         }
 
         /// <inheritdoc />
@@ -147,6 +155,22 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return await this.GetDurableOrchestrationStatusAsync(state, showHistory, showHistoryOutput);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(cancellationToken);
+
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (OrchestrationState state in states)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            return results;
         }
 
         private static JToken ParseToJToken(string value)
@@ -297,6 +321,11 @@ namespace Microsoft.Azure.WebJobs
                 }
             }
 
+            return this.ConvertFrom(orchestrationState, historyArray);
+        }
+
+        private DurableOrchestrationStatus ConvertFrom(OrchestrationState orchestrationState, JArray historyArray = null)
+        {
             return new DurableOrchestrationStatus
             {
                 Name = orchestrationState.Name,

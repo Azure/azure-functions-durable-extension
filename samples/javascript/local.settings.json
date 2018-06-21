@@ -6,7 +6,7 @@
     "AZURE_STORAGE_CONNECTION_STRING": "<Put your Azure Storage connection string here>",
     "TwilioAccountSid": "<Put your Twilio Account SID here>",
     "TwilioAuthToken": "<Put your Twilio Auth Token here>",
-    "TwilioPhoneNumber": "<Put your Twilio Phone Number here>",
+    "TwilioPhoneNumber": "<Put your Twilio Phone Number here in E.164 format>",
     "WeatherUndergroundApiKey": "<Put your Weather Underground API key here>"
   }
 }

@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -27,6 +28,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, OrchestrationClientAttribute attr)
         {
             return input?.ToObject<StartOrchestrationArgs>();
+        }
+
+        public StartOrchestrationArgs StringToStartOrchestrationArgs(string input, OrchestrationClientAttribute attr)
+        {
+            return !string.IsNullOrEmpty(input) ? JsonConvert.DeserializeObject<StartOrchestrationArgs>(input) : null;
         }
 
         private class OrchestrationClientAsyncCollector : IAsyncCollector<StartOrchestrationArgs>

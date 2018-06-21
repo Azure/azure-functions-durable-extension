@@ -20,12 +20,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string taskHub,
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
-            string eventGridKeyValue = null,
-            string eventGridTopicEndpoint = null)
+            INameResolver nameResolver = null,
+            string eventGridTopicEndpoint = null,
+            int? eventGridRetryCount = null,
+            TimeSpan? eventGridRetryInterval = null,
+            int[] eventGridRetryHttpStatus = null,
+            bool logReplayEvents = true,
+            Uri notificationUrl = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
-            config.UseDurableTask(new DurableTaskExtension
+            var durableTaskExtension = new DurableTaskExtension
             {
                 HubName = taskHub.Replace("_", "") + (enableExtendedSessions ? "EX" : ""),
                 TraceInputsAndOutputs = true,
@@ -34,12 +39,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
-            });
+                LogReplayEvents = logReplayEvents,
+                NotificationUrl = notificationUrl,
+            };
+            if (eventGridRetryCount.HasValue)
+            {
+                durableTaskExtension.EventGridPublishRetryCount = eventGridRetryCount.Value;
+            }
+
+            if (eventGridRetryInterval.HasValue)
+            {
+                durableTaskExtension.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
+            }
+
+            if (eventGridRetryHttpStatus != null)
+            {
+                durableTaskExtension.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
+            }
+
+            config.UseDurableTask(durableTaskExtension);
 
             // Mock INameResolver for not setting EnvironmentVariables.
-            if (eventGridKeyValue != null)
+            if (nameResolver != null)
             {
-                config.AddService<INameResolver>(new MockNameResolver(eventGridKeyValue));
+                config.AddService<INameResolver>(nameResolver);
             }
 
             // Performance is *significantly* worse when dashboard logging is enabled, at least
@@ -58,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TestLoggerProvider loggerProvider,
             string testName,
             string instanceId,
-            bool extendedSessions,
+            bool filterOutReplayLogs,
             string[] orchestratorFunctionNames,
             string activityFunctionName = null)
         {
@@ -70,8 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 testName,
                 messageIds,
                 orchestratorFunctionNames,
-                instanceId,
-                extendedSessions,
+                filterOutReplayLogs,
                 activityFunctionName,
                 timeStamp);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
@@ -140,7 +162,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string testName,
             List<string> instanceIds,
             string[] orchestratorFunctionNames,
-            string instanceId,
             bool extendedSessions,
             string activityFunctionName = null,
             string timeStamp = null,
@@ -251,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static List<string> GetLogs_HelloWorldOrchestration_Activity(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
         {
-            var list = new List<string>()
+            var list = new List<string>
             {
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",
@@ -473,21 +494,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
-        }
-
-        private class MockNameResolver : INameResolver
-        {
-            private string value;
-
-            public MockNameResolver(string value)
-            {
-                this.value = value;
-            }
-
-            public string Resolve(string name)
-            {
-                return this.value;
-            }
         }
     }
 }

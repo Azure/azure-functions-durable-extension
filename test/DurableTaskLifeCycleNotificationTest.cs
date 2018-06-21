@@ -50,13 +50,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationStartAndCompleted),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -131,13 +132,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationFailed),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -212,13 +214,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationTerminate),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -297,13 +300,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationStartAndCompleted),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -388,12 +392,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string eventGridKeyValue = null;
             var eventGridKeySettingName = "";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(Array.Empty<(string, string)>());
+
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationTerminate),
                 false /* extendedSessionsEnabled */,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
@@ -407,12 +413,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string eventGridKeyValue = null;
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(Array.Empty<(string, string)>());
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationTerminate),
                 false /* extendedSessionsEnabled */,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
@@ -476,9 +483,476 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return Task.FromResult(responseGenerator(request));
                 });
 
-            extension.LifeCycleNotificationHelper.SetHttpMessageHandler(mock.Object);
+            extension.LifeCycleNotificationHelper.HttpMessageHandler = mock.Object;
 
             return assertBodies;
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationEventGridApiServiceUnavailableRetry(bool extendedSessionsEnabled)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var callCount = 0;
+            var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
+                eventGridEndpoint))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+
+                if (extensionProviders.Any())
+                {
+                    var extension = (DurableTaskExtension)extensionProviders.First();
+                    var mock = new Mock<HttpMessageHandler>();
+                    mock.Protected()
+                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                        {
+                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                            JArray content = JArray.Parse(json);
+                            dynamic o = (JObject)Assert.Single(content);
+                            if (o.subject.ToString() == "durable/orchestrator/Running")
+                            {
+                                callCount++;
+                                if (callCount > retryCount)
+                                {
+                                    var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                    message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                    return Task.FromResult(message);
+                                }
+                                else
+                                {
+                                    var message = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                                    message.Content = new StringContent("{\"message\":\"Exception has been thrown\"}");
+                                    return Task.FromResult(message);
+                                }
+                            }
+                            else if (o.subject.ToString() == "durable/orchestrator/Completed")
+                            {
+                                var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                return Task.FromResult(message);
+                            }
+                            throw new Exception("subject is fault type");
+                        });
+
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
+                        new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+                            mock.Object,
+                            5,
+                            TimeSpan.FromMilliseconds(1000),
+                            Array.Empty<HttpStatusCode>());
+                }
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(retryCount + 1, callCount);
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationEventGridApiExceptionRetry(bool extendedSessionsEnabled)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var callCount = 0;
+            var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
+                eventGridEndpoint))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+
+                if (extensionProviders.Any())
+                {
+                    var extension = (DurableTaskExtension)extensionProviders.First();
+                    var mock = new Mock<HttpMessageHandler>();
+                    mock.Protected()
+                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                        {
+                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                            JArray content = JArray.Parse(json);
+                            dynamic o = (JObject)Assert.Single(content);
+
+                            if (o.subject.ToString() == "durable/orchestrator/Running")
+                            {
+                                callCount++;
+                                if (callCount > retryCount)
+                                {
+                                    var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                    message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                    return Task.FromResult(message);
+                                }
+                                else
+                                {
+                                    throw new HttpRequestException();
+                                }
+                            }
+                            else if (o.subject.ToString() == "durable/orchestrator/Completed")
+                            {
+                                var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                return Task.FromResult(message);
+                            }
+
+                            throw new Exception("subject is fault type");
+                        });
+
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
+                        new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+                            mock.Object,
+                            5,
+                            TimeSpan.FromMilliseconds(1000),
+                            Array.Empty<HttpStatusCode>());
+                }
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(retryCount + 1, callCount);
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationEventGridApiExceptionNoRetry(bool extendedSessionsEnabled)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var callCount = 0;
+            var retryCount = 0;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
+                eventGridEndpoint))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+
+                if (extensionProviders.Any())
+                {
+                    var extension = (DurableTaskExtension)extensionProviders.First();
+                    var mock = new Mock<HttpMessageHandler>();
+                    mock.Protected()
+                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                        {
+                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                            JArray content = JArray.Parse(json);
+                            dynamic o = (JObject)Assert.Single(content);
+
+                            if (o.subject.ToString() == "durable/orchestrator/Running")
+                            {
+                                callCount++;
+                                throw new HttpRequestException();
+                            }
+                            else if (o.subject.ToString() == "durable/orchestrator/Completed")
+                            {
+                                var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                return Task.FromResult(message);
+                            }
+
+                            throw new Exception("subject is fault type");
+                        });
+
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
+                        new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+                            mock.Object,
+                            retryCount,
+                            TimeSpan.FromMilliseconds(1000),
+                            Array.Empty<HttpStatusCode>());
+                }
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(300), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(retryCount + 1, callCount);
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationEventGridApiExceptionRetryCountOver(bool extendedSessionsEnabled)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var callCount = 0;
+            var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
+                eventGridEndpoint))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+
+                if (extensionProviders.Any())
+                {
+                    var extension = (DurableTaskExtension)extensionProviders.First();
+                    var mock = new Mock<HttpMessageHandler>();
+                    mock.Protected()
+                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                        {
+                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                            JArray content = JArray.Parse(json);
+                            dynamic o = (JObject)Assert.Single(content);
+
+                            if (o.subject.ToString() == "durable/orchestrator/Running")
+                            {
+                                callCount++;
+                                throw new HttpRequestException();
+                            }
+                            else if (o.subject.ToString() == "durable/orchestrator/Completed")
+                            {
+                                var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                return Task.FromResult(message);
+                            }
+
+                            throw new Exception("subject is fault type");
+                        });
+
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
+                        new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+                            mock.Object,
+                            5,
+                            TimeSpan.FromMilliseconds(1000),
+                            Array.Empty<HttpStatusCode>());
+                }
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(300), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(retryCount + 1, callCount);
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationEventGridApiRetryStatus(bool extendedSessionsEnabled)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var callCount = 0;
+            var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
+                eventGridEndpoint))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+
+                if (extensionProviders.Any())
+                {
+                    var extension = (DurableTaskExtension)extensionProviders.First();
+                    var mock = new Mock<HttpMessageHandler>();
+                    mock.Protected()
+                        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                        .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                        {
+                            var json = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                            JArray content = JArray.Parse(json);
+                            dynamic o = (JObject)Assert.Single(content);
+
+                            if (o.subject.ToString() == "durable/orchestrator/Running")
+                            {
+                                callCount++;
+                                HttpResponseMessage message = null;
+                                if (callCount == 1)
+                                {
+                                    message = new HttpResponseMessage(HttpStatusCode.BadRequest);
+                                }
+                                else if (callCount == 2)
+                                {
+                                    message = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                                }
+                                else if (callCount == 3)
+                                {
+                                    message = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                                }
+                                else if (callCount == 4)
+                                {
+                                    message = new HttpResponseMessage(HttpStatusCode.NotFound);
+                                }
+                                else
+                                {
+                                    message = new HttpResponseMessage(HttpStatusCode.OK);
+                                    message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                    return Task.FromResult(message);
+                                }
+
+                                message.Content = new StringContent("{\"message\":\"Exception has been thrown\"}");
+                                return Task.FromResult(message);
+                            }
+                            else if (o.subject.ToString() == "durable/orchestrator/Completed")
+                            {
+                                var message = new HttpResponseMessage(HttpStatusCode.OK);
+                                message.Content = new StringContent("{\"message\":\"OK!\"}");
+                                return Task.FromResult(message);
+                            }
+
+                            throw new Exception("subject is fault type");
+                        });
+
+                    extension.LifeCycleNotificationHelper.HttpMessageHandler =
+                        new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+                            mock.Object,
+                            5,
+                            TimeSpan.FromMilliseconds(1000),
+                            new[] { (HttpStatusCode)400, (HttpStatusCode)401, (HttpStatusCode)404 });
+                }
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(5, callCount);
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        public async Task OrchestrationEventGridApiConfigureCheck()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://%WholeStringTest%.com/";
+            var retryCount = 5;
+            var retryInterval = TimeSpan.FromSeconds(10);
+            var retryStatus = new[] { 400, 401 };
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue), ("WholeStringTest", "dummy") });
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationStartAndCompleted), 
+                false,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                retryCount,
+                retryInterval,
+                retryStatus))
+            {
+                await host.StartAsync();
+                var extensionRegistry = (IExtensionRegistry)host.Services.GetService(typeof(IExtensionRegistry));
+                var extensionProviders = extensionRegistry.GetExtensions(typeof(IExtensionConfigProvider))
+                    .Where(x => x is DurableTaskExtension)
+                    .ToList();
+                var extension = (DurableTaskExtension)extensionProviders.First();
+
+                Assert.Equal("http://dummy.com/", extension.LifeCycleNotificationHelper.EventGridTopicEndpoint);
+                Assert.Equal(eventGridKeyValue, extension.LifeCycleNotificationHelper.EventGridKeyValue);
+
+                var handler =
+                    (LifeCycleNotificationHelper.HttpRetryMessageHandler) extension.LifeCycleNotificationHelper
+                        .HttpMessageHandler;
+
+                Assert.Equal(retryCount, handler.MaxRetryCount);
+                Assert.Equal(retryInterval, handler.RetryWaitSpan);
+                Assert.Equal(retryStatus.Select(x => (HttpStatusCode)x), handler.RetryTargetStatus);
+                await host.StopAsync();
+            }
+        }
+
+        private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
+        {
+            var mock = new Mock<INameResolver>();
+            foreach (var setting in settings)
+            {
+                mock.Setup(x => x.Resolve(setting.Key)).Returns(setting.Value);
+            }
+
+            return mock;
         }
     }
 }

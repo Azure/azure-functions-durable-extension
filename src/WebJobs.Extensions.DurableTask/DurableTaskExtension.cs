@@ -185,6 +185,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string EventGridKeySettingName { get; set; }
 
         /// <summary>
+        /// Gets or sets the Event Grid publish request retry count.
+        /// </summary>
+        /// <value>The number of retry attempts.</value>
+        public int EventGridPublishRetryCount { get; set; }
+
+        /// <summary>
+        /// Gets orsets the Event Grid publish request retry interval.
+        /// </summary>
+        /// <value>A <see cref="TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
+        public TimeSpan EventGridPublishRetryInterval { get; set; } = TimeSpan.FromMinutes(5);
+
+        /// <summary>
+        /// Gets or sets the Event Grid publish request http status.
+        /// </summary>
+        /// <value>A list of HTTP status codes, e.g. 400, 403.</value>
+        public int[] EventGridPublishRetryHttpStatus { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>
@@ -214,6 +232,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
 
+        /// <summary>
+        /// Gets or sets if logs for replay events need to be recorded.
+        /// </summary>
+        /// <remarks>
+        /// The default value is false, which disables the logging of replay events.
+        /// </remarks>
+        /// <value>
+        /// Boolean value specifying if the replay events should be logged.
+        /// </value>
+        public bool LogReplayEvents { get; set; }
+
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
 
         internal EndToEndTraceHelper TraceHelper => this.traceHelper;
@@ -232,7 +261,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JobHostConfiguration hostConfig = context.Config;
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger);
+            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger, this.LogReplayEvents);
             this.httpApiHandler = new HttpApiHandler(this, logger);
 
             this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
@@ -250,6 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
+                .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
@@ -622,6 +652,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationClientAttribute attribute)
         {
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+        }
+
+        // Get a data structure containing status, terminate and send external event HTTP.
+        internal HttpManagementPayload CreateHttpManagementPayload(
+            string instanceId,
+            string taskHubName,
+            string connectionName)
+        {
+            return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
         }
 
         // Get a response that will wait for response from the durable function for predefined period of time before

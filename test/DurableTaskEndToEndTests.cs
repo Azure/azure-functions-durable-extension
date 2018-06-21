@@ -143,6 +143,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates logs for replay events by a simple orchestrator function that calls a single activity function.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents)
+        {
+            await this.HelloWorldOrchestration_Activity_Main_Logic(false, logReplayEvents: logReplayEvents);
+        }
+
+        /// <summary>
         ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information is provided.
         /// </summary>
         [Theory]
@@ -164,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true, true);
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -176,7 +187,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.HelloWorldOrchestration_Activity),
-                extendedSessions))
+                extendedSessions,
+                logReplayEvents: logReplayEvents))
             {
                 await host.StartAsync();
 
@@ -234,7 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.loggerProvider,
                         "HelloWorldOrchestration_Activity",
                         client.InstanceId,
-                        extendedSessions,
+                        extendedSessions || !logReplayEvents,
                         orchestratorFunctionNames,
                         activityFunctionName);
                 }
@@ -1578,6 +1590,104 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableOrchestrationStatus status = await client.InnerClient.GetStatusAsync(instanceId: bogusInstanceId);
                 Assert.Null(status);
             }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates that Activity function can get an instance of HttpManagementPayload and return via the orchestrator.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Activity_Gets_HttpManagementPayload(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ReturnHttpManagementPayload),
+                nameof(TestActivities.GetAndReturnHttpManagementPayload),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.Activity_Gets_HttpManagementPayload),
+                extendedSessions,
+                notificationUrl: new Uri(TestConstants.NotificationUrl)))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
+                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates HttpManagementPayload retrieved from Orchestration client when executing a simple orchestrator function which doesn't call any activity functions.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        public async Task OrchestrationClient_Gets_HttpManagementPayload(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.OrchestrationClient_Gets_HttpManagementPayload),
+                extendedSessions,
+                notificationUrl: new Uri(TestConstants.NotificationUrl)))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
+                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+
+                await host.StopAsync();
+
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        "HelloWorldOrchestration_Inline",
+                        client.InstanceId,
+                        extendedSessions,
+                        orchestratorFunctionNames);
+                }
+            }
+        }
+
+        private void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
+        {
+            Assert.NotNull(httpManagementPayload);
+            Assert.NotEmpty(httpManagementPayload.Id);
+            string instanceId = httpManagementPayload.Id;
+            string notifucaitonUrl = TestConstants.NotificationUrlBase;
+            string taskHubName = extendedSessions
+                ? $"{defaultTaskHubName}EX"
+                : defaultTaskHubName;
+            Assert.Equal(
+                $"{notifucaitonUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
+                httpManagementPayload.StatusQueryGetUri);
+            Assert.Equal(
+                $"{notifucaitonUrl}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey",
+                httpManagementPayload.SendEventPostUri);
+            Assert.Equal(
+                $"{notifucaitonUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey",
+                httpManagementPayload.TerminatePostUri);
         }
 
         [DataContract]

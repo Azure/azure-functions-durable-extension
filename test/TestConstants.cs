@@ -13,10 +13,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string InstanceIdDurableOrchestrationClientTests = "6496E83-D63F-4B12-A4DA-4BCA1FF2BA2D";
         public const string RequestUri = "http://localhost:7071/orchestrators/E1_HelloSequence";
         public const string NotificationUrl = "http://localhost:7071/admin/extensions/DurableTaskExtension?code=mykey";
+        public const string NotificationUrlBase = "http://localhost:7071/admin/extensions/DurableTaskExtension";
         public const string InstanceId = "7b59154ae666471993659902ed0ba742";
         public const string RandomInstanceId = "9b59154ae666471993659902ed0ba749";
         public const string TaskHub = "SampleHubVS";
         public const string ConnectionName = "Storage";
+        public const string CustomConnectionName = "TestConnection";
         public const string SampleData = "SampleData";
     }
 }

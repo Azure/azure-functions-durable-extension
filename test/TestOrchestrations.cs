@@ -326,5 +326,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return value;
         }
+
+        public static async Task<HttpManagementPayload> ReturnHttpManagementPayload(
+            [OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            HttpManagementPayload activityPassedHttpManagementPayload =
+                await ctx.CallActivityAsync<HttpManagementPayload>(nameof(TestActivities.GetAndReturnHttpManagementPayload), null);
+            return activityPassedHttpManagementPayload;
+        }
     }
 }

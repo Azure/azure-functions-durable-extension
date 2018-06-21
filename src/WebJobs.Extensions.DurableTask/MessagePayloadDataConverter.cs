@@ -2,10 +2,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Reflection;
 using System.Text;
 using DurableTask.Core.Serializing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -14,16 +16,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // The default JsonDataConverter for DTFx includes type information in JSON objects. This causes issues
         // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
         // configure the JsonDataConverter to not include CLR type information. This is also safer from a security perspective.
-        private static readonly JsonSerializerSettings SharedSettings = new JsonSerializerSettings
+        private static readonly JsonSerializerSettings MessageSettings = new JsonSerializerSettings
         {
             TypeNameHandling = TypeNameHandling.None,
         };
 
-        // Default singleton instance
-        public static readonly MessagePayloadDataConverter Default = new MessagePayloadDataConverter();
+        private static readonly JsonSerializerSettings ErrorSettings = new JsonSerializerSettings
+        {
+            ContractResolver = new ExceptionResolver(),
+        };
 
-        public MessagePayloadDataConverter()
-            : base(SharedSettings)
+        // Default singleton instances
+        public static readonly MessagePayloadDataConverter Default = new MessagePayloadDataConverter(MessageSettings);
+        public static readonly MessagePayloadDataConverter ErrorConverter = new MessagePayloadDataConverter(ErrorSettings);
+
+        public MessagePayloadDataConverter(JsonSerializerSettings settings)
+            : base(settings)
         {
         }
 
@@ -68,6 +76,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return serializedJson;
+        }
+
+        private class ExceptionResolver : DefaultContractResolver
+        {
+            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+            {
+                JsonProperty property = base.CreateProperty(member, memberSerialization);
+
+                // Strip the TargetSite property from all exceptions
+                if (typeof(Exception).IsAssignableFrom(property.DeclaringType) &&
+                    property.PropertyName == nameof(Exception.TargetSite))
+                {
+                    property.ShouldSerialize = _ => false;
+                }
+
+                return property;
+            }
         }
     }
 }
