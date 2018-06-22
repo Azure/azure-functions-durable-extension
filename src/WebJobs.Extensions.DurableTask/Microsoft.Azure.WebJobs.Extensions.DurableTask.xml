@@ -294,21 +294,33 @@
             <summary>
             Gets the ID of the orchestration instance.
             </summary>
+            <value>
+            The ID of the orchestration instance.
+            </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri">
             <summary>
             Gets the HTTP GET status query endpoint URL.
             </summary>
+            <value>
+            The HTTP URL for fetching the instance status.
+            </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri">
             <summary>
             Gets the HTTP POST external event sending endpoint URL.
             </summary>
+            <value>
+            The HTTP URL for posting external event notifications.
+            </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri">
             <summary>
             Gets the HTTP POST instance termination endpoint.
             </summary>
+            <value>
+            The HTTP URL for posting instance termination commands.
+            </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
