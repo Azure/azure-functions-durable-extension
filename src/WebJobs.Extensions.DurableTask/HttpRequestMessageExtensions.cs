@@ -5,6 +5,8 @@ using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
@@ -14,6 +16,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal static class HttpRequestMessageExtensions
     {
+        public static HttpResponseMessage CreateResponse<T>(this HttpRequestMessage request, HttpStatusCode statusCode, T value)
+        {
+            return new HttpResponseMessage
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json"),
+                RequestMessage = request,
+                StatusCode = statusCode,
+            };
+        }
+
         public static HttpResponse CreateResponse(this HttpRequest request, HttpStatusCode statusCode)
         {
             DefaultHttpResponse defaultHttpResponse =
@@ -37,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return defaultHttpResponse;
         }
 
-        public static async  Task<HttpResponse> CreateErrorResponse(this HttpRequest request, HttpStatusCode statusCode, string message)
+        public static async Task<HttpResponse> CreateErrorResponse(this HttpRequest request, HttpStatusCode statusCode, string message)
         {
             var error = new { Message = message };
 
