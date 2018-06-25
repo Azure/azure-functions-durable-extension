@@ -143,6 +143,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates logs for replay events by a simple orchestrator function that calls a single activity function.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents)
+        {
+            await this.HelloWorldOrchestration_Activity_Main_Logic(false, logReplayEvents: logReplayEvents);
+        }
+
+        /// <summary>
         ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information is provided.
         /// </summary>
         [Theory]
@@ -164,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true, true);
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -176,7 +187,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.HelloWorldOrchestration_Activity),
-                extendedSessions))
+                extendedSessions,
+                logReplayEvents: logReplayEvents))
             {
                 await host.StartAsync();
 
@@ -234,7 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.loggerProvider,
                         "HelloWorldOrchestration_Activity",
                         client.InstanceId,
-                        extendedSessions,
+                        extendedSessions || !logReplayEvents,
                         orchestratorFunctionNames,
                         activityFunctionName);
                 }
@@ -1607,8 +1619,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions,
-                    "ActivityGetsHttpManagementPayload");
+                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
 
                 await host.StopAsync();
             }
@@ -1638,8 +1649,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions,
-                    "OrchestrationClientGetsHttpManagementPayload");
+                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);

@@ -119,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 throw new OrchestrationFailureException(
                     $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
-                    Utils.SerializeCause(e, MessagePayloadDataConverter.Default));
+                    Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
             }
             finally
             {

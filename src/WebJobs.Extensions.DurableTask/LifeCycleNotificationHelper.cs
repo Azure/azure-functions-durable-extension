@@ -10,6 +10,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Newtonsoft.Json;
 
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ExtensionConfigContext extensionConfigContext;
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
+        private readonly string eventGridTopicEndpoint;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
@@ -31,8 +33,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
             this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
+            this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
+            if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endpoint))
+            {
+                this.eventGridTopicEndpoint = endpoint;
+            }
 
-            if (!string.IsNullOrEmpty(config.EventGridTopicEndpoint))
+            if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
             {
                 if (!string.IsNullOrEmpty(config.EventGridKeySettingName))
                 {
@@ -40,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     var retryStatusCode = config.EventGridPublishRetryHttpStatus?
                                               .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
-                                              .Select(x => (HttpStatusCode) x)
+                                              .Select(x => (HttpStatusCode)x)
                                               .ToArray()
                                           ?? Array.Empty<HttpStatusCode>();
 
@@ -65,6 +72,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
         }
+
+        public string EventGridKeyValue => this.eventGridKeyValue;
+
+        public string EventGridTopicEndpoint => this.eventGridTopicEndpoint;
 
         public HttpMessageHandler HttpMessageHandler
         {
@@ -95,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage result = null;
             try
             {
-                result = await httpClient.PostAsync(this.config.EventGridTopicEndpoint, content);
+                result = await httpClient.PostAsync(this.eventGridTopicEndpoint, content);
             }
             catch (Exception e)
             {
@@ -309,12 +320,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly TimeSpan retryWaitSpan;
             private readonly HttpStatusCode[] retryTargetStatus;
 
-            public int MaxRetryCount => this.maxRetryCount;
-
-            public TimeSpan RetryWaitSpan => this.retryWaitSpan;
-
-            public HttpStatusCode[] RetryTargetStatus => this.retryTargetStatus;
-
             public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, TimeSpan retryWaitSpan, HttpStatusCode[] retryTargetStatusCode)
                 : base(messageHandler)
             {
@@ -322,6 +327,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.retryWaitSpan = retryWaitSpan;
                 this.retryTargetStatus = retryTargetStatusCode;
             }
+
+            public int MaxRetryCount => this.maxRetryCount;
+
+            public TimeSpan RetryWaitSpan => this.retryWaitSpan;
+
+            public HttpStatusCode[] RetryTargetStatus => this.retryTargetStatus;
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
@@ -353,8 +364,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     tryCount++;
 
                     await Task.Delay(this.retryWaitSpan, cancellationToken);
-
-                } while (this.maxRetryCount >= tryCount);
+                }
+                while (this.maxRetryCount >= tryCount);
 
                 if (response != null)
                 {

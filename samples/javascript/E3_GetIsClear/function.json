@@ -1,0 +1,10 @@
+{
+  "bindings": [
+    {
+      "name": "location",
+      "type": "activityTrigger",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}

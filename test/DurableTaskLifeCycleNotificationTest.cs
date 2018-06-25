@@ -53,13 +53,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationStartAndCompleted),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -134,13 +135,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationFailed),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -215,13 +217,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationTerminate),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -300,13 +303,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationStartAndCompleted),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -391,12 +395,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string eventGridKeyValue = null;
             var eventGridKeySettingName = "";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(Array.Empty<(string, string)>());
+
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationTerminate),
                 false /* extendedSessionsEnabled */,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
@@ -410,12 +416,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string eventGridKeyValue = null;
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(Array.Empty<(string, string)>());
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationTerminate),
                 false /* extendedSessionsEnabled */,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
@@ -499,9 +506,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridEndpoint = "http://dymmy.com/";
             var callCount = 0;
             var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
-                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, eventGridKeyValue,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -580,9 +588,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridEndpoint = "http://dymmy.com/";
             var callCount = 0;
             var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
-                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, eventGridKeyValue,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -661,9 +670,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridEndpoint = "http://dymmy.com/";
             var callCount = 0;
             var retryCount = 0;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
-                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, eventGridKeyValue,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -733,9 +743,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridEndpoint = "http://dymmy.com/";
             var callCount = 0;
             var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
-                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, eventGridKeyValue,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -805,9 +816,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var eventGridEndpoint = "http://dymmy.com/";
             var callCount = 0;
             var retryCount = 5;
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
             using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory,
-                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, eventGridKeyValue,
+                nameof(this.OrchestrationStartAndCompleted), extendedSessionsEnabled, eventGridKeySettingName, mockNameResolver.Object,
                 eventGridEndpoint))
             {
                 await host.StartAsync();
@@ -897,17 +909,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
-            var eventGridEndpoint = "http://dymmy.com/";
+            var eventGridEndpoint = "http://%WholeStringTest%.com/";
             var retryCount = 5;
             var retryInterval = TimeSpan.FromSeconds(10);
             var retryStatus = new[] { 400, 401 };
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue), ("WholeStringTest", "dummy") });
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.OrchestrationStartAndCompleted), 
                 false,
                 eventGridKeySettingName,
-                eventGridKeyValue,
+                mockNameResolver.Object,
                 eventGridEndpoint,
                 retryCount,
                 retryInterval,
@@ -919,6 +932,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     .Where(x => x is DurableTaskExtension)
                     .ToList();
                 var extension = (DurableTaskExtension)extensionProviders.First();
+
+                Assert.Equal("http://dummy.com/", extension.LifeCycleNotificationHelper.EventGridTopicEndpoint);
+                Assert.Equal(eventGridKeyValue, extension.LifeCycleNotificationHelper.EventGridKeyValue);
+
                 var handler =
                     (LifeCycleNotificationHelper.HttpRetryMessageHandler) extension.LifeCycleNotificationHelper
                         .HttpMessageHandler;
@@ -928,6 +945,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(retryStatus.Select(x => (HttpStatusCode)x), handler.RetryTargetStatus);
                 await host.StopAsync();
             }
+        }
+
+        private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
+        {
+            var mock = new Mock<INameResolver>();
+            foreach (var setting in settings)
+            {
+                mock.Setup(x => x.Resolve(setting.Key)).Returns(setting.Value);
+            }
+
+            return mock;
         }
     }
 }

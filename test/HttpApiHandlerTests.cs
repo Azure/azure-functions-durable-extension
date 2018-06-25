@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Dynamitey.DynamicObjects;
 using Microsoft.AspNetCore.Http;
@@ -256,6 +257,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var content = await HttpTestUtility.GetResponseBody(httpResponse);
             var response = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
+        }
+
+        [Fact]
+        public async Task GetAllStatus_is_Success()
+        {
+
+            var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
+                     {
+                         new DurableOrchestrationStatus
+                         {
+                             InstanceId = "01",
+                             RuntimeStatus = OrchestrationRuntimeStatus.Running
+                         },
+                         new DurableOrchestrationStatus
+                         {
+                             InstanceId = "02",
+                             RuntimeStatus = OrchestrationRuntimeStatus.Completed
+                         },
+                     };
+
+            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            clientMock
+                .Setup(x => x.GetStatusAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(list));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(
+                new DefaultHttpRequest(new DefaultHttpContext())
+                {
+                    Method = "GET",
+                    Host = new HostString(TestConstants.NotificationUrlBase),
+                    Path = new PathString("/Instances/"),
+                });
+            Assert.Equal(200, responseMessage.StatusCode);
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await HttpTestUtility.GetResponseBody(responseMessage));
+
+            Assert.Equal("01", actual[0].InstanceId);
+            Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("02", actual[1].InstanceId);
+            Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
 
         [Fact]

@@ -1,13 +1,8 @@
 ﻿using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
-using Newtonsoft.Json;
 
 namespace WebJobs.Extensions.DurableTask.Tests
 {
