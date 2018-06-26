@@ -529,7 +529,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TimeSpan.FromSeconds(1000),
                     this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(2, status.Output);
+                Assert.Equal(2, status.Output.Value<int>());
 
                 await host.StopAsync();
             }
