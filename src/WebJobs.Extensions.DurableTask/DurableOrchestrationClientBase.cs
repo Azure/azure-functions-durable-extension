@@ -149,15 +149,11 @@ namespace Microsoft.Azure.WebJobs
 
 
         /// <summary>
-        /// Rewinds and restarts a failed orchestration instance.
+        /// Rewinds the specified failed orchestration instance with a reason.
         /// </summary>
-        /// <remarks>
-        /// Rewinding the orchestration will erase activities after the orchestrator failed
-        /// and kick off the orchestrator from that point using the same ExecutionId.
-        /// </remarks>
         /// <param name="instanceId">The ID of the orchestration instance to rewind.</param>
         /// <param name="reason">The reason for rewinding the orchestration instance.</param>
-        /// <returns>A task that completes when the rewind message is enqueued. (?)</returns>
+        /// <returns>A task that completes when the rewind message is enqueued.</returns>
         public abstract Task RewindAsync(string instanceId, string reason);
 
         /// <summary>

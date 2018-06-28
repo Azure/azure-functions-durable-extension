@@ -595,7 +595,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.SayHelloWithActivity),
+                nameof(TestOrchestrations.SayHelloWithActivityForRewind),
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
@@ -608,16 +608,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Using the counter orchestration because it will wait indefinitely for input.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "Catherine", this.output);
 
-                // Need to wait for the instance to start before we can terminate it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
                 await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
 
                 var statusFail = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, statusFail?.RuntimeStatus);
 
-                TestOrchestrations.ShouldFail = false;
+                TestOrchestrations.SayHelloWithActivityForRewindShouldFail = false;
 
                 await client.RewindAsync("rewind!");
 
@@ -629,6 +626,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
 
                 // HACK: I think expected logs are hard-coded for original orchestrators/activities
+
                 //if (this.useTestLogger)
                 //{
                 //    TestHelpers.AssertLogMessageSequence(

@@ -147,19 +147,14 @@ namespace Microsoft.Azure.WebJobs
         public override async Task RewindAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
-            if (state.OrchestrationStatus == OrchestrationStatus.Running ||
-                state.OrchestrationStatus == OrchestrationStatus.Pending ||
-                state.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
+            if (state.OrchestrationStatus != OrchestrationStatus.Failed)
             {
-                throw new ArgumentException("Orchestration hasn't failed");
+                throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
             }
-            else if (state.OrchestrationStatus == OrchestrationStatus.Failed)
-            {
-                await this.client.RewindInstanceAsync(state.OrchestrationInstance, reason);
 
-                // TODO: implement tracing
-                // this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
-            }
+            await this.client.RewindInstanceAsync(state.OrchestrationInstance, reason);
+
+            this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
         }
 
         /// <inheritdoc />
