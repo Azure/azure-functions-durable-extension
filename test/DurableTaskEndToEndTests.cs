@@ -605,7 +605,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                // Using the counter orchestration because it will wait indefinitely for input.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "Catherine", this.output);
 
                 await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
