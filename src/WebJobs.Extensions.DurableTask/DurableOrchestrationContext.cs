@@ -290,6 +290,60 @@ namespace Microsoft.Azure.WebJobs
             }
         }
 
+        /// <inheritdoc/>
+        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout)
+        {
+            Action<TaskCompletionSource<T>> timedOutAction = cts =>
+                cts.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
+            return this.WaitForExternalEvent(name, timeout, timedOutAction);
+        }
+
+        /// <inheritdoc/>
+        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
+        {
+            Action<TaskCompletionSource<T>> timedOutAction = cts => cts.TrySetResult(defaultValue);
+            return this.WaitForExternalEvent(name, timeout, timedOutAction);
+        }
+
+        private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction)
+        {
+            var tcs = new TaskCompletionSource<T>();
+            var cts = new CancellationTokenSource();
+
+            var timeoutAt = this.CurrentUtcDateTime + timeout;
+            var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
+            var waitForEventTask = this.WaitForExternalEvent<T>(name);
+
+            waitForEventTask.ContinueWith(
+                t =>
+                {
+                    using (cts)
+                    {
+                        if (t.Exception != null)
+                        {
+                            tcs.TrySetException(t.Exception);
+                        }
+                        else
+                        {
+                            tcs.TrySetResult(t.Result);
+                        }
+
+                        cts.Cancel();
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
+
+            timeoutTask.ContinueWith(
+                t =>
+                {
+                    using (cts)
+                    {
+                        timeoutAction(tcs);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
+
+            return tcs.Task;
+        }
+
         /// <inheritdoc />
         public override void ContinueAsNew(object input)
         {
