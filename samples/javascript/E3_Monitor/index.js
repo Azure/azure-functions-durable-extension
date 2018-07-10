@@ -23,8 +23,8 @@ module.exports = df(function*(context) {
             context.log("Detected clear weather for " + input.location.city + ", "
                 + input.location.state + ". Notifying " + input.phone + ".");
 
-                yield context.df.callActivityAsync("E3_SendGoodWeatherAlert", input.phone);
-                break;
+            yield context.df.callActivityAsync("E3_SendGoodWeatherAlert", input.phone);
+            break;
         } else {
             // Wait for the next checkpoint
             var nextCheckpoint = moment.utc(context.df.currentUtcDateTime).add(30, 's');
