@@ -6,7 +6,7 @@
 
   <!-- Common packages for all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.5.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.13" />
   </ItemGroup>
 
