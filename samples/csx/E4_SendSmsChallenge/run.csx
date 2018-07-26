@@ -7,6 +7,7 @@
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
+// This is an activity called by the human interaction pattern sample orchestrator.
 public static int Run(
     string phoneNumber,
     ILogger log,

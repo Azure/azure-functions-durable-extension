@@ -1,0 +1,10 @@
+{
+  "bindings": [
+    {
+      "name": "backupContext",
+      "type": "orchestrationTrigger",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}

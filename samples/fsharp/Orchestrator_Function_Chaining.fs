@@ -6,9 +6,9 @@ namespace VSSample
 open Microsoft.Azure.WebJobs
 open FSharp.Control.Tasks
 
-module HelloSequence =
+module Orchestrator_Function_Chaining =
 
-  [<FunctionName("E1_HelloSequence")>]
+  [<FunctionName("E1_Orchestrator_Function_Chaining")>]
   let Run([<OrchestrationTrigger>] context: DurableOrchestrationContext) = task {
     let! hello1 = context.CallActivityAsync<string>("E1_SayHello", "Tokyo")
     let! hello2 = context.CallActivityAsync<string>("E1_SayHello", "Seattle")

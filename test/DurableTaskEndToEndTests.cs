@@ -586,7 +586,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates the Rewind functionality.
+        /// End-to-end test that validates the Rewind functionality.
         /// </summary>
         [Theory]
         //[InlineData(true)]

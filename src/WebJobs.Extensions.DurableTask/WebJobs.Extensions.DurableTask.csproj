@@ -7,12 +7,12 @@
     <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
     <AssemblyVersion>1.4.1.0</AssemblyVersion>
     <FileVersion>1.4.1.0</FileVersion>
-    <Version>1.4.1</Version>
+    <Version>1.4.1-private</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.2" />
+    <PackageReference Include="DurableTask.AzureStorage" Version="1.2.2-private" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">

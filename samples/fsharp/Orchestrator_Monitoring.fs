@@ -72,9 +72,9 @@ module WeatherUnderground =
         return jobject.GetValue "weather" |> string |> mapToWeatherCondition
     }
 
-module Monitor =
+module Orchestrator_Monitoring =
 
-    [<FunctionName("E3_Monitor")>]
+    [<FunctionName("Orchestrator_Monitoring")>]
     let Run([<OrchestrationTrigger>] monitorContext: DurableOrchestrationContext, log: TraceWriter) = task {
         let logOnce s = if (not monitorContext.IsReplaying) then log.Info s
 

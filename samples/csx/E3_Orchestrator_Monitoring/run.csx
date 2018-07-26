@@ -5,6 +5,10 @@
 
 using System.Threading;
 
+// The monitor pattern refers to a flexible recurring process in a workflow - for example, polling until certain conditions are met.
+// This sample monitors a location's current weather conditions and alerts a user by SMS when the skies are clear.
+// More on running this sample here: https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-monitor
+
 public static async Task Run(DurableOrchestrationContext monitorContext, ILogger log)
 {
     MonitorRequest input = monitorContext.GetInput<MonitorRequest>();

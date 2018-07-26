@@ -2,6 +2,9 @@
 
 using System.Threading;
 
+// The monitor pattern refers to a flexible recurring process in a workflow - for example, polling until certain conditions are met.
+// This sample implements an SMS-based phone verification system using a durable timer timeout.
+// More on running this sample here: https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-phone-verification
 public static async Task<bool> Run(DurableOrchestrationContext context)
 {
     string phoneNumber = context.GetInput<string>();
@@ -28,6 +31,7 @@ public static async Task<bool> Run(DurableOrchestrationContext context)
             Task<int> challengeResponseTask = 
                 context.WaitForExternalEvent<int>("SmsChallengeResponse");
                 
+            // get either a response or a timeout    
             Task winner = await Task.WhenAny(challengeResponseTask, timeoutTask);
             if (winner == challengeResponseTask)
             {

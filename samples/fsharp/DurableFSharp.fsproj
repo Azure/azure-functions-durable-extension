@@ -15,10 +15,10 @@
   <ItemGroup>
     <Compile Include="HttpStart.fs" />
     <Compile Include="HttpSyncStart.fs" />
-    <Compile Include="HelloSequence.fs" />
-    <Compile Include="BackupSiteContent.fs" />
-    <Compile Include="Monitor.fs" />
-    <Compile Include="PhoneVerification.fs" />
+    <Compile Include="Orchestrator_Function_Chaining.fs" />
+    <Compile Include="Orchestrator_FanIn_FanOut.fs" />
+    <Compile Include="Orchestrator_Monitoring.fs" />
+    <Compile Include="Orchestrator_Human_Interaction.fs" />
   </ItemGroup>
 
   <ItemGroup>

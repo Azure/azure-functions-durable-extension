@@ -39,9 +39,9 @@ using Twilio;
  */
 namespace VSSample
 {
-    public static class Monitor
+    public static class Orchestrator_Monitoring
     {
-        [FunctionName("E3_Monitor")]
+        [FunctionName("E3_Orchestrator_Monitoring")]
         public static async Task Run([OrchestrationTrigger] DurableOrchestrationContext monitorContext, ILogger log)
         {
             MonitorRequest input = monitorContext.GetInput<MonitorRequest>();

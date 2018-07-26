@@ -277,19 +277,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.RuntimeStatus)
+            if (status.RuntimeStatus != OrchestrationRuntimeStatus.Failed)
             {
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Rewind is only supported on failed instances");
             }
+
+            //switch (status.RuntimeStatus)
+            //{
+            //    case OrchestrationRuntimeStatus.Canceled:
+            //    case OrchestrationRuntimeStatus.Terminated:
+            //    case OrchestrationRuntimeStatus.Completed:
+            //        return request.CreateResponse(HttpStatusCode.Gone);
+            //}
 
             string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.RewindAsync(instanceId, reason);
 
-            return request.CreateResponse(HttpStatusCode.Accepted);
+            HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(instanceId);
+
+            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri, httpManagementPayload.RewindPostUri);
+            //return request.CreateResponse(HttpStatusCode.Accepted);
+
         }
 
         private async Task<HttpResponseMessage> HandleRaiseEventRequestAsync(

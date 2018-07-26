@@ -15,9 +15,9 @@ using Twilio;
 
 namespace VSSample
 {
-    public static class PhoneVerification
+    public static class Orchestrator_Human_Interaction
     {
-        [FunctionName("E4_SmsPhoneVerification")]
+        [FunctionName("E4_Orchestrator_Human_Interaction")]
         public static async Task<bool> Run(
             [OrchestrationTrigger] DurableOrchestrationContext context)
         {

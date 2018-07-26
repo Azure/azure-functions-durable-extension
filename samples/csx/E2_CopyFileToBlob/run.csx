@@ -4,6 +4,7 @@
 
 using Microsoft.WindowsAzure.Storage.Blob;
 
+// This is an activity called by the fanIn/fanOut pattern sample orchestrator.
 public static async Task<long> Run(
     string filePath,
     Binder binder,

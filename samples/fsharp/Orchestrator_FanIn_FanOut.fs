@@ -11,9 +11,9 @@ open Microsoft.Azure.WebJobs.Host
 open Microsoft.WindowsAzure.Storage.Blob
 open FSharp.Control.Tasks
 
-module BackupSiteContent =
+module Orchestrator_FanIn_FanOut =
 
-  [<FunctionName("E2_BackupSiteContent")>]
+  [<FunctionName("E2_Orchestrator_FanIn_FanOut")>]
   let Run([<OrchestrationTrigger>] backupContext: DurableOrchestrationContext) = task {
     let input = backupContext.GetInput<string>()
     let rootDirectory = 
