@@ -2,9 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Newtonsoft.Json;
@@ -268,6 +270,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var response = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
+        }
+        [Fact]
+        public async Task GetAllStatus_is_Success()
+        {
+
+            var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
+                     {
+                         new DurableOrchestrationStatus
+                         {
+                             InstanceId = "01",
+                             RuntimeStatus = OrchestrationRuntimeStatus.Running
+                         },
+                         new DurableOrchestrationStatus
+                         {
+                             InstanceId = "02",
+                             RuntimeStatus = OrchestrationRuntimeStatus.Completed
+                         },
+                     };
+
+            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            clientMock
+                .Setup(x => x.GetStatusAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(list));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += $"/Instances/";
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = getStatusRequestUriBuilder.Uri,
+                });
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+
+            Assert.Equal("01", actual[0].InstanceId);
+            Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("02", actual[1].InstanceId);
+            Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
 
         [Fact]
