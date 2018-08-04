@@ -173,6 +173,22 @@ namespace Microsoft.Azure.WebJobs
             return results;
         }
 
+        /// <inheritdoc />
+        public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime createdTimeTo, string runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
+            
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (OrchestrationState state in states)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            return results;
+        }
+
         private static JToken ParseToJToken(string value)
         {
             if (value == null)

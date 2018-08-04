@@ -210,5 +210,16 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets all the status which match the conditions.
+        /// </summary>
+        /// <param name="createdTimeFrom">fetch status greater than the createdTime.</param>
+        /// <param name="createdTimeTo">fetch status less than the createdTime.</param>
+        /// <param name="runtimeStatus">fetch status match the runtimeStatus</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <returns>Returns orchestration status for all instances.</returns>
+        public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime createdTimeTo, string runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
+
     }
 }

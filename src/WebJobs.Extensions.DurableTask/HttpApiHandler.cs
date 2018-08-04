@@ -24,6 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string TerminateOperation = "terminate";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
+        private const string CreatedTimeFromParameter = "createdTimeFrom";
+        private const string CreatedTimeToParameter = "createdTimeTo";
+        private const string RuntimeStatusParameter = "runtimeStatus";
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -105,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
-                // Retrive All Status in case of the request URL ends e.g. /instances/
+                // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
                 if (request.Method == HttpMethod.Get
                     && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                 {
@@ -162,7 +165,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
-            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync();
+            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter);
+            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter);
+            var runtimeStatus = queryNameValuePairs[RuntimeStatusParameter];
+
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -254,6 +262,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 HistoryEvents = status.History,
             };
         }
+
+        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var value = queryStringNameValueCollection[queryParameterName];
+            DateTime.TryParse(value, out DateTime dateTime);
+            return dateTime;
+        }
+
 
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
         {
