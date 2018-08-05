@@ -179,7 +179,6 @@ namespace Microsoft.Azure.WebJobs
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
-            
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
             {
