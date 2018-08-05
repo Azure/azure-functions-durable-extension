@@ -291,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var clientMock = new Mock<DurableOrchestrationClientBase>();
             clientMock
-                .Setup(x => x.GetStatusAsync(It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetStatusAsync(default(DateTime), default(DateTime), null, It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(list));
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
 
