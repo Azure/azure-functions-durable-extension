@@ -471,6 +471,9 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.DateTime,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
             <summary>
             Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>.
@@ -637,6 +640,16 @@
             <summary>
             Gets all the status of the orchestration instances.
             </summary>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+            <returns>Returns orchestration status for all instances.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.DateTime,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets all the status which match the conditions.
+            </summary>
+            <param name="createdTimeFrom">fetch status greater than the createdTime.</param>
+            <param name="createdTimeTo">fetch status less than the createdTime.</param>
+            <param name="runtimeStatus">fetch status match the runtimeStatus</param>
             <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
             <returns>Returns orchestration status for all instances.</returns>
         </member>
