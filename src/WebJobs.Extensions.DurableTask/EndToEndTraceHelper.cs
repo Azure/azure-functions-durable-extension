@@ -54,6 +54,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1117 // Parameters should be on same line or separate lines
 
+        public void ExtensionInformationalEvent(
+            string hubName,
+            string instanceId,
+            string functionName,
+            string message,
+            bool writeToUserLogs)
+        {
+            EtwEventSource.Instance.ExtensionInformationalEvent(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                message,
+                ExtensionVersion);
+
+            if (writeToUserLogs)
+            {
+                this.logger.LogInformation(
+                    "{details}. InstanceId: {instanceId}. Function: {functionName}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    message, instanceId, functionName, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void ExtensionWarningEvent(string hubName, string functionName, string instanceId, string message)
+        {
+            EtwEventSource.Instance.ExtensionInformationalEvent(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                message,
+                ExtensionVersion);
+
+            this.logger.LogWarning(
+                "{details}. InstanceId: {instanceId}. Function: {functionName}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                message, instanceId, functionName, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
         public void FunctionScheduled(
             string hubName,
             string functionName,
@@ -270,6 +310,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' received a '{eventName}' event. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                     instanceId, functionName, functionType, eventName, FunctionState.ExternalEventRaised, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void ExternalEventDropped(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string eventName,
+            bool isReplay)
+        {
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.ExternalEventDropped(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                eventName,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: isReplay);
+
+            if (this.ShouldLogEvent(isReplay: false))
+            {
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' dropped a '{eventName}' event. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, eventName, FunctionState.ExternalEventDropped, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }

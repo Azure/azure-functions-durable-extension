@@ -507,6 +507,16 @@ namespace Microsoft.Azure.WebJobs
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
                     trySetResult.Invoke(tcs, new[] { deserializedObject });
                 }
+                else
+                {
+                    // The orchestrator was not waiting for any event by this name, so the event will be dropped.
+                    this.config.TraceHelper.ExternalEventDropped(
+                        this.HubName,
+                        this.Name,
+                        this.InstanceId,
+                        name,
+                        this.IsReplaying);
+                }
             }
         }
 

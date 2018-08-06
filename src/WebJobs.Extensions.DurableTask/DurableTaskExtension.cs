@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -277,6 +278,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
+            this.TraceConfigurationSettings();
+
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
                 .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
@@ -297,6 +300,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
             context.Config.AddService<IOrchestrationService>(this.orchestrationService);
+        }
+
+        void TraceConfigurationSettings()
+        {
+            var sb = new StringBuilder(4096);
+            sb.AppendLine("Initializing extension with the following settings:");
+            sb.Append(nameof(AzureStorageConnectionStringName)).Append(": ").Append(this.AzureStorageConnectionStringName).Append(", ");
+            sb.Append(nameof(MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
+            sb.Append(nameof(MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
+            sb.Append(nameof(PartitionCount)).Append(": ").Append(this.PartitionCount).Append(", ");
+            sb.Append(nameof(ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
+            sb.Append(nameof(ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
+            sb.Append(nameof(WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
+
+            sb.Append(nameof(ExtendedSessionsEnabled)).Append(": ").Append(this.ExtendedSessionsEnabled).Append(", ");
+            if (this.ExtendedSessionsEnabled)
+            {
+                sb.Append(nameof(ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
+            }
+
+            sb.Append(nameof(EventGridTopicEndpoint)).Append(": ").Append(this.EventGridTopicEndpoint).Append(", ");
+            if (!string.IsNullOrEmpty(this.EventGridTopicEndpoint))
+            {
+                sb.Append(nameof(EventGridKeySettingName)).Append(": ").Append(this.EventGridKeySettingName).Append(", ");
+                sb.Append(nameof(EventGridPublishRetryCount)).Append(": ").Append(this.EventGridPublishRetryCount).Append(", ");
+                sb.Append(nameof(EventGridPublishRetryInterval)).Append(": ").Append(this.EventGridPublishRetryInterval).Append(", ");
+                sb.Append(nameof(EventGridPublishRetryHttpStatus)).Append(": ").Append(string.Join(", ", this.EventGridPublishRetryHttpStatus)).Append(", ");
+            }
+
+            if (this.NotificationUrl != null)
+            {
+                // Don't trace the query string, since that contains secrets
+                string url = this.NotificationUrl.GetLeftPart(UriPartial.Path);
+                sb.Append(nameof(NotificationUrl)).Append(": ").Append(url).Append(", ");
+            }
+
+            sb.Append(nameof(LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
+
+            this.traceHelper.ExtensionInformationalEvent(
+                this.HubName,
+                instanceId: string.Empty,
+                functionName: string.Empty,
+                message: sb.ToString(),
+                writeToUserLogs: true);
         }
 
         /// <summary>
@@ -351,7 +398,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ITriggeredFunctionExecutor executor;
             if (!this.registeredActivities.TryGetValue(activityFunction, out executor))
             {
-                throw new InvalidOperationException($"Activity function '{activityFunction}' does not exist.");
+                string message = $"Activity function '{activityFunction}' does not exist.";
+                this.traceHelper.ExtensionWarningEvent(
+                    this.HubName,
+                    activityFunction.Name,
+                    string.Empty /* TODO: Flow the instance id into this event */,
+                    message);
+                throw new InvalidOperationException(message);
             }
 
             return new TaskActivityShim(this, executor, name);
@@ -377,7 +430,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestratorInfo info;
             if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info))
             {
-                throw new InvalidOperationException($"Orchestrator function '{orchestratorFunction}' does not exist.");
+                string message = $"Orchestrator function '{orchestratorFunction}' does not exist.";
+                this.traceHelper.ExtensionWarningEvent(
+                    this.HubName,
+                    orchestratorFunction.Name,
+                    context.InstanceId,
+                    message);
+                throw new InvalidOperationException(message);
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
@@ -496,6 +555,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, orchestratorInfo, null))
             {
+                this.traceHelper.ExtensionInformationalEvent(
+                    this.HubName,
+                    instanceId: string.Empty,
+                    functionName: orchestratorFunction.Name,
+                    message: $"Registering orchestrator function named {orchestratorFunction}.",
+                    writeToUserLogs: false);
+
                 if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
                 {
                     throw new ArgumentException(
@@ -506,6 +572,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
         {
+            this.traceHelper.ExtensionInformationalEvent(
+                this.HubName,
+                instanceId: string.Empty,
+                functionName: orchestratorFunction.Name,
+                message: $"Deregistering orchestrator function named {orchestratorFunction}.",
+                writeToUserLogs: false);
+
             this.registeredOrchestrators.TryRemove(orchestratorFunction, out _);
         }
 
@@ -522,6 +595,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Allow adding with a null key and subsequently updating with a non-null key.
             if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
             {
+                this.traceHelper.ExtensionInformationalEvent(
+                    this.HubName,
+                    instanceId: string.Empty,
+                    functionName: activityFunction.Name,
+                    message: $"Registering orchestrator function named {activityFunction}.",
+                    writeToUserLogs: false);
+
                 if (!this.registeredActivities.TryAdd(activityFunction, executor))
                 {
                     throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
@@ -531,6 +611,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void DeregisterActivity(FunctionName activityFunction)
         {
+            this.traceHelper.ExtensionInformationalEvent(
+                this.HubName,
+                instanceId: string.Empty,
+                functionName: activityFunction.Name,
+                message: $"Deregistering orchestrator function named {activityFunction}.",
+                writeToUserLogs: false);
+
             this.registeredActivities.TryRemove(activityFunction, out _);
         }
 
@@ -559,10 +646,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 throw new ArgumentException(
-                        string.Format(
-                            "The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: '{1}'",
-                            functionName,
-                            string.Join(", ", this.registeredActivities.Keys)));
+                    string.Format(
+                        "The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: '{1}'",
+                        functionName,
+                        string.Join(", ", this.registeredActivities.Keys)));
             }
 
             if (functionType == FunctionType.Orchestrator)
@@ -595,6 +682,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (!this.isTaskHubWorkerStarted)
                     {
+                        this.traceHelper.ExtensionInformationalEvent(
+                            this.HubName,
+                            instanceId: string.Empty,
+                            functionName: string.Empty,
+                            message: "Starting task hub worker",
+                            writeToUserLogs: true);
+
                         await this.orchestrationService.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
@@ -619,6 +713,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.registeredOrchestrators.Count == 0 &&
                     this.registeredActivities.Count == 0)
                 {
+                    this.traceHelper.ExtensionInformationalEvent(
+                        this.HubName,
+                        instanceId: string.Empty,
+                        functionName: string.Empty,
+                        message: "Stopping task hub worker",
+                        writeToUserLogs: true);
+
                     await this.taskHubWorker.StopAsync(isForced: true);
                     this.isTaskHubWorkerStarted = false;
                     return true;
