@@ -683,6 +683,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the overloads of WaitForExternalEvent with timeout.
+        /// </summary>
+        [Theory]
+        [InlineData("throw", false, "TimeoutException")]
+        [InlineData("throw", true, "ApprovalValue")]
+        [InlineData("default", true, "ApprovalValue")]
+        [InlineData("default", false, "default")]
+        public async Task WaitForExternalEventWithTimeout(string defaultValue, bool sendEvent, string expectedResponse)
+        {
+            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithTimeout) };
+            var extendedSessions = false;
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerFactory,
+                nameof(this.TimerExpiration),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromSeconds(10);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, defaultValue), this.output);
+
+                // Need to wait for the instance to start before sending events to it.
+                // TODO: This requirement may not be ideal and should be revisited.
+                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+
+                // Don't send any notification - let the internal timeout expire
+                if (sendEvent)
+                {
+                    await client.RaiseEventAsync("Approval", "ApprovalValue");
+                }
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(expectedResponse, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+
+        /// <summary>
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
         /// </summary>
         [Theory]
