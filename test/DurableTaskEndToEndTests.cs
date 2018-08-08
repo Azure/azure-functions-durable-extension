@@ -598,6 +598,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloWithActivityForRewind),
             };
 
+            string activityFunctionName = nameof(TestActivities.Hello);
+
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.RewindOrchestration),
@@ -624,18 +626,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
 
-                // HACK: I think expected logs are hard-coded for original orchestrators/activities
-
-                //if (this.useTestLogger)
-                //{
-                //    TestHelpers.AssertLogMessageSequence(
-                //        this.output,
-                //        this.loggerProvider,
-                //        "RewindOrchestration",
-                //        client.InstanceId,
-                //        extendedSessions,
-                //        orchestratorFunctionNames);
-                //}
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        "RewindOrchestration",
+                        client.InstanceId,
+                        extendedSessions,
+                        orchestratorFunctionNames,
+                        activityFunctionName);
+                }
             }
         }
 
