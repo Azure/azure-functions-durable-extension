@@ -5,12 +5,12 @@ namespace VSSample.Tests
 {
     using Xunit;
 
-    public class FunctionChainingActivityTests
+    public class HelloSequenceActivityTests
     {
         [Fact]
         public void SayHello_returns_greeting()
         {
-            var result = Orchestrator_Function_Chaining.SayHello("John");
+            var result = HelloSequence.SayHello("John");
             Assert.Equal("Hello John!", result);
         }
     }

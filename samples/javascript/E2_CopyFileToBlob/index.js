@@ -2,8 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const storage = require("azure-storage");
 
-// This is an activity called by the fanIn/fanOut pattern sample orchestrator.
-
 module.exports = function (context, filePath) {
     const container = "backups";
     const root = path.parse(filePath).root;

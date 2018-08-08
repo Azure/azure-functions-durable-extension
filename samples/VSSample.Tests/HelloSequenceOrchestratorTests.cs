@@ -8,7 +8,7 @@ namespace VSSample.Tests
     using Moq;
     using Xunit;
 
-    public class FunctionChainingOrchestratorTests
+    public class HelloSequenceTests
     {
         [Fact]
         public async Task Run_returns_multiple_greetings()
@@ -18,7 +18,7 @@ namespace VSSample.Tests
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Seattle")).ReturnsAsync("Hello Seattle!");
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "London")).ReturnsAsync("Hello London!");
 
-            var result = await Orchestrator_Function_Chaining.Run(durableOrchestrationContextMock.Object);
+            var result = await HelloSequence.Run(durableOrchestrationContextMock.Object);
 
             Assert.Equal(3, result.Count);
             Assert.Equal("Hello Tokyo!", result[0]);

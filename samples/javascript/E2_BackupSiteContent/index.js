@@ -1,9 +1,5 @@
 const df = require("durable-functions");
 
-// Fan-out/fan-in refers to the pattern of executing multiple functions in parallel, and then waiting for all to finish.
-// This sample demonstates a cloud backup. In parrallel, it copies all files in a root directory to blobs, returning the total number of bytes copied.
-// More on running this sample here: https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-cloud-backup 
-
 module.exports = df(function*(context){
     const rootDirectory = context.df.getInput();
     if (!rootDirectory) {

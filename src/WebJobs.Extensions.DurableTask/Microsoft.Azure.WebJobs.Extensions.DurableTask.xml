@@ -324,7 +324,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RewindPostUri">
             <summary>
-            Rewind endpoint
+            Terminate endpoint
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">

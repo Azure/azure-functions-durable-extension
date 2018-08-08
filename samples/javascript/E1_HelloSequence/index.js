@@ -1,9 +1,5 @@
 const df = require("durable-functions");
 
-// Function chaining refers to the pattern of executing a sequence of functions in a particular order.
-// This orchestrator performs three activity functions sequentially.
-// More on running this sample here: https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sequence
-
 module.exports = df(function*(context){
     context.log("Starting chain sample");
     const output = [];

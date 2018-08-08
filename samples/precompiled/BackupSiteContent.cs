@@ -10,16 +10,16 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace VSSample
 {
-    public static class Orchestrator_FanOut_FanIn
+    public static class BackupSiteContent
     {
-        [FunctionName("E2_Orchestrator_FanOut_FanIn")]
+        [FunctionName("E2_BackupSiteContent")]
         public static async Task<long> Run(
             [OrchestrationTrigger] DurableOrchestrationContext backupContext)
         {
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                rootDirectory = Directory.GetParent(typeof(Orchestrator_FanOut_FanIn).Assembly.Location).FullName;
+                rootDirectory = Directory.GetParent(typeof(BackupSiteContent).Assembly.Location).FullName;
             }
 
             string[] files = await backupContext.CallActivityAsync<string[]>(

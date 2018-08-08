@@ -1,7 +1,5 @@
 const readdirp = require("readdirp");
 
-// This is an activity called by the fanIn/fanOut pattern sample orchestrator.
-
 module.exports = function (context, rootDirectory) {
     context.log(`Searching for files under '${rootDirectory}'...`);
     const allFilePaths = [];

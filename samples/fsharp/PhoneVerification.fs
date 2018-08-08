@@ -12,9 +12,9 @@ open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
 open FSharp.Control.Tasks
 
-module Orchestrator_Human_Interaction =
+module PhoneVerification =
 
-  [<FunctionName("E4_Orchestrator_Human_Interaction")>]
+  [<FunctionName("E4_SmsPhoneVerification")>]
   let Run([<OrchestrationTrigger>] context: DurableOrchestrationContext) = task {
     let phoneNumber = context.GetInput<string>()
     if String.IsNullOrEmpty(phoneNumber)
