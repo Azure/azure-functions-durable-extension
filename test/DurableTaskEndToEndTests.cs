@@ -601,7 +601,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerFactory,
                 nameof(this.RewindOrchestration),
-                extendedSessions))
+                enableExtendedSessions: false))
             {
                 await host.StartAsync();
 
