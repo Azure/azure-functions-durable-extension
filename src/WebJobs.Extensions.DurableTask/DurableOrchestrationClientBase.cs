@@ -214,9 +214,9 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.
         /// </summary>
-        /// <param name="createdTimeFrom">fetch status greater than the createdTime.</param>
-        /// <param name="createdTimeTo">fetch status less than the createdTime.</param>
-        /// <param name="runtimeStatus">fetch status match the runtimeStatus</param>
+        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
