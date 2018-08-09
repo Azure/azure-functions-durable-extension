@@ -212,7 +212,7 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets all the status which match the conditions.
+        /// Gets the status of all orchestration instances that match the specified conditions.
         /// </summary>
         /// <param name="createdTimeFrom">fetch status greater than the createdTime.</param>
         /// <param name="createdTimeTo">fetch status less than the createdTime.</param>
