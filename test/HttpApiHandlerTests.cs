@@ -348,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={System.Web.HttpUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}";
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage
@@ -364,8 +364,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Running", actual[1].RuntimeStatus);
         }
-
-
 
         [Fact]
         public async Task TerminateInstanceWebhook()
