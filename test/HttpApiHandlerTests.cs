@@ -292,7 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var clientMock = new Mock<DurableOrchestrationClientBase>();
             clientMock
-                .Setup(x => x.GetStatusAsync(default(DateTime), default(DateTime), null, It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetStatusAsync(default(DateTime), default(DateTime), new List<OrchestrationRuntimeStatus>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(list));
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
 
@@ -324,19 +324,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                          {
                              InstanceId = "01",
                              CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running
+                             RuntimeStatus = OrchestrationRuntimeStatus.Running,
                          },
                          new DurableOrchestrationStatus
                          {
                              InstanceId = "02",
                              CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running
+                             RuntimeStatus = OrchestrationRuntimeStatus.Running,
                          },
                      };
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0);
             var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59);
-            var runtimeStatus = "Running";
+            var runtimeStatus = new List<OrchestrationRuntimeStatus>();
+            runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
+            var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
+
             var clientMock = new Mock<DurableOrchestrationClientBase>();
             clientMock
                 .Setup(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()))
@@ -345,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={System.Web.HttpUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatus}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={System.Web.HttpUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}";
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage

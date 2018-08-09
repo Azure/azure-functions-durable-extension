@@ -170,7 +170,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter);
             var runtimeStatus = queryNameValuePairs[RuntimeStatusParameter];
 
-            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+            // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters. 
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, this.ConvertFrom(runtimeStatus));
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -179,6 +180,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return request.CreateResponse(HttpStatusCode.OK, results);
+        }
+
+        // TODO After fixing the parameter change, I'll implement multiple parameters.
+        private IEnumerable<OrchestrationRuntimeStatus> ConvertFrom(string runtimeStatus)
+        {
+            var converted = new List<OrchestrationRuntimeStatus>();
+            if ((!string.IsNullOrEmpty(runtimeStatus)) && Enum.TryParse<OrchestrationRuntimeStatus>(runtimeStatus, out OrchestrationRuntimeStatus result))
+            {
+                converted.Add(result);
+            }
+
+            return converted;
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
