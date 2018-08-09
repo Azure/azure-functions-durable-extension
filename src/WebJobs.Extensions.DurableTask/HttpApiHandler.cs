@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
-        private const string RuntimeStatusParameter = "runtimeStatus";
+        private const string RuntimeStatusParameter = "runtimeStatus[]";
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -168,10 +169,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
-            var runtimeStatus = queryNameValuePairs[RuntimeStatusParameter];
+            var runtimeStatus = GetIEnumerableQueryParameterValue(queryNameValuePairs, RuntimeStatusParameter);
 
             // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
-            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, this.ConvertFrom(runtimeStatus));
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -180,18 +181,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return request.CreateResponse(HttpStatusCode.OK, results);
-        }
-
-        // TODO After fixing the parameter change, I'll implement multiple parameters.
-        private IEnumerable<OrchestrationRuntimeStatus> ConvertFrom(string runtimeStatus)
-        {
-            var converted = new List<OrchestrationRuntimeStatus>();
-            if ((!string.IsNullOrEmpty(runtimeStatus)) && Enum.TryParse<OrchestrationRuntimeStatus>(runtimeStatus, out OrchestrationRuntimeStatus result))
-            {
-                converted.Add(result);
-            }
-
-            return converted;
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
@@ -274,6 +263,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
                 HistoryEvents = status.History,
             };
+        }
+
+        private static IEnumerable<OrchestrationRuntimeStatus> GetIEnumerableQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var results = new List<OrchestrationRuntimeStatus>();
+            var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
+            foreach (var value in parameters)
+            {
+                if (Enum.TryParse<OrchestrationRuntimeStatus>(value, out OrchestrationRuntimeStatus result))
+                {
+                    results.Add(result);
+                }
+            }
+
+            return results;
         }
 
         private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
