@@ -166,11 +166,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter);
-            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter);
+            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
+            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
             var runtimeStatus = queryNameValuePairs[RuntimeStatusParameter];
 
-            // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters. 
+            // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
             IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, this.ConvertFrom(runtimeStatus));
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
@@ -276,13 +276,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
         {
             var value = queryStringNameValueCollection[queryParameterName];
-            DateTime.TryParse(value, out DateTime dateTime);
-            return dateTime;
+            return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
         }
-
 
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
         {
