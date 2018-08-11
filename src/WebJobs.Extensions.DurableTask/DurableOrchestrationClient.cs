@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
-            IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => this.ConvertFrom(x)), cancellationToken);
+            IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), cancellationToken);
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
             {
@@ -338,19 +338,6 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return this.ConvertFrom(orchestrationState, historyArray);
-        }
-
-        private OrchestrationStatus ConvertFrom(OrchestrationRuntimeStatus runtimeStatus)
-        {
-            OrchestrationStatus status;
-            if (Enum.TryParse<OrchestrationStatus>(runtimeStatus.ToString(), out status))
-            {
-                return status;
-            }
-            else
-            {
-                throw new ArgumentException($"The OrchestrationRuntimeStatus {runtimeStatus} is exptected to be converted into OrchestrationStatus");
-            }
         }
 
         private DurableOrchestrationStatus ConvertFrom(OrchestrationState orchestrationState, JArray historyArray = null)
