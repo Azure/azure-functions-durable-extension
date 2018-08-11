@@ -348,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus[]={runtimeStatusString}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}";
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus[]={runtimeStatusRunningString}&runtimeStatus[]={runtimeStatusCompletedString}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusRunningString},{runtimeStatusCompletedString}";
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage

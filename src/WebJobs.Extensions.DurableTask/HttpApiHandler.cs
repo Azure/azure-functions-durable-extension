@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
-        private const string RuntimeStatusParameter = "runtimeStatus[]";
+        private const string RuntimeStatusParameter = "runtimeStatus";
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -269,7 +269,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var results = new List<OrchestrationRuntimeStatus>();
             var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
-            foreach (var value in parameters)
+
+            foreach (var value in parameters.SelectMany(x => x.Split(',')))
             {
                 if (Enum.TryParse<OrchestrationRuntimeStatus>(value, out OrchestrationRuntimeStatus result))
                 {
