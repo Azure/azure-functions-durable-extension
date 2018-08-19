@@ -132,6 +132,54 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public override async Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null)
+        {
+            if (string.IsNullOrEmpty(taskHubName))
+            {
+                throw new ArgumentNullException(nameof(taskHubName));
+            }
+
+            if (string.IsNullOrEmpty(eventName))
+            {
+                throw new ArgumentNullException(nameof(eventName));
+            }
+
+            if (string.IsNullOrEmpty(connectionName))
+            {
+                connectionName = this.attribute.ConnectionName;
+            }
+
+            var attribute = new OrchestrationClientAttribute
+            {
+                TaskHub = taskHubName,
+                ConnectionName = connectionName,
+            };
+            var orchestrationClient = this.config.GetClient(attribute);
+
+            var status = await orchestrationClient.GetStatusAsync(instanceId);
+            if (status == null)
+            {
+                return;
+            }
+
+            if (status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
+                status.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew)
+            {
+                await orchestrationClient.RaiseEventAsync(instanceId, eventName, eventData);
+
+                this.traceHelper.FunctionScheduled(
+                    taskHubName,
+                    status.Name,
+                    instanceId,
+                    reason: "RaiseEvent:" + eventName,
+                    functionType: FunctionType.Orchestrator,
+                    isReplay: false);
+            }
+        }
+
+        /// <inheritdoc />
         public override async Task TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
