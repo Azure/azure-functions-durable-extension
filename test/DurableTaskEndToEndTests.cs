@@ -1715,10 +1715,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task OrchestrationClient_RaiseEventWithTaskHubName(bool extendedSessions)
+        public async Task ActorOrchestration_WithTaskHubName(bool extendedSessions)
         {
-            var taskHubName1 = "TaskHubName1";
-            var taskHubName2 = "TaskHubName2";
+            var taskHubName1 = "ActorOrchestration1";
+            var taskHubName2 = "ActorOrchestration2";
             using (JobHost host1 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName1, extendedSessions))
             using (JobHost host2 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName2, extendedSessions))
             {
@@ -1765,6 +1765,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
                 Assert.NotEqual(initialValue, status?.Input);
+
+                await host1.StopAsync();
+                await host2.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ExternalEvents_WithTaskHubNam_MultipleNamesLooping(bool extendedSessions)
+        {
+            var taskHubName1 = "MultipleNamesLooping1";
+            var taskHubName2 = "MultipleNamesLooping2";
+            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName1, extendedSessions))
+            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName2, extendedSessions))
+            {
+                await host1.StartAsync();
+                await host2.StartAsync();
+                var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.Counter2), null, this.output);
+                var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
+                taskHubName1 = client1.TaskHubName;
+                taskHubName2 = client2.TaskHubName;
+                var instanceId = client1.InstanceId;
+
+                // Perform some operations
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null);
+
+                // Make sure it actually completed
+                var status = await client1.WaitForCompletionAsync(
+                    TimeSpan.FromSeconds(1000),
+                    this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(2, status.Output);
 
                 await host1.StopAsync();
                 await host2.StopAsync();
