@@ -28,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.instanceCreationTime = instanceCreationTime;
         }
 
+        public string TaskHubName => this.innerClient.TaskHubName;
+
         public string FunctionName => this.functionName;
 
         public string InstanceId => this.instanceId;
@@ -55,6 +57,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task RaiseEventAsync(string eventName, object eventData)
         {
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
+        }
+
+        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, string connectionName = null)
+        {
+            await this.innerClient.RaiseEventAsync(taskHubName, instanceid, eventName, eventData);
         }
 
         public async Task TerminateAsync(string reason)
