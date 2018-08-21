@@ -1774,7 +1774,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ExternalEvents_WithTaskHubNam_MultipleNamesLooping(bool extendedSessions)
+        public async Task ExternalEvents_WithTaskHubName_MultipleNamesLooping(bool extendedSessions)
         {
             var taskHubName1 = "MultipleNamesLooping1";
             var taskHubName2 = "MultipleNamesLooping2";
