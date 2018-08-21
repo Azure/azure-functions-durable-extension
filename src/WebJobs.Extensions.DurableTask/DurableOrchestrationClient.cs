@@ -113,22 +113,9 @@ namespace Microsoft.Azure.WebJobs
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
+            var orchestrationClient = this.config.GetClient(this.attribute);
 
-            if (state.OrchestrationStatus == OrchestrationStatus.Running ||
-                state.OrchestrationStatus == OrchestrationStatus.Pending ||
-                state.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
-            {
-                await this.client.RaiseEventAsync(state.OrchestrationInstance, eventName, eventData);
-
-                this.traceHelper.FunctionScheduled(
-                    this.hubName,
-                    state.Name,
-                    state.OrchestrationInstance.InstanceId,
-                    reason: "RaiseEvent:" + eventName,
-                    functionType: FunctionType.Orchestrator,
-                    isReplay: false);
-            }
+            await this.RaiseEventAsync(orchestrationClient, instanceId, eventName, eventData);
         }
 
         /// <inheritdoc />
@@ -155,28 +142,10 @@ namespace Microsoft.Azure.WebJobs
                 TaskHub = taskHubName,
                 ConnectionName = connectionName,
             };
+
             var orchestrationClient = this.config.GetClient(attribute);
 
-            var status = await orchestrationClient.GetStatusAsync(instanceId);
-            if (status == null)
-            {
-                return;
-            }
-
-            if (status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
-                status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
-                status.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew)
-            {
-                await orchestrationClient.RaiseEventAsync(instanceId, eventName, eventData);
-
-                this.traceHelper.FunctionScheduled(
-                    taskHubName,
-                    status.Name,
-                    instanceId,
-                    reason: "RaiseEvent:" + eventName,
-                    functionType: FunctionType.Orchestrator,
-                    isReplay: false);
-            }
+            await this.RaiseEventAsync(orchestrationClient, instanceId, eventName, eventData);
         }
 
         /// <inheritdoc />
@@ -370,6 +339,30 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return this.ConvertFrom(orchestrationState, historyArray);
+        }
+
+        private async Task RaiseEventAsync(DurableOrchestrationClientBase client, string instanceId, string eventName, object eventData)
+        {
+            var status = await client.GetStatusAsync(instanceId);
+            if (status == null)
+            {
+                return;
+            }
+
+            if (status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
+                status.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew)
+            {
+                await client.RaiseEventAsync(instanceId, eventName, eventData);
+
+                this.traceHelper.FunctionScheduled(
+                    client.TaskHubName,
+                    status.Name,
+                    instanceId,
+                    reason: "RaiseEvent:" + eventName,
+                    functionType: FunctionType.Orchestrator,
+                    isReplay: false);
+            }
         }
 
         private DurableOrchestrationStatus ConvertFrom(OrchestrationState orchestrationState, JArray historyArray = null)
