@@ -163,6 +163,26 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task RaiseEventAsync(string instanceId, string eventName, object eventData);
 
         /// <summary>
+        /// Sends an event notification message to a waiting orchestration instance.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In order to handle the event, the target orchestration instance must be waiting for an
+        /// event named <paramref name="eventName"/> using the
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}"/> API.
+        /// </para><para>
+        /// If the specified instance is not found or not running, this operation will have no effect.
+        /// </para>
+        /// </remarks>
+        /// <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
+        /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+        /// <param name="eventName">The name of the event.</param>
+        /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
+        /// <returns>A task that completes when the event notification message has been enqueued.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public abstract Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null);
+
+        /// <summary>
         /// Terminates a running orchestration instance.
         /// </summary>
         /// <remarks>
