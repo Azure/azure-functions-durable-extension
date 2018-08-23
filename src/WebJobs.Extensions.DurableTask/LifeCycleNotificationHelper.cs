@@ -11,27 +11,33 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Azure.WebJobs.Host.Config;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class LifeCycleNotificationHelper
     {
-        private readonly DurableTaskExtension config;
-        private readonly ExtensionConfigContext extensionConfigContext;
+        private readonly DurableTaskOptions config;
+        private readonly EndToEndTraceHelper traceHelper;
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
-        public LifeCycleNotificationHelper(DurableTaskExtension config, ExtensionConfigContext extensionConfigContext)
+        public LifeCycleNotificationHelper(
+            DurableTaskOptions config,
+            INameResolver nameResolver,
+            EndToEndTraceHelper traceHelper)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.extensionConfigContext = extensionConfigContext ?? throw new ArgumentNullException(nameof(extensionConfigContext));
+            this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
 
-            INameResolver nameResolver = extensionConfigContext.Config.GetService<INameResolver>();
+            if (nameResolver == null)
+            {
+                throw new ArgumentNullException(nameof(nameResolver));
+            }
+
             this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
             this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
             if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endpoint))
@@ -110,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                this.config.TraceHelper.EventGridException(
+                this.traceHelper.EventGridException(
                     hubName,
                     functionName,
                     functionState,
@@ -127,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var body = await result.Content.ReadAsStringAsync();
                 if (result.IsSuccessStatusCode)
                 {
-                    this.config.TraceHelper.EventGridSuccess(
+                    this.traceHelper.EventGridSuccess(
                         hubName,
                         functionName,
                         functionState,
@@ -139,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.config.TraceHelper.EventGridFailed(
+                    this.traceHelper.EventGridFailed(
                         hubName,
                         functionName,
                         functionState,
@@ -316,23 +322,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal class HttpRetryMessageHandler : DelegatingHandler
         {
-            private readonly int maxRetryCount;
-            private readonly TimeSpan retryWaitSpan;
-            private readonly HttpStatusCode[] retryTargetStatus;
-
             public HttpRetryMessageHandler(HttpMessageHandler messageHandler, int maxRetryCount, TimeSpan retryWaitSpan, HttpStatusCode[] retryTargetStatusCode)
                 : base(messageHandler)
             {
-                this.maxRetryCount = maxRetryCount;
-                this.retryWaitSpan = retryWaitSpan;
-                this.retryTargetStatus = retryTargetStatusCode;
+                this.MaxRetryCount = maxRetryCount;
+                this.RetryWaitSpan = retryWaitSpan;
+                this.RetryTargetStatus = retryTargetStatusCode;
             }
 
-            public int MaxRetryCount => this.maxRetryCount;
+            public int MaxRetryCount { get; }
 
-            public TimeSpan RetryWaitSpan => this.retryWaitSpan;
+            public TimeSpan RetryWaitSpan { get; }
 
-            public HttpStatusCode[] RetryTargetStatus => this.retryTargetStatus;
+            public HttpStatusCode[] RetryTargetStatus { get; }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
@@ -350,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                         else if (response.StatusCode != HttpStatusCode.ServiceUnavailable)
                         {
-                            if (this.retryTargetStatus.All(x => x != response.StatusCode))
+                            if (this.RetryTargetStatus.All(x => x != response.StatusCode))
                             {
                                 return response;
                             }
@@ -363,9 +365,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     tryCount++;
 
-                    await Task.Delay(this.retryWaitSpan, cancellationToken);
+                    await Task.Delay(this.RetryWaitSpan, cancellationToken);
                 }
-                while (this.maxRetryCount >= tryCount);
+                while (this.MaxRetryCount >= tryCount);
 
                 if (response != null)
                 {

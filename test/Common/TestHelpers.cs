@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using WebJobs.Extensions.DurableTask.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string LogCategory = "Host.Triggers.DurableTask";
 
         public static JobHost GetJobHost(
-            ILoggerFactory loggerFactory,
+            ILoggerProvider loggerProvider,
             string taskHub,
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
@@ -28,9 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool logReplayEvents = true,
             Uri notificationUrl = null)
         {
-            var config = new JobHostConfiguration { HostId = "durable-task-host" };
-            config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
-            var durableTaskExtension = new DurableTaskExtension
+            var durableTaskOptions = new DurableTaskOptions
             {
                 HubName = taskHub.Replace("_", "") + (enableExtendedSessions ? "EX" : ""),
                 TraceInputsAndOutputs = true,
@@ -42,38 +42,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 LogReplayEvents = logReplayEvents,
                 NotificationUrl = notificationUrl,
             };
+
             if (eventGridRetryCount.HasValue)
             {
-                durableTaskExtension.EventGridPublishRetryCount = eventGridRetryCount.Value;
+                durableTaskOptions.EventGridPublishRetryCount = eventGridRetryCount.Value;
             }
 
             if (eventGridRetryInterval.HasValue)
             {
-                durableTaskExtension.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
+                durableTaskOptions.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
             }
 
             if (eventGridRetryHttpStatus != null)
             {
-                durableTaskExtension.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
+                durableTaskOptions.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
             }
 
-            config.UseDurableTask(durableTaskExtension);
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+            var testNameResolver = new TestNameResolver(nameResolver);
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver);
+        }
 
-            // Mock INameResolver for not setting EnvironmentVariables.
-            if (nameResolver != null)
+        public static ITypeLocator GetTypeLocator()
+        {
+            var types = new Type[]
             {
-                config.AddService<INameResolver>(nameResolver);
-            }
+                typeof(TestOrchestrations),
+                typeof(TestActivities),
+                typeof(ClientFunctions),
+            };
 
-            // Performance is *significantly* worse when dashboard logging is enabled, at least
-            // when running in the storage emulator. Disabling to keep tests running quickly.
-            config.DashboardConnectionString = null;
+            ITypeLocator typeLocator = new ExplicitTypeLocator(types);
+            return typeLocator;
+        }
 
-            // Add test logger
-            config.LoggerFactory = loggerFactory;
-
-            var host = new JobHost(config);
-            return host;
+        public static string GetStorageConnectionString()
+        {
+            return Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         }
 
         public static void AssertLogMessageSequence(
@@ -494,6 +499,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
+        }
+
+        private class ExplicitTypeLocator : ITypeLocator
+        {
+            private readonly IReadOnlyList<Type> types;
+
+            public ExplicitTypeLocator(params Type[] types)
+            {
+                this.types = types.ToList().AsReadOnly();
+            }
+
+            public IReadOnlyList<Type> GetTypes()
+            {
+                return this.types;
+            }
+        }
+
+        private class TestNameResolver : INameResolver
+        {
+            private readonly INameResolver innerResolver;
+
+            public TestNameResolver(INameResolver innerResolver)
+            {
+                // null is okay
+                this.innerResolver = innerResolver;
+            }
+
+            public string Resolve(string name)
+            {
+                if (string.IsNullOrEmpty(name))
+                {
+                    return null;
+                }
+
+                string value = this.innerResolver?.Resolve(name);
+                if (value == null)
+                {
+                    return Environment.GetEnvironmentVariable(name);
+                }
+
+                return value;
+            }
         }
     }
 }

@@ -17,22 +17,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class BindingTests
     {
         private readonly ITestOutputHelper output;
-
-        private readonly ILoggerFactory loggerFactory;
         private readonly TestLoggerProvider loggerProvider;
 
         public BindingTests(ITestOutputHelper output)
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
-            this.loggerFactory = new LoggerFactory();
-            this.loggerFactory.AddProvider(this.loggerProvider);
         }
 
         [Fact]
         public async Task ActivityTriggerAsJObject()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsJObject), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false))
             {
                 await host.StartAsync();
 
@@ -57,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityTriggerAsPOCO()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsPOCO), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsPOCO), false))
             {
                 await host.StartAsync();
 
@@ -83,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task ActivityTriggerAsNumber()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsNumber), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false))
             {
                 await host.StartAsync();
 
@@ -107,11 +103,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task BindToBlobViaParameterName()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsNumber), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false))
             {
                 await host.StartAsync();
 
-                string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
+                string connectionString = TestHelpers.GetStorageConnectionString();
                 CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
                 this.output.WriteLine($"Using storage account: {account.Credentials.AccountName}");
 
@@ -157,11 +153,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task BindToBlobViaPOCO()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.ActivityTriggerAsNumber), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false))
             {
                 await host.StartAsync();
 
-                string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
+                string connectionString = TestHelpers.GetStorageConnectionString();
                 CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
                 this.output.WriteLine($"Using storage account: {account.Credentials.AccountName}");
 

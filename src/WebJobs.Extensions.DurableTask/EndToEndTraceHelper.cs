@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private long sequenceNumber;
 
-        public EndToEndTraceHelper(JobHostConfiguration config, ILogger logger, bool logReplayEvents)
+        public EndToEndTraceHelper(ILogger logger, bool logReplayEvents)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.logReplayEvents = logReplayEvents;

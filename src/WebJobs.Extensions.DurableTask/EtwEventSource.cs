@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Diagnostics.Tracing;
-using System.Net;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {

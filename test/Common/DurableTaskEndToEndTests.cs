@@ -22,7 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private readonly ITestOutputHelper output;
 
-        private readonly ILoggerFactory loggerFactory;
         private readonly TestLoggerProvider loggerProvider;
         private readonly bool useTestLogger;
 
@@ -31,32 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public DurableTaskEndToEndTests(ITestOutputHelper output)
         {
             this.output = output;
-
-            // Set to false to manually verify log entries in Application Insights but tests with TestHelpers.AssertLogMessageSequence will be skipped
-            this.useTestLogger = true;
-
             this.loggerProvider = new TestLoggerProvider(output);
-            this.loggerFactory = new LoggerFactory();
-
-            if (this.useTestLogger)
-            {
-                this.loggerFactory.AddProvider(this.loggerProvider);
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(InstrumentationKey))
-                {
-                    var filter = new LogCategoryFilter
-                    {
-                        DefaultLevel = LogLevel.Debug,
-                    };
-
-                    filter.CategoryLevels[TestHelpers.LogCategory] = LogLevel.Debug;
-
-                    this.loggerFactory = new LoggerFactory()
-                        .AddApplicationInsights(InstrumentationKey, filter.Filter);
-                }
-            }
         }
 
         /// <summary>
@@ -73,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (var host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.HelloWorldOrchestration_Inline),
                 extendedSessions))
             {
@@ -115,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.HelloWorldOrchestration_Inline),
                 extendedSessions))
             {
@@ -185,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string activityFunctionName = nameof(TestActivities.Hello);
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.HelloWorldOrchestration_Activity),
                 extendedSessions,
                 logReplayEvents: logReplayEvents))
@@ -266,7 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string activityFunctionName = nameof(TestActivities.Hello);
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.HelloWorldOrchestration_Activity_CustomStatus),
                 extendedSessions))
             {
@@ -312,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task SequentialOrchestration(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.SequentialOrchestration),
                 extendedSessions))
             {
@@ -349,7 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task ParallelOrchestration(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.ParallelOrchestration),
                 extendedSessions))
             {
@@ -375,7 +349,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task ActorOrchestration(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.ActorOrchestration),
                 extendedSessions))
             {
@@ -438,7 +412,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task BatchedActorOrchestration(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.BatchedActorOrchestration),
                 extendedSessions))
             {
@@ -481,7 +455,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task ParallelBatchedActorOrchestration(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.ParallelBatchedActorOrchestration),
                 extendedSessions))
             {
@@ -512,7 +486,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task ExternalEvents_MultipleNamesLooping(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.ExternalEvents_MultipleNamesLooping),
                 extendedSessions))
             {
@@ -549,7 +523,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.TerminateOrchestration),
                 extendedSessions))
             {
@@ -599,7 +573,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.TimerCancellation),
                 extendedSessions))
             {
@@ -647,7 +621,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.TimerExpiration),
                 extendedSessions))
             {
@@ -733,7 +707,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task OrchestrationConcurrency(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.OrchestrationConcurrency),
                 extendedSessions))
             {
@@ -775,7 +749,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task HandledActivityException(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.HandledActivityException),
                 extendedSessions))
             {
@@ -806,7 +780,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.UnhandledOrchestrationException),
                 extendedSessions))
             {
@@ -854,7 +828,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string activityFunctionName = nameof(TestActivities.Hello);
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.Orchestration_Activity),
                 extendedSessions))
             {
@@ -920,7 +894,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task SubOrchestration_Has_Valid_ParentInstanceId_Assigned(bool extendedSessions)
         {
             const string TaskHub = nameof(this.SubOrchestration_ComplexType);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, TaskHub, extendedSessions))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, extendedSessions))
             {
                 await host.StartAsync();
 
@@ -950,7 +924,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private async Task SubOrchestration_ComplexType_Main_Logic(bool showHistory = false, bool showHistoryOutput = false)
         {
             const string TaskHub = nameof(this.SubOrchestration_ComplexType);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, TaskHub, enableExtendedSessions: false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, enableExtendedSessions: false))
             {
                 await host.StartAsync();
 
@@ -1063,7 +1037,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.UnhandledOrchestrationExceptionWithRetry),
                 extendedSessions))
             {
@@ -1108,7 +1082,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.OrchestrationWithRetry_NullRetryOptions),
                 enableExtendedSessions: false))
             {
@@ -1146,7 +1120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string activityFunctionName = nameof(TestActivities.ThrowActivity);
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.UnhandledActivityException),
                 extendedSessions))
             {
@@ -1198,7 +1172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string activityFunctionName = nameof(TestActivities.ThrowActivity);
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.UnhandledActivityExceptionWithRetry),
                 extendedSessions))
             {
@@ -1239,7 +1213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task ActivityWithRetry_NullRetryOptions()
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.ActivityWithRetry_NullRetryOptions),
                 enableExtendedSessions: false))
             {
@@ -1274,7 +1248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an orchestrator function";
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.StartOrchestration_OnUnregisteredOrchestrator),
                 extendedSessions))
             {
@@ -1306,7 +1280,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string errorMessage = $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The function '{activityFunctionName}' doesn't exist, is disabled, or is not an activity function";
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.Orchestration_OnUnregisteredActivity),
                 extendedSessions))
             {
@@ -1360,7 +1334,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var input = new { Foo = greetingName };
             var inputJson = JsonConvert.SerializeObject(input);
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.Orchestration_OnValidOrchestrator),
                 extendedSessions))
             {
@@ -1408,7 +1382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task ThrowExceptionOnLongTimer(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.Orchestration_OnValidOrchestrator),
                 extendedSessions))
             {
@@ -1446,7 +1420,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string errorMessage = $"The function '{unregisteredOrchestrator}' doesn't exist, is disabled, or is not an orchestrator function";
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.Orchestration_OnUnregisteredActivity),
                 extendedSessions))
             {
@@ -1485,7 +1459,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task BigReturnValue_Orchestrator(bool extendedSessions)
         {
             string taskHub = nameof(this.BigReturnValue_Orchestrator);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, taskHub, extendedSessions))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions))
             {
                 await host.StartAsync();
 
@@ -1512,7 +1486,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task BigReturnValue_Activity(bool extendedSessions)
         {
             string taskHub = nameof(this.BigReturnValue_Activity);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, taskHub, extendedSessions))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions))
             {
                 await host.StartAsync();
 
@@ -1544,7 +1518,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task RaiseEventToSubOrchestration(bool extendedSessions)
         {
             string taskHub = nameof(this.RaiseEventToSubOrchestration);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, taskHub, extendedSessions))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions))
             {
                 await host.StartAsync();
 
@@ -1580,7 +1554,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task SetStatusOrchestration(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.SetStatusOrchestration),
                 extendedSessions))
             {
@@ -1619,7 +1593,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task GetStatus_InstanceNotFound()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerFactory, nameof(this.GetStatus_InstanceNotFound), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_InstanceNotFound), false))
             {
                 await host.StartAsync();
 
@@ -1649,7 +1623,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (var host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.Activity_Gets_HttpManagementPayload),
                 extendedSessions,
                 notificationUrl: new Uri(TestConstants.NotificationUrl)))
@@ -1680,7 +1654,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using (var host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.OrchestrationClient_Gets_HttpManagementPayload),
                 extendedSessions,
                 notificationUrl: new Uri(TestConstants.NotificationUrl)))

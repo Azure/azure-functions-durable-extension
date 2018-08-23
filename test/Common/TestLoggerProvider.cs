@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Host.TestCommon
         public TestLoggerProvider(ITestOutputHelper testOutput, Func<string, LogLevel, bool> filter = null)
         {
             this.testOutput = testOutput;
-            this.filter = filter ?? new LogCategoryFilter().Filter;
+            this.filter = filter; //// ?? new LogCategoryFilter().Filter;
         }
 
         public IList<TestLogger> CreatedLoggers { get; } = new List<TestLogger>();

@@ -34,13 +34,13 @@ namespace Microsoft.Azure.WebJobs
         internal DurableOrchestrationClient(
             IOrchestrationServiceClient serviceClient,
             DurableTaskExtension config,
-            OrchestrationClientAttribute attribute,
-            EndToEndTraceHelper traceHelper)
+            OrchestrationClientAttribute attribute)
         {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+
             this.client = new TaskHubClient(serviceClient);
-            this.traceHelper = traceHelper;
-            this.config = config;
-            this.hubName = config.HubName;
+            this.traceHelper = config.TraceHelper;
+            this.hubName = config.Options.HubName;
             this.attribute = attribute;
         }
 
