@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
-        private readonly bool useTestLogger;
+        private readonly bool useTestLogger = true;
 
         private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 
@@ -348,6 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task ActorOrchestration(bool extendedSessions)
         {
+            string instanceId;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.ActorOrchestration),
@@ -357,6 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 int initialValue = 0;
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
+                instanceId = client.InstanceId;
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr");
@@ -398,7 +400,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
-                var logMessages = logger.LogMessages.ToList();
+                var logMessages = logger.LogMessages.Where(
+                    msg => msg.FormattedMessage.Contains(instanceId)).ToList();
                 Assert.Equal(extendedSessions ? 37 : 49, logMessages.Count);
             }
         }
@@ -669,7 +672,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithTimeout) };
             var extendedSessions = false;
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.TimerExpiration),
                 extendedSessions))
             {
@@ -696,7 +699,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
         }
-
 
         /// <summary>
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
@@ -1693,8 +1695,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var taskHubName1 = "ActorOrchestration1";
             var taskHubName2 = "ActorOrchestration2";
-            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName1, extendedSessions))
-            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName2, extendedSessions))
+            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions))
+            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions))
             {
                 await host1.StartAsync();
                 await host2.StartAsync();
@@ -1752,8 +1754,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var taskHubName1 = "MultipleNamesLooping1";
             var taskHubName2 = "MultipleNamesLooping2";
-            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName1, extendedSessions))
-            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerFactory, taskHubName2, extendedSessions))
+            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions))
+            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions))
             {
                 await host1.StartAsync();
                 await host2.StartAsync();

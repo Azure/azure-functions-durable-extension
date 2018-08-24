@@ -518,6 +518,9 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
             <inheritdoc />
         </member>
@@ -581,9 +584,9 @@
             or contains the payload containing the output of the completed orchestration.
             </summary>
             <remarks>
-            If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
+            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
             contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-            complete within this timeout, then the HTTP response will be identical to that of the
+            complete within the specified timeout, then the HTTP response will be identical to that of the
             <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
             </remarks>
             <param name="request">The HTTP request that triggered the current function.</param>
@@ -648,6 +651,25 @@
             If the specified instance is not found or not running, this operation will have no effect.
             </para>
             </remarks>
+            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+            <param name="eventName">The name of the event.</param>
+            <param name="eventData">The JSON-serializeable data associated with the event.</param>
+            <returns>A task that completes when the event notification message has been enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+            <summary>
+            Sends an event notification message to a waiting orchestration instance.
+            </summary>
+            <remarks>
+            <para>
+            In order to handle the event, the target orchestration instance must be waiting for an
+            event named <paramref name="eventName"/> using the
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
+            </para><para>
+            If the specified instance is not found or not running, this operation will have no effect.
+            </para>
+            </remarks>
+            <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
             <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
             <param name="eventName">The name of the event.</param>
             <param name="eventData">The JSON-serializeable data associated with the event.</param>
