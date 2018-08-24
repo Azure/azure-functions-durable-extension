@@ -673,6 +673,7 @@
             <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
             <param name="eventName">The name of the event.</param>
             <param name="eventData">The JSON-serializeable data associated with the event.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the event notification message has been enqueued.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String,System.String)">
@@ -1149,7 +1150,7 @@
             <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
             </remarks>
             <param name="name">The name of the event to wait for.</param>
-            <param name="timeout">The duration after which to throw a TimeoutException</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received.</returns>
             <exception cref="T:System.TimeoutException">
@@ -1168,7 +1169,7 @@
             <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
             <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
-            <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/> 
+            <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
             if the timeout expires.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)">

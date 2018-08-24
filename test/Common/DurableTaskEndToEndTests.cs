@@ -9,8 +9,6 @@ using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
-using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -37,6 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple orchestrator function which doesn't call any activity functions.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Inline(bool extendedSessions)
@@ -79,6 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ParentInstnaceId_Not_Assigned_In_Orchestrator(bool extendedSessions)
@@ -109,6 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity(bool extendedSessions)
@@ -120,6 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates logs for replay events by a simple orchestrator function that calls a single activity function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents)
@@ -131,6 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information is provided.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity_History(bool extendedSessions)
@@ -142,6 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that history information with input and result date is provided.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity_HistoryInputOutput(bool extendedSessions)
@@ -228,6 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity_CustomStatus(bool extendedSessions)
@@ -281,6 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates function chaining by implementing a naive factorial function orchestration.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SequentialOrchestration(bool extendedSessions)
@@ -322,6 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// in parallel and getting the sum total of all file sizes.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ParallelOrchestration(bool extendedSessions)
@@ -348,6 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the ContinueAsNew functionality by implementing a counter actor pattern.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration(bool extendedSessions)
@@ -414,6 +422,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the wait-for-full-batch case using an actor pattern.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task BatchedActorOrchestration(bool extendedSessions)
@@ -457,6 +466,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the parallel wait-for-full-batch case using an actor pattern.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ParallelBatchedActorOrchestration(bool extendedSessions)
@@ -488,6 +498,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ExternalEvents_MultipleNamesLooping(bool extendedSessions)
@@ -520,6 +531,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the Terminate functionality.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TerminateOrchestration(bool extendedSessions)
@@ -570,6 +582,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the cancellation of durable timers.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TimerCancellation(bool extendedSessions)
@@ -618,6 +631,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the handling of durable timer expiration.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TimerExpiration(bool extendedSessions)
@@ -667,6 +681,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the overloads of WaitForExternalEvent with timeout.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("throw", false, "TimeoutException")]
         [InlineData("throw", true, "ApprovalValue")]
         [InlineData("default", true, "ApprovalValue")]
@@ -708,6 +723,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationConcurrency(bool extendedSessions)
@@ -750,6 +766,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the orchestrator's exception handling behavior.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HandledActivityException(bool extendedSessions)
@@ -776,6 +793,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the handling of unhandled exceptions generated from orchestrator code.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task UnhandledOrchestrationException(bool extendedSessions)
@@ -821,6 +839,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates calling an orchestrator function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Orchestration_Activity(bool extendedSessions)
@@ -868,6 +887,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs.
         /// </summary>
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task SubOrchestration_ComplexType()
         {
             await this.SubOrchestration_ComplexType_Main_Logic();
@@ -877,6 +897,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs and history information is provided.
         /// </summary>
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task SubOrchestration_ComplexType_History()
         {
             await this.SubOrchestration_ComplexType_Main_Logic(true);
@@ -886,6 +907,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which ensures sub-orchestrations can work with complex types for inputs and outputs and history information with input and result data is provided.
         /// </summary>
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task SubOrchestration_ComplexType_HistoryInputOutput()
         {
             await this.SubOrchestration_ComplexType_Main_Logic(true, true);
@@ -895,6 +917,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a sub-orchestrator function have assigned corrent value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SubOrchestration_Has_Valid_ParentInstanceId_Assigned(bool extendedSessions)
@@ -1033,6 +1056,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the retries of unhandled exceptions generated from orchestrator functions.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task UnhandledOrchestrationExceptionWithRetry(bool extendedSessions)
@@ -1080,6 +1104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the retries for an orchestrator function with null RetryOptions fails.
         /// </summary>
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task OrchestrationWithRetry_NullRetryOptions()
         {
             string[] orchestratorFunctionNames =
@@ -1114,6 +1139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the handling of unhandled exceptions generated from activity code.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task UnhandledActivityException(bool extendedSessions)
@@ -1166,6 +1192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the retries of unhandled exceptions generated from activity functions.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task UnhandledActivityExceptionWithRetry(bool extendedSessions)
@@ -1216,6 +1243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the retries for an activity function with null RetryOptions fails.
         /// </summary>
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task ActivityWithRetry_NullRetryOptions()
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1246,6 +1274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task StartOrchestration_OnUnregisteredOrchestrator(bool extendedSessions)
@@ -1273,6 +1302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Orchestration_OnUnregisteredActivity(bool extendedSessions)
@@ -1323,6 +1353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which runs an orchestrator function that calls another orchestrator function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Orchestration_OnValidOrchestrator(bool extendedSessions)
@@ -1383,6 +1414,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ThrowExceptionOnLongTimer(bool extendedSessions)
@@ -1412,6 +1444,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Orchestration_OnUnregisteredOrchestrator(bool extendedSessions)
@@ -1460,6 +1493,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task BigReturnValue_Orchestrator(bool extendedSessions)
@@ -1487,6 +1521,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task BigReturnValue_Activity(bool extendedSessions)
@@ -1519,6 +1554,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task RaiseEventToSubOrchestration(bool extendedSessions)
@@ -1555,6 +1591,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SetStatusOrchestration(bool extendedSessions)
@@ -1597,6 +1634,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetStatus_InstanceNotFound()
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_InstanceNotFound), false))
@@ -1618,6 +1656,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates that Activity function can get an instance of HttpManagementPayload and return via the orchestrator.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Activity_Gets_HttpManagementPayload(bool extendedSessions)
@@ -1651,6 +1690,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates HttpManagementPayload retrieved from Orchestration client when executing a simple orchestrator function which doesn't call any activity functions.
         /// </summary>
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         public async Task OrchestrationClient_Gets_HttpManagementPayload(bool extendedSessions)
         {
@@ -1693,6 +1733,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration_WithTaskHubName(bool extendedSessions)
@@ -1752,6 +1793,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ExternalEvents_WithTaskHubName_MultipleNamesLooping(bool extendedSessions)

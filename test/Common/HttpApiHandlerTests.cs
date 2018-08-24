@@ -1,5 +1,5 @@
-﻿////// Copyright (c) .NET Foundation. All rights reserved.
-////// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 ////using System;
 ////using System.Collections.Generic;
@@ -18,6 +18,7 @@
 ////    public class HttpApiHandlerTests
 ////    {
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        private void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension(), null);
@@ -26,6 +27,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Throws_Exception_When_Bad_Timeout_Request()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -46,6 +48,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task CreateCheckStatusResponse_Returns_Corrent_HTTP_202_Response()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -76,6 +79,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_default_values()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -94,6 +98,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_custom_taskhub_value()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -112,6 +117,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_custom_connection_value()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -130,6 +136,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_custom_values()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -148,6 +155,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_202_Response_After_Timeout()
 ////        {
@@ -184,6 +192,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -207,6 +216,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response_After_Few_Iterations()
 ////        {
 ////            var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
@@ -233,18 +243,21 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Failed()
 ////        {
 ////            await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed, HttpStatusCode.InternalServerError);
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Terminated()
 ////        {
 ////            await this.CheckRuntimeStatus(TestConstants.InstanceIdTerminated, OrchestrationRuntimeStatus.Terminated);
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Canceled()
 ////        {
 ////            await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
@@ -272,6 +285,7 @@
 ////            Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
 ////        }
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task GetAllStatus_is_Success()
 ////        {
 
@@ -314,6 +328,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task TerminateInstanceWebhook()
 ////        {
 ////            string testInstanceId = Guid.NewGuid().ToString("N");

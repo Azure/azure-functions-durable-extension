@@ -7,7 +7,6 @@ using System.Linq;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WebJobs.Extensions.DurableTask.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -42,6 +41,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 LogReplayEvents = logReplayEvents,
                 NotificationUrl = notificationUrl,
             };
+
+            durableTaskOptions.HubName += PlatformSpecificHelpers.VersionSuffix;
 
             if (eventGridRetryCount.HasValue)
             {

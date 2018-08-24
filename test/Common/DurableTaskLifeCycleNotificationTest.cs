@@ -1,5 +1,5 @@
-﻿////// Copyright (c) .NET Foundation. All rights reserved.
-////// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 ////using System;
 ////using System.Collections.Generic;
@@ -387,6 +387,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task ConfigurationWihtoutEventGridKeySettingName()
 ////        {
 ////            string eventGridKeyValue = null;
@@ -408,6 +409,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task ConfigurationWithoutEventGridKeyValue()
 ////        {
 ////            string eventGridKeyValue = null;
@@ -897,6 +899,7 @@
 ////        }
 
 ////        [Fact]
+////        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
 ////        public async Task OrchestrationEventGridApiConfigureCheck()
 ////        {
 ////            string[] orchestratorFunctionNames =
@@ -914,7 +917,7 @@
 
 ////            using (JobHost host = TestHelpers.GetJobHost(
 ////                this.loggerFactory,
-////                nameof(this.OrchestrationStartAndCompleted), 
+////                nameof(this.OrchestrationStartAndCompleted),
 ////                false,
 ////                eventGridKeySettingName,
 ////                mockNameResolver.Object,

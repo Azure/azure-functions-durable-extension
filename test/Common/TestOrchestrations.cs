@@ -159,7 +159,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return eventValue;
         }
 
-
         public static async Task ThrowOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();

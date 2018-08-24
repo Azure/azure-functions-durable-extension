@@ -1,13 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     /// <summary>
     /// These helpers are specific to Functions v1.
@@ -15,6 +12,9 @@ namespace WebJobs.Extensions.DurableTask.Tests
     /// </summary>
     public static class PlatformSpecificHelpers
     {
+        public const string VersionSuffix = "V1";
+        public const string TestCategory = "Functions" + VersionSuffix;
+
         public static JobHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
             ILoggerProvider loggerProvider,
