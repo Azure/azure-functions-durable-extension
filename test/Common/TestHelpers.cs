@@ -215,6 +215,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "OrchestrationEventGridApiReturnBadStatus":
                     messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
                     break;
+                case nameof(DurableTaskEndToEndTests.ActorOrchestration):
+                    messages = GetLogs_ActorOrchestration(instanceIds[0]).ToList();
+                    break;
                 default:
                     break;
             }
@@ -487,6 +490,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             return list;
+        }
+
+        private static string[] GetLogs_ActorOrchestration(string instanceId)
+        {
+            return new[]
+            {
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 0. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 0. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 1. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 1. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 1. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 2. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 3. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 2. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 3. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: False. IsReplay: False. Output: 3. State: Completed.",            };
         }
 
         private static string GetInstanceId(string message)

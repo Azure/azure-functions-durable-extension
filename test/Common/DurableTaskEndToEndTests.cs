@@ -329,6 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ParallelOrchestration(bool extendedSessions)
@@ -356,6 +357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration(bool extendedSessions)
@@ -372,6 +374,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
                 instanceId = client.InstanceId;
 
+                // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr");
 
@@ -379,15 +384,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 //       are processed by the same instance at the same time, resulting in a corrupt
                 //       storage failure in DTFx.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                await Task.Delay(3000);
+                await Task.Delay(2000);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(3000);
+                await Task.Delay(2000);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(3000);
+                await Task.Delay(2000);
                 await client.RaiseEventAsync("operation", "decr");
-                await Task.Delay(3000);
+                await Task.Delay(2000);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(3000);
+                await Task.Delay(2000);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
@@ -407,14 +412,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.NotEqual(initialValue, status?.Input);
 
                 await host.StopAsync();
-            }
 
-            if (this.useTestLogger)
-            {
-                var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
-                var logMessages = logger.LogMessages.Where(
-                    msg => msg.FormattedMessage.Contains(instanceId)).ToList();
-                Assert.Equal(extendedSessions ? 37 : 49, logMessages.Count);
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        nameof(this.ActorOrchestration),
+                        client.InstanceId,
+                        extendedSessions,
+                        new[] { nameof(TestOrchestrations.Counter) });
+                }
             }
         }
 
@@ -435,11 +443,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActor), null, this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
 
                 // Perform some operations
                 await client.RaiseEventAsync("newItem", "item1");
@@ -1140,6 +1143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task UnhandledActivityException(bool extendedSessions)
@@ -1522,6 +1526,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task BigReturnValue_Activity(bool extendedSessions)
@@ -1592,6 +1597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SetStatusOrchestration(bool extendedSessions)
@@ -1837,6 +1843,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string taskHubName = extendedSessions
                 ? $"{defaultTaskHubName}EX"
                 : defaultTaskHubName;
+            taskHubName += PlatformSpecificHelpers.VersionSuffix;
+
             Assert.Equal(
                 $"{notifucaitonUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);

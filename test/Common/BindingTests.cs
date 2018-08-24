@@ -27,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         public async Task ActivityTriggerAsJObject()
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false))
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task BindToBlobViaParameterName()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false))
             {
                 await host.StartAsync();
 
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task BindToBlobViaPOCO()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaPOCO), false))
             {
                 await host.StartAsync();
 
