@@ -285,6 +285,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task SequentialOrchestration(bool extendedSessions)
         {
+            string instanceId;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.SequentialOrchestration),
@@ -293,6 +294,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Factorial), 10, this.output);
+                instanceId = client.InstanceId;
+
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -306,7 +309,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (this.useTestLogger)
             {
                 var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
-                var logMessages = logger.LogMessages.ToList();
+                var logMessages = logger.LogMessages.Where(
+                    msg => msg.FormattedMessage.Contains(instanceId)).ToList(); ;
 
                 int expectedLogMessageCount = extendedSessions ? 43 : 153;
                 Assert.Equal(expectedLogMessageCount, logMessages.Count);
