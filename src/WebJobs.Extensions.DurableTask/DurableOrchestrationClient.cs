@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
         {
-            this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
+            this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
 
             if (string.IsNullOrEmpty(instanceId))
             {

@@ -280,11 +280,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestratorInfo info;
             if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info))
             {
-                string message = $"Orchestrator function '{orchestratorFunction}' does not exist.";
+                string message = this.GetInvalidOrchestratorFunctionMessage(orchestratorFunction.Name);
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,
                     orchestratorFunction.Name,
-                    context.InstanceId,
+                    orchestrationRuntimeState.OrchestrationInstance.InstanceId,
                     message);
                 throw new InvalidOperationException(message);
             }
@@ -471,57 +471,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.registeredActivities.TryRemove(activityFunction, out _);
         }
 
-        internal void AssertOrchestratorExists(string name, string version)
+        internal void ThrowIfFunctionDoesNotExist(string name, FunctionType functionType)
         {
             var functionName = new FunctionName(name);
-            if (!this.registeredOrchestrators.ContainsKey(functionName))
+
+            if (functionType == FunctionType.Activity && !this.registeredActivities.ContainsKey(functionName))
             {
-                throw new ArgumentException(
-                    string.Format(
-                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: {1}.",
-                        functionName,
-                        string.Join(", ", this.registeredOrchestrators.Keys)));
+                throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
+            }
+            else if (functionType == FunctionType.Orchestrator && !this.registeredOrchestrators.ContainsKey(functionName))
+            {
+                throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
         }
 
-        internal FunctionType ThrowIfInvalidFunctionType(string name, FunctionType functionType, string version)
+        internal string GetInvalidActivityFunctionMessage(string name)
         {
-            var functionName = new FunctionName(name);
-
-            if (functionType == FunctionType.Activity)
+            string message = $"The function '{name}' doesn't exist, is disabled, or is not an activity function. Additional info: ";
+            if (this.registeredActivities.Keys.Count > 0)
             {
-                if (this.registeredActivities.ContainsKey(functionName))
-                {
-                    return FunctionType.Activity;
-                }
-
-                throw new ArgumentException(
-                    string.Format(
-                        "The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: '{1}'",
-                        functionName,
-                        string.Join(", ", this.registeredActivities.Keys)));
+                message += $"The following are the active activity functions: '{string.Join("', '", this.registeredActivities.Keys)}'.";
+            }
+            else
+            {
+                message += "No activity functions are currently registered!";
             }
 
-            if (functionType == FunctionType.Orchestrator)
-            {
-                if (this.registeredOrchestrators.ContainsKey(functionName))
-                {
-                    return FunctionType.Orchestrator;
-                }
+            return message;
+        }
 
-                throw new ArgumentException(
-                    string.Format(
-                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: '{1}'",
-                        functionName,
-                        string.Join(", ", this.registeredOrchestrators.Keys)));
+        internal string GetInvalidOrchestratorFunctionMessage(string name)
+        {
+            string message = $"The function '{name}' doesn't exist, is disabled, or is not an orchestrator function. Additional info: ";
+            if (this.registeredOrchestrators.Keys.Count > 0)
+            {
+                message += $"The following are the active orchestrator functions: '{string.Join("', '", this.registeredOrchestrators.Keys)}'.";
+            }
+            else
+            {
+                message += "No orchestrator functions are currently registered!";
             }
 
-            throw new ArgumentException(
-                string.Format(
-                    "The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
-                    functionName,
-                    string.Join(", ", this.registeredActivities.Keys),
-                    string.Join(", ", this.registeredOrchestrators.Keys)));
+            return message;
         }
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
@@ -559,7 +550,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
-                if (!this.isTaskHubWorkerStarted &&
+                if (this.isTaskHubWorkerStarted &&
                     this.registeredOrchestrators.Count == 0 &&
                     this.registeredActivities.Count == 0)
                 {

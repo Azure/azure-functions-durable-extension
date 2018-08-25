@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void ExtensionWarningEvent(string hubName, string functionName, string instanceId, string message)
         {
-            EtwEventSource.Instance.ExtensionInformationalEvent(
+            EtwEventSource.Instance.ExtensionWarningEvent(
                 hubName,
                 LocalAppName,
                 LocalSlotName,

@@ -364,7 +364,7 @@ namespace Microsoft.Azure.WebJobs
 
             // TODO: Support for versioning
             string version = DefaultVersion;
-            this.config.ThrowIfInvalidFunctionType(functionName, functionType, version);
+            this.config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask;
 
