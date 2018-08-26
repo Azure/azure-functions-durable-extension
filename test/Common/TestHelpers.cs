@@ -544,7 +544,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
                 $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
                 $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: False. IsReplay: False. Output: 3. State: Completed.",            };
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: False. IsReplay: False. Output: 3. State: Completed.",
+            };
         }
 
         private static string GetInstanceId(string message)
@@ -558,6 +559,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
+        }
+
+        internal static INameResolver GetTestNameResolver()
+        {
+            return new TestNameResolver(null);
         }
 
         private class ExplicitTypeLocator : ITypeLocator
