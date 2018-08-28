@@ -451,7 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item4");
 
                 // Make sure it's still running and didn't complete early (or fail).
-                var status = await client.GetStatusAsync();
+                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
