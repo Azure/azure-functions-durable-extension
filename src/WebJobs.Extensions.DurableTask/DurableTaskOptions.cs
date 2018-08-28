@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Net.Http;
 using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -202,6 +203,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool LogReplayEvents { get; set; }
 
+        // Used for mocking the lifecycle notification helper.
+        internal HttpMessageHandler NotificationHandler { get; set; }
+
         internal string GetDebugString()
         {
             var sb = new StringBuilder(4096);
@@ -226,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.EventGridKeySettingName)).Append(": ").Append(this.EventGridKeySettingName).Append(", ");
                 sb.Append(nameof(this.EventGridPublishRetryCount)).Append(": ").Append(this.EventGridPublishRetryCount).Append(", ");
                 sb.Append(nameof(this.EventGridPublishRetryInterval)).Append(": ").Append(this.EventGridPublishRetryInterval).Append(", ");
-                sb.Append(nameof(this.EventGridPublishRetryHttpStatus)).Append(": ").Append(string.Join(", ", this.EventGridPublishRetryHttpStatus)).Append(", ");
+                sb.Append(nameof(this.EventGridPublishRetryHttpStatus)).Append(": ").Append(string.Join(", ", this.EventGridPublishRetryHttpStatus ?? new int[0])).Append(", ");
             }
 
             if (this.NotificationUrl != null)

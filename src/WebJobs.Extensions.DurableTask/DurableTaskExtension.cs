@@ -51,6 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly INameResolver nameResolver;
+        private readonly bool isOptionsConfigured;
 
         private AzureStorageOrchestrationService orchestrationService;
         private TaskHubWorker taskHubWorker;
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Options initialization happens later
             this.Options = new DurableTaskOptions();
+            this.isOptionsConfigured = false;
         }
         #endif
 
@@ -98,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.httpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(options.Value, nameResolver, this.TraceHelper);
+            this.isOptionsConfigured = true;
         }
 
 #if !NETSTANDARD2_0
@@ -131,8 +134,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             ConfigureLoaderHooks();
 
-            // This is a no-op when targetting .NET Standard 2.0 (Functions v2)
-            this.InitializeForFunctionsV1(context);
+            // Functions V1 has it's configuration initialized at startup time (now).
+            // For Functions V2 (and for some unit tests) configuration happens earlier in the pipeline.
+            if (!this.isOptionsConfigured)
+            {
+                this.InitializeForFunctionsV1(context);
+            }
 
             // Throw if any of the configured options are invalid
             this.Options.Validate();

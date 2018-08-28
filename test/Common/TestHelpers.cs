@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
-            string taskHub,
+            string testName,
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
             INameResolver nameResolver = null,
@@ -27,11 +28,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
             bool logReplayEvents = true,
-            Uri notificationUrl = null)
+            Uri notificationUrl = null,
+            HttpMessageHandler eventGridNotificationHandler = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
-                HubName = taskHub.Replace("_", "") + (enableExtendedSessions ? "EX" : ""),
+                HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
                 EventGridTopicEndpoint = eventGridTopicEndpoint,
@@ -40,9 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 MaxConcurrentActivityFunctions = 200,
                 LogReplayEvents = logReplayEvents,
                 NotificationUrl = notificationUrl,
+                NotificationHandler = eventGridNotificationHandler,
             };
-
-            durableTaskOptions.HubName += PlatformSpecificHelpers.VersionSuffix;
 
             if (eventGridRetryCount.HasValue)
             {
@@ -62,6 +63,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
             return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver);
+        }
+
+        public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
+        {
+            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
         }
 
         public static ITypeLocator GetTypeLocator()

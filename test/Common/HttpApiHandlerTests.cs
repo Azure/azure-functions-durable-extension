@@ -391,14 +391,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new MockDurableTaskExtension(options);
         }
 
-        private class TestConnectionStringResolver : IConnectionStringResolver
-        {
-            public string Resolve(string connectionStringName)
-            {
-                return TestHelpers.GetStorageConnectionString();
-            }
-        }
-
         // Same as regular HTTP Api handler except you can specify a custom client object.
         private class ExtendedHttpApiHandler : HttpApiHandler
         {

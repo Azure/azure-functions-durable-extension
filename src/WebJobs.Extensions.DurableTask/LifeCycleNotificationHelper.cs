@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // For more detail about the Event Grid, please refer this document.
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    this.HttpMessageHandler = new HttpRetryMessageHandler(
+                    this.HttpMessageHandler = config.NotificationHandler ?? new HttpRetryMessageHandler(
                         new HttpClientHandler(),
                         config.EventGridPublishRetryCount,
                         config.EventGridPublishRetryInterval,
