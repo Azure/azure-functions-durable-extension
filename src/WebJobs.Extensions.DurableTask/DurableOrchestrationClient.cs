@@ -169,7 +169,8 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
             }
 
-            await this.client.RewindInstanceAsync(state.OrchestrationInstance, reason);
+            var service = (AzureStorageOrchestrationService)this.client.serviceClient;
+            await service.RewindTaskOrchestrationAsync(instanceId, reason);
 
             this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
         }

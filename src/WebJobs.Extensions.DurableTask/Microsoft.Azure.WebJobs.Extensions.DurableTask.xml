@@ -352,6 +352,11 @@
             The HTTP URL for posting instance termination commands.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RewindPostUri">
+            <summary>
+            Rewind endpoint
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
             Interface defining methods to resolve connection strings.
@@ -363,11 +368,6 @@
             </summary>
             <param name="connectionStringName">The name of the connection string.</param>
             <returns>Returns the resolved connection string value.</returns>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RewindPostUri">
-            <summary>
-            Rewind endpoint
-            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>

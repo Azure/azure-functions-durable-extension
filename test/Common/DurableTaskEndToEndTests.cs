@@ -584,10 +584,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <summary>
         /// End-to-end test which validates the Rewind functionality.
         /// </summary>
-        [Theory]
-        //[InlineData(true)]
-        [InlineData(false)]
-        public async Task RewindOrchestration(bool extendedSessions)
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        public async Task RewindOrchestration()
         {
             string[] orchestratorFunctionNames =
             {
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string activityFunctionName = nameof(TestActivities.Hello);
 
             using (JobHost host = TestHelpers.GetJobHost(
-                this.loggerFactory,
+                this.loggerProvider,
                 nameof(this.RewindOrchestration),
                 enableExtendedSessions: false))
             {
@@ -629,7 +629,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.loggerProvider,
                         "RewindOrchestration",
                         client.InstanceId,
-                        extendedSessions,
+                        false /* filterOutReplayLogs */,
                         orchestratorFunctionNames,
                         activityFunctionName);
                 }
