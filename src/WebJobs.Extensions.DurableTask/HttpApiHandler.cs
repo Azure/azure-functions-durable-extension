@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
@@ -25,6 +26,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
+        private const string CreatedTimeFromParameter = "createdTimeFrom";
+        private const string CreatedTimeToParameter = "createdTimeTo";
+        private const string RuntimeStatusParameter = "runtimeStatus";
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -106,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
-                // Retrive All Status in case of the request URL ends e.g. /instances/
+                // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
                 if (request.Method == HttpMethod.Get
                     && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                 {
@@ -167,7 +171,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
-            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync();
+            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
+            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
+            var runtimeStatus = GetIEnumerableQueryParameterValue(queryNameValuePairs, RuntimeStatusParameter);
+
+            // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -258,6 +268,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
                 HistoryEvents = status.History,
             };
+        }
+
+        private static IEnumerable<OrchestrationRuntimeStatus> GetIEnumerableQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var results = new List<OrchestrationRuntimeStatus>();
+            var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
+
+            foreach (var value in parameters.SelectMany(x => x.Split(',')))
+            {
+                if (Enum.TryParse<OrchestrationRuntimeStatus>(value, out OrchestrationRuntimeStatus result))
+                {
+                    results.Add(result);
+                }
+            }
+
+            return results;
+        }
+
+        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
+        {
+            var value = queryStringNameValueCollection[queryParameterName];
+            return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
         }
 
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
