@@ -8,6 +8,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -18,17 +21,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class HttpApiHandlerTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         private void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension(), null);
+            var options = new DurableTaskOptions();
+            options.NotificationUrl = null;
+
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
             var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
             Assert.Equal("Webhooks are not configured", ex.Message);
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Throws_Exception_When_Bad_Timeout_Request()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var ex = await Assert.ThrowsAsync<ArgumentException>(() => httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
@@ -46,9 +54,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CreateCheckStatusResponse_Returns_Corrent_HTTP_202_Response()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var httpResponseMessage = httpApiHandler.CreateCheckStatusResponse(
                 new HttpRequestMessage
                 {
@@ -60,6 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 });
+
             Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
@@ -76,9 +86,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_default_values()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, null, null);
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
@@ -94,9 +105,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_custom_taskhub_value()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, null);
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
@@ -112,9 +124,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_custom_connection_value()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, null, TestConstants.CustomConnectionName);
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
@@ -130,9 +143,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatus_Returns_Corrent_HttpManagementPayload_based_on_custom_values()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtension() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName);
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
@@ -148,10 +162,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_202_Response_After_Timeout()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var stopWatch = Stopwatch.StartNew();
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
@@ -184,9 +198,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
@@ -207,9 +222,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response_After_Few_Iterations()
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var stopwatch = Stopwatch.StartNew();
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
@@ -233,18 +249,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Failed()
         {
             await this.CheckRuntimeStatus(TestConstants.InstanceIdFailed, OrchestrationRuntimeStatus.Failed, HttpStatusCode.InternalServerError);
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Terminated()
         {
             await this.CheckRuntimeStatus(TestConstants.InstanceIdTerminated, OrchestrationRuntimeStatus.Terminated);
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Canceled()
         {
             await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
@@ -252,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus, HttpStatusCode httpStatusCode = HttpStatusCode.OK)
         {
-            var httpApiHandler = new HttpApiHandler(new DurableTaskExtensionMock() { NotificationUrl = new Uri(TestConstants.NotificationUrl) }, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 new HttpRequestMessage
                 {
@@ -273,9 +292,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetAllStatus_is_Success()
         {
-
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
                      {
                          new DurableOrchestrationStatus
@@ -467,6 +486,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TerminateInstanceWebhook()
         {
             string testInstanceId = Guid.NewGuid().ToString("N");
@@ -510,28 +530,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(testReason, actualReason);
         }
 
+        private static DurableTaskExtension GetTestExtension()
+        {
+            var options = new DurableTaskOptions();
+            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+
+            return GetTestExtension(options);
+        }
+
+        private static DurableTaskExtension GetTestExtension(DurableTaskOptions options)
+        {
+            return new MockDurableTaskExtension(options);
+        }
+
         // Same as regular HTTP Api handler except you can specify a custom client object.
         private class ExtendedHttpApiHandler : HttpApiHandler
         {
             private readonly DurableOrchestrationClientBase innerClient;
 
             public ExtendedHttpApiHandler(DurableOrchestrationClientBase client)
-                : base(GetExtension(), null /* traceWriter */)
+                : base(GetTestExtension(), null /* traceWriter */)
             {
                 this.innerClient = client;
-            }
-
-            private static DurableTaskExtension GetExtension()
-            {
-                return new DurableTaskExtension
-                {
-                    NotificationUrl = new Uri(TestConstants.NotificationUrl),
-                };
             }
 
             protected override DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
             {
                 return this.innerClient;
+            }
+        }
+
+        private class MockDurableTaskExtension : DurableTaskExtension
+        {
+            public MockDurableTaskExtension(DurableTaskOptions options)
+                : base(
+                    new OptionsWrapper<DurableTaskOptions>(options),
+                    new LoggerFactory(),
+                    TestHelpers.GetTestNameResolver(),
+                    new TestConnectionStringResolver())
+            {
+            }
+
+            protected internal override DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+            {
+                var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+                return new DurableOrchestrationClientMock(orchestrationServiceClientMock.Object, this, null);
             }
         }
     }

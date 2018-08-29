@@ -135,6 +135,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        public static async Task<string> ApprovalWithTimeout([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            (TimeSpan timeout, string defaultValue) = ctx.GetInput<(TimeSpan, string)>();
+            DateTime deadline = ctx.CurrentUtcDateTime.Add(timeout);
+            string eventValue;
+            if (defaultValue == "throw")
+            {
+                try
+                {
+                    eventValue = await ctx.WaitForExternalEvent<string>("approval", timeout);
+                }
+                catch (TimeoutException)
+                {
+                    return "TimeoutException";
+                }
+            }
+            else
+            {
+                eventValue = await ctx.WaitForExternalEvent("approval", timeout, defaultValue);
+            }
+
+            return eventValue;
+        }
+
         public static async Task ThrowOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();

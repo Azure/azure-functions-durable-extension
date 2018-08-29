@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class DurableOrchestrationClientBaseTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task StartNewAsync_is_calling_overload_method()
         {
             var instanceId = Guid.NewGuid().ToString();
