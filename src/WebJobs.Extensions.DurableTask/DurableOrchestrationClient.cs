@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -179,6 +180,21 @@ namespace Microsoft.Azure.WebJobs
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(cancellationToken);
 
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (OrchestrationState state in states)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            return results;
+        }
+
+        /// <inheritdoc />
+        public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), cancellationToken);
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
             {
