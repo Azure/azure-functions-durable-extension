@@ -221,6 +221,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "OrchestrationEventGridApiReturnBadStatus":
                     messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
                     break;
+                case "RewindOrchestration":
+                    messages = GetLogs_Rewind_Orchestration(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
+                    break;
                 case nameof(DurableTaskEndToEndTests.ActorOrchestration):
                     messages = GetLogs_ActorOrchestration(instanceIds[0]).ToList();
                     break;
@@ -493,6 +496,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' scheduled. Reason: OrchestratorGreeting. IsReplay: True.",
                 $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)",
+            };
+
+            return list;
+        }
+
+        private static List<string> GetLogs_Rewind_Orchestration(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: System.Exception: Simulating Orchestration failure.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' was rewound. Reason: rewind!. State: Rewound.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: True. Output: (replayed).",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: True. Output: \"Hello, Catherine!\". State: Completed.",
             };
 
             return list;

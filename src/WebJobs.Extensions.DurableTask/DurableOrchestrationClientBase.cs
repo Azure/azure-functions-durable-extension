@@ -195,6 +195,15 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A task that completes when the terminate message is enqueued.</returns>
         public abstract Task TerminateAsync(string instanceId, string reason);
 
+
+        /// <summary>
+        /// Rewinds the specified failed orchestration instance with a reason.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to rewind.</param>
+        /// <param name="reason">The reason for rewinding the orchestration instance.</param>
+        /// <returns>A task that completes when the rewind message is enqueued.</returns>
+        public abstract Task RewindAsync(string instanceId, string reason);
+
         /// <summary>
         /// Gets the status of the specified orchestration instance.
         /// </summary>

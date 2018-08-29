@@ -162,6 +162,21 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
+        public override async Task RewindAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
+            if (state.OrchestrationStatus != OrchestrationStatus.Failed)
+            {
+                throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
+            }
+
+            var service = (AzureStorageOrchestrationService)this.client.serviceClient;
+            await service.RewindTaskOrchestrationAsync(instanceId, reason);
+
+            this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
+        }
+
+        /// <inheritdoc />
         public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
         {
             OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);

@@ -582,6 +582,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the Rewind functionality.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        public async Task RewindOrchestration()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivityForRewind),
+            };
+
+            string activityFunctionName = nameof(TestActivities.Hello);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.RewindOrchestration),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "Catherine", this.output);
+
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+
+                var statusFail = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, statusFail?.RuntimeStatus);
+
+                TestOrchestrations.SayHelloWithActivityForRewindShouldFail = false;
+
+                await client.RewindAsync("rewind!");
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Hello, Catherine!", status?.Output);
+
+                await host.StopAsync();
+
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        "RewindOrchestration",
+                        client.InstanceId,
+                        false /* filterOutReplayLogs */,
+                        orchestratorFunctionNames,
+                        activityFunctionName);
+                }
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the cancellation of durable timers.
         /// </summary>
         [Theory]

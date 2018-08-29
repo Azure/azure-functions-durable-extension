@@ -15,5 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         ExternalEventRaised,
         ExternalEventDropped,
         TimerExpired,
+        Rewound,
     }
 }

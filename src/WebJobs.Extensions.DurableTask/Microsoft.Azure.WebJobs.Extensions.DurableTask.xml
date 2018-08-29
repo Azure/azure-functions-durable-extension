@@ -352,6 +352,11 @@
             The HTTP URL for posting instance termination commands.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RewindPostUri">
+            <summary>
+            Rewind endpoint
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
             Interface defining methods to resolve connection strings.
@@ -516,6 +521,9 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RewindAsync(System.String,System.String)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
@@ -684,6 +692,14 @@
             <param name="instanceId">The ID of the orchestration instance to terminate.</param>
             <param name="reason">The reason for terminating the orchestration instance.</param>
             <returns>A task that completes when the terminate message is enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RewindAsync(System.String,System.String)">
+            <summary>
+            Rewinds the specified failed orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to rewind.</param>
+            <param name="reason">The reason for rewinding the orchestration instance.</param>
+            <returns>A task that completes when the rewind message is enqueued.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">
             <summary>

@@ -45,5 +45,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         [JsonProperty("terminatePostUri")]
         public string TerminatePostUri { get; internal set; }
+
+        /// <summary>
+        /// Rewind endpoint
+        /// </summary>
+        [JsonProperty("rewindPostUri")]
+        public string RewindPostUri { get; internal set; }
     }
 }
