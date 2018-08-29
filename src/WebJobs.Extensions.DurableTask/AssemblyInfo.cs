@@ -3,4 +3,5 @@
 
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("WebJobs.Extensions.DurableTask.Tests")]
+[assembly: InternalsVisibleTo("WebJobs.Extensions.DurableTask.Tests.V1")]
+[assembly: InternalsVisibleTo("WebJobs.Extensions.DurableTask.Tests.V2")]

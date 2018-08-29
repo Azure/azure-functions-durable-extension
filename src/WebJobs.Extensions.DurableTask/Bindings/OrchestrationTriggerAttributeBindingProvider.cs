@@ -64,7 +64,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
-            private readonly IReadOnlyDictionary<string, Type> contract;
 
             public OrchestrationTriggerBinding(
                 DurableTaskExtension config,
@@ -74,12 +73,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config = config;
                 this.parameterInfo = parameterInfo;
                 this.orchestratorName = orchestratorName;
-                this.contract = GetBindingDataContract(parameterInfo);
+                this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
             public Type TriggerValueType => typeof(DurableOrchestrationContext);
 
-            public IReadOnlyDictionary<string, Type> BindingDataContract => this.contract;
+            public IReadOnlyDictionary<string, Type> BindingDataContract { get; }
 
             private static IReadOnlyDictionary<string, Type> GetBindingDataContract(ParameterInfo parameterInfo)
             {

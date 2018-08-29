@@ -408,12 +408,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHubName,
             string connectionName)
         {
-            if (this.config.NotificationUrl == null)
+            if (this.config.Options.NotificationUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            Uri notificationUri = this.config.NotificationUrl;
+            Uri notificationUri = this.config.Options.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
@@ -421,8 +421,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
-            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.HubName);
-            string connection = WebUtility.UrlEncode(connectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
+            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.Options.HubName);
+            string connection = WebUtility.UrlEncode(connectionName ?? this.config.Options.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
 
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
             if (!string.IsNullOrEmpty(notificationUri.Query))
