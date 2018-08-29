@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
-        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}"/> API.
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para><para>
         /// If the specified instance is not found or not running, this operation will have no effect.
         /// </para>
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
-        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}"/> API.
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para><para>
         /// If the specified instance is not found or not running, this operation will have no effect.
         /// </para>
@@ -178,6 +178,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
         /// <param name="eventName">The name of the event.</param>
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
+        /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
         public abstract Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null);

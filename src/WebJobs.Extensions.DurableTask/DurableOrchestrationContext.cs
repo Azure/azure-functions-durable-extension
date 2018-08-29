@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool IsCompleted { get; set; }
 
-        internal string HubName => this.config.HubName;
+        internal string HubName => this.config.Options.HubName;
 
         internal string Name => this.orchestrationName;
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs
             Task<T> timerTask = this.innerContext.CreateTimer(fireAt, state, cancelToken);
 
             this.config.TraceHelper.FunctionListening(
-                this.config.HubName,
+                this.config.Options.HubName,
                 this.orchestrationName,
                 this.InstanceId,
                 reason: $"CreateTimer:{fireAt:o}",
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.WebJobs
             T result = await timerTask;
 
             this.config.TraceHelper.TimerExpired(
-                this.config.HubName,
+                this.config.Options.HubName,
                 this.orchestrationName,
                 this.InstanceId,
                 expirationTime: fireAt,
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.WebJobs
                 }
 
                 this.config.TraceHelper.FunctionListening(
-                    this.config.HubName,
+                    this.config.Options.HubName,
                     this.orchestrationName,
                     this.InstanceId,
                     reason: $"WaitForExternalEvent:{name}",
@@ -364,7 +364,7 @@ namespace Microsoft.Azure.WebJobs
 
             // TODO: Support for versioning
             string version = DefaultVersion;
-            this.config.ThrowIfInvalidFunctionType(functionName, functionType, version);
+            this.config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask;
 
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.WebJobs
             string sourceFunctionId = this.orchestrationName;
 
             this.config.TraceHelper.FunctionScheduled(
-                this.config.HubName,
+                this.config.Options.HubName,
                 functionName,
                 this.InstanceId,
                 reason: sourceFunctionId,
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.WebJobs
                     // If this were not a replay, then the activity function trigger would have already
                     // emitted a FunctionFailed trace with the full exception details.
                     this.config.TraceHelper.FunctionFailed(
-                        this.config.HubName,
+                        this.config.Options.HubName,
                         functionName,
                         this.InstanceId,
                         reason: $"(replayed {exception.GetType().Name})",
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.WebJobs
                 // If this were not a replay, then the activity function trigger would have already
                 // emitted a FunctionCompleted trace with the actual output details.
                 this.config.TraceHelper.FunctionCompleted(
-                    this.config.HubName,
+                    this.config.Options.HubName,
                     functionName,
                     this.InstanceId,
                     output: "(replayed)",
@@ -506,6 +506,16 @@ namespace Microsoft.Azure.WebJobs
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
                     trySetResult.Invoke(tcs, new[] { deserializedObject });
+                }
+                else
+                {
+                    // The orchestrator was not waiting for any event by this name, so the event will be dropped.
+                    this.config.TraceHelper.ExternalEventDropped(
+                        this.HubName,
+                        this.Name,
+                        this.InstanceId,
+                        name,
+                        this.IsReplaying);
                 }
             }
         }
