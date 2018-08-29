@@ -296,18 +296,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task GetAllStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
-                     {
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "01",
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running
-                         },
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "02",
-                             RuntimeStatus = OrchestrationRuntimeStatus.Completed
-                         },
-                     };
+            {
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "01",
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "02",
+                    RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                },
+            };
 
             var clientMock = new Mock<DurableOrchestrationClientBase>();
             clientMock
@@ -336,22 +336,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task GetQueryStatus_is_Success()
         {
-
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
-                     {
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "01",
-                             CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running,
-                         },
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "02",
-                             CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running,
-                         },
-                     };
+            {
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "01",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "02",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+            };
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0);
             var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59);
@@ -367,7 +366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={System.Web.HttpUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}";
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage
@@ -387,22 +386,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task GetQueryMultipleRuntimeStatus_is_Success()
         {
-
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
-                     {
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "01",
-                             CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running,
-                         },
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "02",
-                             CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Completed,
-                         },
-                     };
+            {
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "01",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "02",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                },
+            };
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0);
             var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59);
@@ -441,22 +439,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public async Task GetQueryWithoutRuntimeStatus_is_Success()
         {
-
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
-                     {
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "01",
-                             CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Running,
-                         },
-                         new DurableOrchestrationStatus
-                         {
-                             InstanceId = "02",
-                             CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
-                             RuntimeStatus = OrchestrationRuntimeStatus.Completed,
-                         },
-                     };
+            {
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "01",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "02",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                },
+            };
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0);
 
