@@ -195,7 +195,6 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A task that completes when the terminate message is enqueued.</returns>
         public abstract Task TerminateAsync(string instanceId, string reason);
 
-
         /// <summary>
         /// Rewinds the specified failed orchestration instance with a reason.
         /// </summary>
@@ -250,6 +249,5 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
-
     }
 }

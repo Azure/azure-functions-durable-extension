@@ -7,7 +7,7 @@
     <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
     <FileVersion>1.6.0</FileVersion>
     <AssemblyVersion>$(FileVersion)</AssemblyVersion>
-    <Version>$(FileVersion)-rc</Version>
+    <Version>$(FileVersion)</Version>
     <Company>Microsoft Corporation</Company>
   </PropertyGroup>
 

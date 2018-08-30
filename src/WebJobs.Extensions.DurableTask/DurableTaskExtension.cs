@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// Configuration for the Durable Functions extension.
     /// </summary>
 #if NETSTANDARD2_0
-    [Extension("DurableTask")]
+    [Extension("DurableTask", "DurableTask")]
 #endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
