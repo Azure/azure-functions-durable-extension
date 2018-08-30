@@ -45,5 +45,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         [JsonProperty("terminatePostUri")]
         public string TerminatePostUri { get; internal set; }
+
+        /// <summary>
+        /// Gets the HTTP POST instance rewind endpoint.
+        /// </summary>
+        /// <value>
+        /// The HTTP URL for rewinding orchestration instances.
+        /// </value>
+        [JsonProperty("rewindPostUri")]
+        public string RewindPostUri { get; internal set; }
     }
 }

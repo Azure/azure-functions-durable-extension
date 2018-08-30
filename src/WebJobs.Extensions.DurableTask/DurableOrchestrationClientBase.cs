@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
-        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}"/> API.
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para><para>
         /// If the specified instance is not found or not running, this operation will have no effect.
         /// </para>
@@ -163,6 +163,27 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task RaiseEventAsync(string instanceId, string eventName, object eventData);
 
         /// <summary>
+        /// Sends an event notification message to a waiting orchestration instance.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In order to handle the event, the target orchestration instance must be waiting for an
+        /// event named <paramref name="eventName"/> using the
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
+        /// </para><para>
+        /// If the specified instance is not found or not running, this operation will have no effect.
+        /// </para>
+        /// </remarks>
+        /// <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
+        /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+        /// <param name="eventName">The name of the event.</param>
+        /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
+        /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+        /// <returns>A task that completes when the event notification message has been enqueued.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public abstract Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null);
+
+        /// <summary>
         /// Terminates a running orchestration instance.
         /// </summary>
         /// <remarks>
@@ -173,6 +194,14 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="reason">The reason for terminating the orchestration instance.</param>
         /// <returns>A task that completes when the terminate message is enqueued.</returns>
         public abstract Task TerminateAsync(string instanceId, string reason);
+
+        /// <summary>
+        /// Rewinds the specified failed orchestration instance with a reason.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to rewind.</param>
+        /// <param name="reason">The reason for rewinding the orchestration instance.</param>
+        /// <returns>A task that completes when the rewind message is enqueued.</returns>
+        public abstract Task RewindAsync(string instanceId, string reason);
 
         /// <summary>
         /// Gets the status of the specified orchestration instance.
@@ -210,5 +239,15 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets the status of all orchestration instances that match the specified conditions.
+        /// </summary>
+        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <returns>Returns orchestration status for all instances.</returns>
+        public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,8 +18,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string LogCategory = "Host.Triggers.DurableTask";
 
         public static JobHost GetJobHost(
-            ILoggerFactory loggerFactory,
-            string taskHub,
+            ILoggerProvider loggerProvider,
+            string testName,
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
             INameResolver nameResolver = null,
@@ -26,13 +28,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
             bool logReplayEvents = true,
-            Uri notificationUrl = null)
+            Uri notificationUrl = null,
+            HttpMessageHandler eventGridNotificationHandler = null)
         {
-            var config = new JobHostConfiguration { HostId = "durable-task-host" };
-            config.ConfigureDurableFunctionTypeLocator(typeof(TestOrchestrations), typeof(TestActivities));
-            var durableTaskExtension = new DurableTaskExtension
+            var durableTaskOptions = new DurableTaskOptions
             {
-                HubName = taskHub.Replace("_", "") + (enableExtendedSessions ? "EX" : ""),
+                HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
                 EventGridTopicEndpoint = eventGridTopicEndpoint,
@@ -41,39 +42,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 MaxConcurrentActivityFunctions = 200,
                 LogReplayEvents = logReplayEvents,
                 NotificationUrl = notificationUrl,
+                NotificationHandler = eventGridNotificationHandler,
             };
+
             if (eventGridRetryCount.HasValue)
             {
-                durableTaskExtension.EventGridPublishRetryCount = eventGridRetryCount.Value;
+                durableTaskOptions.EventGridPublishRetryCount = eventGridRetryCount.Value;
             }
 
             if (eventGridRetryInterval.HasValue)
             {
-                durableTaskExtension.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
+                durableTaskOptions.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
             }
 
             if (eventGridRetryHttpStatus != null)
             {
-                durableTaskExtension.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
+                durableTaskOptions.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
             }
 
-            config.UseDurableTask(durableTaskExtension);
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+            var testNameResolver = new TestNameResolver(nameResolver);
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver);
+        }
 
-            // Mock INameResolver for not setting EnvironmentVariables.
-            if (nameResolver != null)
+        public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
+        {
+            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+        }
+
+        public static ITypeLocator GetTypeLocator()
+        {
+            var types = new Type[]
             {
-                config.AddService<INameResolver>(nameResolver);
-            }
+                typeof(TestOrchestrations),
+                typeof(TestActivities),
+                typeof(ClientFunctions),
+            };
 
-            // Performance is *significantly* worse when dashboard logging is enabled, at least
-            // when running in the storage emulator. Disabling to keep tests running quickly.
-            config.DashboardConnectionString = null;
+            ITypeLocator typeLocator = new ExplicitTypeLocator(types);
+            return typeLocator;
+        }
 
-            // Add test logger
-            config.LoggerFactory = loggerFactory;
-
-            var host = new JobHost(config);
-            return host;
+        public static string GetStorageConnectionString()
+        {
+            return Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         }
 
         public static void AssertLogMessageSequence(
@@ -208,6 +220,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
                 case "OrchestrationEventGridApiReturnBadStatus":
                     messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
+                    break;
+                case "RewindOrchestration":
+                    messages = GetLogs_Rewind_Orchestration(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
+                    break;
+                case nameof(DurableTaskEndToEndTests.ActorOrchestration):
+                    messages = GetLogs_ActorOrchestration(instanceIds[0]).ToList();
                     break;
                 default:
                     break;
@@ -483,6 +501,85 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return list;
         }
 
+        private static List<string> GetLogs_Rewind_Orchestration(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
+        {
+            var list = new List<string>()
+            {
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: True.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: System.Exception: Simulating Orchestration failure.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' was rewound. Reason: rewind!. State: Rewound.",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: True.",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: True. Output: (replayed).",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: True. Output: \"Hello, Catherine!\". State: Completed.",
+            };
+
+            return list;
+        }
+
+        private static string[] GetLogs_ActorOrchestration(string instanceId)
+        {
+            return new[]
+            {
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 0. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 0. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 1. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 1. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 1. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 2. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 3. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 2. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 2. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 3. State: Completed.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
+                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: False. IsReplay: False. Output: 3. State: Completed.",
+            };
+        }
+
         private static string GetInstanceId(string message)
         {
             return message.Substring(0, message.IndexOf(':'));
@@ -494,6 +591,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int start = message.IndexOf(CreateTimerPrefix) + CreateTimerPrefix.Length;
             int end = message.IndexOf('Z', start) + 1;
             return message.Substring(start, end - start);
+        }
+
+        internal static INameResolver GetTestNameResolver()
+        {
+            return new TestNameResolver(null);
+        }
+
+        private class ExplicitTypeLocator : ITypeLocator
+        {
+            private readonly IReadOnlyList<Type> types;
+
+            public ExplicitTypeLocator(params Type[] types)
+            {
+                this.types = types.ToList().AsReadOnly();
+            }
+
+            public IReadOnlyList<Type> GetTypes()
+            {
+                return this.types;
+            }
+        }
+
+        private class TestNameResolver : INameResolver
+        {
+            private readonly INameResolver innerResolver;
+
+            public TestNameResolver(INameResolver innerResolver)
+            {
+                // null is okay
+                this.innerResolver = innerResolver;
+            }
+
+            public string Resolve(string name)
+            {
+                if (string.IsNullOrEmpty(name))
+                {
+                    return null;
+                }
+
+                string value = this.innerResolver?.Resolve(name);
+                if (value == null)
+                {
+                    return Environment.GetEnvironmentVariable(name);
+                }
+
+                return value;
+            }
         }
     }
 }

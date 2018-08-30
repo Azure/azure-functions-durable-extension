@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -22,8 +23,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
+        private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
+        private const string CreatedTimeFromParameter = "createdTimeFrom";
+        private const string CreatedTimeToParameter = "createdTimeTo";
+        private const string RuntimeStatusParameter = "runtimeStatus";
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -40,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationClientAttribute attribute)
         {
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
-            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
+            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri, httpManagementPayload.RewindPostUri);
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -94,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    return this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri);
+                    return this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri, httpManagementPayload.RewindPostUri);
                 }
             }
         }
@@ -105,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
-                // Retrive All Status in case of the request URL ends e.g. /instances/
+                // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
                 if (request.Method == HttpMethod.Get
                     && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                 {
@@ -138,6 +143,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
                     }
+                    else if (string.Equals(operation, RewindOperation, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return await this.HandleRewindInstanceRequestAsync(request, instanceId);
+                    }
                 }
                 else
                 {
@@ -162,7 +171,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
-            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync();
+            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
+            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
+            var runtimeStatus = GetIEnumerableQueryParameterValue(queryNameValuePairs, RuntimeStatusParameter);
+
+            // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
+            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -255,6 +270,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
+        private static IEnumerable<OrchestrationRuntimeStatus> GetIEnumerableQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var results = new List<OrchestrationRuntimeStatus>();
+            var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
+
+            foreach (var value in parameters.SelectMany(x => x.Split(',')))
+            {
+                if (Enum.TryParse<OrchestrationRuntimeStatus>(value, out OrchestrationRuntimeStatus result))
+                {
+                    results.Add(result);
+                }
+            }
+
+            return results;
+        }
+
+        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
+        {
+            var value = queryStringNameValueCollection[queryParameterName];
+            return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
+        }
+
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
         {
             var value = queryStringNameValueCollection[queryParameterName];
@@ -285,6 +322,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.TerminateAsync(instanceId, reason);
+
+            return request.CreateResponse(HttpStatusCode.Accepted);
+        }
+
+        private async Task<HttpResponseMessage> HandleRewindInstanceRequestAsync(
+           HttpRequestMessage request,
+           string instanceId)
+        {
+            DurableOrchestrationClientBase client = this.GetClient(request);
+
+            var status = await client.GetStatusAsync(instanceId);
+            if (status == null)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            switch (status.RuntimeStatus)
+            {
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.Gone);
+            }
+
+            string reason = request.GetQueryNameValuePairs()["reason"];
+
+            await client.RewindAsync(instanceId, reason);
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
@@ -376,12 +440,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHubName,
             string connectionName)
         {
-            if (this.config.NotificationUrl == null)
+            if (this.config.Options.NotificationUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }
 
-            Uri notificationUri = this.config.NotificationUrl;
+            Uri notificationUri = this.config.Options.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
@@ -389,8 +453,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
 
-            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.HubName);
-            string connection = WebUtility.UrlEncode(connectionName ?? this.config.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
+            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.Options.HubName);
+            string connection = WebUtility.UrlEncode(connectionName ?? this.config.Options.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
 
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
             if (!string.IsNullOrEmpty(notificationUri.Query))
@@ -405,12 +469,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 StatusQueryGetUri = instancePrefix + "?" + querySuffix,
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
+                RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
             };
 
             return httpManagementPayload;
         }
 
-        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri)
+        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string rewindPostUri)
         {
             var response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -420,6 +485,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     statusQueryGetUri,
                     sendEventPostUri,
                     terminatePostUri,
+                    rewindPostUri,
                 });
 
             // Implement the async HTTP 202 pattern.
