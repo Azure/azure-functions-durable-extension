@@ -285,31 +285,6 @@
             The type of a function.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
-            <summary>
-            Data structure containing status, terminate and send external event HTTP endpoints.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id">
-            <summary>
-            Gets the ID of the orchestration instance.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri">
-            <summary>
-            Gets the HTTP GET status query endpoint URL.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri">
-            <summary>
-            Gets the HTTP POST external event sending endpoint URL.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri">
-            <summary>
-            Gets the HTTP POST instance termination endpoint.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.
@@ -487,10 +462,10 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)">
             <summary>
-            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
+            Creates a <see cref="T:Microsoft.Azure.WebJobs.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> class.</returns>
+            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.HttpManagementPayload"/> class.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)">
             <summary>
@@ -498,9 +473,9 @@
             or contains the payload containing the output of the completed orchestration.
             </summary>
             <remarks>
-            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+            If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
             contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-            complete within the specified timeout, then the HTTP response will be identical to that of the
+            complete within this timeout, then the HTTP response will be identical to that of the
             <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
             </remarks>
             <param name="request">The HTTP request that triggered the current function.</param>
@@ -1237,6 +1212,31 @@
             Gets the string value of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.
             </summary>
             <returns>The name and optional version of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.HttpManagementPayload">
+            <summary>
+            Data structure containing status, terminate and send external event HTTP endpoints.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.Id">
+            <summary>
+            Gets the ID of the orchestration instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.StatusQueryGetUri">
+            <summary>
+            Gets the HTTP GET status query endpoint URL.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.SendEventPostUri">
+            <summary>
+            Gets the HTTP POST external event sending endpoint URL.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.TerminatePostUri">
+            <summary>
+            Gets the HTTP POST instance termination endpoint.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute">
             <summary>

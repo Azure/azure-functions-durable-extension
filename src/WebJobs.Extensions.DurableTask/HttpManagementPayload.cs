@@ -3,7 +3,7 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
+namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
     /// Data structure containing status, terminate and send external event HTTP endpoints.
