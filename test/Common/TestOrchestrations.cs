@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class TestOrchestrations
     {
         public const char BigValueChar = '*';
+        public static bool SayHelloWithActivityForRewindShouldFail = true;
 
         public static string SayHelloInline([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
@@ -19,10 +20,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
+
         public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            return output;
+        }
+
+
+        public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            if (SayHelloWithActivityForRewindShouldFail)
+            {
+                SayHelloWithActivityForRewindShouldFail = false;
+                throw new Exception("Simulating Orchestration failure...");
+            }
+
             return output;
         }
 
@@ -133,6 +149,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return "Expired";
                 }
             }
+        }
+
+        public static async Task<string> ApprovalWithTimeout([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            (TimeSpan timeout, string defaultValue) = ctx.GetInput<(TimeSpan, string)>();
+            DateTime deadline = ctx.CurrentUtcDateTime.Add(timeout);
+            string eventValue;
+            if (defaultValue == "throw")
+            {
+                try
+                {
+                    eventValue = await ctx.WaitForExternalEvent<string>("approval", timeout);
+                }
+                catch (TimeoutException)
+                {
+                    return "TimeoutException";
+                }
+            }
+            else
+            {
+                eventValue = await ctx.WaitForExternalEvent("approval", timeout, defaultValue);
+            }
+
+            return eventValue;
         }
 
         public static async Task ThrowOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)

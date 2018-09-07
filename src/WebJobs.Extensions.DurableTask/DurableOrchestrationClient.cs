@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,13 +35,13 @@ namespace Microsoft.Azure.WebJobs
         internal DurableOrchestrationClient(
             IOrchestrationServiceClient serviceClient,
             DurableTaskExtension config,
-            OrchestrationClientAttribute attribute,
-            EndToEndTraceHelper traceHelper)
+            OrchestrationClientAttribute attribute)
         {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+
             this.client = new TaskHubClient(serviceClient);
-            this.traceHelper = traceHelper;
-            this.config = config;
-            this.hubName = config.HubName;
+            this.traceHelper = config.TraceHelper;
+            this.hubName = config.Options.HubName;
             this.attribute = attribute;
         }
 
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
         {
-            this.config.AssertOrchestratorExists(orchestratorFunctionName, DefaultVersion);
+            this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
 
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -106,29 +107,44 @@ namespace Microsoft.Azure.WebJobs
 
         /// <inheritdoc />
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
-        public override async Task RaiseEventAsync(string instanceId, string eventName, object eventData)
+        public override Task RaiseEventAsync(string instanceId, string eventName, object eventData)
         {
             if (string.IsNullOrEmpty(eventName))
             {
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
+            return this.RaiseEventInternalAsync(this.client, this.hubName, instanceId, eventName, eventData);
+        }
 
-            if (state.OrchestrationStatus == OrchestrationStatus.Running ||
-                state.OrchestrationStatus == OrchestrationStatus.Pending ||
-                state.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
+        /// <inheritdoc />
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public override Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null)
+        {
+            if (string.IsNullOrEmpty(taskHubName))
             {
-                await this.client.RaiseEventAsync(state.OrchestrationInstance, eventName, eventData);
-
-                this.traceHelper.FunctionScheduled(
-                    this.hubName,
-                    state.Name,
-                    state.OrchestrationInstance.InstanceId,
-                    reason: "RaiseEvent:" + eventName,
-                    functionType: FunctionType.Orchestrator,
-                    isReplay: false);
+                throw new ArgumentNullException(nameof(taskHubName));
             }
+
+            if (string.IsNullOrEmpty(eventName))
+            {
+                throw new ArgumentNullException(nameof(eventName));
+            }
+
+            if (string.IsNullOrEmpty(connectionName))
+            {
+                connectionName = this.attribute.ConnectionName;
+            }
+
+            var attribute = new OrchestrationClientAttribute
+            {
+                TaskHub = taskHubName,
+                ConnectionName = connectionName,
+            };
+
+            TaskHubClient taskHubClient = this.config.GetClient(attribute).client;
+
+            return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData);
         }
 
         /// <inheritdoc />
@@ -143,6 +159,21 @@ namespace Microsoft.Azure.WebJobs
 
                 this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
             }
+        }
+
+        /// <inheritdoc />
+        public override async Task RewindAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
+            if (state.OrchestrationStatus != OrchestrationStatus.Failed)
+            {
+                throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
+            }
+
+            var service = (AzureStorageOrchestrationService)this.client.serviceClient;
+            await service.RewindTaskOrchestrationAsync(instanceId, reason);
+
+            this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
         }
 
         /// <inheritdoc />
@@ -164,6 +195,21 @@ namespace Microsoft.Azure.WebJobs
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(cancellationToken);
 
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (OrchestrationState state in states)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            return results;
+        }
+
+        /// <inheritdoc />
+        public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), cancellationToken);
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
             {
@@ -322,6 +368,35 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return this.ConvertFrom(orchestrationState, historyArray);
+        }
+
+        private async Task RaiseEventInternalAsync(
+            TaskHubClient taskHubClient,
+            string taskHubName,
+            string instanceId,
+            string eventName,
+            object eventData)
+        {
+            OrchestrationState status = await taskHubClient.GetOrchestrationStateAsync(instanceId);
+            if (status == null)
+            {
+                return;
+            }
+
+            if (status.OrchestrationStatus == OrchestrationStatus.Running ||
+                status.OrchestrationStatus == OrchestrationStatus.Pending ||
+                status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
+            {
+                await taskHubClient.RaiseEventAsync(status.OrchestrationInstance, eventName, eventData);
+
+                this.traceHelper.FunctionScheduled(
+                    taskHubName,
+                    status.Name,
+                    instanceId,
+                    reason: "RaiseEvent:" + eventName,
+                    functionType: FunctionType.Orchestrator,
+                    isReplay: false);
+            }
         }
 
         private DurableOrchestrationStatus ConvertFrom(OrchestrationState orchestrationState, JArray historyArray = null)

@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly Task<int> intResultTask = Task.FromResult(5);
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void IsReplaying_returns_false()
         {
             var durableOrchestrationContextBaseMock = new Mock<DurableOrchestrationContextBase> { CallBase = true };
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CallActivityAsync_is_calling_overload_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<DurableOrchestrationContextBase> { CallBase = true };
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallActivityWithRetryAsync_is_calling_overload_method()
         {
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(10), 5);
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorAsync_is_calling_overload_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<DurableOrchestrationContextBase> { CallBase = true };
@@ -60,6 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorAsync_with_instanceId_is_calling_overload_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<DurableOrchestrationContextBase> { CallBase = true };
@@ -72,6 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorAsync_typed_task_is_calling_overload_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<DurableOrchestrationContextBase> { CallBase = true };
@@ -81,6 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorWithRetryAsync_with_4_parameters_is_calling_overload_method()
         {
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(10), 5);
@@ -94,6 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorWithRetryAsync_with_5_parameters_is_calling_overload_method()
         {
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(10), 5);
@@ -108,6 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorWithRetryAsync_typed_task_is_calling_overload_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<DurableOrchestrationContextBase> { CallBase = true };
@@ -117,6 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CreateTimer_is_calling_overload_method()
         {
             var dateTime = DateTime.Now;

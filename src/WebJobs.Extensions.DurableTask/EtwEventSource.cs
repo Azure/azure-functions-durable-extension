@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Diagnostics.Tracing;
-using System.Net;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -214,6 +213,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(212, TaskHub, AppName, SlotName, FunctionName, FunctionState, Version ?? "", InstanceId, Details, exceptionMessage, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
         }
 
+        [Event(213, Level = EventLevel.Informational)]
+        public void ExtensionInformationalEvent(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string Details,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(213, TaskHub, AppName, SlotName, FunctionName ?? string.Empty, InstanceId ?? string.Empty, Details, ExtensionVersion);
+        }
+
+        [Event(214, Level = EventLevel.Warning)]
+        public void ExtensionWarningEvent(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string Details,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(214, TaskHub, AppName, SlotName, FunctionName ?? string.Empty, InstanceId ?? string.Empty, Details, ExtensionVersion);
+        }
+
+        [Event(215, Level = EventLevel.Warning)]
+        public void ExternalEventDropped(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string EventName,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(215, TaskHub, AppName, SlotName, FunctionName, InstanceId, EventName, FunctionType, ExtensionVersion, IsReplay);
+        }
+
+        [Event(216, Level = EventLevel.Informational)]
+        public void FunctionRewound(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string Reason,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(216, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason ?? string.Empty, FunctionType, ExtensionVersion, IsReplay);
+        }
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

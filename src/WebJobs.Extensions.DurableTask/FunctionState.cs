@@ -13,6 +13,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Terminated,
         Failed,
         ExternalEventRaised,
+        ExternalEventDropped,
         TimerExpired,
+        Rewound,
     }
 }

@@ -80,12 +80,31 @@ references:
   isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse
   nameWithType: DurableOrchestrationClient.CreateCheckStatusResponse
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload(System.String)
+  name: CreateHttpManagementPayload(String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_CreateHttpManagementPayload_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload(System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload(System.String)
+  nameWithType: DurableOrchestrationClient.CreateHttpManagementPayload(String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload*
+  name: CreateHttpManagementPayload
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_CreateHttpManagementPayload_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload
+  nameWithType: DurableOrchestrationClient.CreateHttpManagementPayload
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)
   name: GetStatusAsync(String, Boolean, Boolean)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_
   commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String, System.Boolean, System.Boolean)
   nameWithType: DurableOrchestrationClient.GetStatusAsync(String, Boolean, Boolean)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)
+  name: GetStatusAsync(CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)
+  nameWithType: DurableOrchestrationClient.GetStatusAsync(CancellationToken)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync*
   name: GetStatusAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_
@@ -177,6 +196,19 @@ references:
   isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse
   nameWithType: DurableOrchestrationClientBase.CreateCheckStatusResponse
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)
+  name: CreateHttpManagementPayload(String)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_CreateHttpManagementPayload_System_String_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)
+  nameWithType: DurableOrchestrationClientBase.CreateHttpManagementPayload(String)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload*
+  name: CreateHttpManagementPayload
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_CreateHttpManagementPayload_
+  commentId: Overload:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload
+  nameWithType: DurableOrchestrationClientBase.CreateHttpManagementPayload
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)
   name: GetStatusAsync(String)
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_
@@ -195,6 +227,12 @@ references:
   commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String, System.Boolean, System.Boolean)
   nameWithType: DurableOrchestrationClientBase.GetStatusAsync(String, Boolean, Boolean)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)
+  name: GetStatusAsync(CancellationToken)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_Threading_CancellationToken_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)
+  nameWithType: DurableOrchestrationClientBase.GetStatusAsync(CancellationToken)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*
   name: GetStatusAsync
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_
@@ -994,6 +1032,45 @@ references:
   isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridKeySettingName
   nameWithType: DurableTaskExtension.EventGridKeySettingName
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount
+  name: EventGridPublishRetryCount
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridPublishRetryCount
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount
+  nameWithType: DurableTaskExtension.EventGridPublishRetryCount
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount*
+  name: EventGridPublishRetryCount
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridPublishRetryCount_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryCount
+  nameWithType: DurableTaskExtension.EventGridPublishRetryCount
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus
+  name: EventGridPublishRetryHttpStatus
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridPublishRetryHttpStatus
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus
+  nameWithType: DurableTaskExtension.EventGridPublishRetryHttpStatus
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus*
+  name: EventGridPublishRetryHttpStatus
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridPublishRetryHttpStatus_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryHttpStatus
+  nameWithType: DurableTaskExtension.EventGridPublishRetryHttpStatus
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval
+  name: EventGridPublishRetryInterval
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridPublishRetryInterval
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval
+  nameWithType: DurableTaskExtension.EventGridPublishRetryInterval
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval*
+  name: EventGridPublishRetryInterval
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridPublishRetryInterval_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridPublishRetryInterval
+  nameWithType: DurableTaskExtension.EventGridPublishRetryInterval
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EventGridTopicEndpoint
   name: EventGridTopicEndpoint
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_EventGridTopicEndpoint
@@ -1059,6 +1136,19 @@ references:
   isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName
   nameWithType: DurableTaskExtension.HubName
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents
+  name: LogReplayEvents
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_LogReplayEvents
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents
+  nameWithType: DurableTaskExtension.LogReplayEvents
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents*
+  name: LogReplayEvents
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_LogReplayEvents_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.LogReplayEvents
+  nameWithType: DurableTaskExtension.LogReplayEvents
 - uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.MaxConcurrentActivityFunctions
   name: MaxConcurrentActivityFunctions
   href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_MaxConcurrentActivityFunctions
@@ -1192,6 +1282,64 @@ references:
   isSpec: "True"
   fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask
   nameWithType: DurableTaskJobHostConfigurationExtensions.UseDurableTask
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload
+  name: HttpManagementPayload
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html
+  commentId: T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload
+  nameWithType: HttpManagementPayload
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id
+  name: Id
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_Id
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id
+  nameWithType: HttpManagementPayload.Id
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id*
+  name: Id
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_Id_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id
+  nameWithType: HttpManagementPayload.Id
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri
+  name: SendEventPostUri
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_SendEventPostUri
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri
+  nameWithType: HttpManagementPayload.SendEventPostUri
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri*
+  name: SendEventPostUri
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_SendEventPostUri_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri
+  nameWithType: HttpManagementPayload.SendEventPostUri
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri
+  name: StatusQueryGetUri
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_StatusQueryGetUri
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri
+  nameWithType: HttpManagementPayload.StatusQueryGetUri
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri*
+  name: StatusQueryGetUri
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_StatusQueryGetUri_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri
+  nameWithType: HttpManagementPayload.StatusQueryGetUri
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri
+  name: TerminatePostUri
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_TerminatePostUri
+  commentId: P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri
+  nameWithType: HttpManagementPayload.TerminatePostUri
+- uid: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri*
+  name: TerminatePostUri
+  href: api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_HttpManagementPayload_TerminatePostUri_
+  commentId: Overload:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri
+  isSpec: "True"
+  fullName: Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri
+  nameWithType: HttpManagementPayload.TerminatePostUri
 - uid: Microsoft.Azure.WebJobs.FunctionFailedException
   name: FunctionFailedException
   href: api/Microsoft.Azure.WebJobs.FunctionFailedException.html

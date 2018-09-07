@@ -28,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.instanceCreationTime = instanceCreationTime;
         }
 
+        public string TaskHubName => this.innerClient.TaskHubName;
+
         public string FunctionName => this.functionName;
 
         public string InstanceId => this.instanceId;
@@ -57,9 +59,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
         }
 
+        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, string connectionName = null)
+        {
+            await this.innerClient.RaiseEventAsync(taskHubName, instanceid, eventName, eventData);
+        }
+
         public async Task TerminateAsync(string reason)
         {
             await this.innerClient.TerminateAsync(this.instanceId, reason);
+        }
+
+        public async Task RewindAsync(string reason)
+        {
+            await this.innerClient.RewindAsync(this.instanceId, reason);
         }
 
         public async Task<DurableOrchestrationStatus> WaitForStartupAsync(TimeSpan timeout, ITestOutputHelper output)

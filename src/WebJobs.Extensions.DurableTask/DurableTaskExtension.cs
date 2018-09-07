@@ -11,11 +11,14 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Middleware;
+using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -23,17 +26,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
+#if NETSTANDARD2_0
+    [Extension("DurableTask", "DurableTask")]
+#endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
-        /// <summary>
-        /// The default task hub name to use when not explicitly configured.
-        /// </summary>
-        internal const string DefaultHubName = "DurableFunctionsHub";
-
         private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
@@ -49,14 +50,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
+        private readonly INameResolver nameResolver;
+        private readonly bool isOptionsConfigured;
+
         private AzureStorageOrchestrationService orchestrationService;
         private TaskHubWorker taskHubWorker;
+        private HttpApiHandler httpApiHandler;
+        private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
-        private EndToEndTraceHelper traceHelper;
-        private HttpApiHandler httpApiHandler;
-        private LifeCycleNotificationHelper lifeCycleNotificationHelper;
+        #if !NETSTANDARD2_0
+        /// <summary>
+        /// Obsolete. Please use an alternate constructor overload.
+        /// </summary>
+        [Obsolete("The default constructor is obsolete and will be removed in future versions")]
+        public DurableTaskExtension()
+        {
+            // Options initialization happens later
+            this.Options = new DurableTaskOptions();
+            this.isOptionsConfigured = false;
+        }
+        #endif
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
+        /// </summary>
+        /// <param name="options">The configuration options for this extension.</param>
+        /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
+        /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
+        /// <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
+        public DurableTaskExtension(
+            IOptions<DurableTaskOptions> options,
+            ILoggerFactory loggerFactory,
+            INameResolver nameResolver,
+            IConnectionStringResolver connectionStringResolver)
+        {
+            // Options will be null in Functions v1 runtime - populated later.
+            this.Options = options?.Value ?? new DurableTaskOptions();
+            this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
+
+            if (loggerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+
+            ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
+
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
+            this.httpApiHandler = new HttpApiHandler(this, logger);
+            this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(options.Value, nameResolver, this.TraceHelper);
+            this.isOptionsConfigured = true;
+        }
+
+#if !NETSTANDARD2_0
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
@@ -66,186 +113,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
-        public string HubName { get; set; } = DefaultHubName;
+        public string HubName
+        {
+            get { return this.Options.HubName; }
+            set { this.Options.HubName = value; }
+        }
+#endif
 
-        /// <summary>
-        /// Gets or sets the number of messages to pull from the control queue at a time.
-        /// </summary>
-        /// <remarks>
-        /// Messages pulled from the control queue are buffered in memory until the internal
-        /// dispatcher is ready to process them.
-        /// </remarks>
-        /// <value>A positive integer configured by the host. The default value is <c>32</c>.</value>
-        public int ControlQueueBatchSize { get; set; } = 32;
+        internal DurableTaskOptions Options { get; }
 
-        /// <summary>
-        /// Gets or sets the partition count for the control queue.
-        /// </summary>
-        /// <remarks>
-        /// Increasing the number of partitions will increase the number of workers
-        /// that can concurrently execute orchestrator functions. However, increasing
-        /// the partition count can also increase the amount of load placed on the storage
-        /// account and on the thread pool if the number of workers is smaller than the
-        /// number of partitions.
-        /// </remarks>
-        /// <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
-        public int PartitionCount { get; set; } = 4;
+        internal LifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
 
-        /// <summary>
-        /// Gets or sets the visibility timeout of dequeued control queue messages.
-        /// </summary>
-        /// <value>
-        /// A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
-        /// </value>
-        public TimeSpan ControlQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Gets or sets the visibility timeout of dequeued work item queue messages.
-        /// </summary>
-        /// <value>
-        /// A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
-        /// </value>
-        public TimeSpan WorkItemQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
-        /// </summary>
-        /// <remarks>
-        /// Increasing activity function concurrent can result in increased throughput but can
-        /// also increase the total CPU and memory usage on a single worker instance.
-        /// </remarks>
-        /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
-        /// </value>
-        public int MaxConcurrentActivityFunctions { get; set; } = 10 * Environment.ProcessorCount;
-
-        /// <summary>
-        /// Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
-        /// </summary>
-        /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
-        /// </value>
-        public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
-
-        /// <summary>
-        /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
-        /// </summary>
-        /// <remarks>
-        /// If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-        /// </remarks>
-        /// <value>The name of a connection string that exists in the app's application settings.</value>
-        public string AzureStorageConnectionStringName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the base URL for the HTTP APIs managed by this extension.
-        /// </summary>
-        /// <remarks>
-        /// This property is intended for use only by runtime hosts.
-        /// </remarks>
-        /// <value>
-        /// A URL pointing to the hosted function app that responds to status polling requests.
-        /// </value>
-        public Uri NotificationUrl { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to trace the inputs and outputs of function calls.
-        /// </summary>
-        /// <remarks>
-        /// The default behavior when tracing function execution events is to include the number of bytes in the serialized
-        /// inputs and outputs for function calls. This provides minimal information about what the inputs and outputs look
-        /// like without bloating the logs or inadvertently exposing sensitive information to the logs. Setting
-        /// <see cref="TraceInputsAndOutputs"/> to <c>true</c> will instead cause the default function logging to log
-        /// the entire contents of function inputs and outputs.
-        /// </remarks>
-        /// <value>
-        /// <c>true</c> to trace the raw values of inputs and outputs; otherwise <c>false</c>.
-        /// </value>
-        public bool TraceInputsAndOutputs { get; set; }
-
-        /// <summary>
-        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint.
-        /// When set, orchestration life cycle notification events will be automatically
-        /// published to this endpoint.
-        /// </summary>
-        /// <remarks>
-        /// Azure Event Grid topic URLs are generally expected to be in the form
-        /// https://{topic_name}.{region}.eventgrid.azure.net/api/events.
-        /// </remarks>
-        /// <value>
-        /// The Azure Event Grid custom topic URL.
-        /// </value>
-        public string EventGridTopicEndpoint { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridTopicEndpoint"/>.
-        /// </summary>
-        /// <value>
-        /// The name of the app setting that stores the Azure Event Grid key.
-        /// </value>
-        public string EventGridKeySettingName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Event Grid publish request retry count.
-        /// </summary>
-        /// <value>The number of retry attempts.</value>
-        public int EventGridPublishRetryCount { get; set; }
-
-        /// <summary>
-        /// Gets orsets the Event Grid publish request retry interval.
-        /// </summary>
-        /// <value>A <see cref="TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
-        public TimeSpan EventGridPublishRetryInterval { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Gets or sets the Event Grid publish request http status.
-        /// </summary>
-        /// <value>A list of HTTP status codes, e.g. 400, 403.</value>
-        public int[] EventGridPublishRetryHttpStatus { get; set; }
-
-        /// <summary>
-        /// Gets or sets a flag indicating whether to enable extended sessions.
-        /// </summary>
-        /// <remarks>
-        /// <para>Extended sessions can improve the performance of orchestrator functions by allowing them to skip
-        /// replays when new messages are received within short periods of time.</para>
-        /// <para>Note that orchestrator functions which are extended this way will continue to count against the
-        /// <see cref="MaxConcurrentOrchestratorFunctions"/> limit. To avoid starvation, only half of the maximum
-        /// number of allowed concurrent orchestrator functions can be concurrently extended at any given time.
-        /// The <see cref="ExtendedSessionIdleTimeoutInSeconds"/> property can also be used to control how long an idle
-        /// orchestrator function is allowed to be extended.</para>
-        /// <para>It is recommended that this property be set to <c>false</c> during development to help
-        /// ensure that the orchestrator code correctly obeys the idempotency rules.</para>
-        /// </remarks>
-        /// <value>
-        /// <c>true</c> to enable extended sessions; otherwise <c>false</c>.
-        /// </value>
-        public bool ExtendedSessionsEnabled { get; set; }
-
-        /// <summary>
-        /// Gets or sets the amount of time in seconds before an idle session times out. The default value is 30 seconds.
-        /// </summary>
-        /// <remarks>
-        /// This setting is applicable when <see cref="ExtendedSessionsEnabled"/> is set to <c>true</c>.
-        /// </remarks>
-        /// <value>
-        /// The number of seconds before an idle session times out.
-        /// </value>
-        public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
-
-        /// <summary>
-        /// Gets or sets if logs for replay events need to be recorded.
-        /// </summary>
-        /// <remarks>
-        /// The default value is false, which disables the logging of replay events.
-        /// </remarks>
-        /// <value>
-        /// Boolean value specifying if the replay events should be logged.
-        /// </value>
-        public bool LogReplayEvents { get; set; }
-
-        internal LifeCycleNotificationHelper LifeCycleNotificationHelper => this.lifeCycleNotificationHelper;
-
-        internal EndToEndTraceHelper TraceHelper => this.traceHelper;
+        internal EndToEndTraceHelper TraceHelper { get; private set; }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -255,27 +134,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             ConfigureLoaderHooks();
 
-            context.ApplyConfig(this, "DurableTask");
+            // Functions V1 has it's configuration initialized at startup time (now).
+            // For Functions V2 (and for some unit tests) configuration happens earlier in the pipeline.
+            if (!this.isOptionsConfigured)
+            {
+                this.InitializeForFunctionsV1(context);
+            }
 
-            // Register the trigger bindings
-            JobHostConfiguration hostConfig = context.Config;
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
-
-            this.traceHelper = new EndToEndTraceHelper(hostConfig, logger, this.LogReplayEvents);
-            this.httpApiHandler = new HttpApiHandler(this, logger);
-
-            this.lifeCycleNotificationHelper = new LifeCycleNotificationHelper(this, context);
-
-            // Register the non-trigger bindings, which have a different model.
-            var bindings = new BindingHelper(this, this.traceHelper);
+            // Throw if any of the configured options are invalid
+            this.Options.Validate();
 
             // For 202 support
-            if (this.NotificationUrl == null)
+            if (this.Options.NotificationUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.NotificationUrl = context.GetWebhookHandler();
+                this.Options.NotificationUrl = context.GetWebhookHandler();
 #pragma warning restore CS0618 // Type or member is obsolete
             }
+
+            this.TraceConfigurationSettings();
+
+            var bindings = new BindingHelper(this, this.TraceHelper);
 
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
@@ -286,17 +165,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<DurableOrchestrationClient>(this.GetClient);
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.traceHelper));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
-                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.traceHelper));
+                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
             AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings();
             this.orchestrationService = new AzureStorageOrchestrationService(settings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+        }
 
-            context.Config.AddService<IOrchestrationService>(this.orchestrationService);
+        private void InitializeForFunctionsV1(ExtensionConfigContext context)
+        {
+#if !NETSTANDARD2_0
+            context.ApplyConfig(this.Options, "DurableTask");
+
+            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
+
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
+            this.httpApiHandler = new HttpApiHandler(this, logger);
+            this.connectionStringResolver = new WebJobsConnectionStringProvider();
+            this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(
+                this.Options,
+                context.Config.NameResolver,
+                this.TraceHelper);
+#endif
+        }
+
+        private void TraceConfigurationSettings()
+        {
+            this.TraceHelper.ExtensionInformationalEvent(
+                this.Options.HubName,
+                instanceId: string.Empty,
+                functionName: string.Empty,
+                message: $"Initializing extension with the following settings: {this.Options.GetDebugString()}",
+                writeToUserLogs: true);
         }
 
         /// <summary>
@@ -351,7 +255,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ITriggeredFunctionExecutor executor;
             if (!this.registeredActivities.TryGetValue(activityFunction, out executor))
             {
-                throw new InvalidOperationException($"Activity function '{activityFunction}' does not exist.");
+                string message = $"Activity function '{activityFunction}' does not exist.";
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    activityFunction.Name,
+                    string.Empty /* TODO: Flow the instance id into this event */,
+                    message);
+                throw new InvalidOperationException(message);
             }
 
             return new TaskActivityShim(this, executor, name);
@@ -377,7 +287,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestratorInfo info;
             if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info))
             {
-                throw new InvalidOperationException($"Orchestrator function '{orchestratorFunction}' does not exist.");
+                string message = this.GetInvalidOrchestratorFunctionMessage(orchestratorFunction.Name);
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    orchestratorFunction.Name,
+                    orchestrationRuntimeState.OrchestrationInstance.InstanceId,
+                    message);
+                throw new InvalidOperationException(message);
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
@@ -448,7 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attr);
                     var innerClient = new AzureStorageOrchestrationService(settings);
-                    return new DurableOrchestrationClient(innerClient, this, attr, this.traceHelper);
+                    return new DurableOrchestrationClient(innerClient, this, attr);
                 });
 
             return client;
@@ -466,8 +382,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionNameOverride = null,
             string taskHubNameOverride = null)
         {
-            string connectionName = connectionNameOverride ?? this.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage;
-            string resolvedStorageConnectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(connectionName);
+            string connectionName = connectionNameOverride ?? this.Options.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage;
+            string resolvedStorageConnectionString = this.connectionStringResolver.Resolve(connectionName);
 
             if (string.IsNullOrEmpty(resolvedStorageConnectionString))
             {
@@ -475,19 +391,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             TimeSpan extendedSessionTimeout = TimeSpan.FromSeconds(
-                Math.Max(this.ExtendedSessionIdleTimeoutInSeconds, 0));
+                Math.Max(this.Options.ExtendedSessionIdleTimeoutInSeconds, 0));
 
             return new AzureStorageOrchestrationServiceSettings
             {
                 StorageConnectionString = resolvedStorageConnectionString,
-                TaskHubName = taskHubNameOverride ?? this.HubName,
-                PartitionCount = this.PartitionCount,
-                ControlQueueBatchSize = this.ControlQueueBatchSize,
-                ControlQueueVisibilityTimeout = this.ControlQueueVisibilityTimeout,
-                WorkItemQueueVisibilityTimeout = this.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.MaxConcurrentOrchestratorFunctions,
-                MaxConcurrentTaskActivityWorkItems = this.MaxConcurrentActivityFunctions,
-                ExtendedSessionsEnabled = this.ExtendedSessionsEnabled,
+                TaskHubName = taskHubNameOverride ?? this.Options.HubName,
+                PartitionCount = this.Options.PartitionCount,
+                ControlQueueBatchSize = this.Options.ControlQueueBatchSize,
+                ControlQueueVisibilityTimeout = this.Options.ControlQueueVisibilityTimeout,
+                WorkItemQueueVisibilityTimeout = this.Options.WorkItemQueueVisibilityTimeout,
+                MaxConcurrentTaskOrchestrationWorkItems = this.Options.MaxConcurrentOrchestratorFunctions,
+                MaxConcurrentTaskActivityWorkItems = this.Options.MaxConcurrentActivityFunctions,
+                ExtendedSessionsEnabled = this.Options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
             };
         }
@@ -496,6 +412,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, orchestratorInfo, null))
             {
+                this.TraceHelper.ExtensionInformationalEvent(
+                    this.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: orchestratorFunction.Name,
+                    message: $"Registering orchestrator function named {orchestratorFunction}.",
+                    writeToUserLogs: false);
+
                 if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
                 {
                     throw new ArgumentException(
@@ -506,6 +429,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
         {
+            this.TraceHelper.ExtensionInformationalEvent(
+                this.Options.HubName,
+                instanceId: string.Empty,
+                functionName: orchestratorFunction.Name,
+                message: $"Deregistering orchestrator function named {orchestratorFunction}.",
+                writeToUserLogs: false);
+
             this.registeredOrchestrators.TryRemove(orchestratorFunction, out _);
         }
 
@@ -522,6 +452,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Allow adding with a null key and subsequently updating with a non-null key.
             if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
             {
+                this.TraceHelper.ExtensionInformationalEvent(
+                    this.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: activityFunction.Name,
+                    message: $"Registering orchestrator function named {activityFunction}.",
+                    writeToUserLogs: false);
+
                 if (!this.registeredActivities.TryAdd(activityFunction, executor))
                 {
                     throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
@@ -531,60 +468,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void DeregisterActivity(FunctionName activityFunction)
         {
+            this.TraceHelper.ExtensionInformationalEvent(
+                this.Options.HubName,
+                instanceId: string.Empty,
+                functionName: activityFunction.Name,
+                message: $"Deregistering orchestrator function named {activityFunction}.",
+                writeToUserLogs: false);
+
             this.registeredActivities.TryRemove(activityFunction, out _);
         }
 
-        internal void AssertOrchestratorExists(string name, string version)
+        internal void ThrowIfFunctionDoesNotExist(string name, FunctionType functionType)
         {
             var functionName = new FunctionName(name);
-            if (!this.registeredOrchestrators.ContainsKey(functionName))
+
+            if (functionType == FunctionType.Activity && !this.registeredActivities.ContainsKey(functionName))
             {
-                throw new ArgumentException(
-                    string.Format(
-                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: {1}.",
-                        functionName,
-                        string.Join(", ", this.registeredOrchestrators.Keys)));
+                throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
+            }
+            else if (functionType == FunctionType.Orchestrator && !this.registeredOrchestrators.ContainsKey(functionName))
+            {
+                throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
         }
 
-        internal FunctionType ThrowIfInvalidFunctionType(string name, FunctionType functionType, string version)
+        internal string GetInvalidActivityFunctionMessage(string name)
         {
-            var functionName = new FunctionName(name);
-
-            if (functionType == FunctionType.Activity)
+            string message = $"The function '{name}' doesn't exist, is disabled, or is not an activity function. Additional info: ";
+            if (this.registeredActivities.Keys.Count > 0)
             {
-                if (this.registeredActivities.ContainsKey(functionName))
-                {
-                    return FunctionType.Activity;
-                }
-
-                throw new ArgumentException(
-                        string.Format(
-                            "The function '{0}' doesn't exist, is disabled, or is not an activity function. The following are the active activity functions: '{1}'",
-                            functionName,
-                            string.Join(", ", this.registeredActivities.Keys)));
+                message += $"The following are the active activity functions: '{string.Join("', '", this.registeredActivities.Keys)}'.";
+            }
+            else
+            {
+                message += "No activity functions are currently registered!";
             }
 
-            if (functionType == FunctionType.Orchestrator)
-            {
-                if (this.registeredOrchestrators.ContainsKey(functionName))
-                {
-                    return FunctionType.Orchestrator;
-                }
+            return message;
+        }
 
-                throw new ArgumentException(
-                    string.Format(
-                        "The function '{0}' doesn't exist, is disabled, or is not an orchestrator function. The following are the active orchestrator functions: '{1}'",
-                        functionName,
-                        string.Join(", ", this.registeredOrchestrators.Keys)));
+        internal string GetInvalidOrchestratorFunctionMessage(string name)
+        {
+            string message = $"The function '{name}' doesn't exist, is disabled, or is not an orchestrator function. Additional info: ";
+            if (this.registeredOrchestrators.Keys.Count > 0)
+            {
+                message += $"The following are the active orchestrator functions: '{string.Join("', '", this.registeredOrchestrators.Keys)}'.";
+            }
+            else
+            {
+                message += "No orchestrator functions are currently registered!";
             }
 
-            throw new ArgumentException(
-                string.Format(
-                    "The function '{0}' doesn't exist, is disabled, or is not an activity or orchestrator function. The following are the active activity functions: '{1}', orchestrator functions: '{2}'",
-                    functionName,
-                    string.Join(", ", this.registeredActivities.Keys),
-                    string.Join(", ", this.registeredOrchestrators.Keys)));
+            return message;
         }
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
@@ -595,6 +530,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (!this.isTaskHubWorkerStarted)
                     {
+                        this.TraceHelper.ExtensionInformationalEvent(
+                            this.Options.HubName,
+                            instanceId: string.Empty,
+                            functionName: string.Empty,
+                            message: "Starting task hub worker",
+                            writeToUserLogs: true);
+
                         await this.orchestrationService.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
@@ -615,10 +557,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
-                if (!this.isTaskHubWorkerStarted &&
+                if (this.isTaskHubWorkerStarted &&
                     this.registeredOrchestrators.Count == 0 &&
                     this.registeredActivities.Count == 0)
                 {
+                    this.TraceHelper.ExtensionInformationalEvent(
+                        this.Options.HubName,
+                        instanceId: string.Empty,
+                        functionName: string.Empty,
+                        message: "Stopping task hub worker",
+                        writeToUserLogs: true);
+
                     await this.taskHubWorker.StopAsync(isForced: true);
                     this.isTaskHubWorkerStarted = false;
                     return true;
@@ -630,7 +579,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetIntputOutputTrace(string rawInputOutputData)
         {
-            if (this.TraceInputsAndOutputs)
+            if (this.Options.TraceInputsAndOutputs)
             {
                 return rawInputOutputData;
             }
