@@ -157,6 +157,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var input = arg.GetInputAsJson();
 
                 var contextObject = new JObject(
+                    new JProperty("instanceId", arg.InstanceId),
+                    new JProperty("isReplaying", arg.IsReplaying),
                     new JProperty("history", history),
                     new JProperty("input", input));
                 return contextObject.ToString();
