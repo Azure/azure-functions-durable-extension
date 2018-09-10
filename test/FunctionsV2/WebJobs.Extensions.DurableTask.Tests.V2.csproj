@@ -4,6 +4,8 @@
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <Company>Microsoft Corporation</Company>
     <NoWarn>SA0001;SA1600;SA1615</NoWarn>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
