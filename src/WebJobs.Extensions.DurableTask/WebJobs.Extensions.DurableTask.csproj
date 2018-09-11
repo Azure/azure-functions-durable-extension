@@ -5,9 +5,12 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
-    <FileVersion>1.6.1</FileVersion>
-    <AssemblyVersion>$(FileVersion)</AssemblyVersion>
-    <Version>$(FileVersion)</Version>
+    <MajorVersion>1</MajorVersion>
+    <MinorVersion>6</MinorVersion>
+    <PatchVersion>1</PatchVersion>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+    <FileVersion>$(Version)</FileVersion>
+    <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
