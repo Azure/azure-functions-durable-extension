@@ -157,10 +157,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var input = arg.GetInputAsJson();
 
                 var contextObject = new JObject(
+                    new JProperty("history", history),
+                    new JProperty("input", input),
                     new JProperty("instanceId", arg.InstanceId),
                     new JProperty("isReplaying", arg.IsReplaying),
-                    new JProperty("history", history),
-                    new JProperty("input", input));
+                    new JProperty("parentInstanceId", arg.ParentInstanceId));
                 return contextObject.ToString();
             }
         }
