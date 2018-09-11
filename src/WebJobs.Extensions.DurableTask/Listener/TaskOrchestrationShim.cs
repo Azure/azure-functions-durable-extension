@@ -231,7 +231,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             break;
                         case AsyncActionType.CallActivityWithRetry: break;
-                        case AsyncActionType.CallSubOrchestrator: break;
+                        case AsyncActionType.CallSubOrchestrator:
+                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.Input));
+                            break;
                         case AsyncActionType.CallSubOrchestratorWithRetry: break;
                         case AsyncActionType.ContinueAsNew: break;
                         case AsyncActionType.WaitForExternalEvent:
