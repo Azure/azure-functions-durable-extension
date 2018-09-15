@@ -230,7 +230,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             }
 
                             break;
-                        case AsyncActionType.CallActivityWithRetry: break;
+                        case AsyncActionType.CallActivityWithRetry:
+                            tasks.Add(this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input));
+                            break;
                         case AsyncActionType.CallSubOrchestrator:
                             tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.Input));
                             break;
@@ -285,6 +287,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("isCanceled")]
             internal bool IsCanceled { get; set; }
+
+            [JsonProperty("retryOptions")]
+            [JsonConverter(typeof(RetryOptionsConverter))]
+            internal RetryOptions RetryOptions { get; set; }
         }
     }
 }
