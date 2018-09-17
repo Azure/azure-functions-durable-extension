@@ -14,16 +14,13 @@ namespace VSSample.Tests
         public async Task Run_returns_multiple_greetings()
         {
             var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
-            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo!");
-            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Seattle")).ReturnsAsync("Hello Seattle!");
-            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "London")).ReturnsAsync("Hello London!");
+            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo");
+            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHelloPlusSeattle", "Hello Tokyo")).ReturnsAsync("Hello Tokyo and Seattle");
+            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHelloPlusLondon", "Hello Tokyo and Seattle")).ReturnsAsync("Hello Tokyo and Seattle and London!");
 
             var result = await HelloSequence.Run(durableOrchestrationContextMock.Object);
 
-            Assert.Equal(3, result.Count);
-            Assert.Equal("Hello Tokyo!", result[0]);
-            Assert.Equal("Hello Seattle!", result[1]);
-            Assert.Equal("Hello London!", result[2]);
+            Assert.Equal("Hello Tokyo and Seattle and London!", result);
         }
     }
 }

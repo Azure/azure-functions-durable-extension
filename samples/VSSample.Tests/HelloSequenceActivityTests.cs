@@ -10,8 +10,22 @@ namespace VSSample.Tests
         [Fact]
         public void SayHello_returns_greeting()
         {
-            var result = HelloSequence.SayHello("John");
-            Assert.Equal("Hello John!", result);
+            var result = HelloSequence.SayHello("there!");
+            Assert.Equal("Hello there!", result);
+        }
+
+        [Fact]
+        public void SayHelloPlusSeattle_returns_Seattle_attatched()
+        {
+            var result = HelloSequence.SayHelloPlusSeattle("Added:");
+            Assert.Equal("Added: and Seattle", result);
+        }
+
+        [Fact]
+        public void SayHelloPlusLondon_returns_London_attatched()
+        {
+            var result = HelloSequence.SayHelloPlusLondon("Added:");
+            Assert.Equal("Added: and London!", result);
         }
     }
 }
