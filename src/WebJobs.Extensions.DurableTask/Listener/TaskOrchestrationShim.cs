@@ -234,9 +234,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             tasks.Add(this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input));
                             break;
                         case AsyncActionType.CallSubOrchestrator:
-                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.Input));
+                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input));
                             break;
-                        case AsyncActionType.CallSubOrchestratorWithRetry: break;
+                        case AsyncActionType.CallSubOrchestratorWithRetry:
+                            tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
+                            break;
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
                             break;
@@ -291,6 +293,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [JsonProperty("retryOptions")]
             [JsonConverter(typeof(RetryOptionsConverter))]
             internal RetryOptions RetryOptions { get; set; }
+
+            [JsonProperty("instanceId")]
+            internal string InstanceId { get; set; }
         }
     }
 }
