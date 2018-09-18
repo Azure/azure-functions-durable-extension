@@ -12,7 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class TestOrchestrations
     {
         public const char BigValueChar = '*';
-        public static bool SayHelloWithActivityForRewindShouldFail = true;
+
+        public static bool SayHelloWithActivityForRewindShouldFail { get; set; } = true;
 
         public static string SayHelloInline([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
@@ -20,14 +21,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
-
         public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             return output;
         }
-
 
         public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
