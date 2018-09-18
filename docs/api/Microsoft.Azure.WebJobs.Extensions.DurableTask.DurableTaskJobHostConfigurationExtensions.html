@@ -116,19 +116,19 @@
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_UseDurableTask_Microsoft_Azure_WebJobs_JobHostConfiguration_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration%2CMicrosoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_Microsoft_Azure_WebJobs_IWebJobsBuilder_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskJobHostConfigurationExtensions.cs/#L20">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskJobHostConfigurationExtensions.cs/#L27">View Source</a>
   </span>
-  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_UseDurableTask_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_UseDurableTask_Microsoft_Azure_WebJobs_JobHostConfiguration_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskExtension_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)">UseDurableTask(JobHostConfiguration, DurableTaskExtension)</h4>
-  <div class="markdown level1 summary"><p>Enable running durable orchestrations implemented as functions.</p>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_Microsoft_Azure_WebJobs_IWebJobsBuilder_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)">AddDurableTask(IWebJobsBuilder)</h4>
+  <div class="markdown level1 summary"><p>Adds the Durable Task extension to the provided <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span>.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static void UseDurableTask(this JobHostConfiguration hostConfig, DurableTaskExtension listenerConfig)</code></pre>
+    <pre><code class="lang-csharp hljs">public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -141,15 +141,137 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Microsoft.Azure.WebJobs.JobHostConfiguration</span></td>
-        <td><span class="parametername">hostConfig</span></td>
-        <td><p>Configuration settings of the current <code>JobHost</code> instance.</p>
+        <td><span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span></td>
+        <td><span class="parametername">builder</span></td>
+        <td><p>The <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span> to configure.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span></td>
+        <td><p>Returns the provided <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_Microsoft_Azure_WebJobs_IWebJobsBuilder_Microsoft_Extensions_Options_IOptions_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskOptions__.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder%2CMicrosoft.Extensions.Options.IOptions%7BMicrosoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions%7D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskJobHostConfigurationExtensions.cs/#L47">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_Microsoft_Azure_WebJobs_IWebJobsBuilder_Microsoft_Extensions_Options_IOptions_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskOptions__" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">AddDurableTask(IWebJobsBuilder, IOptions&lt;DurableTaskOptions&gt;)</h4>
+  <div class="markdown level1 summary"><p>Adds the Durable Task extension to the provided <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions&lt;DurableTaskOptions&gt; options)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span></td>
+        <td><span class="parametername">builder</span></td>
+        <td><p>The <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span> to configure.</p>
 </td>
       </tr>
       <tr>
-        <td><a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html">DurableTaskExtension</a></td>
-        <td><span class="parametername">listenerConfig</span></td>
-        <td><p>Durable Functions configuration.</p>
+        <td><span class="xref">Microsoft.Extensions.Options.IOptions</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.html">DurableTaskOptions</a>&gt;</td>
+        <td><span class="parametername">options</span></td>
+        <td><p>The configuration options for this extension.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span></td>
+        <td><p>Returns the provided <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_Microsoft_Azure_WebJobs_IWebJobsBuilder_System_Action_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskOptions__.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder%2CSystem.Action%7BMicrosoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions%7D)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskJobHostConfigurationExtensions.cs/#L70">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions_AddDurableTask_Microsoft_Azure_WebJobs_IWebJobsBuilder_System_Action_Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskOptions__" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,System.Action{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">AddDurableTask(IWebJobsBuilder, Action&lt;DurableTaskOptions&gt;)</h4>
+  <div class="markdown level1 summary"><p>Adds the Durable Task extension to the provided <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, Action&lt;DurableTaskOptions&gt; configure)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span></td>
+        <td><span class="parametername">builder</span></td>
+        <td><p>The <span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span> to configure.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Action</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.html">DurableTaskOptions</a>&gt;</td>
+        <td><span class="parametername">configure</span></td>
+        <td><p>An <span class="xref">System.Action&lt;T&gt;</span> to configure the provided <a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.html">DurableTaskOptions</a>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Microsoft.Azure.WebJobs.IWebJobsBuilder</span></td>
+        <td><p>Returns the modified <code data-dev-comment-type="paramref" class="paramref">builder</code> object.</p>
 </td>
       </tr>
     </tbody>
@@ -165,7 +287,7 @@
                     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_DurableTaskJobHostConfigurationExtensions.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
                   </li>
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskJobHostConfigurationExtensions.cs/#L13" class="contribution-link">View Source</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableTaskJobHostConfigurationExtensions.cs/#L19" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

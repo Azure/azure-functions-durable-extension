@@ -33,7 +33,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClient.html",
-          "hash": "vIcZ2VuSXsR3lN/I8EDFFQ=="
+          "hash": "ctsWYu4LUqJKDG4SZ9Wz/g=="
         }
       },
       "is_incremental": false,
@@ -45,7 +45,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.html",
-          "hash": "g7Ml680PZyhh3nUXQyl7ig=="
+          "hash": "3OZoPCJ56On+BQccvif1TQ=="
         }
       },
       "is_incremental": false,
@@ -57,7 +57,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html",
-          "hash": "BAvt8cNms6bqeRht2XShwQ=="
+          "hash": "l4Hw2nqTDxuZM+fkVPpcHA=="
         }
       },
       "is_incremental": false,
@@ -69,7 +69,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html",
-          "hash": "aJ2/nIwBNpzCLpmtC9UgJA=="
+          "hash": "8abHcRgavCLSeGz6k+8k4w=="
         }
       },
       "is_incremental": false,
@@ -93,7 +93,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.html",
-          "hash": "05oWlie9jUkh6lh/YgkZYA=="
+          "hash": "gL+OL3F4AShKHIJHboK3Bw=="
         }
       },
       "is_incremental": false,
@@ -105,7 +105,19 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.html",
-          "hash": "REPFELirPyoyyAagNreEDw=="
+          "hash": "YLrPT407gFa0ZWWqjrKMrQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.html",
+          "hash": "K/e/bQpRY4AgSJrR6j6ogA=="
         }
       },
       "is_incremental": false,
@@ -117,7 +129,31 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html",
-          "hash": "iWm9+Ue+liShMdpQIUEc+g=="
+          "hash": "LUv2jppFuU2zYWKWVXqGGg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver.html",
+          "hash": "j0lznSHKdcf85BV2u6VDNg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.html",
+          "hash": "hDHZlJNkT6HGNVFnCYab2Q=="
         }
       },
       "is_incremental": false,
@@ -129,7 +165,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.Extensions.DurableTask.html",
-          "hash": "exgA7Ch/W7JLmolZrghMKg=="
+          "hash": "fDD2Zca9HmV39N88BpwzZg=="
         }
       },
       "is_incremental": false,
@@ -153,7 +189,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Microsoft.Azure.WebJobs.OrchestrationClientAttribute.html",
-          "hash": "yIrcvGn25CWzguCGCujpnQ=="
+          "hash": "ek3av2no0X8OD0UTBdedug=="
         }
       },
       "is_incremental": false,
@@ -225,7 +261,7 @@
       "output": {
         ".html": {
           "relative_path": "api/toc.html",
-          "hash": "D0cNbpVr6OUZUD604DTA4w=="
+          "hash": "J49VDSd3QkVdYLrfhu8fiQ=="
         }
       },
       "is_incremental": false,
@@ -240,7 +276,7 @@
           "hash": "xXhNO3Pl+j8VOBnTmnls+g=="
         }
       },
-      "is_incremental": true,
+      "is_incremental": false,
       "version": ""
     },
     {
@@ -259,7 +295,8 @@
   "incremental_info": [
     {
       "status": {
-        "can_incremental": true,
+        "can_incremental": false,
+        "details": "Disable incremental build by force rebuild option.",
         "incrementalPhase": "build"
       },
       "processors": {
@@ -268,20 +305,20 @@
           "details": "Processor TocDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         },
-        "ManagedReferenceDocumentProcessor": {
-          "can_incremental": true,
+        "ConceptualDocumentProcessor": {
+          "can_incremental": false,
           "incrementalPhase": "build"
         },
-        "ConceptualDocumentProcessor": {
-          "can_incremental": true,
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": false,
           "incrementalPhase": "build"
         }
       }
     },
     {
       "status": {
-        "can_incremental": true,
-        "details": "Can support incremental post processing.",
+        "can_incremental": false,
+        "details": "Cannot support incremental post processing, the reason is: it's disabled.",
         "incrementalPhase": "postProcessing"
       },
       "processors": {}

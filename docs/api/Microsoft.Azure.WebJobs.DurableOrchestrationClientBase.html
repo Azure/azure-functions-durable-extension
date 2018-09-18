@@ -262,10 +262,78 @@ terminate the orchestration.</p>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_DateTime_System_Nullable_System_DateTime__System_Collections_Generic_IEnumerable_Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus__System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime%2CSystem.Nullable%7BSystem.DateTime%7D%2CSystem.Collections.Generic.IEnumerable%7BMicrosoft.Azure.WebJobs.OrchestrationRuntimeStatus%7D%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L251">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_DateTime_System_Nullable_System_DateTime__System_Collections_Generic_IEnumerable_Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus__System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">GetStatusAsync(DateTime, Nullable&lt;DateTime&gt;, IEnumerable&lt;OrchestrationRuntimeStatus&gt;, CancellationToken)</h4>
+  <div class="markdown level1 summary"><p>Gets the status of all orchestration instances that match the specified conditions.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract Task&lt;IList&lt;DurableOrchestrationStatus&gt;&gt; GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable&lt;OrchestrationRuntimeStatus&gt; runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.DateTime</span></td>
+        <td><span class="parametername">createdTimeFrom</span></td>
+        <td><p>Return orchestration instances which were created after this DateTime.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Nullable</span>&lt;<span class="xref">System.DateTime</span>&gt;</td>
+        <td><span class="parametername">createdTimeTo</span></td>
+        <td><p>Return orchestration instances which were created before this DateTime.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html">OrchestrationRuntimeStatus</a>&gt;</td>
+        <td><span class="parametername">runtimeStatus</span></td>
+        <td><p>Return orchestration instances which matches the runtimeStatus.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
+        <td><span class="parametername">cancellationToken</span></td>
+        <td><p>Cancellation token that can be used to cancel the status query operation.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Collections.Generic.IList</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationStatus.html">DurableOrchestrationStatus</a>&gt;&gt;</td>
+        <td><p>Returns orchestration status for all instances.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L182">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L211">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">GetStatusAsync(String)</h4>
@@ -315,7 +383,7 @@ terminate the orchestration.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_System_Boolean_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String%2CSystem.Boolean)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L193">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L222">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_System_Boolean_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean)">GetStatusAsync(String, Boolean)</h4>
@@ -371,7 +439,7 @@ terminate the orchestration.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L205">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L234">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_String_System_Boolean_System_Boolean_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)">GetStatusAsync(String, Boolean, Boolean)</h4>
@@ -433,7 +501,7 @@ terminate the orchestration.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L212">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L241">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)">GetStatusAsync(CancellationToken)</h4>
@@ -549,6 +617,145 @@ event named <code data-dev-comment-type="paramref" class="paramref">eventName</c
 If the specified instance is not found or not running, this operation will have no effect.
 </p>
 </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RaiseEventAsync_System_String_System_String_System_String_System_Object_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String%2CSystem.String%2CSystem.String%2CSystem.Object%2CSystem.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L183">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RaiseEventAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RaiseEventAsync_System_String_System_String_System_String_System_Object_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">RaiseEventAsync(String, String, String, Object, String)</h4>
+  <div class="markdown level1 summary"><p>Sends an event notification message to a waiting orchestration instance.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">taskHubName</span></td>
+        <td><p>The TaskHubName of the orchestration that will handle the event.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">instanceId</span></td>
+        <td><p>The ID of the orchestration instance that will handle the event.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">eventName</span></td>
+        <td><p>The name of the event.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span></td>
+        <td><span class="parametername">eventData</span></td>
+        <td><p>The JSON-serializeable data associated with the event.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">connectionName</span></td>
+        <td><p>The name of the connection string associated with <code data-dev-comment-type="paramref" class="paramref">taskHubName</code>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A task that completes when the event notification message has been enqueued.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RaiseEventAsync_System_String_System_String_System_String_System_Object_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+In order to handle the event, the target orchestration instance must be waiting for an
+event named <code data-dev-comment-type="paramref" class="paramref">eventName</code> using the
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_WaitForExternalEvent__1_System_String_">WaitForExternalEvent&lt;T&gt;(String)</a> API.
+</p><p>
+If the specified instance is not found or not running, this operation will have no effect.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RewindAsync_System_String_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RewindAsync(System.String%2CSystem.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L204">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RewindAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RewindAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_RewindAsync_System_String_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RewindAsync(System.String,System.String)">RewindAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Rewinds the specified failed orchestration instance with a reason.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract Task RewindAsync(string instanceId, string reason)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">instanceId</span></td>
+        <td><p>The ID of the orchestration instance to rewind.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">reason</span></td>
+        <td><p>The reason for rewinding the orchestration instance.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A task that completes when the rewind message is enqueued.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_StartNewAsync_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
@@ -708,7 +915,7 @@ will be silently replaced by this new instance.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TerminateAsync_System_String_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String%2CSystem.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L175">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L196">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TerminateAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_TerminateAsync_System_String_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String,System.String)">TerminateAsync(String, String)</h4>
