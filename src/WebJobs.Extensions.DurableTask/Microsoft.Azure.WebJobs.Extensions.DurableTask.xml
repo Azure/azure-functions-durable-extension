@@ -750,10 +750,10 @@
             Parameter data for orchestration bindings that can be used to schedule function-based activities.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.InstanceId">
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
             <inheritdoc />
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput">
