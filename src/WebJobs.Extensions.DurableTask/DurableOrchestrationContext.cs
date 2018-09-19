@@ -36,8 +36,6 @@ namespace Microsoft.Azure.WebJobs
         private string serializedInput;
         private string serializedOutput;
         private string serializedCustomStatus;
-        private string instanceId;
-        private bool isReplaying;
 
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
         {
@@ -47,43 +45,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override string InstanceId
-        {
-            get
-            {
-                if (this.innerContext != null)
-                {
-                    return this.innerContext.OrchestrationInstance.InstanceId;
-                }
-                else
-                {
-                    return this.instanceId;
-                }
-            }
-
-            internal set => this.instanceId = value;
-        }
-
-        /// <inheritdoc />
         public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
-
-        /// <inheritdoc />
-        public override bool IsReplaying
-        {
-            get
-            {
-                if (this.innerContext != null)
-                {
-                    return this.innerContext.IsReplaying;
-                }
-                else
-                {
-                    return this.isReplaying;
-                }
-            }
-
-            internal set => this.isReplaying = value;
-        }
 
         internal bool ContinuedAsNew { get; private set; }
 

@@ -756,9 +756,6 @@
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
             <inheritdoc />
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying">
-            <inheritdoc />
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput">
             <summary>
             Returns the orchestrator function input as a raw JSON string value.

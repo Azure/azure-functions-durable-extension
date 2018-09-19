@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The ID of the current orchestration instance.
         /// </value>
-        public abstract string InstanceId { get; internal set; }
+        public virtual string InstanceId { get; internal set; }
 
         /// <summary>
         /// Gets the parent instance ID of the currently executing sub-orchestration.
@@ -59,11 +59,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// <c>true</c> if the orchestrator function is currently being replayed; otherwise <c>false</c>.
         /// </value>
-        public virtual bool IsReplaying
-        {
-            get => false;
-            internal set => this.IsReplaying = value;
-        }
+        public virtual bool IsReplaying { get; internal set; }
 
         /// <summary>
         /// Gets the input of the current orchestrator function as a deserialized value.

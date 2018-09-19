@@ -23,36 +23,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             JObject obj = JObject.Load(reader);
 
-            if (!this.FieldExists(FirstRetryIntervalField, obj))
+            JToken firstRetryIntervalToken;
+            if (!obj.TryGetValue(FirstRetryIntervalField, out firstRetryIntervalToken))
             {
-                throw new ArgumentException("Invalid JSON. Must contain field firstRetryIntervalInMilliseconds", "reader");
+                throw new ArgumentException($"Invalid JSON. Must contain field {FirstRetryIntervalField}", "reader");
             }
 
-            if (!this.FieldExists(MaxAttemptsField, obj))
+            JToken maxIntervalAttemptsToken;
+            if (!obj.TryGetValue(MaxAttemptsField, out maxIntervalAttemptsToken))
             {
-                throw new ArgumentException("Invalid JSON. Must contain field maxNumberOfAttempts", "reader");
+                throw new ArgumentException($"Invalid JSON. Must contain field {MaxAttemptsField}", "reader");
             }
 
-            var firstRetryIntervalInMilliseconds = obj[FirstRetryIntervalField].Value<int>();
-            var maxNumberOfAttempts = obj[MaxAttemptsField].Value<int>();
+            var firstRetryIntervalInMilliseconds = firstRetryIntervalToken.Value<int>();
+            var maxNumberOfAttempts = maxIntervalAttemptsToken.Value<int>();
 
             var target = new RetryOptions(
-                new TimeSpan(firstRetryIntervalInMilliseconds * TimeSpan.TicksPerMillisecond),
+                TimeSpan.FromMilliseconds(firstRetryIntervalInMilliseconds),
                 maxNumberOfAttempts);
 
-            if (this.FieldExists(BackoffCoefficientField, obj))
+            JToken backoffCoefficientToken;
+            if (obj.TryGetValue(BackoffCoefficientField, out backoffCoefficientToken))
             {
-                target.BackoffCoefficient = obj[BackoffCoefficientField].Value<double>();
+                target.BackoffCoefficient = backoffCoefficientToken.Value<double>();
             }
 
-            if (this.FieldExists(MaxRetryIntervalField, obj))
+            JToken maxRetryIntervalToken;
+            if (obj.TryGetValue(MaxRetryIntervalField, out maxRetryIntervalToken))
             {
-                target.MaxRetryInterval = new TimeSpan(obj[MaxRetryIntervalField].Value<int>() * TimeSpan.TicksPerMillisecond);
+                int maxRetryIntervalMilliseconds = maxRetryIntervalToken.Value<int>();
+                target.MaxRetryInterval = TimeSpan.FromMilliseconds(maxRetryIntervalMilliseconds);
             }
 
-            if (this.FieldExists(RetryTimeoutField, obj))
+            JToken retryTimeoutToken;
+            if (obj.TryGetValue(RetryTimeoutField, out retryTimeoutToken))
             {
-                target.RetryTimeout = new TimeSpan(obj[RetryTimeoutField].Value<int>() * TimeSpan.TicksPerMillisecond);
+                int retryTimeoutMilliseconds = retryTimeoutToken.Value<int>();
+                target.RetryTimeout = TimeSpan.FromMilliseconds(retryTimeoutMilliseconds);
             }
 
             return target;
@@ -61,11 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             throw new NotImplementedException("Unnecessary because CanWrite is false. The type will skip the converter.");
-        }
-
-        private bool FieldExists(string fieldName, JObject jObject)
-        {
-            return jObject[fieldName] != null;
         }
     }
 }
