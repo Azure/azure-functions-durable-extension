@@ -7,7 +7,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Azure.WebJobs
-open Microsoft.Azure.WebJobs.Host
+open Microsoft.Extensions.Logging
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
 open FSharp.Control.Tasks
@@ -47,14 +47,14 @@ module PhoneVerification =
   [<FunctionName("E4_SendSmsChallenge")>]
   let SendSmsChallenge
     ([<ActivityTrigger>] phoneNumber: string, 
-     log: TraceWriter,
+     log: ILogger,
      [<TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")>] messageCollector: ICollector<CreateMessageOptions>
     ) =
     // Get a random number generator with a random seed (not time-based)
     let rand = Random(Guid.NewGuid().GetHashCode())
     let challengeCode = rand.Next(10000)
 
-    log.Info (sprintf "Sending verification code %i to %s." challengeCode phoneNumber)
+    log.LogInformation (sprintf "Sending verification code %i to %s." challengeCode phoneNumber)
     let message = CreateMessageOptions(PhoneNumber(phoneNumber))
     message.Body <- sprintf "Your verification code is %i:0000" challengeCode
     messageCollector.Add message 

@@ -1,2 +1,16 @@
 {
+  "version": "2.0",
+  "applicationInsights": {
+    "sampling": {
+      "isEnabled": false
+    }
+  },
+  "extensions": {
+    "http": {
+      "routePrefix": ""
+    },
+    "durableTask": {
+      "HubName": "SampleHubFSharp"
+    }
+  }
 }

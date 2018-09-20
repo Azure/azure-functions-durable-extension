@@ -1,9 +1,8 @@
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "<Put your Azure Storage connection string here>",
-    "AzureWebJobsDashboard": "<Put your Azure Storage connection string here>",
-    "AZURE_STORAGE_CONNECTION_STRING": "<Put your Azure Storage connection string here>",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "TwilioAccountSid": "<Put your Twilio Account SID here>",
     "TwilioAuthToken": "<Put your Twilio Auth Token here>",
     "TwilioPhoneNumber": "<Put your Twilio Phone Number here>",
