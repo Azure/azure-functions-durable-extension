@@ -230,10 +230,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             }
 
                             break;
-                        case AsyncActionType.CallActivityWithRetry: break;
-                        case AsyncActionType.CallSubOrchestrator: break;
-                        case AsyncActionType.CallSubOrchestratorWithRetry: break;
-                        case AsyncActionType.ContinueAsNew: break;
+                        case AsyncActionType.CallActivityWithRetry:
+                            tasks.Add(this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input));
+                            break;
+                        case AsyncActionType.CallSubOrchestrator:
+                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input));
+                            break;
+                        case AsyncActionType.CallSubOrchestratorWithRetry:
+                            tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
+                            break;
+                        case AsyncActionType.ContinueAsNew:
+                            this.context.ContinueAsNew(action.Input);
+                            break;
                         case AsyncActionType.WaitForExternalEvent:
                             tasks.Add(this.context.WaitForExternalEvent<object>(action.ExternalEventName));
                             break;
@@ -281,6 +289,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("isCanceled")]
             internal bool IsCanceled { get; set; }
+
+            [JsonProperty("retryOptions")]
+            [JsonConverter(typeof(RetryOptionsConverter))]
+            internal RetryOptions RetryOptions { get; set; }
+
+            [JsonProperty("instanceId")]
+            internal string InstanceId { get; set; }
         }
     }
 }

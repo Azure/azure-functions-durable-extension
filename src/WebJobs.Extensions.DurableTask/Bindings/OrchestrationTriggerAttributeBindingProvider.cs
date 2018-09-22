@@ -158,7 +158,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var contextObject = new JObject(
                     new JProperty("history", history),
-                    new JProperty("input", input));
+                    new JProperty("input", input),
+                    new JProperty("instanceId", arg.InstanceId),
+                    new JProperty("isReplaying", arg.IsReplaying),
+                    new JProperty("parentInstanceId", arg.ParentInstanceId));
                 return contextObject.ToString();
             }
         }

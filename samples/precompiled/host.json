@@ -1,13 +1,18 @@
 {
-  "http": {
-    "routePrefix": ""
-  },
-  "applicationInsights": {
-    "sampling": {
-      "isEnabled": false
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "sampling": {
+        "isEnabled": false
+      }
     }
   },
-  "durableTask": {
-    "HubName": "SampleHubVS"
+  "extensions": {
+    "http": {
+      "routePrefix": ""
+    },
+    "durableTask": {
+      "HubName": "SampleHubVS"
+    }
   }
 }

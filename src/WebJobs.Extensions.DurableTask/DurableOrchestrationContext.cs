@@ -45,13 +45,10 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override string InstanceId => this.innerContext.OrchestrationInstance.InstanceId;
-
-        /// <inheritdoc />
         public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
 
         /// <inheritdoc />
-        public override bool IsReplaying => this.innerContext.IsReplaying;
+        public override bool IsReplaying => this.innerContext?.IsReplaying ?? base.IsReplaying;
 
         internal bool ContinuedAsNew { get; private set; }
 

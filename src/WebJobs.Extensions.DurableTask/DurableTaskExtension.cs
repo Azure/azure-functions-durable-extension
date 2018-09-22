@@ -279,6 +279,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
 
+            context.InstanceId = orchestrationRuntimeState.OrchestrationInstance.InstanceId;
+            context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.SetInput(orchestrationRuntimeState.Input);
 
