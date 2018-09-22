@@ -7,7 +7,7 @@ open System
 open System.Net.Http
 open System.Threading
 open Microsoft.Azure.WebJobs
-open Microsoft.Azure.WebJobs.Host
+open Microsoft.Extensions.Logging
 open Newtonsoft.Json.Linq
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
@@ -75,8 +75,8 @@ module WeatherUnderground =
 module Monitor =
 
     [<FunctionName("E3_Monitor")>]
-    let Run([<OrchestrationTrigger>] monitorContext: DurableOrchestrationContext, log: TraceWriter) = task {
-        let logOnce s = if (not monitorContext.IsReplaying) then log.Info s
+    let Run([<OrchestrationTrigger>] monitorContext: DurableOrchestrationContext, log: ILogger) = task {
+        let logOnce s = if (not monitorContext.IsReplaying) then log.LogInformation s
 
         let input = monitorContext.GetInput<MonitorRequest>()
         if (obj.ReferenceEquals (input, null)) then
@@ -119,7 +119,7 @@ module Monitor =
 
         do! checkWeather()
         
-        log.Info "Monitor expiring."
+        log.LogInformation "Monitor expiring."
         return ()
     }
 

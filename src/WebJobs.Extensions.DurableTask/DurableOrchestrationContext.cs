@@ -47,6 +47,9 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
 
+        /// <inheritdoc />
+        public override bool IsReplaying => this.innerContext?.IsReplaying ?? base.IsReplaying;
+
         internal bool ContinuedAsNew { get; private set; }
 
         internal bool IsCompleted { get; set; }

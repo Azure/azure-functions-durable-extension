@@ -1,4 +1,5 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+#r "Microsoft.Azure.WebJobs.Extensions.Storage"
 #r "Microsoft.Extensions.Logging"
 #r "Microsoft.WindowsAzure.Storage"
 

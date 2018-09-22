@@ -7,7 +7,7 @@ open System
 open System.Net.Http
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Extensions.Http
-open Microsoft.Azure.WebJobs.Host
+open Microsoft.Extensions.Logging
 open FSharp.Control.Tasks
 
 module HttpSyncStart = 
@@ -23,12 +23,12 @@ module HttpSyncStart =
   let Run([<HttpTrigger(AuthorizationLevel.Function, "post", Route = "orchestrators/{functionName}/wait")>] req: HttpRequestMessage,
           [<OrchestrationClient>] starter: DurableOrchestrationClient,
           functionName: string,
-          log: TraceWriter) =
+          log: ILogger) =
     task {
       let! eventData =  req.Content.ReadAsAsync<Object>()
       let! instanceId = starter.StartNewAsync(functionName, eventData)
 
-      log.Info(sprintf "Started orchestration with ID = '{%s}'." instanceId)
+      log.LogInformation(sprintf "Started orchestration with ID = '{%s}'." instanceId)
 
       let timeout = getTimeSpan req "timeout" 30.0
       let retryInterval = getTimeSpan req "retryInterval" 1.0
