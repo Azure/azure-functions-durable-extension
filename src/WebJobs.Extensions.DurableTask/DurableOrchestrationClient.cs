@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
             }
 
-            var service = (AzureStorageOrchestrationService)this.client.serviceClient;
+            var service = (AzureStorageOrchestrationService)this.client.ServiceClient;
             await service.RewindTaskOrchestrationAsync(instanceId, reason);
 
             this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.WebJobs
         public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
-            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(cancellationToken);
 
             var results = new List<DurableOrchestrationStatus>();
@@ -204,13 +204,17 @@ namespace Microsoft.Azure.WebJobs
             return results;
         }
 
+        // TODO implementation to enable paging
+        public override Task<DurableOrchestrationStatusContext> GetStatusAsync(int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
         /// <inheritdoc />
         public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
         {
-            // TODO implementation to enable paging
-
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
-            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), cancellationToken);
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
@@ -219,6 +223,12 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return results;
+        }
+
+        // TODO implementation to enable paging
+        public override async Task<DurableOrchestrationStatusContext> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
         }
 
         private static JToken ParseToJToken(string value)

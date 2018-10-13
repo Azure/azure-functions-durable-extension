@@ -240,6 +240,9 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
 
+        // TODO add comments
+        public abstract Task<DurableOrchestrationStatusContext> GetStatusAsync(int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
+
         /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.
         /// </summary>
@@ -249,5 +252,8 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
+
+        // TODO add comments
+        public abstract Task<DurableOrchestrationStatusContext> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
     }
 }
