@@ -386,6 +386,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        public async Task GetQueryStatusWithPaging_is_Success()
+        {
+            var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
+            {
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "01",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "02",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+            };
+
+            var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0);
+            var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59);
+            var runtimeStatus = new List<OrchestrationRuntimeStatus>();
+            runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
+            var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
+
+            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            clientMock
+                .Setup(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(list));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += $"/Instances/";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&top=100";
+
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = getStatusRequestUriBuilder.Uri,
+            };
+            requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+            clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()));
+            Assert.Equal("01", actual[0].InstanceId);
+            Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("02", actual[1].InstanceId);
+            Assert.Equal("Running", actual[1].RuntimeStatus);
+        }
+
+        [Fact]
         public async Task GetQueryMultipleRuntimeStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>

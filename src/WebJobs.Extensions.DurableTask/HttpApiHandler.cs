@@ -29,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
+        private const string PageSizeParameter = "top";
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -175,6 +176,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
             var runtimeStatus = GetIEnumerableQueryParameterValue(queryNameValuePairs, RuntimeStatusParameter);
+            var pageSize = GetIEnumerableQueryParameterValue(queryNameValuePairs, PageSizeParameter);
+
+            var continuationToken = "";
+            if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
+            {
+                continuationToken = headerValues.FirstOrDefault();
+            }
 
             // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
             IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
