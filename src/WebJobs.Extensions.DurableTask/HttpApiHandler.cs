@@ -185,7 +185,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 results.Add(this.ConvertFrom(state));
             }
 
-            return request.CreateResponse(HttpStatusCode.OK, results);
+            var response = request.CreateResponse(HttpStatusCode.OK, results);
+            response.Headers.Add("x-ms-continuation-token", string.Empty); // TODO make dynamic
+            return response;
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(

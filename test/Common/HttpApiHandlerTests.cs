@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -325,6 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     RequestUri = getStatusRequestUriBuilder.Uri,
                 });
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
 
             Assert.Equal("01", actual[0].InstanceId);
