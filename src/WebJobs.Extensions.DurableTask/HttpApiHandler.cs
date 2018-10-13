@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -176,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
             var runtimeStatus = GetIEnumerableQueryParameterValue(queryNameValuePairs, RuntimeStatusParameter);
-            var pageSize = GetIEnumerableQueryParameterValue(queryNameValuePairs, PageSizeParameter);
+            var pageSize = GetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter);
 
             var continuationToken = "";
             if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
@@ -184,8 +185,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 continuationToken = headerValues.FirstOrDefault();
             }
 
-            // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
-            IList<DurableOrchestrationStatus> statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+            IList<DurableOrchestrationStatus> statusForAllInstances;
+            var nextContinuationToken = "";
+
+            if (pageSize > 0)
+            {
+                var context = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, pageSize, continuationToken);
+                statusForAllInstances = context.DurableOrchestrationStatuses.ToList();
+                nextContinuationToken = context.ContinuationToken;
+            }
+            else
+            {
+                // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
+                statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+            }
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -194,7 +207,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var response = request.CreateResponse(HttpStatusCode.OK, results);
-            response.Headers.Add("x-ms-continuation-token", string.Empty); // TODO make dynamic
+
+            response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
             return response;
         }
 
@@ -306,6 +320,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var value = queryStringNameValueCollection[queryParameterName];
             return bool.TryParse(value, out bool parsedValue) && parsedValue;
+        }
+
+        private static int GetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var value = queryStringNameValueCollection[queryParameterName];
+            return int.TryParse(value, out var intValue) ? intValue : 0;
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(

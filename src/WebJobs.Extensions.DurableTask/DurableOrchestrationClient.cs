@@ -204,12 +204,6 @@ namespace Microsoft.Azure.WebJobs
             return results;
         }
 
-        // TODO implementation to enable paging
-        public override Task<DurableOrchestrationStatusContext> GetStatusAsync(int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            throw new NotImplementedException();
-        }
-
         /// <inheritdoc />
         public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -228,7 +222,22 @@ namespace Microsoft.Azure.WebJobs
         // TODO implementation to enable paging
         public override async Task<DurableOrchestrationStatusContext> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            var serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);
+
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (var state in statusContext.Item1)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            var result = new DurableOrchestrationStatusContext
+            {
+                DurableOrchestrationStatuses = results,
+                ContinuationToken = statusContext.Item2,
+            };
+
+            return result;
         }
 
         private static JToken ParseToJToken(string value)
