@@ -220,7 +220,13 @@ namespace Microsoft.Azure.WebJobs
         }
 
         // TODO implementation to enable paging
-        public override async Task<DurableOrchestrationStatusContext> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<DurableOrchestrationStatusContext> GetStatusAsync(
+            DateTime createdTimeFrom,
+            DateTime? createdTimeTo,
+            IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
+            int pageSize,
+            string continuationToken,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);
