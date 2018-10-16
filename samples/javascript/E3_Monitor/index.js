@@ -1,7 +1,7 @@
 const df = require("durable-functions");
 const moment = require('moment');
 
-module.exports = df(function*(context) {
+module.exports = df.orchestrator(function*(context) {
     const input = context.df.getInput();
     context.log("Received monitor request. location: " + (input ? input.location : undefined)
         + ". phone: " + (input ? input.phone : undefined) + ".");
@@ -16,14 +16,14 @@ module.exports = df(function*(context) {
         // Check the weather
         context.log("Checking current weather conditions for " + input.location.city + ", "
             + input.location.state + " at " + context.df.currentUtcDateTime + ".");
-        const isClear = yield context.df.callActivityAsync("E3_GetIsClear", input.location);
+        const isClear = yield context.df.callActivity("E3_GetIsClear", input.location);
 
         if (isClear) {
             // It's not raining! Or snowing. Or misting. Tell our user to take advantage of it.
             context.log("Detected clear weather for " + input.location.city + ", "
                 + input.location.state + ". Notifying " + input.phone + ".");
 
-            yield context.df.callActivityAsync("E3_SendGoodWeatherAlert", input.phone);
+            yield context.df.callActivity("E3_SendGoodWeatherAlert", input.phone);
             break;
         } else {
             // Wait for the next checkpoint
