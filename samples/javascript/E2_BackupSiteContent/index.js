@@ -1,17 +1,17 @@
 const df = require("durable-functions");
 
-module.exports = df(function*(context){
+module.exports = df.orchestrator(function*(context){
     const rootDirectory = context.df.getInput();
     if (!rootDirectory) {
         throw new Error("A directory path is required as an input.");
     }
 
-    const files = yield context.df.callActivityAsync("E2_GetFileList", rootDirectory);
+    const files = yield context.df.callActivity("E2_GetFileList", rootDirectory);
 
     // Backup Files and save Promises into array
     const tasks = [];
     for (const file of files) {
-        tasks.push(context.df.callActivityAsync("E2_CopyFileToBlob", file));
+        tasks.push(context.df.callActivity("E2_CopyFileToBlob", file));
     }
 
     // wait for all the Backup Files Activities to complete, sum total bytes
