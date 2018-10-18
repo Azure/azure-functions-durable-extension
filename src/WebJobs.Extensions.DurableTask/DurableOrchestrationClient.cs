@@ -232,7 +232,7 @@ namespace Microsoft.Azure.WebJobs
             var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);
 
             var results = new List<DurableOrchestrationStatus>();
-            foreach (var state in statusContext.Item1)
+            foreach (var state in statusContext.OrchestrationState)
             {
                 results.Add(this.ConvertFrom(state));
             }
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.WebJobs
             var result = new DurableOrchestrationStatusContext
             {
                 DurableOrchestrationStatuses = results,
-                ContinuationToken = statusContext.Item2,
+                ContinuationToken = statusContext.ContinuationToken,
             };
 
             return result;
