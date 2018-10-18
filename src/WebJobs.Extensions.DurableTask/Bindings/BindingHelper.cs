@@ -10,6 +10,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class BindingHelper
     {
+        private const string InstanceIdPlaceholder = "INSTANCEID";
+
         private readonly DurableTaskExtension config;
         private readonly EndToEndTraceHelper traceHelper;
 
@@ -23,6 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableOrchestrationClientBase client = this.config.GetClient(clientAttribute);
             return new OrchestrationClientAsyncCollector(client);
+        }
+
+        public string DurableOrchestrationClientToString(DurableOrchestrationClient client, OrchestrationClientAttribute attr)
+        {
+            var payload = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName);
+            return JsonConvert.SerializeObject(payload);
         }
 
         public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, OrchestrationClientAttribute attr)

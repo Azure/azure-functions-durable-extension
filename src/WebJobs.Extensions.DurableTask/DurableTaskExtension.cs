@@ -55,7 +55,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private AzureStorageOrchestrationService orchestrationService;
         private TaskHubWorker taskHubWorker;
-        private HttpApiHandler httpApiHandler;
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
@@ -98,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
-            this.httpApiHandler = new HttpApiHandler(this, logger);
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(options.Value, nameResolver, this.TraceHelper);
             this.isOptionsConfigured = true;
         }
@@ -121,6 +120,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
 
         internal DurableTaskOptions Options { get; }
+
+        internal HttpApiHandler HttpApiHandler { get; private set; }
 
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
 
@@ -159,7 +160,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
                 .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
-                .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs);
+                .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
+                .AddConverter<DurableOrchestrationClient, string>(bindings.DurableOrchestrationClientToString);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             rule.BindToInput<DurableOrchestrationClient>(this.GetClient);
@@ -184,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
-            this.httpApiHandler = new HttpApiHandler(this, logger);
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
             this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(
                 this.Options,
@@ -602,7 +604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             OrchestrationClientAttribute attribute)
         {
-            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+            return this.HttpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
 
         // Get a data structure containing status, terminate and send external event HTTP.
@@ -611,7 +613,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHubName,
             string connectionName)
         {
-            return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
+            return this.HttpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
         }
 
         // Get a response that will wait for response from the durable function for predefined period of time before
@@ -623,7 +625,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan timeout,
             TimeSpan retryInterval)
         {
-            return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+            return await this.HttpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 request,
                 instanceId,
                 attribute,
@@ -636,7 +638,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return this.httpApiHandler.HandleRequestAsync(request);
+            return this.HttpApiHandler.HandleRequestAsync(request);
         }
 
         internal static string ValidatePayloadSize(string payload)
