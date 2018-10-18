@@ -220,7 +220,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         // TODO implementation to enable paging
-        public override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
+        internal override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
             DateTime createdTimeFrom,
             DateTime? createdTimeTo,
             IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
