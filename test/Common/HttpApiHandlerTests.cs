@@ -404,9 +404,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
             };
 
-            var ctx = new DurableOrchestrationStatusContext
+            var ctx = new OrchestrationStatusQueryResult
             {
-                DurableOrchestrationStatuses = list,
+                DurableOrchestrationState = list,
                 ContinuationToken = "YYYY-YYYYYYYY-YYYYYYYYYYYY"
             };
 

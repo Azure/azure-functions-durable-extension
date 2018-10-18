@@ -220,7 +220,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         // TODO implementation to enable paging
-        public override async Task<DurableOrchestrationStatusContext> GetStatusAsync(
+        public override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
             DateTime createdTimeFrom,
             DateTime? createdTimeTo,
             IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
@@ -237,9 +237,9 @@ namespace Microsoft.Azure.WebJobs
                 results.Add(this.ConvertFrom(state));
             }
 
-            var result = new DurableOrchestrationStatusContext
+            var result = new OrchestrationStatusQueryResult
             {
-                DurableOrchestrationStatuses = results,
+                DurableOrchestrationState = results,
                 ContinuationToken = statusContext.ContinuationToken,
             };
 

@@ -8,10 +8,10 @@ using System.Text;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     // TODO add comments
-    public class DurableOrchestrationStatusContext
+    public class OrchestrationStatusQueryResult
     {
         // TODO add comments
-        public IEnumerable<DurableOrchestrationStatus> DurableOrchestrationStatuses { get; set; }
+        public IEnumerable<DurableOrchestrationStatus> DurableOrchestrationState { get; set; }
 
         // TODO add comments
         public string ContinuationToken { get; set; }

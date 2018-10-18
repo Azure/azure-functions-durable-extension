@@ -191,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (pageSize > 0)
             {
                 var context = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, pageSize, continuationToken);
-                statusForAllInstances = context.DurableOrchestrationStatuses.ToList();
+                statusForAllInstances = context.DurableOrchestrationState.ToList();
                 nextContinuationToken = context.ContinuationToken;
             }
             else
