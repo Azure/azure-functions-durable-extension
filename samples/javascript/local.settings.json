@@ -2,11 +2,10 @@
   "IsEncrypted": false,
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
-    "TwilioAccountSid": "<Put your Twilio Account SID here>",
-    "TwilioAuthToken": "<Put your Twilio Auth Token here>",
-    "TwilioPhoneNumber": "<Put your Twilio Phone Number here>",
-    "WeatherUndergroundApiKey": "<Put your Weather Underground API key here>"
+    "AzureWebJobsStorage": "<Put your Azure Storage connection string here>",
+    "WeatherUndergroundApiKey": "<Put your Weather Underground API key here - sample 3>",
+    "TwilioAccountSid": "<Put your Twilio Account SID here - samples 3 and 4>",
+    "TwilioAuthToken": "<Put your Twilio Auth Token here - samples 3 and 4>",
+    "TwilioPhoneNumber": "<Put your Twilio Phone Number here - samples 3 and 4>"
   }
 }
