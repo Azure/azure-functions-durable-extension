@@ -219,7 +219,7 @@ namespace Microsoft.Azure.WebJobs
             return results;
         }
 
-        // TODO implementation to enable paging
+        /// <inheritdoc />
         internal override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
             DateTime createdTimeFrom,
             DateTime? createdTimeTo,
