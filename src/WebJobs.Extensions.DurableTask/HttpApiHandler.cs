@@ -19,6 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class HttpApiHandler
     {
         private const string InstancesControllerSegment = "/instances/";
+        private const string OrchestratorsControllerSegment = "/orchestrators/";
         private const string TaskHubParameter = "taskHub";
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
@@ -107,7 +108,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
         {
             string path = request.RequestUri.AbsolutePath.TrimEnd('/');
-            int i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
+            int i = path.IndexOf(OrchestratorsControllerSegment, StringComparison.OrdinalIgnoreCase);
+            int nextSlash = -1;
+            if (i >= 0 && request.Method == HttpMethod.Post)
+            {
+                string functionName = string.Empty;
+                string instanceId = string.Empty;
+
+                i += OrchestratorsControllerSegment.Length;
+                nextSlash = path.IndexOf('/', i);
+
+                if (nextSlash < 0)
+                {
+                    functionName = path.Substring(i);
+                }
+                else
+                {
+                    functionName = path.Substring(i, nextSlash - i);
+                    i = nextSlash + 1;
+                    instanceId = path.Substring(i);
+                }
+
+                return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
+            }
+
+            i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
             if (i < 0)
             {
                 // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
@@ -121,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             i += InstancesControllerSegment.Length;
-            int nextSlash = path.IndexOf('/', i);
+            nextSlash = path.IndexOf('/', i);
 
             if (nextSlash < 0)
             {
@@ -326,6 +351,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
 
+        private async Task<HttpResponseMessage> HandleStartOrchestratorRequestAsync(
+            HttpRequestMessage request,
+            string functionName,
+            string instanceId)
+        {
+            try
+            {
+                DurableOrchestrationClientBase client = this.GetClient(request);
+
+                object input = null;
+                if (request.Content != null)
+                {
+                    string contentAsString = await request.Content.ReadAsStringAsync();
+                    input = JsonConvert.DeserializeObject(contentAsString);
+                }
+
+                string id = await client.StartNewAsync(functionName, instanceId, input);
+
+                TimeSpan? timeout = this.GetTimeSpan(request, "timeout");
+                TimeSpan? pollingInterval = this.GetTimeSpan(request, "pollingInterval");
+
+                if (timeout.HasValue && pollingInterval.HasValue)
+                {
+                    return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, id, timeout.Value, pollingInterval.Value);
+                }
+                else
+                {
+                    var res = client.CreateCheckStatusResponse(request, id);
+                    res.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
+                    return res;
+                }
+            }
+            catch (JsonReaderException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
+            }
+            catch (ArgumentException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "One or more of the arguments submitted is incorrect", e);
+            }
+            catch (Exception e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Something went wrong while processing your request", e);
+            }
+        }
+
         private async Task<HttpResponseMessage> HandleRewindInstanceRequestAsync(
            HttpRequestMessage request,
            string instanceId)
@@ -492,6 +563,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             response.Headers.Location = new Uri(statusQueryGetUri);
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
+        }
+
+        private TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
+        {
+            string queryParameterStringValue = request.GetQueryNameValuePairs()[queryParameterName];
+            if (string.IsNullOrEmpty(queryParameterStringValue))
+            {
+                return null;
+            }
+
+            return TimeSpan.FromSeconds(double.Parse(queryParameterStringValue));
         }
     }
 }
