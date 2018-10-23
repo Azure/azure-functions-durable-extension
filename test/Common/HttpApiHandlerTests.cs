@@ -393,7 +393,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new DurableOrchestrationStatus
                 {
                     InstanceId = "01",
-                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
