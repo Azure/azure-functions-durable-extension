@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -107,89 +108,105 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
         {
-            string path = request.RequestUri.AbsolutePath.TrimEnd('/');
-            int i = path.IndexOf(OrchestratorsControllerSegment, StringComparison.OrdinalIgnoreCase);
-            int nextSlash = -1;
-            if (i >= 0 && request.Method == HttpMethod.Post)
+            try
             {
-                string functionName = string.Empty;
-                string instanceId = string.Empty;
-
-                i += OrchestratorsControllerSegment.Length;
-                nextSlash = path.IndexOf('/', i);
-
-                if (nextSlash < 0)
+                string path = request.RequestUri.AbsolutePath.TrimEnd('/');
+                int i = path.IndexOf(OrchestratorsControllerSegment, StringComparison.OrdinalIgnoreCase);
+                int nextSlash = -1;
+                if (i >= 0 && request.Method == HttpMethod.Post)
                 {
-                    functionName = path.Substring(i);
-                }
-                else
-                {
-                    functionName = path.Substring(i, nextSlash - i);
-                    i = nextSlash + 1;
-                    instanceId = path.Substring(i);
-                }
+                    string functionName;
+                    string instanceId = string.Empty;
 
-                return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
-            }
+                    i += OrchestratorsControllerSegment.Length;
+                    nextSlash = path.IndexOf('/', i);
 
-            i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
-            if (i < 0)
-            {
-                // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
-                if (request.Method == HttpMethod.Get
-                    && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-                {
-                    return await this.HandleGetStatusRequestAsync(request);
-                }
-
-                return request.CreateResponse(HttpStatusCode.NotFound);
-            }
-
-            i += InstancesControllerSegment.Length;
-            nextSlash = path.IndexOf('/', i);
-
-            if (nextSlash < 0)
-            {
-                string instanceId = path.Substring(i);
-                if (request.Method == HttpMethod.Get)
-                {
-                    return await this.HandleGetStatusRequestAsync(request, instanceId);
-                }
-            }
-            else if (request.Method == HttpMethod.Post)
-            {
-                string instanceId = path.Substring(i, nextSlash - i);
-                i = nextSlash + 1;
-                nextSlash = path.IndexOf('/', i);
-                if (nextSlash < 0)
-                {
-                    string operation = path.Substring(i);
-                    if (string.Equals(operation, TerminateOperation, StringComparison.OrdinalIgnoreCase))
+                    if (nextSlash < 0)
                     {
-                        return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
+                        functionName = path.Substring(i);
                     }
-                    else if (string.Equals(operation, RewindOperation, StringComparison.OrdinalIgnoreCase))
+                    else
                     {
-                        return await this.HandleRewindInstanceRequestAsync(request, instanceId);
-                    }
-                }
-                else
-                {
-                    string operation = path.Substring(i, nextSlash - i);
-                    if (string.Equals(operation, RaiseEventOperation, StringComparison.OrdinalIgnoreCase))
-                    {
+                        functionName = path.Substring(i, nextSlash - i);
                         i = nextSlash + 1;
-                        nextSlash = path.IndexOf('/', i);
-                        if (nextSlash < 0)
+                        instanceId = path.Substring(i);
+                    }
+
+                    return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
+                }
+
+                i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
+                if (i < 0)
+                {
+                    // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
+                    if (request.Method == HttpMethod.Get
+                        && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return await this.HandleGetStatusRequestAsync(request);
+                    }
+
+                    return request.CreateResponse(HttpStatusCode.NotFound);
+                }
+
+                i += InstancesControllerSegment.Length;
+                nextSlash = path.IndexOf('/', i);
+
+                if (nextSlash < 0)
+                {
+                    string instanceId = path.Substring(i);
+                    if (request.Method == HttpMethod.Get)
+                    {
+                        return await this.HandleGetStatusRequestAsync(request, instanceId);
+                    }
+                }
+                else if (request.Method == HttpMethod.Post)
+                {
+                    string instanceId = path.Substring(i, nextSlash - i);
+                    i = nextSlash + 1;
+                    nextSlash = path.IndexOf('/', i);
+                    if (nextSlash < 0)
+                    {
+                        string operation = path.Substring(i);
+                        if (string.Equals(operation, TerminateOperation, StringComparison.OrdinalIgnoreCase))
                         {
-                            string eventName = path.Substring(i);
-                            return await this.HandleRaiseEventRequestAsync(request, instanceId, eventName);
+                            return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
+                        }
+                        else if (string.Equals(operation, RewindOperation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return await this.HandleRewindInstanceRequestAsync(request, instanceId);
+                        }
+                    }
+                    else
+                    {
+                        string operation = path.Substring(i, nextSlash - i);
+                        if (string.Equals(operation, RaiseEventOperation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            i = nextSlash + 1;
+                            nextSlash = path.IndexOf('/', i);
+                            if (nextSlash < 0)
+                            {
+                                string eventName = path.Substring(i);
+                                return await this.HandleRaiseEventRequestAsync(request, instanceId, eventName);
+                            }
                         }
                     }
                 }
+
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
             }
 
-            return request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
+            /* Some handler methods throw ArgumentExceptions in specialized cases which should be returned to the client, such as when:
+             *     - the function name is not found (starting a new function)
+             *     - the orchestration instance is not in a Failed state (rewinding an orchestration instance)
+            */
+            catch (ArgumentException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "One or more of the arguments submitted is incorrect", e);
+            }
+            catch (Exception e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Something went wrong while processing your request", e);
+            }
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
@@ -363,14 +380,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 object input = null;
                 if (request.Content != null)
                 {
-                    string contentAsString = await request.Content.ReadAsStringAsync();
-                    input = JsonConvert.DeserializeObject(contentAsString);
+                    using (Stream s = await request.Content.ReadAsStreamAsync())
+                    using (StreamReader sr = new StreamReader(s))
+                    using (JsonReader reader = new JsonTextReader(sr))
+                    {
+                        JsonSerializer serializer = JsonSerializer.Create(MessagePayloadDataConverter.MessageSettings);
+                        input = serializer.Deserialize<object>(reader);
+                    }
                 }
 
                 string id = await client.StartNewAsync(functionName, instanceId, input);
 
-                TimeSpan? timeout = this.GetTimeSpan(request, "timeout");
-                TimeSpan? pollingInterval = this.GetTimeSpan(request, "pollingInterval");
+                TimeSpan? timeout = GetTimeSpan(request, "timeout");
+                TimeSpan? pollingInterval = GetTimeSpan(request, "pollingInterval");
 
                 if (timeout.HasValue && pollingInterval.HasValue)
                 {
@@ -378,22 +400,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    var res = client.CreateCheckStatusResponse(request, id);
-                    res.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
-                    return res;
+                    return client.CreateCheckStatusResponse(request, id);
                 }
             }
             catch (JsonReaderException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
-            }
-            catch (ArgumentException e)
-            {
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "One or more of the arguments submitted is incorrect", e);
-            }
-            catch (Exception e)
-            {
-                return request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Something went wrong while processing your request", e);
             }
         }
 
@@ -565,7 +577,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return response;
         }
 
-        private TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
+        private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
         {
             string queryParameterStringValue = request.GetQueryNameValuePairs()[queryParameterName];
             if (string.IsNullOrEmpty(queryParameterStringValue))
