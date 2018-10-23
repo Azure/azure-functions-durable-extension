@@ -254,7 +254,7 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the status of all orchestration instances with paging that match the specified conditions.
         /// </summary>
         /// <remarks>
-        /// This is limited to invokes from <see cref="HttpApiHandler"/> and it will not be published to clients.
+        /// This is limited to <see cref="HttpApiHandler"/> and it will not be published to external clients.
         /// </remarks>
         /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
         /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
