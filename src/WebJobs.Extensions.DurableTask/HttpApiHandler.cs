@@ -196,7 +196,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                // TODO Step-by-step. After fixing the parameter change, I'll implement multiple parameters.
                 statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
             }
 
