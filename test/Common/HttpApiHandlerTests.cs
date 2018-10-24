@@ -411,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
-            var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59);
+            var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
             var runtimeStatus = new List<OrchestrationRuntimeStatus>();
             runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
             var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
