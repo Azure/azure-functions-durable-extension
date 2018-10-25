@@ -336,6 +336,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CreateTimer(ctx.CurrentUtcDateTime.AddSeconds(2), CancellationToken.None);
         }
 
+        public static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
+            DurableOrchestrationStatus result = await ctx.CallActivityAsync<DurableOrchestrationStatus>(
+                nameof(TestActivities.UpdateDurableOrchestrationStatus),
+                durableOrchestrationStatus);
+            return result;
+        }
+
         public static async Task ParallelBatchActor([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
            Task item1 = ctx.WaitForExternalEvent<string>("newItem");
