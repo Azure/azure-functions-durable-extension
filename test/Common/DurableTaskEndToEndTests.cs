@@ -1720,6 +1720,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.Deserialize_DurableOrchestrationStatus), false))
             {
                 await host.StartAsync();
+
                 string instanceId = Guid.NewGuid().ToString();
                 DurableOrchestrationStatus input = new DurableOrchestrationStatus();
                 var client = await host.StartOrchestratorAsync(
