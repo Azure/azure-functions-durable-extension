@@ -35,12 +35,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     catch (Exception ex)
                     {
-                        logger.LogDebug($"Azure Storage HttpClientHandler was not updated: '{ex}'. Current value: {handler.MaxConnectionsPerServer}");
+                        logger.LogWarning($"Azure Storage HttpClientHandler was not updated: '{ex}'. Current value: {handler.MaxConnectionsPerServer}");
                     }
                 }
                 else
                 {
-                    logger.LogDebug($"Azure Storage HttpClientHandler was not found in assembly: '{storageAssembly.FullName}'.");
+                    logger.LogWarning($"Azure Storage HttpClientHandler was not found in assembly: '{storageAssembly.FullName}'.");
                 }
 
                 isSet = true;
