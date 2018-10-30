@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // The default JsonDataConverter for DTFx includes type information in JSON objects. This causes issues
         // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
         // configure the JsonDataConverter to not include CLR type information. This is also safer from a security perspective.
-        private static readonly JsonSerializerSettings MessageSettings = new JsonSerializerSettings
+        internal static readonly JsonSerializerSettings MessageSettings = new JsonSerializerSettings
         {
             TypeNameHandling = TypeNameHandling.None,
         };

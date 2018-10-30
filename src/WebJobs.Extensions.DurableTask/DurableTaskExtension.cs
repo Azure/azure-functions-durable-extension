@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -12,11 +13,9 @@ using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -54,11 +53,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
 
         private AzureStorageOrchestrationService orchestrationService;
+        private AzureStorageOrchestrationServiceSettings orchestrationServiceSettings;
         private TaskHubWorker taskHubWorker;
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
-        #if !NETSTANDARD2_0
+#if !NETSTANDARD2_0
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
         /// </summary>
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = new DurableTaskOptions();
             this.isOptionsConfigured = false;
         }
-        #endif
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -95,6 +95,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
+
+#if NETSTANDARD2_0
+            MaxConnectionHelper.SetMaxConnectionsPerServer(logger);
+#endif
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
@@ -172,8 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
-            AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings();
-            this.orchestrationService = new AzureStorageOrchestrationService(settings);
+            this.orchestrationServiceSettings = this.GetOrchestrationServiceSettings();
+            this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
@@ -367,7 +371,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 attr =>
                 {
                     AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attr);
-                    var innerClient = new AzureStorageOrchestrationService(settings);
+
+                    AzureStorageOrchestrationService innerClient;
+                    if (this.orchestrationServiceSettings != null &&
+                        this.orchestrationService != null &&
+                        string.Equals(this.orchestrationServiceSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(this.orchestrationServiceSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // It's important that clients use the same AzureStorageOrchestrationService instance
+                        // as the host when possible to ensure we any send operations can be picked up
+                        // immediately instead of waiting for the next queue polling interval.
+                        innerClient = this.orchestrationService;
+                    }
+                    else
+                    {
+                        innerClient = new AzureStorageOrchestrationService(settings);
+                    }
+
                     return new DurableOrchestrationClient(innerClient, this, attr);
                 });
 
