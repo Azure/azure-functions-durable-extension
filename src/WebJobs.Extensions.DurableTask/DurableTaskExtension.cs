@@ -53,6 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
 
         private AzureStorageOrchestrationService orchestrationService;
+        private AzureStorageOrchestrationServiceSettings orchestrationServiceSettings;
         private TaskHubWorker taskHubWorker;
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
@@ -175,8 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
-            AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings();
-            this.orchestrationService = new AzureStorageOrchestrationService(settings);
+            this.orchestrationServiceSettings = this.GetOrchestrationServiceSettings();
+            this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
@@ -370,7 +371,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 attr =>
                 {
                     AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attr);
-                    var innerClient = new AzureStorageOrchestrationService(settings);
+
+                    AzureStorageOrchestrationService innerClient;
+                    if (this.orchestrationServiceSettings != null &&
+                        this.orchestrationService != null &&
+                        string.Equals(this.orchestrationServiceSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(this.orchestrationServiceSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // It's important that clients use the same AzureStorageOrchestrationService instance
+                        // as the host when possible to ensure we any send operations can be picked up
+                        // immediately instead of waiting for the next queue polling interval.
+                        innerClient = this.orchestrationService;
+                    }
+                    else
+                    {
+                        innerClient = new AzureStorageOrchestrationService(settings);
+                    }
+
                     return new DurableOrchestrationClient(innerClient, this, attr);
                 });
 
