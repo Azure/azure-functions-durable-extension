@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -326,6 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     RequestUri = getStatusRequestUriBuilder.Uri,
                 });
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
 
             Assert.Equal("01", actual[0].InstanceId);
@@ -385,6 +387,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetQueryStatusWithPaging_is_Success()
+        {
+            var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
+            {
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "01",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableOrchestrationStatus
+                {
+                    InstanceId = "02",
+                    CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
+                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                },
+            };
+
+            var ctx = new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = list,
+                ContinuationToken = "YYYY-YYYYYYYY-YYYYYYYYYYYY"
+            };
+
+            var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
+            var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
+            var runtimeStatus = new List<OrchestrationRuntimeStatus>();
+            runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
+            var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
+            var pageSize = 100;
+            var continuationToken = "XXXX-XXXXXXXX-XXXXXXXXXXXX";
+
+            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            clientMock
+                .Setup(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, pageSize, continuationToken, It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(ctx));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += $"/Instances/";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&top=100";
+
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = getStatusRequestUriBuilder.Uri,
+            };
+            requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal("YYYY-YYYYYYYY-YYYYYYYYYYYY", responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+            clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, pageSize, continuationToken, It.IsAny<CancellationToken>()));
+            Assert.Equal("01", actual[0].InstanceId);
+            Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("02", actual[1].InstanceId);
+            Assert.Equal("Running", actual[1].RuntimeStatus);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryMultipleRuntimeStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
@@ -438,6 +503,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryWithoutRuntimeStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>

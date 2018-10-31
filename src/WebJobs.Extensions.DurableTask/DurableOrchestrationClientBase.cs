@@ -249,5 +249,20 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets the status of all orchestration instances with paging that match the specified conditions.
+        /// </summary>
+        /// <remarks>
+        /// This is limited to <see cref="HttpApiHandler"/> and it will not be published to external clients.
+        /// </remarks>
+        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+        /// <param name="pageSize">Number of records per one request.</param>
+        /// <param name="continuationToken">ContinuationToken of the pager.</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
+        internal abstract Task<OrchestrationStatusQueryResult> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
     }
 }
