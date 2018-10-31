@@ -386,6 +386,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryStatusWithPaging_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
@@ -447,6 +448,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryMultipleRuntimeStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
@@ -500,6 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryWithoutRuntimeStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
