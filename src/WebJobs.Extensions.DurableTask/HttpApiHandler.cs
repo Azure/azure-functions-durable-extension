@@ -546,16 +546,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.config.GetClient(attribute);
         }
 
+        internal HttpCreationPayload GetInstanceCreationLinks()
+        {
+            this.ThrowIfWebhooksNotConfigured();
+
+            Uri notificationUri = this.config.Options.NotificationUrl;
+
+            string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
+            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
+            string instancePrefix = baseUrl + OrchestratorsControllerSegment + "{functionName}[/{instanceId}]";
+
+            string querySuffix = !string.IsNullOrEmpty(notificationUri.Query)
+                ? notificationUri.Query.TrimStart('?')
+                : string.Empty;
+
+            HttpCreationPayload httpCreationPayload = new HttpCreationPayload
+            {
+                CreateNewInstancePostUri = instancePrefix + "?" + querySuffix,
+                CreateAndWaitOnNewInstancePostUri = instancePrefix + "?timeout={timeoutInSeconds}&pollingInterval={intervalInSeconds}&" + querySuffix,
+            };
+
+            return httpCreationPayload;
+        }
+
         private HttpManagementPayload GetClientResponseLinks(
             HttpRequestMessage request,
             string instanceId,
             string taskHubName,
             string connectionName)
         {
-            if (this.config.Options.NotificationUrl == null)
-            {
-                throw new InvalidOperationException("Webhooks are not configured");
-            }
+            this.ThrowIfWebhooksNotConfigured();
 
             Uri notificationUri = this.config.Options.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
@@ -604,6 +624,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             response.Headers.Location = new Uri(statusQueryGetUri);
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
+        }
+
+        private void ThrowIfWebhooksNotConfigured()
+        {
+            if (this.config.Options.NotificationUrl == null)
+            {
+                throw new InvalidOperationException("Webhooks are not configured");
+            }
         }
 
         private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
