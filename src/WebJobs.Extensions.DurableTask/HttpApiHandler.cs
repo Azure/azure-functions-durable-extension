@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
+        private const string HideInputParameter = "hideInput";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
@@ -197,7 +198,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter);
             var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter);
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput);
+            var hideInput = GetBooleanQueryParameterValue(queryNameValuePairs, HideInputParameter);
+
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, hideInput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);

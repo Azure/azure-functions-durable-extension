@@ -221,7 +221,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
         public virtual Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory)
         {
-            return this.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false);
+            return this.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false, hideInput: false);
         }
 
         /// <summary>
@@ -230,8 +230,9 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+        /// <param name="hideInput">If set, do not display the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput);
+        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool hideInput = false);
 
         /// <summary>
         /// Gets all the status of the orchestration instances.

@@ -177,10 +177,12 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
+        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool hideInput = false)
         {
-            OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
-            if (state?.OrchestrationInstance == null)
+            IList<OrchestrationState> stateList = await this.client.GetOrchestrationStateAsync(instanceId, allExecutions: false, ignoreInput: hideInput);
+            OrchestrationState state = stateList?.FirstOrDefault();
+
+            if (state == null || state.OrchestrationInstance == null)
             {
                 return null;
             }
