@@ -223,6 +223,33 @@ namespace Microsoft.Azure.WebJobs
             return results;
         }
 
+        /// <inheritdoc />
+        internal override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
+            DateTime createdTimeFrom,
+            DateTime? createdTimeTo,
+            IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
+            int pageSize,
+            string continuationToken,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);
+
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (var state in statusContext.OrchestrationState)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            var result = new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = results,
+                ContinuationToken = statusContext.ContinuationToken,
+            };
+
+            return result;
+        }
+
         private static JToken ParseToJToken(string value)
         {
             if (value == null)

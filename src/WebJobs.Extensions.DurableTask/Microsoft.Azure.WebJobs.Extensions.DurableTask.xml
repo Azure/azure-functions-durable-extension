@@ -315,6 +315,27 @@
             The type of a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload">
+            <summary>
+            Data structure containing orchestration instance creation HTTP endpoints.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload.CreateNewInstancePostUri">
+            <summary>
+            Gets the HTTP POST orchestration instance creation endpoint URL.
+            </summary>
+            <value>
+            The HTTP URL for creating a new orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload.WaitOnNewInstancePostUri">
+            <summary>
+            Gets the HTTP POST orchestration instance create-and-wait endpoint URL.
+            </summary>
+            <value>
+            The HTTP URL for creating a new orchestration instance and waiting on its completion.
+            </value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
             <summary>
             Data structure containing status, terminate and send external event HTTP endpoints.
@@ -544,6 +565,9 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
             <summary>
             Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>.
@@ -751,6 +775,21 @@
             <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
             <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
             <returns>Returns orchestration status for all instances.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets the status of all orchestration instances with paging that match the specified conditions.
+            </summary>
+            <remarks>
+            This is limited to <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpApiHandler"/> and it will not be published to external clients.
+            </remarks>
+            <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+            <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+            <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+            <param name="pageSize">Number of records per one request.</param>
+            <param name="continuationToken">ContinuationToken of the pager.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+            <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
             <summary>
