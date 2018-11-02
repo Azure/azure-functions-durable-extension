@@ -1717,15 +1717,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", "GetStatus")]
-        public async Task GetStatus_FetchInputFalse()
+        public async Task GetStatus_ShowInputFalse()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_FetchInputFalse), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputFalse), false))
             {
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
 
-                DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false, fetchInput: false);
+                DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false, showInput: false);
                 Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
             }
         }
@@ -1733,9 +1733,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", "GetStatus")]
-        public async Task GetStatus_FetchInputDefault()
+        public async Task GetStatus_ShowInputDefault()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_FetchInputDefault), false))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputDefault), false))
             {
                 await host.StartAsync();
 

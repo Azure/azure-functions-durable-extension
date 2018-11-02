@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
-        private const string FetchInputParameter = "fetchInput";
+        private const string ShowInputParameter = "showInput";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
@@ -261,13 +261,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableOrchestrationClientBase client = this.GetClient(request);
 
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter);
-            var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter);
+            var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, defaultValue: false);
+            var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, defaultValue: false);
 
-            bool? nullableFetchInput = GetNullableBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter);
-            bool fetchInput = (nullableFetchInput == null) ? true : (bool)nullableFetchInput; // Default to true
+            bool showInput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, defaultValue: true);
 
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, fetchInput);
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -362,16 +361,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
         }
 
-        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, bool defaultValue)
         {
             var value = queryStringNameValueCollection[queryParameterName];
-            return bool.TryParse(value, out bool parsedValue) && parsedValue;
-        }
-
-        private static bool? GetNullableBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
-        {
-            var value = queryStringNameValueCollection[queryParameterName];
-            return bool.TryParse(value, out bool parsedValue) ? (bool?)parsedValue : null;
+            return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
         }
 
         private static int GetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)

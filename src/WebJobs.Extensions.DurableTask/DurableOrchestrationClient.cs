@@ -177,11 +177,11 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool fetchInput = true)
+        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             var storageService = (AzureStorageOrchestrationService)this.client.ServiceClient;
-            IList<OrchestrationState> stateList = await storageService.GetOrchestrationStateAsync(instanceId, allExecutions: false, fetchInput: fetchInput);
+            IList<OrchestrationState> stateList = await storageService.GetOrchestrationStateAsync(instanceId, allExecutions: false, fetchInput: showInput);
 
             OrchestrationState state = stateList?.FirstOrDefault();
             if (state == null || state.OrchestrationInstance == null)
