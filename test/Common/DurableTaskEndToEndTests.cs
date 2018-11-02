@@ -1696,6 +1696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", "GetStatus")]
         public async Task GetStatus_InstanceNotFound()
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_InstanceNotFound), false))
@@ -1710,6 +1711,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.output.WriteLine($"Fetching status for fake instance: {bogusInstanceId}");
                 DurableOrchestrationStatus status = await client.InnerClient.GetStatusAsync(instanceId: bogusInstanceId);
                 Assert.Null(status);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", "GetStatus")]
+        public async Task GetStatus_FetchInputFalse()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_FetchInputFalse), false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+
+                DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false, fetchInput: false);
+                Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", "GetStatus")]
+        public async Task GetStatus_FetchInputDefault()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_FetchInputDefault), false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+
+                DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false);
+                Assert.Equal("1", status.Input.ToString());
             }
         }
 

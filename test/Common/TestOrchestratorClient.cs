@@ -36,9 +36,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         internal DurableOrchestrationClient InnerClient => this.innerClient;
 
-        public async Task<DurableOrchestrationStatus> GetStatusAsync(bool showHistory = false, bool showHistoryOutput = false)
+        public async Task<DurableOrchestrationStatus> GetStatusAsync(bool showHistory = false, bool showHistoryOutput = false, bool fetchInput = true)
         {
-            DurableOrchestrationStatus status = await this.innerClient.GetStatusAsync(this.instanceId, showHistory, showHistoryOutput);
+            DurableOrchestrationStatus status = await this.innerClient.GetStatusAsync(this.instanceId, showHistory, showHistoryOutput, fetchInput);
 
             if (status != null)
             {

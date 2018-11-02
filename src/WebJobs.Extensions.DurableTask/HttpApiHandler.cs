@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
-        private const string HideInputParameter = "hideInput";
+        private const string FetchInputParameter = "fetchInput";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
@@ -198,9 +198,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter);
             var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter);
-            var hideInput = GetBooleanQueryParameterValue(queryNameValuePairs, HideInputParameter);
 
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, hideInput);
+            bool? nullableFetchInput = GetNullableBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter);
+            bool fetchInput = (nullableFetchInput == null) ? true : (bool)nullableFetchInput; // Default to true
+
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, fetchInput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -299,6 +301,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var value = queryStringNameValueCollection[queryParameterName];
             return bool.TryParse(value, out bool parsedValue) && parsedValue;
+        }
+
+        private static bool? GetNullableBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            var value = queryStringNameValueCollection[queryParameterName];
+            return bool.TryParse(value, out bool parsedValue) ? (bool?) parsedValue : null;
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
