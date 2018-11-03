@@ -1696,7 +1696,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [Trait("Category", "GetStatus")]
         public async Task GetStatus_InstanceNotFound()
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_InstanceNotFound), false))
@@ -1716,7 +1715,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [Trait("Category", "GetStatus")]
         public async Task GetStatus_ShowInputFalse()
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputFalse), false))
@@ -1732,7 +1730,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [Trait("Category", "GetStatus")]
         public async Task GetStatus_ShowInputDefault()
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputDefault), false))
