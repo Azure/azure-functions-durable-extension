@@ -3,14 +3,18 @@
 
 namespace VSSample.Tests
 {
+    using Microsoft.Azure.WebJobs;
     using Xunit;
+    using Moq;
 
     public class HelloSequenceActivityTests
     {
         [Fact]
         public void SayHello_returns_greeting()
         {
-            var result = HelloSequence.SayHello("John");
+            var durableActivityContextMock = new Mock<DurableActivityContextBase>();
+            durableActivityContextMock.Setup(x => x.GetInput<string>()).Returns("John");
+            var result = HelloSequence.SayHello(durableActivityContextMock.Object);
             Assert.Equal("Hello John!", result);
         }
     }
