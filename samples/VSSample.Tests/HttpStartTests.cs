@@ -43,8 +43,7 @@ namespace VSSample.Tests
                     Content = new StringContent(string.Empty),
                     Headers =
                     {
-                        RetryAfter = 
-                        new RetryConditionHeaderValue(TimeSpan.FromSeconds(10))
+                        RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10))
                     }
                 });
 

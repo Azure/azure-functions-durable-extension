@@ -17,5 +17,12 @@ namespace VSSample.Tests
             var result = HelloSequence.SayHello(durableActivityContextMock.Object);
             Assert.Equal("Hello John!", result);
         }
+
+        [Fact]
+        public void SayHello_returns_greeting_direct_input()
+        {
+            var result = HelloSequence.SayHelloDirectInput("John");
+            Assert.Equal("Hello John!", result);
+        }
     }
 }

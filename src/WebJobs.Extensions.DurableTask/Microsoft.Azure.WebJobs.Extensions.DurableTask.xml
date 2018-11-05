@@ -558,7 +558,24 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Strier>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RewindAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -1615,29 +1632,6 @@
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
-            <summary>
-            Gets or sets the name of the orchestrator function to start.
-            </summary>
-            <value>The name of the orchestrator function to start.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId">
-            <summary>
-            Gets or sets the instance ID to assign to the started orchestration.
-            </summary>
-            <remarks>
-            If this property value is null (the default), then a randomly generated instance ID will be assigned automatically.
-            </remarks>
-            <value>The instance ID to assign.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input">
-            <summary>
-            Gets or sets the JSON-serializeable input data for the orchestrator function.
-            </summary>
-            <value>JSON-serializeable input value for the orchestrator function.</value>
-        </member>
-    </members>
-</doc>
-r name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
             <summary>
             Gets or sets the name of the orchestrator function to start.
             </summary>
