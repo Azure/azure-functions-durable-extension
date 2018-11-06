@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
@@ -252,6 +253,22 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Purge the history for a concrete instance.
+        /// </summary>
+        /// <param name="instanceId">Instance ID.</param>
+        /// <returns>Instance of <see cref="Task"/>.</returns>
+        public abstract Task PurgeInstanceHistoryAsync(string instanceId);
+
+        /// <summary>
+        /// Purge the orchestration history for instances that match the conditions.
+        /// </summary>
+        /// <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
+        /// <param name="createdTimeTo">End creation time for querying instances for purging.</param>
+        /// <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
+        /// <returns>Instance of <see cref="Task"/>.</returns>
+        public abstract Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus);
+
+        /// <summary>
         /// Gets the status of all orchestration instances with paging that match the specified conditions.
         /// </summary>
         /// <remarks>
@@ -265,5 +282,6 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         internal abstract Task<OrchestrationStatusQueryResult> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
+
     }
 }
