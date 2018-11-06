@@ -1579,7 +1579,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(stringLength, status?.Output.ToString().Count(c => c == TestOrchestrations.BigValueChar));
+                Assert.Equal(InstancesTableInformationMessageForLargeDataBlobs, status?.Output.ToString());
 
                 await host.StopAsync();
             }
@@ -1613,7 +1613,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(stringLength, status?.Output.ToString().Count(c => c == TestActivities.BigValueChar));
+                Assert.Equal(InstancesTableInformationMessageForLargeDataBlobs, status?.Output.ToString());
 
                 await host.StopAsync();
             }
