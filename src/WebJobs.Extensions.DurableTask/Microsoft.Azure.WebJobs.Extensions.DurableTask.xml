@@ -618,18 +618,7 @@
             or contains the payload containing the output of the completed orchestration.
             </summary>
             <remarks>
-            If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
-            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-            complete within this timeout, then the HTTP response will be identical to that of the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
-            </remarks>
-            <param name="request">The HTTP request that triggered the current function.</param>
-            <param name="instanceId">The unique ID of the instance to check.</param>
-            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)">
-            <summary>
-            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+            If the orchestrtes an HTTP response which either contains a payload of management URLs for a non-completed instance
             or contains the payload containing the output of the completed orchestration.
             </summary>
             <remarks>
@@ -1025,7 +1014,22 @@
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution.
             </summary>
-            <param name="functionName">The name of the orchestrator functcution.
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The sub-orchestrator function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.String,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution.
             </summary>
             <param name="functionName">The name of the orchestrator function to call.</param>
             <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
