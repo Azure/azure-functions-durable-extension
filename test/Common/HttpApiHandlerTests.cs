@@ -409,7 +409,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var ctx = new OrchestrationStatusQueryResult
             {
                 DurableOrchestrationState = list,
-                ContinuationToken = "YYYY-YYYYYYYY-YYYYYYYYYYYY"
+                ContinuationToken = "YYYY-YYYYYYYY-YYYYYYYYYYYY",
             };
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);

@@ -282,6 +282,5 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         internal abstract Task<OrchestrationStatusQueryResult> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
-
     }
 }

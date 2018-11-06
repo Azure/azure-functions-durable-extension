@@ -22,14 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskEndToEndTests
     {
+        private const string InstancesTableInformationMessageForLargeDataBlobs = "Too large to display. Please check History table for the actual data.";
+
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
         private readonly bool useTestLogger = true;
 
         private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-
-        private const string InstancesTableInformationMessageForLargeDataBlobs = "Too large to display. Please check History table for the actual data.";
 
         public DurableTaskEndToEndTests(ITestOutputHelper output)
         {
@@ -1953,11 +1953,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task PurgeHistory_SingleInstance_Large_Blob(bool extendedSessions)
+        public async Task Purge_Single_Instance_History(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.PurgeHistory_SingleInstance_Large_Blob),
+                nameof(this.Purge_Single_Instance_History),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -1988,16 +1988,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task PurgeHistory_All_TimePeriod(bool extendedSessions)
+        public async Task Purge_All_History_By_TimePeriod(bool extendedSessions)
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.PurgeHistory_All_TimePeriod),
+                nameof(this.Purge_Partially_History_By_TimePeriod),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -2014,7 +2013,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status.History.Count > 0);
 
                 string secondInstanceId = Guid.NewGuid().ToString();
-                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50,this.output, secondInstanceId);
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
                 await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
@@ -2038,7 +2037,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(InstancesTableInformationMessageForLargeDataBlobs, status.Output.Value<string>());
+                Assert.Equal(
+                    InstancesTableInformationMessageForLargeDataBlobs,
+                    status.Output.Value<string>());
                 Assert.True(status.History.Count > 0);
 
                 int blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
@@ -2068,6 +2069,78 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
                 Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Purge_Partially_History_By_TimePeriod(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.Purge_Partially_History_By_TimePeriod),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                DateTime startDateTime = DateTime.Now;
+
+                string firstInstanceId = Guid.NewGuid().ToString();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                DateTime endDateTime = DateTime.Now;
+                await Task.Delay(5000);
+
+                string secondInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string thirdInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(
+                    startDateTime,
+                    endDateTime,
+                    new List<OrchestrationStatus>
+                    {
+                        OrchestrationStatus.Completed,
+                        OrchestrationStatus.Terminated,
+                        OrchestrationStatus.Failed,
+                    });
+
+                status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.NotNull(status);
+                Assert.Equal(secondInstanceId, status.InstanceId);
+                Assert.True(status.History.Count > 0);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.NotNull(status);
+                Assert.Equal(thirdInstanceId, status.InstanceId);
+                Assert.True(status.History.Count > 0);
 
                 await host.StopAsync();
             }
@@ -2112,7 +2185,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 BlobResultSegment results = await instanceDirectory.ListBlobsSegmentedAsync(blobContinuationToken);
                 blobContinuationToken = results.ContinuationToken;
                 blobCount += results.Results.Count();
-            } while (blobContinuationToken != null);
+            }
+            while (blobContinuationToken != null);
 
             return blobCount;
         }
