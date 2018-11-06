@@ -1963,7 +1963,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string instanceId = Guid.NewGuid().ToString();
-                string message = this.GenerateMendiumRandomStringPayload().ToString();
+                string message = this.GenerateMediumRandomStringPayload().ToString();
                 TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -1973,7 +1973,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(instanceId, orchestrationStatus.InstanceId);
                 Assert.True(orchestrationStatus.History.Count > 0);
 
-                int blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
                 Assert.True(blobCount > 0);
 
                 await client.InnerClient.PurgeInstanceHistoryAsync(instanceId);
@@ -1981,7 +1981,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 orchestrationStatus = await client.GetStatusAsync(true);
                 Assert.Null(orchestrationStatus);
 
-                blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
                 Assert.Equal(0, blobCount);
 
                 await host.StopAsync();
@@ -2031,7 +2031,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status.History.Count > 0);
 
                 string fourthInstanceId = Guid.NewGuid().ToString();
-                string message = this.GenerateMendiumRandomStringPayload().ToString();
+                string message = this.GenerateMediumRandomStringPayload().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, fourthInstanceId);
                 await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
 
@@ -2042,7 +2042,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     status.Output.Value<string>());
                 Assert.True(status.History.Count > 0);
 
-                int blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
                 Assert.True(blobCount > 0);
 
                 await client.InnerClient.PurgeInstanceHistoryAsync(
@@ -2067,7 +2067,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
                 Assert.Null(status);
 
-                blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
                 Assert.Equal(0, blobCount);
 
                 await host.StopAsync();
@@ -2146,7 +2146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private StringBuilder GenerateMendiumRandomStringPayload()
+        private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload
             const int TargetPayloadSize = 128 * 1024; // 128 KB
@@ -2164,7 +2164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return sb;
         }
 
-        private async Task<int> GetBlobCount(string containerName, string directoryName)
+        private static async Task<int> GetBlobCount(string containerName, string directoryName)
         {
             string storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
             CloudStorageAccount storageAccount;
@@ -2191,25 +2191,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return blobCount;
         }
 
-        private void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
+        private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
         {
             Assert.NotNull(httpManagementPayload);
             Assert.NotEmpty(httpManagementPayload.Id);
             string instanceId = httpManagementPayload.Id;
-            string notifucaitonUrl = TestConstants.NotificationUrlBase;
+            string notificationUrl = TestConstants.NotificationUrlBase;
             string taskHubName = extendedSessions
                 ? $"{defaultTaskHubName}EX"
                 : defaultTaskHubName;
             taskHubName += PlatformSpecificHelpers.VersionSuffix;
 
             Assert.Equal(
-                $"{notifucaitonUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
+                $"{notificationUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
-                $"{notifucaitonUrl}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey",
+                $"{notificationUrl}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.SendEventPostUri);
             Assert.Equal(
-                $"{notifucaitonUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey",
+                $"{notificationUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
         }
 
