@@ -255,8 +255,8 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Purge the history for a concrete instance.
         /// </summary>
-        /// <param name="instanceId">Instance ID.</param>
-        /// <returns>Instance of <see cref="Task"/>.</returns>
+        /// <param name="instanceId">The ID of the orchestration instance to purge.</param>
+        /// <returns>Returns a task which completes when the purge has completed.</returns>
         public abstract Task PurgeInstanceHistoryAsync(string instanceId);
 
         /// <summary>
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
         /// <param name="createdTimeTo">End creation time for querying instances for purging.</param>
         /// <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-        /// <returns>Instance of <see cref="Task"/>.</returns>
+        /// <returns>Returns a task which completes when the purge has completed.</returns>
         public abstract Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus);
 
         /// <summary>
