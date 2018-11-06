@@ -8,6 +8,7 @@ namespace VSSample.Tests
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
+    using System.Net.Http.Headers;
     using Microsoft.Azure.WebJobs;
     using Microsoft.Extensions.Logging;
     using Moq;
@@ -40,6 +41,10 @@ namespace VSSample.Tests
                 {
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent(string.Empty),
+                    Headers =
+                    {
+                        RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10))
+                    }
                 });
 
             // Call Orchestration trigger function

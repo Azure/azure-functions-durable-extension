@@ -17,14 +17,21 @@ namespace VSSample
 
             outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Tokyo"));
             outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Seattle"));
-            outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "London"));
+            outputs.Add(await context.CallActivityAsync<string>("E1_SayHello_DirectInput", "London"));
 
             // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
             return outputs;
         }
 
         [FunctionName("E1_SayHello")]
-        public static string SayHello([ActivityTrigger] string name)
+        public static string SayHello([ActivityTrigger] DurableActivityContextBase context)
+        {
+            string name = context.GetInput<string>();
+            return $"Hello {name}!";
+        }
+
+        [FunctionName("E1_SayHello_DirectInput")]
+        public static string SayHelloDirectInput([ActivityTrigger] string name)
         {
             return $"Hello {name}!";
         }

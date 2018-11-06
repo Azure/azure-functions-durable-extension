@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const char BigValueChar = '*';
 
-        public static string Hello([ActivityTrigger] DurableActivityContext ctx)
+        public static string Hello([ActivityTrigger] DurableActivityContextBase ctx)
         {
             string input = ctx.GetInput<string>();
             return $"Hello, {input}!";

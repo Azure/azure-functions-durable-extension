@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.IO;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -12,7 +11,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// The default parameter type for activity functions.
     /// </summary>
-    public class DurableActivityContext
+    public class DurableActivityContext : DurableActivityContextBase
     {
         private readonly string instanceId;
         private readonly string serializedInput;
@@ -26,17 +25,8 @@ namespace Microsoft.Azure.WebJobs
             this.serializedInput = serializedInput;
         }
 
-        /// <summary>
-        /// Gets the instance ID of the currently executing orchestration.
-        /// </summary>
-        /// <remarks>
-        /// The instance ID is fixed when the parent orchestrator function is scheduled. It can be either
-        /// auto-generated, in which case it is formatted as a GUID, or it can be an arbitrary string value.
-        /// </remarks>
-        /// <value>
-        /// The ID of the current orchestration instance.
-        /// </value>
-        public string InstanceId => this.instanceId;
+        /// <inheritdoc />
+        public override string InstanceId => this.instanceId;
 
         /// <summary>
         /// Returns the input of the task activity in its raw JSON string value.
@@ -71,12 +61,8 @@ namespace Microsoft.Azure.WebJobs
             return this.parsedJsonInput;
         }
 
-        /// <summary>
-        /// Gets the input of the current activity function as a deserialized value.
-        /// </summary>
-        /// <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
-        /// <returns>The deserialized input value.</returns>
-        public T GetInput<T>()
+        /// <inheritdoc />
+        public override T GetInput<T>()
         {
             if (this.serializedInput == null)
             {
