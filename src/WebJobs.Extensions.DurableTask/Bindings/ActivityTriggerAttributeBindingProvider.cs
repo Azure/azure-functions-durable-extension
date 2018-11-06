@@ -116,7 +116,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     convertedValue = value;
                 }
-                else if (destinationType == typeof(DurableActivityContextBase))
+                else if (destinationType == typeof(DurableActivityContext) ||
+                    destinationType == typeof(DurableActivityContextBase))
                 {
                     convertedValue = activityContext;
                 }
