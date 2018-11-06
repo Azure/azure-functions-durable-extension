@@ -389,5 +389,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await ctx.CallActivityAsync<HttpManagementPayload>(nameof(TestActivities.GetAndReturnHttpManagementPayload), null);
             return activityPassedHttpManagementPayload;
         }
+
+        public static async Task<string> FanOutFanIn(
+            [OrchestrationTrigger] DurableOrchestrationContext context)
+        {
+            int parallelTasks = context.GetInput<int>();
+            var tasks = new Task[parallelTasks];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = context.CallActivityAsync<string>(nameof(TestActivities.Hello), i.ToString("000"));
+            }
+
+            await Task.WhenAll(tasks);
+
+            return "Done";
+        }
     }
 }

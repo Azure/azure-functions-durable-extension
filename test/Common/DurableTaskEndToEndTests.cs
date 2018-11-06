@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.WindowsAzure.Storage;
@@ -27,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly bool useTestLogger = true;
 
         private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+
+        private const string InstancesTableInformationMessageForLargeDataBlobs = "Too large to display. Please check History table for the actual data.";
 
         public DurableTaskEndToEndTests(ITestOutputHelper output)
         {
@@ -1979,6 +1982,91 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Null(orchestrationStatus);
 
                 blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PurgeHistory_All_TimePeriod(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.PurgeHistory_All_TimePeriod),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                DateTime startDateTime = DateTime.Now;
+
+                string firstInstanceId = Guid.NewGuid().ToString();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string secondInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50,this.output, secondInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string thirdInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string fourthInstanceId = Guid.NewGuid().ToString();
+                string message = this.GenerateMendiumRandomStringPayload().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, fourthInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(InstancesTableInformationMessageForLargeDataBlobs, status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                int blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                Assert.True(blobCount > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(
+                    startDateTime,
+                    DateTime.UtcNow,
+                    new List<OrchestrationStatus>
+                    {
+                        OrchestrationStatus.Completed,
+                        OrchestrationStatus.Terminated,
+                        OrchestrationStatus.Failed,
+                    });
+
+                status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
+                Assert.Null(status);
+
+                blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
                 Assert.Equal(0, blobCount);
 
                 await host.StopAsync();
