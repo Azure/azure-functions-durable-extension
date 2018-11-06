@@ -6,9 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -1941,6 +1944,89 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host1.StopAsync();
                 await host2.StopAsync();
             }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PurgeHistory_SingleInstance_Large_Blob(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.PurgeHistory_SingleInstance_Large_Blob),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                string instanceId = Guid.NewGuid().ToString();
+                string message = this.GenerateMendiumRandomStringPayload().ToString();
+                TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync(true);
+                Assert.NotNull(orchestrationStatus);
+                Assert.Equal(instanceId, orchestrationStatus.InstanceId);
+                Assert.True(orchestrationStatus.History.Count > 0);
+
+                int blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.True(blobCount > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(instanceId);
+
+                orchestrationStatus = await client.GetStatusAsync(true);
+                Assert.Null(orchestrationStatus);
+
+                blobCount = await this.GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+        private StringBuilder GenerateMendiumRandomStringPayload()
+        {
+            // Generate a medium random string payload
+            const int TargetPayloadSize = 128 * 1024; // 128 KB
+            const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 {}/<>.-";
+            var sb = new StringBuilder();
+            var random = new Random();
+            while (Encoding.Unicode.GetByteCount(sb.ToString()) < TargetPayloadSize)
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    sb.Append(Chars[random.Next(Chars.Length)]);
+                }
+            }
+
+            return sb;
+        }
+
+        private async Task<int> GetBlobCount(string containerName, string directoryName)
+        {
+            string storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+            CloudStorageAccount storageAccount;
+            if (!CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
+            {
+                return 0;
+            }
+
+            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+
+            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
+            await cloudBlobContainer.CreateIfNotExistsAsync();
+            CloudBlobDirectory instanceDirectory = cloudBlobContainer.GetDirectoryReference(directoryName);
+            int blobCount = 0;
+            BlobContinuationToken blobContinuationToken = null;
+            do
+            {
+                BlobResultSegment results = await instanceDirectory.ListBlobsSegmentedAsync(blobContinuationToken);
+                blobContinuationToken = results.ContinuationToken;
+                blobCount += results.Results.Count();
+            } while (blobContinuationToken != null);
+
+            return blobCount;
         }
 
         private void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)

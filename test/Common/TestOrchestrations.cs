@@ -28,6 +28,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Echo), input);
+            return output;
+        }
+
         public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
