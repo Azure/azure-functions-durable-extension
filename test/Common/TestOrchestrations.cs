@@ -28,6 +28,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Echo), input);
+            return output;
+        }
+
         public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
@@ -381,6 +388,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpManagementPayload activityPassedHttpManagementPayload =
                 await ctx.CallActivityAsync<HttpManagementPayload>(nameof(TestActivities.GetAndReturnHttpManagementPayload), null);
             return activityPassedHttpManagementPayload;
+        }
+
+        public static async Task<string> FanOutFanIn(
+            [OrchestrationTrigger] DurableOrchestrationContext context)
+        {
+            int parallelTasks = context.GetInput<int>();
+            var tasks = new Task[parallelTasks];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = context.CallActivityAsync<string>(nameof(TestActivities.Hello), i.ToString("000"));
+            }
+
+            await Task.WhenAll(tasks);
+
+            return "Done";
         }
     }
 }
