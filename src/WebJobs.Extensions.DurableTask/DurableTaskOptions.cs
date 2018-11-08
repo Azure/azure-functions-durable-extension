@@ -29,6 +29,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string HubName { get; set; } = DefaultHubName;
 
         /// <summary>
+        /// Get or sets Application Setting name to be used for hub name.
+        /// </summary>
+        public string HubNameAppSetting { get; set; }
+
+        /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
         /// </summary>
         /// <remarks>

@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs
 
             this.client = new TaskHubClient(serviceClient);
             this.traceHelper = config.TraceHelper;
-            this.hubName = config.Options.HubName;
+            this.hubName = Helper.GetHubName(config.Options);
             this.attribute = attribute;
         }
 
