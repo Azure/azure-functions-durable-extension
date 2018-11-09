@@ -4,6 +4,7 @@
 using System;
 using System.Net.Http;
 using System.Text;
+using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -250,6 +251,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (string.IsNullOrEmpty(this.HubName))
             {
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
+            }
+
+            try
+            {
+                NameValidator.ValidateBlobName(this.HubName);
+                NameValidator.ValidateContainerName(this.HubName);
+                NameValidator.ValidateTableName(this.HubName);
+                NameValidator.ValidateQueueName(this.HubName);
+            }
+            catch (ArgumentException e)
+            {
+                throw new ArgumentException(
+                    $"Task hub name '{this.HubName}' can not be used for creation of Azure Storage resources - blobs, containers, tables or queues.", e);
             }
 
             if (this.ControlQueueBatchSize <= 0)

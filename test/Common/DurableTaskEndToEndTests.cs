@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -2143,6 +2144,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status.History.Count > 0);
 
                 await host.StopAsync();
+            }
+        }
+
+
+        /// <summary>
+        /// End-to-end test which validates that incorrect task hub name throws instance of <see cref="ArgumentException"/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TaskHubName_Thows_ArgumentException(bool extendedSessions)
+        {
+
+            await VerifyExceptionOnBadInputForTaskHubName("Task-Hub-Name-Test", extendedSessions);
+            await VerifyExceptionOnBadInputForTaskHubName("1TaskHubNameTest", extendedSessions);
+            await VerifyExceptionOnBadInputForTaskHubName("/TaskHubNameTest", extendedSessions);
+            await VerifyExceptionOnBadInputForTaskHubName("-taskhubnametest", extendedSessions);
+            await VerifyExceptionOnBadInputForTaskHubName(
+                "taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest",
+                extendedSessions);
+        }
+
+        private async Task VerifyExceptionOnBadInputForTaskHubName(string taskHubName, bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                taskHubName,
+                extendedSessions))
+            {
+                if (extendedSessions)
+                {
+                    taskHubName = $"{taskHubName}EX";
+                }
+                var exception = await Record.ExceptionAsync(async () => await host.StartAsync());
+                Assert.NotNull(exception);
+                Assert.IsType<ArgumentException>(exception);
+                Assert.Equal(
+                    exception.Message.Contains($"{taskHubName}V1")
+                        ? $"Task hub name '{taskHubName}V1' can not be used for creation of Azure Storage resources - blobs, containers, tables or queues."
+                        : $"Task hub name '{taskHubName}V2' can not be used for creation of Azure Storage resources - blobs, containers, tables or queues.",
+                    exception.Message);
             }
         }
 
