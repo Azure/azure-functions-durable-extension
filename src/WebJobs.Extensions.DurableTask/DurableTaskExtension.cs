@@ -118,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>The name of the default task hub.</value>
         public string HubName
         {
-            get { return Helper.GetHubName(this.Options);  }
+            get { return this.Options.HubName;  }
             set { this.Options.HubName = value; }
         }
 #endif
@@ -144,6 +144,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.isOptionsConfigured)
             {
                 this.InitializeForFunctionsV1(context);
+            }
+
+            string taskHubName = this.nameResolver.Resolve(this.Options.HubName);
+
+            if (!string.IsNullOrEmpty(taskHubName))
+            {
+                this.Options.HubName = taskHubName;
             }
 
             // Throw if any of the configured options are invalid
@@ -202,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void TraceConfigurationSettings()
         {
             this.TraceHelper.ExtensionInformationalEvent(
-                Helper.GetHubName(this.Options),
+                this.Options.HubName,
                 instanceId: string.Empty,
                 functionName: string.Empty,
                 message: $"Initializing extension with the following settings: {this.Options.GetDebugString()}",
@@ -263,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 string message = $"Activity function '{activityFunction}' does not exist.";
                 this.TraceHelper.ExtensionWarningEvent(
-                    Helper.GetHubName(this.Options),
+                    this.Options.HubName,
                     activityFunction.Name,
                     string.Empty /* TODO: Flow the instance id into this event */,
                     message);
@@ -297,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 string message = this.GetInvalidOrchestratorFunctionMessage(orchestratorFunction.Name);
                 this.TraceHelper.ExtensionWarningEvent(
-                    Helper.GetHubName(this.Options),
+                    this.Options.HubName,
                     orchestratorFunction.Name,
                     orchestrationRuntimeState.OrchestrationInstance.InstanceId,
                     message);
@@ -420,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new AzureStorageOrchestrationServiceSettings
             {
                 StorageConnectionString = resolvedStorageConnectionString,
-                TaskHubName = taskHubNameOverride ?? Helper.GetHubName(this.Options),
+                TaskHubName = taskHubNameOverride ?? this.Options.HubName,
                 PartitionCount = this.Options.PartitionCount,
                 ControlQueueBatchSize = this.Options.ControlQueueBatchSize,
                 ControlQueueVisibilityTimeout = this.Options.ControlQueueVisibilityTimeout,
@@ -437,7 +444,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, orchestratorInfo, null))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
-                    Helper.GetHubName(this.Options),
+                    this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: orchestratorFunction.Name,
                     message: $"Registering orchestrator function named {orchestratorFunction}.",
@@ -454,7 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
         {
             this.TraceHelper.ExtensionInformationalEvent(
-                Helper.GetHubName(this.Options),
+                this.Options.HubName,
                 instanceId: string.Empty,
                 functionName: orchestratorFunction.Name,
                 message: $"Deregistering orchestrator function named {orchestratorFunction}.",
@@ -477,7 +484,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
-                    Helper.GetHubName(this.Options),
+                    this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: activityFunction.Name,
                     message: $"Registering orchestrator function named {activityFunction}.",
@@ -493,7 +500,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterActivity(FunctionName activityFunction)
         {
             this.TraceHelper.ExtensionInformationalEvent(
-                Helper.GetHubName(this.Options),
+                this.Options.HubName,
                 instanceId: string.Empty,
                 functionName: activityFunction.Name,
                 message: $"Deregistering orchestrator function named {activityFunction}.",
@@ -555,7 +562,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (!this.isTaskHubWorkerStarted)
                     {
                         this.TraceHelper.ExtensionInformationalEvent(
-                            Helper.GetHubName(this.Options),
+                            this.Options.HubName,
                             instanceId: string.Empty,
                             functionName: string.Empty,
                             message: "Starting task hub worker",
@@ -586,7 +593,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.registeredActivities.Count == 0)
                 {
                     this.TraceHelper.ExtensionInformationalEvent(
-                        Helper.GetHubName(this.Options),
+                        this.Options.HubName,
                         instanceId: string.Empty,
                         functionName: string.Empty,
                         message: "Stopping task hub worker",

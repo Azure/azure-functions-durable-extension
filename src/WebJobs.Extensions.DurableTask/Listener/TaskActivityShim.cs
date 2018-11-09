@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var triggerInput = new TriggeredFunctionData { ParentId = parentId, TriggerValue = inputContext };
 
             this.config.TraceHelper.FunctionStarting(
-                Helper.GetHubName(this.config.Options),
+                this.config.Options.HubName,
                 this.activityName,
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
 
                 this.config.TraceHelper.FunctionFailed(
-                    Helper.GetHubName(this.config.Options),
+                    this.config.Options.HubName,
                     this.activityName,
                     instanceId,
                     exceptionToReport?.ToString() ?? string.Empty,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string serializedOutput = inputContext.GetSerializedOutput();
             this.config.TraceHelper.FunctionCompleted(
-                Helper.GetHubName(this.config.Options),
+                this.config.Options.HubName,
                 this.activityName,
                 instanceId,
                 this.config.GetIntputOutputTrace(serializedOutput),
