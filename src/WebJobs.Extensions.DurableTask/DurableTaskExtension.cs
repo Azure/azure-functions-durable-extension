@@ -118,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>The name of the default task hub.</value>
         public string HubName
         {
-            get { return this.Options.HubName;  }
+            get { return this.Options.HubName; }
             set { this.Options.HubName = value; }
         }
 #endif
