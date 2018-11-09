@@ -256,9 +256,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             try
             {
                 NameValidator.ValidateBlobName(this.HubName);
-                NameValidator.ValidateContainerName(this.HubName);
+                NameValidator.ValidateContainerName(this.HubName.ToLowerInvariant());
                 NameValidator.ValidateTableName(this.HubName);
-                NameValidator.ValidateQueueName(this.HubName);
+                NameValidator.ValidateQueueName(this.HubName.ToLowerInvariant());
             }
             catch (ArgumentException e)
             {
