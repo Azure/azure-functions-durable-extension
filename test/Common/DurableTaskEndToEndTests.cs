@@ -2152,6 +2152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         public async Task TaskHubName_Thows_ArgumentException()
         {
 
