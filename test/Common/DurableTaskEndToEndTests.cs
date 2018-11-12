@@ -1873,7 +1873,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
                 var instanceId = client1.InstanceId;
                 taskHubName1 = client1.TaskHubName;
-                taskHubName2 = client2.TaskHubName;
 
                 // Perform some operations
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
