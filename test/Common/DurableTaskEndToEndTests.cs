@@ -2151,40 +2151,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <summary>
         /// End-to-end test which validates that incorrect task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>
-        [Theory]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task TaskHubName_Thows_ArgumentException(bool extendedSessions)
+        public async Task TaskHubName_Thows_ArgumentException()
         {
 
-            await VerifyExceptionOnBadInputForTaskHubName("Task-Hub-Name-Test", extendedSessions);
-            await VerifyExceptionOnBadInputForTaskHubName("1TaskHubNameTest", extendedSessions);
-            await VerifyExceptionOnBadInputForTaskHubName("/TaskHubNameTest", extendedSessions);
-            await VerifyExceptionOnBadInputForTaskHubName("-taskhubnametest", extendedSessions);
+            await VerifyExceptionOnBadInputForTaskHubName("Task-Hub-Name-Test");
+            await VerifyExceptionOnBadInputForTaskHubName("1TaskHubNameTest");
+            await VerifyExceptionOnBadInputForTaskHubName("/TaskHubNameTest");
+            await VerifyExceptionOnBadInputForTaskHubName("-taskhubnametest");
             await VerifyExceptionOnBadInputForTaskHubName(
-                "taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest",
-                extendedSessions);
+                "taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest");
         }
 
-        private async Task VerifyExceptionOnBadInputForTaskHubName(string taskHubName, bool extendedSessions)
+        private async Task VerifyExceptionOnBadInputForTaskHubName(string taskHubName)
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                taskHubName,
-                extendedSessions))
+                taskHubName, 
+                false))
             {
-                if (extendedSessions)
-                {
-                    taskHubName = $"{taskHubName}EX";
-                }
                 var exception = await Record.ExceptionAsync(async () => await host.StartAsync());
                 Assert.NotNull(exception);
                 Assert.IsType<ArgumentException>(exception);
                 Assert.Equal(
                     exception.Message.Contains($"{taskHubName}V1")
-                        ? $"Task hub name '{taskHubName}V1' can not be used for creation of Azure Storage resources - blobs, containers, tables or queues."
-                        : $"Task hub name '{taskHubName}V2' can not be used for creation of Azure Storage resources - blobs, containers, tables or queues.",
+                        ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
+                        : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
                     exception.Message);
             }
         }

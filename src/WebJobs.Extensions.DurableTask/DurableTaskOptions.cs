@@ -263,7 +263,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (ArgumentException e)
             {
                 throw new ArgumentException(
-                    $"Task hub name '{this.HubName}' can not be used for creation of Azure Storage resources - blobs, containers, tables or queues.", e);
+                    $"Task hub name '{this.HubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.", e);
             }
 
             if (this.ControlQueueBatchSize <= 0)
