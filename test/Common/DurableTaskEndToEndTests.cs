@@ -2147,7 +2147,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
         /// <summary>
         /// End-to-end test which validates that incorrect task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>
@@ -2166,19 +2165,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private async Task VerifyExceptionOnBadInputForTaskHubName(string taskHubName)
         {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                taskHubName, 
-                false))
+            string version = PlatformSpecificHelpers.VersionSuffix;
+            if (version == "V2")
             {
-                var exception = await Record.ExceptionAsync(async () => await host.StartAsync());
-                Assert.NotNull(exception);
-                Assert.IsType<ArgumentException>(exception);
+                ArgumentException argumentException =
+                    await Assert.ThrowsAsync<ArgumentException>(async () => TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        taskHubName,
+                        false));
+                Assert.NotNull(argumentException);
                 Assert.Equal(
-                    exception.Message.Contains($"{taskHubName}V1")
+                    argumentException.Message.Contains($"{taskHubName}V1")
                         ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
                         : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
-                    exception.Message);
+                    argumentException.Message);
+            }
+            else
+            {
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    taskHubName,
+                    false))
+                {
+                    ArgumentException argumentException =
+                        await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
+                    Assert.NotNull(argumentException);
+                    Assert.Equal(
+                        argumentException.Message.Contains($"{taskHubName}V1")
+                            ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
+                            : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                        argumentException.Message);
+                }
             }
         }
 
