@@ -69,6 +69,12 @@ namespace Microsoft.Azure.WebJobs
         public abstract T GetInput<T>();
 
         /// <summary>
+        /// Creates deterministic GUID based on instance ID. The value will be the same on first call and consecutive replays.
+        /// </summary>
+        /// <returns>Instance of <see cref="Guid"/>.</returns>
+        public abstract Guid NewGuid();
+
+        /// <summary>
         /// Schedules an activity function named <paramref name="functionName"/> for execution.
         /// </summary>
         /// <param name="functionName">The name of the activity function to call.</param>

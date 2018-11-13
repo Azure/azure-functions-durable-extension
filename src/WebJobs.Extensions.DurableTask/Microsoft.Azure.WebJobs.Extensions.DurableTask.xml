@@ -315,6 +315,11 @@
             The type of a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.GuidManager">
+            <summary>
+            Class for creating deterministic <see cref="T:System.Guid"/>.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload">
             <summary>
             Data structure containing orchestration instance creation HTTP endpoints.
@@ -854,6 +859,9 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput``1">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.NewGuid">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)">
             <summary>
             Sets the JSON-serializeable output of the current orchestrator function.
@@ -964,6 +972,12 @@
             </summary>
             <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
             <returns>The deserialized input value.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid">
+            <summary>
+            Creates deterministic GUID based on instance ID. The value will be the same on first call and consecutive replays.
+            </summary>
+            <returns>Instance of <see cref="T:System.Guid"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">
             <summary>

@@ -28,6 +28,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task<bool> SayHelloWithActivityWithDeterministicGuid([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            Guid firstGuid = ctx.NewGuid();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            Guid secondGuid = ctx.NewGuid();
+            return firstGuid == secondGuid;
+        }
+
         public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();

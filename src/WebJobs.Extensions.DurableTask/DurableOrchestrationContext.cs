@@ -100,6 +100,12 @@ namespace Microsoft.Azure.WebJobs
             return MessagePayloadDataConverter.Default.Deserialize<T>(this.serializedInput);
         }
 
+        /// <inheritdoc />
+        public override Guid NewGuid()
+        {
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, this.InstanceId);
+        }
+
         internal void SetInput(string rawInput)
         {
             this.serializedInput = rawInput;
