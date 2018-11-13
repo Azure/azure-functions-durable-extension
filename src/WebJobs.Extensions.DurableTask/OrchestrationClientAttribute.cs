@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs
         /// The default behavior is to use the task hub name specified in <see cref="DurableTaskOptions.HubName"/>.
         /// If no value exists there, then a default value will be used.
         /// </remarks>
+        [AutoResolve]
         public string TaskHub { get; set; }
 
         /// <summary>
