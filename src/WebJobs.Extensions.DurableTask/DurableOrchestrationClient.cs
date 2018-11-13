@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -89,6 +90,9 @@ namespace Microsoft.Azure.WebJobs
             {
                 throw new ArgumentException($"Instance ID lengths must not exceed {MaxInstanceIdLength} characters.");
             }
+
+            // Correlation 
+            var current = Activity.Current;
 
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName, DefaultVersion, instanceId, input);

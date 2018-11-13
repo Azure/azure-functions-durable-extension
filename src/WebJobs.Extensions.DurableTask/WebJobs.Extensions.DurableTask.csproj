@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
@@ -37,17 +37,14 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.1.2" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0" />
-  </ItemGroup>
-
   <ItemGroup>
     <AdditionalFiles Include="..\..\.stylecop\stylecop.json" />
     <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.4.0" />
+    <ProjectReference Include="..\..\..\..\durabletask\src\DurableTask.AzureStorage\DurableTask.AzureStorage.csproj" />
+    <ProjectReference Include="..\..\..\ts\azure-webjobs-sdk\src\Microsoft.Azure.WebJobs.Host\WebJobs.Host.csproj" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
@@ -66,6 +63,7 @@
     <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AutoGenerateBindingRedirects>True</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
 </Project>

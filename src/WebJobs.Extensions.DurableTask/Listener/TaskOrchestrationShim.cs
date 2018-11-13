@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -56,6 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"The {nameof(this.functionInvocationCallback)} has not been assigned!");
             }
+            // Correlation
+            var current = Activity.Current;
 
             this.context.SetInnerContext(innerContext);
             this.context.SetInput(serializedInput);
