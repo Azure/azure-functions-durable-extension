@@ -2149,54 +2149,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <summary>
         /// End-to-end test which validates that incorrect task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        public async Task TaskHubName_Thows_ArgumentException()
+        [InlineData("Task-Hub-Name-Test")]
+        [InlineData("1TaskHubNameTest")]
+        [InlineData("/TaskHubNameTest")]
+        [InlineData("-taskhubnametest")]
+        [InlineData("taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest")]
+        public async Task TaskHubName_Thows_ArgumentException(string taskHubName)
         {
-
-            await VerifyExceptionOnBadInputForTaskHubName("Task-Hub-Name-Test");
-            await VerifyExceptionOnBadInputForTaskHubName("1TaskHubNameTest");
-            await VerifyExceptionOnBadInputForTaskHubName("/TaskHubNameTest");
-            await VerifyExceptionOnBadInputForTaskHubName("-taskhubnametest");
-            await VerifyExceptionOnBadInputForTaskHubName(
-                "taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest");
+            await this.VerifyExceptionOnBadInputForTaskHubName(taskHubName);
         }
 
         private async Task VerifyExceptionOnBadInputForTaskHubName(string taskHubName)
         {
-            string version = PlatformSpecificHelpers.VersionSuffix;
-            if (version == "V2")
-            {
-                ArgumentException argumentException =
-                    await Assert.ThrowsAsync<ArgumentException>(async () => TestHelpers.GetJobHost(
+            ArgumentException argumentException =
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHost(
                         this.loggerProvider,
                         taskHubName,
-                        false));
-                Assert.NotNull(argumentException);
-                Assert.Equal(
-                    argumentException.Message.Contains($"{taskHubName}V1")
-                        ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
-                        : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
-                    argumentException.Message);
-            }
-            else
-            {
-                using (var host = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    taskHubName,
-                    false))
-                {
-                    ArgumentException argumentException =
-                        await Assert.ThrowsAsync<ArgumentException>(async () => await host.StartAsync());
-                    Assert.NotNull(argumentException);
-                    Assert.Equal(
-                        argumentException.Message.Contains($"{taskHubName}V1")
-                            ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
-                            : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
-                        argumentException.Message);
-                }
-            }
+                        false))
+                    {
+                        await host.StartAsync();
+                    }
+                });
+
+            Assert.NotNull(argumentException);
+            Assert.Equal(
+                argumentException.Message.Contains($"{taskHubName}V1")
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                argumentException.Message);
         }
 
         private static StringBuilder GenerateMediumRandomStringPayload()
