@@ -32,9 +32,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string input = ctx.GetInput<string>();
             Guid firstGuid = ctx.NewGuid();
-            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             Guid secondGuid = ctx.NewGuid();
-            return firstGuid == secondGuid;
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            Guid thirdGuid = ctx.NewGuid();
+            return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
         }
 
         public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)

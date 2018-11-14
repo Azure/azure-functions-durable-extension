@@ -166,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task HelloWorldActivityWithSameGUID(bool extendedSessions)
+        public async Task HelloWorldActivityWithNewGUID(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.HelloWorldActivityWithSameGUID),
+                nameof(this.HelloWorldActivityWithNewGUID),
                 extendedSessions))
             {
                 await host.StartAsync();

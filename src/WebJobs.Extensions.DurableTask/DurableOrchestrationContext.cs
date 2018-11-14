@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
+        private int newGuidCounter = 0;
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
@@ -103,7 +105,10 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override Guid NewGuid()
         {
-            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, this.InstanceId);
+            this.newGuidCounter++;
+            StringBuilder newGuidNameStringBuilder = new StringBuilder(this.InstanceId);
+            newGuidNameStringBuilder.Append(this.newGuidCounter);
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, newGuidNameStringBuilder.ToString());
         }
 
         internal void SetInput(string rawInput)
