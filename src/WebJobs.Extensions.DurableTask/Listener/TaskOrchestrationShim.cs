@@ -4,11 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
+using Microsoft.ApplicationInsights;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -57,8 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"The {nameof(this.functionInvocationCallback)} has not been assigned!");
             }
-            // Correlation
-            var current = Activity.Current;
 
             this.context.SetInnerContext(innerContext);
             this.context.SetInput(serializedInput);
@@ -82,6 +84,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FunctionType.Orchestrator,
                     this.context.IsReplaying));
             }
+
+            // Correlation
+            var current = Activity.Current; // new Activity is created but we can't set parentId
 
             object returnValue;
             try

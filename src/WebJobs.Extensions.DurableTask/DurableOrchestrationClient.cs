@@ -93,6 +93,10 @@ namespace Microsoft.Azure.WebJobs
 
             // Correlation 
             var current = Activity.Current;
+            // Start an new Activity for Dependency Telemetry
+            var dependencyActivity = new Activity($"Start Orchestration {orchestratorFunctionName}");
+            dependencyActivity.SetParentAndStartActivity(current);
+            DependencyTraceContext.Current = dependencyActivity.CreateTraceContext();
 
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName, DefaultVersion, instanceId, input);

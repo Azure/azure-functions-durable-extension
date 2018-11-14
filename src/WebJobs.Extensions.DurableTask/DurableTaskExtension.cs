@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -12,6 +15,11 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Middleware;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.DependencyCollector;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.ApplicationInsights.W3C;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -20,6 +28,7 @@ using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -98,6 +107,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
+            // correlation experiment
+            this.SetupDependencyTelemetryClient();
+            DependencyTraceClient.SetUp(
+                (DependencyTelemetry telemetry) =>
+            {
+                this.DependencyTelemetryClient.Track(telemetry);
+            },
+                (Exception e) =>
+            {
+                this.DependencyTelemetryClient.TrackException(e);
+            });
+
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(options.Value, nameResolver, this.TraceHelper);
@@ -128,6 +149,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal LifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
+
+        internal TelemetryClient DependencyTelemetryClient { get; private set; }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -184,6 +207,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+
+        }
+
+        // Setup TelemtryClient for DependencyTelemetry.
+        // The TelemetryClient which is used for Application Insights Logger can't emit the DependnecyTelemetry.
+        private void SetupDependencyTelemetryClient()
+        {
+            DependencyTrackingTelemetryModule module = new DependencyTrackingTelemetryModule();
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
+
+            var config = TelemetryConfiguration.CreateDefault();
+#pragma warning disable 618
+            config.TelemetryInitializers.Add(new W3COperationCorrelationTelemetryInitializer());
+            module.Initialize(config);
+            // Set the instrumentKey
+            config.InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+
+            this.DependencyTelemetryClient = new TelemetryClient(config);
         }
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
@@ -262,6 +303,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         TaskActivity INameVersionObjectManager<TaskActivity>.GetObject(string name, string version)
         {
             FunctionName activityFunction = new FunctionName(name);
+            // correlation
+            var current = Activity.Current;
 
             ITriggeredFunctionExecutor executor;
             if (!this.registeredActivities.TryGetValue(activityFunction, out executor))
@@ -282,6 +325,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             TaskOrchestrationShim shim = (TaskOrchestrationShim)dispatchContext.GetProperty<TaskOrchestration>();
             DurableOrchestrationContext context = shim.Context;
+
+            // Correlation
+            var current = Activity.Current;
 
             OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
 
@@ -308,6 +354,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     message);
                 throw new InvalidOperationException(message);
             }
+
+            // correlation
+            // Only the first time execution of the Orchestration, we track it. 
+            if (!context.IsReplaying)
+            {
+                var property = typeof(Activity).GetProperty("Current", BindingFlags.Public | BindingFlags.Static);
+                property.SetValue(null, orchestrationRuntimeState.CurrentActivity);
+            }
+
+            current = Activity.Current;
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
             FunctionResult result = await info.Executor.TryExecuteAsync(

@@ -2,11 +2,14 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Executors;
 
@@ -53,6 +56,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
                 isReplay: false);
+
+            // correlation
+            var current = Activity.Current;
 
             FunctionResult result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
             if (!result.Succeeded)
