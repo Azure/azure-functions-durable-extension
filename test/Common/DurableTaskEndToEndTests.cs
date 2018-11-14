@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -1872,7 +1873,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
                 var instanceId = client1.InstanceId;
                 taskHubName1 = client1.TaskHubName;
-                taskHubName2 = client2.TaskHubName;
 
                 // Perform some operations
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
@@ -2144,6 +2144,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [InlineData("Task-Hub-Name-Test")]
+        [InlineData("1TaskHubNameTest")]
+        [InlineData("/TaskHubNameTest")]
+        [InlineData("-taskhubnametest")]
+        [InlineData("taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest")]
+        public async Task TaskHubName_Throws_ArgumentException(string taskHubName)
+        {
+            ArgumentException argumentException =
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        taskHubName,
+                        false))
+                    {
+                        await host.StartAsync();
+                    }
+                });
+
+            Assert.NotNull(argumentException);
+            Assert.Equal(
+                argumentException.Message.Contains($"{taskHubName}V1")
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                argumentException.Message);
         }
 
         private static StringBuilder GenerateMediumRandomStringPayload()
