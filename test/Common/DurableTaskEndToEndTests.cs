@@ -2157,12 +2157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("/TaskHubNameTest")]
         [InlineData("-taskhubnametest")]
         [InlineData("taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest")]
-        public async Task TaskHubName_Thows_ArgumentException(string taskHubName)
-        {
-            await this.VerifyExceptionOnBadInputForTaskHubName(taskHubName);
-        }
-
-        private async Task VerifyExceptionOnBadInputForTaskHubName(string taskHubName)
+        public async Task TaskHubName_Throws_ArgumentException(string taskHubName)
         {
             ArgumentException argumentException =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
