@@ -2147,7 +2147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates that incorrect task hub name throws instance of <see cref="ArgumentException"/>.
+        /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
