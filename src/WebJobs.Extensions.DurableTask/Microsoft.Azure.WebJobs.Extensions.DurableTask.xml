@@ -624,7 +624,18 @@
             or contains the payload containing the output of the completed orchestration.
             </summary>
             <remarks>
-            If the orchestrtes an HTTP response which either contains a payload of management URLs for a non-completed instance
+            If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
+            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+            complete within this timeout, then the HTTP response will be identical to that of the
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
+            </remarks>
+            <param name="request">The HTTP request that triggered the current function.</param>
+            <param name="instanceId">The unique ID of the instance to check.</param>
+            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)">
+            <summary>
+            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
             or contains the payload containing the output of the completed orchestration.
             </summary>
             <remarks>
@@ -786,8 +797,8 @@
             <summary>
             Purge the history for a concrete instance.
             </summary>
-            <param name="instanceId">Instance ID.</param>
-            <returns>Instance of <see cref="T:System.Threading.Tasks.Task"/>.</returns>
+            <param name="instanceId">The ID of the orchestration instance to purge.</param>
+            <returns>Returns a task which completes when the purge has completed.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <summary>
@@ -796,7 +807,7 @@
             <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
             <param name="createdTimeTo">End creation time for querying instances for purging.</param>
             <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-            <returns>Instance of <see cref="T:System.Threading.Tasks.Task"/>.</returns>
+            <returns>Returns a task which completes when the purge has completed.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <summary>
@@ -1643,29 +1654,6 @@
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
-            <summary>
-            Gets or sets the name of the orchestrator function to start.
-            </summary>
-            <value>The name of the orchestrator function to start.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId">
-            <summary>
-            Gets or sets the instance ID to assign to the started orchestration.
-            </summary>
-            <remarks>
-            If this property value is null (the default), then a randomly generated instance ID will be assigned automatically.
-            </remarks>
-            <value>The instance ID to assign.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input">
-            <summary>
-            Gets or sets the JSON-serializeable input data for the orchestrator function.
-            </summary>
-            <value>JSON-serializeable input value for the orchestrator function.</value>
-        </member>
-    </members>
-</doc>
-r name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
             <summary>
             Gets or sets the name of the orchestrator function to start.
             </summary>
