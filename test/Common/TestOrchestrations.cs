@@ -38,6 +38,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
         }
 
+        public static bool VerifyUniqueGuids([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            List<Guid> guids = new List<Guid>(10000);
+            for (int i = 0; i < 10000; i++)
+            {
+                Guid newGuid = ctx.NewGuid();
+                if (guids.Contains(newGuid))
+                {
+                    return false;
+                }
+                else
+                {
+                    guids.Add(newGuid);
+                }
+            }
+
+            return true;
+        }
+
         public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
