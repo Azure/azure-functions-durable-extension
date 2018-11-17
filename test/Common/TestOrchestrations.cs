@@ -57,6 +57,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return true;
         }
 
+        public static async Task<bool> VerifySameGuidGeneratedOnReplay([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            Guid firstGuid = ctx.NewGuid();
+            Guid firstOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), firstGuid);
+            if (firstGuid != firstOutputGuid)
+            {
+                return false;
+            }
+
+            Guid secondGuid = ctx.NewGuid();
+            Guid secondOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), secondGuid);
+            if (secondGuid != secondOutputGuid)
+            {
+                return false;
+            }
+
+            return true;
+
+        }
+
         public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();

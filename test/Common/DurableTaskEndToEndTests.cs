@@ -221,7 +221,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-                Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
+                Assert.Empty(status.Input.ToString());
+                Assert.Equal("True", status.Output.ToString());
+            }
+        }
+
+        /// <summary>
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates the same Guid-s on replay. 
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task VerifySameGuidsOnReplay(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.VerifySameGuidGeneratedOnReplay),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.VerifySameGuidsOnReplay),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Empty(status.Input.ToString());
                 Assert.Equal("True", status.Output.ToString());
             }
         }
