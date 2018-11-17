@@ -105,10 +105,9 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override Guid NewGuid()
         {
+            string guidNameValue = this.InstanceId + this.newGuidCounter.ToString();
             this.newGuidCounter++;
-            StringBuilder newGuidNameStringBuilder = new StringBuilder(this.InstanceId);
-            newGuidNameStringBuilder.Append(this.newGuidCounter);
-            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, newGuidNameStringBuilder.ToString());
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
         internal void SetInput(string rawInput)
