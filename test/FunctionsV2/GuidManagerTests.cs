@@ -4,6 +4,7 @@
 using System;
 using Xunit;
 
+#pragma warning disable xUnit1025 // InlineData should be unique within the Theory it belongs to
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class GuidManagerTests

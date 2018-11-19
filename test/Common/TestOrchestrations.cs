@@ -74,7 +74,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return true;
-
         }
 
         public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)

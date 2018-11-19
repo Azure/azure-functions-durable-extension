@@ -12,9 +12,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal static class GuidManager
     {
-        internal const string DnsNamespaceValue = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
-        internal const string UrlNamespaceValue = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
-        internal const string IsoOidNamespaceValue = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
+        internal const string DnsNamespaceValue = "9e952958-5e33-4daf-827f-2fa12937b875";
+        internal const string UrlNamespaceValue = "9e952959-5e33-4daf-827f-2fa12937b875";
+        internal const string IsoOidNamespaceValue = "9e952960-5e33-4daf-827f-2fa12937b875";
+
+        internal enum DeterministicGuidVersion
+        {
+            V3,
+            V5,
+        }
 
         internal static Guid CreateDeterministicGuid(string namespaceValue, string name)
         {
@@ -77,12 +83,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             byteArray[left] = byteArray[right];
             byteArray[right] = temp;
         }
-
-        internal enum DeterministicGuidVersion
-        {
-            V3,
-            V5,
-        };
-
     }
 }
