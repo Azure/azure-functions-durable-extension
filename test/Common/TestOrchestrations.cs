@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static bool VerifyUniqueGuids([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
-            List<Guid> guids = new List<Guid>(10000);
+            HashSet<Guid> guids = new HashSet<Guid>();
             for (int i = 0; i < 10000; i++)
             {
                 Guid newGuid = ctx.NewGuid();
