@@ -26,7 +26,6 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
-        private int newGuidCounter = 0;
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
@@ -38,6 +37,7 @@ namespace Microsoft.Azure.WebJobs
         private string serializedInput;
         private string serializedOutput;
         private string serializedCustomStatus;
+        private int newGuidCounter = 0;
 
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
         {
@@ -105,8 +105,16 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc />
         public override Guid NewGuid()
         {
-            string guidNameValue = this.InstanceId + this.newGuidCounter.ToString();
+            // The name is a combination of the instance ID, the current orchestrator date/time, and a counter.
+            string guidNameValue = string.Concat(
+                this.InstanceId,
+                "_",
+                this.innerContext.CurrentUtcDateTime.ToString("o"),
+                "_",
+                this.newGuidCounter.ToString());
+
             this.newGuidCounter++;
+
             return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 

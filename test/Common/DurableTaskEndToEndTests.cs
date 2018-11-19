@@ -174,8 +174,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloWithActivityWithDeterministicGuid),
             };
 
-            string activityFunctionName = nameof(TestActivities.Hello);
-
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.HelloWorldActivityWithNewGUID),
@@ -195,8 +193,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates unique Guid-s. 
-        ///  The tests creates 10 000 Guids and validates that all the values are unique.
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates unique GUIDs.
+        ///  The tests creates 10,000 GUIDs and validates that all the values are unique.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -228,7 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates the same Guid-s on replay. 
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates the same GUIDs on replay.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
