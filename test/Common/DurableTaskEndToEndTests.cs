@@ -160,6 +160,105 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true, true);
         }
 
+        /// <summary>
+        ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that the generated GUID-s from the DurableOrchestrationContext are the same.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task HelloWorldActivityWithNewGUID(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivityWithDeterministicGuid),
+            };
+
+            string activityFunctionName = nameof(TestActivities.Hello);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorldActivityWithNewGUID),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("True", status.Output.ToString());
+            }
+        }
+
+        /// <summary>
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates unique Guid-s. 
+        ///  The tests creates 10 000 Guids and validates that all the values are unique.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task VerifyUniqueGuids(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.VerifyUniqueGuids),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.VerifyUniqueGuids),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Empty(status.Input.ToString());
+                Assert.Equal("True", status.Output.ToString());
+            }
+        }
+
+        /// <summary>
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates the same Guid-s on replay. 
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task VerifySameGuidsOnReplay(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.VerifySameGuidGeneratedOnReplay),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.VerifySameGuidsOnReplay),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Empty(status.Input.ToString());
+                Assert.Equal("True", status.Output.ToString());
+            }
+        }
+
         private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
         {
             string[] orchestratorFunctionNames =

@@ -28,6 +28,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task<bool> SayHelloWithActivityWithDeterministicGuid([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            Guid firstGuid = ctx.NewGuid();
+            Guid secondGuid = ctx.NewGuid();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            Guid thirdGuid = ctx.NewGuid();
+            return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
+        }
+
+        public static bool VerifyUniqueGuids([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            HashSet<Guid> guids = new HashSet<Guid>();
+            for (int i = 0; i < 10000; i++)
+            {
+                Guid newGuid = ctx.NewGuid();
+                if (guids.Contains(newGuid))
+                {
+                    return false;
+                }
+                else
+                {
+                    guids.Add(newGuid);
+                }
+            }
+
+            return true;
+        }
+
+        public static async Task<bool> VerifySameGuidGeneratedOnReplay([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            Guid firstGuid = ctx.NewGuid();
+            Guid firstOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), firstGuid);
+            if (firstGuid != firstOutputGuid)
+            {
+                return false;
+            }
+
+            Guid secondGuid = ctx.NewGuid();
+            Guid secondOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), secondGuid);
+            if (secondGuid != secondOutputGuid)
+            {
+                return false;
+            }
+
+            return true;
+
+        }
+
         public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
