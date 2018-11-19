@@ -69,9 +69,14 @@ namespace Microsoft.Azure.WebJobs
         public abstract T GetInput<T>();
 
         /// <summary>
-        /// Creates deterministic GUID based on instance ID. The value will be the same on first call and consecutive replays.
+        /// Creates a new GUID that is safe for replay within an orchestrator function.
         /// </summary>
-        /// <returns>Instance of <see cref="Guid"/>.</returns>
+        /// <remarks>
+        /// The default implementation of this method creates a name-based UUID using the algorithm from
+        /// RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+        /// instance ID and an internally managed sequence number.
+        /// </remarks>
+        /// <returns>The new <see cref="Guid"/> value.</returns>
         public abstract Guid NewGuid();
 
         /// <summary>
