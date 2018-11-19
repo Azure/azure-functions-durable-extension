@@ -373,6 +373,17 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken);
 
         /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        public virtual Task WaitForExternalEvent(string name) => this.WaitForExternalEvent<object>(name);
+
+        /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
         /// </summary>
         /// <remarks>
@@ -383,6 +394,21 @@ namespace Microsoft.Azure.WebJobs
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received.</returns>
         public abstract Task<T> WaitForExternalEvent<T>(string name);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        /// <exception cref="TimeoutException">
+        /// The external event was not received before the timeout expired.
+        /// </exception>
+        public virtual Task WaitForExternalEvent(string name, TimeSpan timeout) => this.WaitForExternalEvent<object>(name, timeout);
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
