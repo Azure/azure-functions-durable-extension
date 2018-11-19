@@ -13,6 +13,7 @@ using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
@@ -144,6 +145,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.isOptionsConfigured)
             {
                 this.InitializeForFunctionsV1(context);
+            }
+
+            if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
+            {
+                // use the resolved task hub name
+                this.Options.HubName = taskHubName;
             }
 
             // Throw if any of the configured options are invalid

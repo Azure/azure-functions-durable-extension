@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.WebJobs
         private const string DefaultVersion = "";
         private const int MaxTimerDurationInDays = 6;
 
+        private int newGuidCounter = 0;
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
@@ -98,6 +100,14 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return MessagePayloadDataConverter.Default.Deserialize<T>(this.serializedInput);
+        }
+
+        /// <inheritdoc />
+        public override Guid NewGuid()
+        {
+            string guidNameValue = this.InstanceId + this.newGuidCounter.ToString();
+            this.newGuidCounter++;
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
         internal void SetInput(string rawInput)
