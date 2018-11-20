@@ -106,6 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
+                    name = string.Empty;
                     value = s.Substring(si, i - si).Trim();
                 }
 
@@ -117,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // trailing '&'
                 if (i == l - 1 && s[i] == separator)
                 {
-                    values.Add(null, string.Empty);
+                    values.Add(string.Empty, string.Empty);
                 }
 
                 i++;
