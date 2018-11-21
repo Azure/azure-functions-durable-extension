@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null)
         {
+            if (nameResolver == null) { nameResolver = new SimpleNameResolver(); }
             var durableTaskOptions = new DurableTaskOptions
             {
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
@@ -638,6 +639,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 return value;
             }
+        }
+    }
+
+    public class SimpleNameResolver : INameResolver
+    {
+        private readonly Dictionary<string, string> values = null;
+
+        public SimpleNameResolver()
+        {
+            this.values = new Dictionary<string, string>
+            {
+                { "TestTaskHub", "" },
+            };
+        }
+
+        public SimpleNameResolver(Dictionary<string, string> values)
+        {
+            this.values = values;
+        }
+
+        public string Resolve(string name)
+        {
+            if (this.values == null)
+            {
+                return null;
+            }
+
+            return !this.values.TryGetValue(name, out string result) ? null : result;
         }
     }
 }

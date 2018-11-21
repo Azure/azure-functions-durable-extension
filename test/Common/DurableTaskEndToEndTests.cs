@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string taskHubName = "testtaskhub";
             Dictionary<string, string> values = new Dictionary<string, string>
             {
-                { "TaskHubName", $"{taskHubName}{PlatformSpecificHelpers.VersionSuffix}" },
+                { "TestTaskHub", $"{taskHubName}{PlatformSpecificHelpers.VersionSuffix}" },
             };
 
             using (var defaultHost = TestHelpers.GetJobHost(
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 taskHubName,
                 false,
-                nameResolver: new TestNameResolver(values)))
+                nameResolver: new SimpleNameResolver(values)))
             {
                 await defaultHost.StartAsync();
                 await customHost.StartAsync();
@@ -2297,23 +2297,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 [DataMember]
                 public TimeSpan F { get; set; }
-            }
-        }
-
-        public class TestNameResolver : INameResolver
-        {
-            private readonly Dictionary<string, string> values;
-
-            public TestNameResolver(Dictionary<string, string> values)
-            {
-                this.values = values;
-            }
-
-            public string Resolve(string name)
-            {
-                string result;
-                this.values.TryGetValue(name, out result);
-                return result;
             }
         }
     }
