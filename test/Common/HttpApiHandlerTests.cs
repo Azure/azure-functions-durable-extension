@@ -827,7 +827,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             protected internal override DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
             {
                 var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-                return new DurableOrchestrationClientMock(orchestrationServiceClientMock.Object, this, null);
+                return new DurableOrchestrationClientMock(orchestrationServiceClientMock.Object, this, attribute);
             }
         }
     }

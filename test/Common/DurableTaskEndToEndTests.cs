@@ -81,6 +81,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        // <summary>
+        /// End-to-end test which validates task hub name configured via the <see cref="OrchestrationClientAttribute"/> when 
+        /// simple orchestrator function which that doesn't call any activity functions is executed.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HelloWorld_OrchestrationClientTaskHub()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            string taskHubName = "testtaskhub";
+            Dictionary<string, string> values = new Dictionary<string, string>
+            {
+                { "TestTaskHub", $"{taskHubName}{PlatformSpecificHelpers.VersionSuffix}" },
+            };
+
+            using (var defaultHost = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorld_OrchestrationClientTaskHub),
+                false))
+            using (var customHost = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                taskHubName,
+                false,
+                nameResolver: new SimpleNameResolver(values)))
+            {
+                await defaultHost.StartAsync();
+                await customHost.StartAsync();
+
+                var client = await defaultHost.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output, null);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+
+                client = await customHost.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output, null, true);
+                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+
+                await defaultHost.StopAsync();
+                await customHost.StopAsync();
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
         /// </summary>
