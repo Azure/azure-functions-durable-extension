@@ -933,7 +933,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
         {
             var mock = new Mock<INameResolver>();
-            foreach (var setting in settings)
+            var settingList = settings.ToList();
+            settingList.Add(("TestTaskHub", string.Empty));
+            foreach (var setting in settingList)
             {
                 mock.Setup(x => x.Resolve(setting.Key)).Returns(setting.Value);
             }
