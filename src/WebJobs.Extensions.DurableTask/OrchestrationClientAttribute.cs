@@ -36,7 +36,6 @@ namespace Microsoft.Azure.WebJobs
         /// <see cref="DurableTaskOptions.AzureStorageConnectionStringName"/>. If no value exists there, then
         /// the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
-        [AutoResolve]
         public string ConnectionName { get; set; }
 
         /// <summary>
