@@ -27,6 +27,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The name of the activity function or <c>null</c> to use the function name.
         /// </value>
+        [AutoResolve]
         public string Activity { get; set; }
     }
 }

@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceCreationTime);
         }
 
+        // NOTE: The TestTaskHub app setting name must exist in order for the job host to successfully index this function.
         [NoAutomaticTrigger]
         public static async Task StartFunctionWithTaskHub(
             [OrchestrationClient(TaskHub = "%TestTaskHub%")] DurableOrchestrationClient client,

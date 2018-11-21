@@ -30,6 +30,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The name of the orchestrator function or <c>null</c> to use the function name.
         /// </value>
+        [AutoResolve]
         public string Orchestration { get; set; }
     }
 }
