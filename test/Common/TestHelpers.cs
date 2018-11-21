@@ -643,7 +643,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     }
 
     /// <summary>
-    /// Test implementation of INameResolver interface.
+    /// Test helper implementation of INameResolver interface.
     /// </summary>
     public class SimpleNameResolver : INameResolver
     {
