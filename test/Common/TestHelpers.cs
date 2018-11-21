@@ -642,6 +642,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 
+    /// <summary>
+    /// Helper name resolver class. 
+    /// </summary>
     public class SimpleNameResolver : INameResolver
     {
         private readonly Dictionary<string, string> values = null;
