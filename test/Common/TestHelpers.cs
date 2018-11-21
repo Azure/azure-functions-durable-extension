@@ -650,7 +650,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             this.values = new Dictionary<string, string>
             {
-                { "TestTaskHub", "" },
+                { "TestTaskHub", string.Empty },
             };
         }
 
