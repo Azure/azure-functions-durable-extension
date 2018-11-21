@@ -23,8 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskEndToEndTests
     {
-        private const string InstancesTableInformationMessageForLargeDataBlobs = "Too large to display. Please check History table for the actual data.";
-
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
@@ -1728,7 +1726,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(InstancesTableInformationMessageForLargeDataBlobs, status?.Output.ToString());
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -1762,7 +1760,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(InstancesTableInformationMessageForLargeDataBlobs, status?.Output.ToString());
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -2142,9 +2140,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task Purge_All_History_By_TimePeriod(bool extendedSessions)
         {
+            string testName = nameof(this.Purge_Partially_History_By_TimePeriod);
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.Purge_Partially_History_By_TimePeriod),
+                testName,
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -2154,7 +2153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
                 await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
-
+                
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Done", status.Output.Value<string>());
@@ -2185,10 +2184,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(
-                    InstancesTableInformationMessageForLargeDataBlobs,
-                    status.Output.Value<string>());
                 Assert.True(status.History.Count > 0);
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
 
                 int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
                 Assert.True(blobCount > 0);
@@ -2347,7 +2344,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static async Task<int> GetBlobCount(string containerName, string directoryName)
         {
-            string storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+            string storageConnectionString = TestHelpers.GetStorageConnectionString();
             CloudStorageAccount storageAccount;
             if (!CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
             {
@@ -2370,6 +2367,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             while (blobContinuationToken != null);
 
             return blobCount;
+        }
+
+        private static async Task ValidateBlobUrlAsync(string taskHubName, string instanceId, string value)
+        {
+            CloudStorageAccount account = CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
+            Assert.StartsWith(account.BlobStorageUri.PrimaryUri.OriginalString, value);
+            Assert.Contains("/" + instanceId + "/", value);
+            Assert.EndsWith(".json.gz", value);
+
+            string containerName = $"{taskHubName.ToLowerInvariant()}-largemessages";
+            CloudBlobClient client = account.CreateCloudBlobClient();
+            CloudBlobContainer container = client.GetContainerReference(containerName);
+            Assert.True(await container.ExistsAsync(), $"Blob container {containerName} is expected to exist.");
+
+            await client.GetBlobReferenceFromServerAsync(new Uri(value));
+            CloudBlobDirectory instanceDirectory = container.GetDirectoryReference(instanceId);
+
+            string blobName = value.Split('/').Last();
+            CloudBlob blob = instanceDirectory.GetBlobReference(blobName);
+            Assert.True(await blob.ExistsAsync(), $"Blob named {blob.Uri} is expected to exist.");
         }
 
         private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
