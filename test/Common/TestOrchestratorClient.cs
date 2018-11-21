@@ -55,6 +55,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return status;
         }
 
+        public async Task RaiseEventAsync(string eventName)
+        {
+            await this.innerClient.RaiseEventAsync(this.instanceId, eventName);
+        }
+
         public async Task RaiseEventAsync(string eventName, object eventData)
         {
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
