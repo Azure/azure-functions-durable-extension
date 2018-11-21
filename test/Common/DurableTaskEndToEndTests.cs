@@ -2159,7 +2159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
                 await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
-                
+
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Done", status.Output.Value<string>());

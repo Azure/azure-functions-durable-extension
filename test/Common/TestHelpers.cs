@@ -615,7 +615,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private class TestNameResolver : INameResolver
         {
-            static readonly Dictionary<string, string> DefaultAppSettings = new Dictionary<string, string>(
+            private static readonly Dictionary<string, string> DefaultAppSettings = new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase)
             {
                 { "TestTaskHub", string.Empty },

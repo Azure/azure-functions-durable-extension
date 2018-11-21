@@ -30,7 +30,9 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The name of the orchestrator function or <c>null</c> to use the function name.
         /// </value>
+#pragma warning disable CS0618 // Type or member is obsolete
         [AutoResolve]
+#pragma warning restore CS0618 // Type or member is obsolete
         public string Orchestration { get; set; }
     }
 }
