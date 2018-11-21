@@ -15,9 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             object input,
             ITestOutputHelper output,
             string instanceId = null,
-            bool isTaskHubConfiguredViaOrchestrationClient = false)
+            bool useTaskHubFromAppSettings = false)
         {
-            var startFunction = isTaskHubConfiguredViaOrchestrationClient ?
+            var startFunction = useTaskHubFromAppSettings ?
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithTaskHub)) :
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
             var clientRef = new TestOrchestratorClient[1];

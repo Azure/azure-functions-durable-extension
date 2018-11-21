@@ -154,6 +154,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
             }
 
+            // Allow clients to track the current value.
+            ctx.SetCustomStatus(currentValue);
+
             if (!done)
             {
                 ctx.ContinueAsNew(currentValue);

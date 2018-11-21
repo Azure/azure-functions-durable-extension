@@ -79,54 +79,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        // <summary>
-        /// End-to-end test which validates task hub name configured via the <see cref="OrchestrationClientAttribute"/> when 
+        /// <summary>
+        /// End-to-end test which validates task hub name configured via the <see cref="OrchestrationClientAttribute"/> when
         /// simple orchestrator function which that doesn't call any activity functions is executed.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task HelloWorld_OrchestrationClientTaskHub()
         {
-            string[] orchestratorFunctionNames =
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.HelloWorld_OrchestrationClientTaskHub),
+                enableExtendedSessions: false);
+
+            Dictionary<string, string> appSettings = new Dictionary<string, string>
             {
-                nameof(TestOrchestrations.SayHelloInline),
+                { "TestTaskHub", taskHubName },
             };
 
-            string taskHubName = "testtaskhub";
-            Dictionary<string, string> values = new Dictionary<string, string>
-            {
-                { "TestTaskHub", $"{taskHubName}{PlatformSpecificHelpers.VersionSuffix}" },
-            };
-
-            using (var defaultHost = TestHelpers.GetJobHost(
+            using (var clientHost = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorld_OrchestrationClientTaskHub) + "_Unused",
+                enableExtendedSessions: false,
+                nameResolver: new SimpleNameResolver(appSettings)))
+            using (var orchestrationHost = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.HelloWorld_OrchestrationClientTaskHub),
-                false))
-            using (var customHost = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                taskHubName,
-                false,
-                nameResolver: new SimpleNameResolver(values)))
+                enableExtendedSessions: false))
             {
-                await defaultHost.StartAsync();
-                await customHost.StartAsync();
+                await clientHost.StartAsync();
+                await orchestrationHost.StartAsync();
 
-                var client = await defaultHost.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output, null);
+                // First, start and complete an orchestration on the main orchestration host.
+                var client = await orchestrationHost.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SayHelloInline),
+                    "World",
+                    this.output,
+                    useTaskHubFromAppSettings: false);
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
 
-                client = await customHost.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output, null, true);
+                // Next, start an orchestration from the client host and verify that it completes on the orchestration host.
+                client = await clientHost.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SayHelloInline),
+                    "World",
+                    this.output,
+                    useTaskHubFromAppSettings: true);
                 status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
                 Assert.Equal("Hello, World!", status?.Output);
 
-                await defaultHost.StopAsync();
-                await customHost.StopAsync();
+                await orchestrationHost.StopAsync();
+                await clientHost.StopAsync();
             }
         }
 
@@ -533,19 +541,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr");
 
-                // TODO: Sleeping to avoid a race condition where multiple ContinueAsNew messages
-                //       are processed by the same instance at the same time, resulting in a corrupt
-                //       storage failure in DTFx.
+                // TODO: Sleeping to avoid a race condition where events can get dropped.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                await Task.Delay(2000);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
                 await client.RaiseEventAsync("operation", "decr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
@@ -556,7 +563,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The end message will cause the actor to complete itself.
                 await client.RaiseEventAsync("operation", "end");
 
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(waitTimeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int)status?.Output);
@@ -2023,19 +2030,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Perform some operations
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
 
-                // TODO: Sleeping to avoid a race condition where multiple ContinueAsNew messages
-                //       are processed by the same instance at the same time, resulting in a corrupt
-                //       storage failure in DTFx.
+                // TODO: Sleeping to avoid a race condition where events can get dropped.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                await Task.Delay(3000);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "decr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client1.GetStatusAsync();
@@ -2153,7 +2159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
                 await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
-                
+
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Done", status.Output.Value<string>());

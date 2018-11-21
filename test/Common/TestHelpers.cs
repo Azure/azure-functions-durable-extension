@@ -31,7 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null)
         {
-            if (nameResolver == null) { nameResolver = new SimpleNameResolver(); }
             var durableTaskOptions = new DurableTaskOptions
             {
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
@@ -616,6 +615,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private class TestNameResolver : INameResolver
         {
+            private static readonly Dictionary<string, string> DefaultAppSettings = new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                { "TestTaskHub", string.Empty },
+            };
+
             private readonly INameResolver innerResolver;
 
             public TestNameResolver(INameResolver innerResolver)
@@ -634,42 +639,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string value = this.innerResolver?.Resolve(name);
                 if (value == null)
                 {
-                    return Environment.GetEnvironmentVariable(name);
+                    DefaultAppSettings.TryGetValue(name, out value);
+                }
+
+                if (value == null)
+                {
+                    value = Environment.GetEnvironmentVariable(name);
                 }
 
                 return value;
             }
-        }
-    }
-
-    /// <summary>
-    /// Test helper implementation of INameResolver interface.
-    /// </summary>
-    public class SimpleNameResolver : INameResolver
-    {
-        private readonly Dictionary<string, string> values = null;
-
-        public SimpleNameResolver()
-        {
-            this.values = new Dictionary<string, string>
-            {
-                { "TestTaskHub", string.Empty },
-            };
-        }
-
-        public SimpleNameResolver(Dictionary<string, string> values)
-        {
-            this.values = values;
-        }
-
-        public string Resolve(string name)
-        {
-            if (this.values == null)
-            {
-                return null;
-            }
-
-            return !this.values.TryGetValue(name, out string result) ? null : result;
         }
     }
 }
