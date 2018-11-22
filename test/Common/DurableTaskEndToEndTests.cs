@@ -626,6 +626,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the wait-for-full-batch case using an actor pattern.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task BatchedActorOrchestrationDeleteLastItemAlways(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.BatchedActorOrchestrationDeleteLastItemAlways),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActorRemoveLast), null, this.output);
+
+                // Perform some operations
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item5
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item4
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item3
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item2
+
+                // Make sure it's still running and didn't complete early (or fail).
+                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
+
+                // Sending this last event will cause the actor to complete itself.
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item1
+
+                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the parallel wait-for-full-batch case using an actor pattern.
         /// </summary>
         [Theory]

@@ -34,9 +34,10 @@ The general flow for making a change to the script host is:
 ## Running the tests (Visual Studio) 
 
 1. Build the project and Visual Studio will identify all the tests in the solution.
-2. Set an environment variable named **AzureWebJobsStorage** set to a connection string e.g. to the storage emulator (`UseDevelopmentStorage=true`).
-3. Run Azure Storage Emulator 5.6.
-4. Run the unit tests via Visual Studio Test Explorer by selecting "Run All"
+2. Set an environment variable named **AzureWebJobsStorage** set to an Azure General Purpose Storage Account connection string.
+> Note: While it is possible to use the local storage emulator (`UseDevelopmentStorage=true`), this is not recommended as performance and reliability are severely impacted while running unit tests; using a real storage account in Azure will yield much better results.
+
+3. Run the unit tests via Visual Studio Test Explorer by selecting "Run All"
 
 
 ## Testing code changes locally (Visual Studio) 

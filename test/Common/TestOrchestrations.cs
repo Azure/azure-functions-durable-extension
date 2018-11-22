@@ -183,6 +183,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // we've received events for all the required items; safe to bail now!
         }
 
+        public static async Task BatchActorRemoveLast([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            var requiredItems = new HashSet<string>(new[] { @"item1", @"item2", @"item3", @"item4", @"item5" });
+
+            // If an item was sent in during StartAsNew() this handles that
+            var itemName = ctx.GetInput<string>();
+            requiredItems.Remove(itemName);
+
+            while (requiredItems.Any())
+            {
+                await ctx.WaitForExternalEvent("deleteItem");
+
+                requiredItems.Remove(requiredItems.Last());
+            }
+
+            // we've received events for all the required items; safe to bail now!
+        }
+
         public static async Task<string> Approval([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             TimeSpan timeout = ctx.GetInput<TimeSpan>();

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The name of the task hub.
         /// </value>
-        public abstract string TaskHubName { get;  }
+        public abstract string TaskHubName { get; }
 
         /// <summary>
         /// Creates an HTTP response that is useful for checking the status of the specified instance.
@@ -143,6 +143,24 @@ namespace Microsoft.Azure.WebJobs
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
         public abstract Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input);
+
+        /// <summary>
+        /// Sends an event notification message to a waiting orchestration instance.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In order to handle the event, the target orchestration instance must be waiting for an
+        /// event named <paramref name="eventName"/> using the
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent(string)"/> API.
+        /// </para><para>
+        /// If the specified instance is not found or not running, this operation will have no effect.
+        /// </para>
+        /// </remarks>
+        /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+        /// <param name="eventName">The name of the event.</param>
+        /// <returns>A task that completes when the event notification message has been enqueued.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public virtual Task RaiseEventAsync(string instanceId, string eventName) => this.RaiseEventAsync(instanceId, eventName, null);
 
         /// <summary>
         /// Sends an event notification message to a waiting orchestration instance.
