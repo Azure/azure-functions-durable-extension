@@ -198,6 +198,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             await this.ProcessAsyncActions(execution.Actions);
 
+            if (!string.IsNullOrEmpty(execution.Error))
+            {
+                throw new OrchestrationFailureException(
+                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}");
+            }
+
             if (execution.IsDone)
             {
                 this.Context.SetOutput(execution.Output);
@@ -272,6 +278,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("output")]
             internal object Output { get; set; }
+
+            [JsonProperty("error")]
+            internal string Error { get; set; }
 
             [JsonProperty("customStatus")]
             internal object CustomStatus { get; set; }
