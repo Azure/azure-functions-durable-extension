@@ -50,9 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
-        private readonly INameResolver nameResolver;
         private readonly bool isOptionsConfigured;
 
+        private INameResolver nameResolver;
         private AzureStorageOrchestrationService orchestrationService;
         private AzureStorageOrchestrationServiceSettings orchestrationServiceSettings;
         private TaskHubWorker taskHubWorker;
@@ -147,8 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InitializeForFunctionsV1(context);
             }
 
-            if (this.nameResolver != null &&
-                this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
+            if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
             {
                 // use the resolved task hub name
                 this.Options.HubName = taskHubName;
@@ -204,6 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Options,
                 context.Config.NameResolver,
                 this.TraceHelper);
+            this.nameResolver = context.Config.NameResolver;
 #endif
         }
 
