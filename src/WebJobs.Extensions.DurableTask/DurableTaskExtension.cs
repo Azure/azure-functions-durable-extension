@@ -147,7 +147,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InitializeForFunctionsV1(context);
             }
 
-            if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
+            if (this.nameResolver != null &&
+                this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
             {
                 // use the resolved task hub name
                 this.Options.HubName = taskHubName;
