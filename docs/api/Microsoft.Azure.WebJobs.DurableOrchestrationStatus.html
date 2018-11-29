@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class DurableOrchestrationStatus
    ">
-    <meta name="generator" content="docfx 2.36.2.0">
+    <meta name="generator" content="docfx 2.40.4.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -114,7 +114,7 @@
   </div>
   <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_remarks"><strong>Remarks</strong></h5>
   <div class="markdown level0 remarks"><p>An external client can fetch the status of an orchestration instance using
-<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_">GetStatusAsync(String, Boolean, Boolean)</a>.</p>
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_System_Boolean_">GetStatusAsync(String, Boolean, Boolean, Boolean)</a>.</p>
 </div>
   <h3 id="properties">Properties
   </h3>
@@ -132,7 +132,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public DateTime CreatedTime { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public DateTime CreatedTime { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -168,7 +168,7 @@ status, this time represents the time at which the orchestration instance was sc
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public JToken CustomStatus { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public JToken CustomStatus { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -203,7 +203,7 @@ status, this time represents the time at which the orchestration instance was sc
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public JArray History { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public JArray History { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -224,7 +224,7 @@ status, this time represents the time at which the orchestration instance was sc
   <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationStatus_History_remarks">Remarks</h5>
   <div class="markdown level1 remarks"><p>The history log can be large and is therefore <code>null</code> by default.
 It is populated only when explicitly requested in the call to
-<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_">GetStatusAsync(String, Boolean, Boolean)</a>.</p>
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_GetStatusAsync_System_String_System_Boolean_System_Boolean_System_Boolean_">GetStatusAsync(String, Boolean, Boolean, Boolean)</a>.</p>
 </div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
@@ -240,7 +240,7 @@ It is populated only when explicitly requested in the call to
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public JToken Input { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public JToken Input { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -272,7 +272,7 @@ It is populated only when explicitly requested in the call to
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string InstanceId { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public string InstanceId { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -308,7 +308,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public DateTime LastUpdatedTime { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public DateTime LastUpdatedTime { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -340,7 +340,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string Name { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public string Name { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -372,7 +372,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public JToken Output { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public JToken Output { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -404,7 +404,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public OrchestrationRuntimeStatus RuntimeStatus { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public OrchestrationRuntimeStatus RuntimeStatus { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">

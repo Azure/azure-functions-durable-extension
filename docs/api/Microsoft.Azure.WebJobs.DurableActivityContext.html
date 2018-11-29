@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class DurableActivityContext
    ">
-    <meta name="generator" content="docfx 2.36.2.0">
+    <meta name="generator" content="docfx 2.40.4.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -80,7 +80,8 @@
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
-    <div class="level1"><span class="xref">DurableActivityContext</span></div>
+    <div class="level1"><a class="xref" href="Microsoft.Azure.WebJobs.DurableActivityContextBase.html">DurableActivityContextBase</a></div>
+    <div class="level2"><span class="xref">DurableActivityContext</span></div>
   </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
@@ -110,7 +111,7 @@
   <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
   <h5 id="Microsoft_Azure_WebJobs_DurableActivityContext_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class DurableActivityContext</code></pre>
+    <pre><code class="lang-csharp hljs">public class DurableActivityContext : DurableActivityContextBase</code></pre>
   </div>
   <h3 id="properties">Properties
   </h3>
@@ -119,7 +120,7 @@
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContext_InstanceId.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L39">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L29">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableActivityContext_InstanceId_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableActivityContext_InstanceId" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId">InstanceId</h4>
@@ -128,7 +129,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string InstanceId { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public override string InstanceId { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -146,9 +147,11 @@
       </tr>
     </tbody>
   </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><a class="xref" href="Microsoft.Azure.WebJobs.DurableActivityContextBase.html#Microsoft_Azure_WebJobs_DurableActivityContextBase_InstanceId">DurableActivityContextBase.InstanceId</a></div>
   <h5 id="Microsoft_Azure_WebJobs_DurableActivityContext_InstanceId_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The instance ID is fixed when the parent orchestrator function is scheduled. It can be either
-auto-generated, in which case it is formatted as a GUID, or it can be an arbitrary string value.</p>
+  <div class="markdown level1 remarks"><p>The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
+auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.</p>
 </div>
   <h3 id="methods">Methods
   </h3>
@@ -157,7 +160,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be an arbitra
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContext_GetInput__1.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContext.GetInput%60%601%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L79">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L65">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableActivityContext_GetInput_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.GetInput*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableActivityContext_GetInput__1" data-uid="Microsoft.Azure.WebJobs.DurableActivityContext.GetInput``1">GetInput&lt;T&gt;()</h4>
@@ -166,7 +169,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be an arbitra
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public T GetInput&lt;T&gt;()</code></pre>
+    <pre><code class="lang-csharp hljs">public override T GetInput&lt;T&gt;()</code></pre>
   </div>
   <h5 class="returns">Returns</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -200,6 +203,8 @@ auto-generated, in which case it is formatted as a GUID, or it can be an arbitra
       </tr>
     </tbody>
   </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><a class="xref" href="Microsoft.Azure.WebJobs.DurableActivityContextBase.html#Microsoft_Azure_WebJobs_DurableActivityContextBase_GetInput__1">DurableActivityContextBase.GetInput&lt;T&gt;()</a></div>
 </article>
           </div>
           
@@ -211,7 +216,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be an arbitra
                     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContext.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContext%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
                   </li>
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L15" class="contribution-link">View Source</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContext.cs/#L14" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

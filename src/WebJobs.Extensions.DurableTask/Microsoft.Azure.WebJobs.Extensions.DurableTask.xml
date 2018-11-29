@@ -831,7 +831,19 @@
             <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
             <returns>Returns a task which completes when the purge has completed.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Miy operation.</param>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets the status of all orchestration instances with paging that match the specified conditions.
+            </summary>
+            <remarks>
+            This is limited to <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpApiHandler"/> and it will not be published to external clients.
+            </remarks>
+            <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+            <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+            <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+            <param name="pageSize">Number of records per one request.</param>
+            <param name="continuationToken">ContinuationToken of the pager.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
             <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
@@ -1704,29 +1716,6 @@
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
-            <summary>
-            Gets or sets the name of the orchestrator function to start.
-            </summary>
-            <value>The name of the orchestrator function to start.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId">
-            <summary>
-            Gets or sets the instance ID to assign to the started orchestration.
-            </summary>
-            <remarks>
-            If this property value is null (the default), then a randomly generated instance ID will be assigned automatically.
-            </remarks>
-            <value>The instance ID to assign.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input">
-            <summary>
-            Gets or sets the JSON-serializeable input data for the orchestrator function.
-            </summary>
-            <value>JSON-serializeable input value for the orchestrator function.</value>
-        </member>
-    </members>
-</doc>
-r name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
             <summary>
             Gets or sets the name of the orchestrator function to start.
             </summary>
