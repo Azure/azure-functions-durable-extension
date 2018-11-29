@@ -26,9 +26,7 @@ namespace VSSample
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
-            var res = starter.CreateCheckStatusResponse(req, instanceId);
-            res.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
-            return res;
+            return starter.CreateCheckStatusResponse(req, instanceId);
         }
     }
 }

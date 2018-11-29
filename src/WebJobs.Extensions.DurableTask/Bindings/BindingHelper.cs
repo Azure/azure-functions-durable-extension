@@ -10,6 +10,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class BindingHelper
     {
+        private const string InstanceIdPlaceholder = "INSTANCEID";
+
         private readonly DurableTaskExtension config;
         private readonly EndToEndTraceHelper traceHelper;
 
@@ -23,6 +25,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableOrchestrationClientBase client = this.config.GetClient(clientAttribute);
             return new OrchestrationClientAsyncCollector(client);
+        }
+
+        public string DurableOrchestrationClientToString(DurableOrchestrationClient client, OrchestrationClientAttribute attr)
+        {
+            var payload = new OrchestrationClientInputData
+            {
+                TaskHubName = client.TaskHubName,
+                CreationUrls = this.config.HttpApiHandler.GetInstanceCreationLinks(),
+                ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
+            };
+            return JsonConvert.SerializeObject(payload);
         }
 
         public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, OrchestrationClientAttribute attr)
@@ -61,6 +74,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return Task.CompletedTask;
             }
+        }
+
+        private class OrchestrationClientInputData
+        {
+            [JsonProperty("taskHubName")]
+            public string TaskHubName { get; set; }
+
+            [JsonProperty("creationUrls")]
+            public HttpCreationPayload CreationUrls { get; set; }
+
+            [JsonProperty("managementUrls")]
+            public HttpManagementPayload ManagementUrls { get; set; }
         }
     }
 }

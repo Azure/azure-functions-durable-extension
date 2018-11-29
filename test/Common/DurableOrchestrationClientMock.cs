@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public int Counter { get; set; }
 
-        public override Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
+        public override Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true)
         {
             var runtimeStatus = OrchestrationRuntimeStatus.Running;
             switch (instanceId)

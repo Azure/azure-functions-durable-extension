@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     /// <remarks>
     /// An external client can fetch the status of an orchestration instance using
-    /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool)"/>.
+    /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
     /// </remarks>
     public class DurableOrchestrationStatus
     {
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The orchestrator function name.
         /// </value>
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
         /// <summary>
         /// Gets the ID of the queried orchestration instance.
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The unique ID of the instance.
         /// </value>
-        public string InstanceId { get; internal set; }
+        public string InstanceId { get; set; }
 
         /// <summary>
         /// Gets the time at which the orchestration instance was created.
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The instance creation time in UTC.
         /// </value>
-        public DateTime CreatedTime { get; internal set; }
+        public DateTime CreatedTime { get; set; }
 
         /// <summary>
         /// Gets the time at which the orchestration instance last updated its execution history.
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The last-updated time in UTC.
         /// </value>
-        public DateTime LastUpdatedTime { get; internal set; }
+        public DateTime LastUpdatedTime { get; set; }
 
         /// <summary>
         /// Gets the input of the orchestrator function instance.
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The input as either a <c>JToken</c> or <c>null</c> if no input was provided.
         /// </value>
-        public JToken Input { get; internal set; }
+        public JToken Input { get; set; }
 
         /// <summary>
         /// Gets the output of the queried orchestration instance.
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The output as either a <c>JToken</c> object or <c>null</c> if it has not yet completed.
         /// </value>
-        public JToken Output { get; internal set; }
+        public JToken Output { get; set; }
 
         /// <summary>
         /// Gets the runtime status of the queried orchestration instance.
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// Expected values include `Running`, `Pending`, `Failed`, `Canceled`, `Terminated`, `Completed`.
         /// </value>
-        public OrchestrationRuntimeStatus RuntimeStatus { get; internal set; }
+        public OrchestrationRuntimeStatus RuntimeStatus { get; set; }
 
         /// <summary>
         /// Gets the custom status payload (if any) that was set by the orchestrator function.
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The custom status as either a <c>JToken</c> object or <c>null</c> if no custom status has been set.
         /// </value>
-        public JToken CustomStatus { get; internal set; }
+        public JToken CustomStatus { get; set; }
 
         /// <summary>
         /// Gets the execution history of the orchestration instance.
@@ -96,11 +96,11 @@ namespace Microsoft.Azure.WebJobs
         /// <remarks>
         /// The history log can be large and is therefore <c>null</c> by default.
         /// It is populated only when explicitly requested in the call to
-        /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool)"/>.
+        /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
         /// </remarks>
         /// <value>
         /// The output as a <c>JArray</c> object or <c>null</c>.
         /// </value>
-        public JArray History { get; internal set; }
+        public JArray History { get; set; }
     }
 }

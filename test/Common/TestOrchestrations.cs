@@ -28,6 +28,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task<bool> SayHelloWithActivityWithDeterministicGuid([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            Guid firstGuid = ctx.NewGuid();
+            Guid secondGuid = ctx.NewGuid();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            Guid thirdGuid = ctx.NewGuid();
+            return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
+        }
+
+        public static bool VerifyUniqueGuids([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            HashSet<Guid> guids = new HashSet<Guid>();
+            for (int i = 0; i < 10000; i++)
+            {
+                Guid newGuid = ctx.NewGuid();
+                if (guids.Contains(newGuid))
+                {
+                    return false;
+                }
+                else
+                {
+                    guids.Add(newGuid);
+                }
+            }
+
+            return true;
+        }
+
+        public static async Task<bool> VerifySameGuidGeneratedOnReplay([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            Guid firstGuid = ctx.NewGuid();
+            Guid firstOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), firstGuid);
+            if (firstGuid != firstOutputGuid)
+            {
+                return false;
+            }
+
+            Guid secondGuid = ctx.NewGuid();
+            Guid secondOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), secondGuid);
+            if (secondGuid != secondOutputGuid)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Echo), input);
+            return output;
+        }
+
         public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
@@ -99,6 +154,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
             }
 
+            // Allow clients to track the current value.
+            ctx.SetCustomStatus(currentValue);
+
             if (!done)
             {
                 ctx.ContinueAsNew(currentValue);
@@ -120,6 +178,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 itemName = await ctx.WaitForExternalEvent<string>("newItem");
 
                 requiredItems.Remove(itemName);
+            }
+
+            // we've received events for all the required items; safe to bail now!
+        }
+
+        public static async Task BatchActorRemoveLast([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            var requiredItems = new HashSet<string>(new[] { @"item1", @"item2", @"item3", @"item4", @"item5" });
+
+            // If an item was sent in during StartAsNew() this handles that
+            var itemName = ctx.GetInput<string>();
+            requiredItems.Remove(itemName);
+
+            while (requiredItems.Any())
+            {
+                await ctx.WaitForExternalEvent("deleteItem");
+
+                requiredItems.Remove(requiredItems.Last());
             }
 
             // we've received events for all the required items; safe to bail now!
@@ -336,6 +412,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CreateTimer(ctx.CurrentUtcDateTime.AddSeconds(2), CancellationToken.None);
         }
 
+        public static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
+            DurableOrchestrationStatus result = await ctx.CallActivityAsync<DurableOrchestrationStatus>(
+                nameof(TestActivities.UpdateDurableOrchestrationStatus),
+                durableOrchestrationStatus);
+            return result;
+        }
+
         public static async Task ParallelBatchActor([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
            Task item1 = ctx.WaitForExternalEvent<string>("newItem");
@@ -372,6 +457,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpManagementPayload activityPassedHttpManagementPayload =
                 await ctx.CallActivityAsync<HttpManagementPayload>(nameof(TestActivities.GetAndReturnHttpManagementPayload), null);
             return activityPassedHttpManagementPayload;
+        }
+
+        public static async Task<string> FanOutFanIn(
+            [OrchestrationTrigger] DurableOrchestrationContext context)
+        {
+            int parallelTasks = context.GetInput<int>();
+            var tasks = new Task[parallelTasks];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = context.CallActivityAsync<string>(nameof(TestActivities.Hello), i.ToString("000"));
+            }
+
+            await Task.WhenAll(tasks);
+
+            return "Done";
         }
     }
 }

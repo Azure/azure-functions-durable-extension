@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.WebJobs
         private string serializedInput;
         private string serializedOutput;
         private string serializedCustomStatus;
+        private int newGuidCounter = 0;
 
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
         {
@@ -98,6 +100,22 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return MessagePayloadDataConverter.Default.Deserialize<T>(this.serializedInput);
+        }
+
+        /// <inheritdoc />
+        public override Guid NewGuid()
+        {
+            // The name is a combination of the instance ID, the current orchestrator date/time, and a counter.
+            string guidNameValue = string.Concat(
+                this.InstanceId,
+                "_",
+                this.innerContext.CurrentUtcDateTime.ToString("o"),
+                "_",
+                this.newGuidCounter.ToString());
+
+            this.newGuidCounter++;
+
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
         internal void SetInput(string rawInput)

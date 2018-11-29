@@ -14,9 +14,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string functionName,
             object input,
             ITestOutputHelper output,
-            string instanceId = null)
+            string instanceId = null,
+            bool useTaskHubFromAppSettings = false)
         {
-            var startFunction = typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
+            var startFunction = useTaskHubFromAppSettings ?
+                typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithTaskHub)) :
+                typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
             var clientRef = new TestOrchestratorClient[1];
             var args = new Dictionary<string, object>
             {

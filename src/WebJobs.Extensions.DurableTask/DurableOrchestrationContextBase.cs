@@ -69,6 +69,17 @@ namespace Microsoft.Azure.WebJobs
         public abstract T GetInput<T>();
 
         /// <summary>
+        /// Creates a new GUID that is safe for replay within an orchestrator function.
+        /// </summary>
+        /// <remarks>
+        /// The default implementation of this method creates a name-based UUID using the algorithm from
+        /// RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+        /// instance ID and an internally managed sequence number.
+        /// </remarks>
+        /// <returns>The new <see cref="Guid"/> value.</returns>
+        public abstract Guid NewGuid();
+
+        /// <summary>
         /// Schedules an activity function named <paramref name="functionName"/> for execution.
         /// </summary>
         /// <param name="functionName">The name of the activity function to call.</param>
@@ -362,6 +373,17 @@ namespace Microsoft.Azure.WebJobs
         public abstract Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken);
 
         /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        public virtual Task WaitForExternalEvent(string name) => this.WaitForExternalEvent<object>(name);
+
+        /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
         /// </summary>
         /// <remarks>
@@ -372,6 +394,21 @@ namespace Microsoft.Azure.WebJobs
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received.</returns>
         public abstract Task<T> WaitForExternalEvent<T>(string name);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        /// <exception cref="TimeoutException">
+        /// The external event was not received before the timeout expired.
+        /// </exception>
+        public virtual Task WaitForExternalEvent(string name, TimeSpan timeout) => this.WaitForExternalEvent<object>(name, timeout);
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.

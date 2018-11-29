@@ -191,7 +191,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task HandleOutOfProcExecution(JObject executionResult)
         {
             var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(executionResult.ToString());
+            if (execution.CustomStatus != null)
+            {
+                this.context.SetCustomStatus(execution.CustomStatus);
+            }
+
             await this.ProcessAsyncActions(execution.Actions);
+
+            if (!string.IsNullOrEmpty(execution.Error))
+            {
+                throw new OrchestrationFailureException(
+                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}");
+            }
 
             if (execution.IsDone)
             {
@@ -267,6 +278,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("output")]
             internal object Output { get; set; }
+
+            [JsonProperty("error")]
+            internal string Error { get; set; }
+
+            [JsonProperty("customStatus")]
+            internal object CustomStatus { get; set; }
         }
 
         private class AsyncAction

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The name of the task hub.
         /// </value>
-        public abstract string TaskHubName { get;  }
+        public abstract string TaskHubName { get; }
 
         /// <summary>
         /// Creates an HTTP response that is useful for checking the status of the specified instance.
@@ -150,6 +151,24 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
+        /// <see cref="DurableOrchestrationContext.WaitForExternalEvent(string)"/> API.
+        /// </para><para>
+        /// If the specified instance is not found or not running, this operation will have no effect.
+        /// </para>
+        /// </remarks>
+        /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+        /// <param name="eventName">The name of the event.</param>
+        /// <returns>A task that completes when the event notification message has been enqueued.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
+        public virtual Task RaiseEventAsync(string instanceId, string eventName) => this.RaiseEventAsync(instanceId, eventName, null);
+
+        /// <summary>
+        /// Sends an event notification message to a waiting orchestration instance.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In order to handle the event, the target orchestration instance must be waiting for an
+        /// event named <paramref name="eventName"/> using the
         /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para><para>
         /// If the specified instance is not found or not running, this operation will have no effect.
@@ -221,7 +240,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
         public virtual Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory)
         {
-            return this.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false);
+            return this.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false, showInput: true);
         }
 
         /// <summary>
@@ -230,8 +249,9 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+        /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput);
+        public abstract Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput = true);
 
         /// <summary>
         /// Gets all the status of the orchestration instances.
@@ -249,5 +269,36 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         public abstract Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Purge the history for a concrete instance.
+        /// </summary>
+        /// <param name="instanceId">The ID of the orchestration instance to purge.</param>
+        /// <returns>Returns a task which completes when the purge has completed.</returns>
+        public abstract Task PurgeInstanceHistoryAsync(string instanceId);
+
+        /// <summary>
+        /// Purge the orchestration history for instances that match the conditions.
+        /// </summary>
+        /// <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
+        /// <param name="createdTimeTo">End creation time for querying instances for purging.</param>
+        /// <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
+        /// <returns>Returns a task which completes when the purge has completed.</returns>
+        public abstract Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus);
+
+        /// <summary>
+        /// Gets the status of all orchestration instances with paging that match the specified conditions.
+        /// </summary>
+        /// <remarks>
+        /// This is limited to <see cref="HttpApiHandler"/> and it will not be published to external clients.
+        /// </remarks>
+        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+        /// <param name="pageSize">Number of records per one request.</param>
+        /// <param name="continuationToken">ContinuationToken of the pager.</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
+        internal abstract Task<OrchestrationStatusQueryResult> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

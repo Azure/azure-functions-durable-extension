@@ -615,6 +615,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private class TestNameResolver : INameResolver
         {
+            private static readonly Dictionary<string, string> DefaultAppSettings = new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                { "TestTaskHub", string.Empty },
+            };
+
             private readonly INameResolver innerResolver;
 
             public TestNameResolver(INameResolver innerResolver)
@@ -633,7 +639,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string value = this.innerResolver?.Resolve(name);
                 if (value == null)
                 {
-                    return Environment.GetEnvironmentVariable(name);
+                    DefaultAppSettings.TryGetValue(name, out value);
+                }
+
+                if (value == null)
+                {
+                    value = Environment.GetEnvironmentVariable(name);
                 }
 
                 return value;

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const char BigValueChar = '*';
 
-        public static string Hello([ActivityTrigger] DurableActivityContext ctx)
+        public static string Hello([ActivityTrigger] DurableActivityContextBase ctx)
         {
             string input = ctx.GetInput<string>();
             return $"Hello, {input}!";
@@ -92,6 +92,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(ctx.InstanceId);
             return httpManagementPayload;
+        }
+
+        public static DurableOrchestrationStatus UpdateDurableOrchestrationStatus([ActivityTrigger] DurableActivityContext ctx)
+        {
+            DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
+            durableOrchestrationStatus.RuntimeStatus = OrchestrationRuntimeStatus.Completed;
+            durableOrchestrationStatus.CreatedTime = DateTime.UtcNow;
+            durableOrchestrationStatus.LastUpdatedTime = DateTime.UtcNow.AddSeconds(5);
+            return durableOrchestrationStatus;
         }
 
         public static Guid NewGuid([ActivityTrigger] DurableActivityContext ctx)

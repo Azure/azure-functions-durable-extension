@@ -4,6 +4,7 @@
 using System;
 using System.Net.Http;
 using System.Text;
+using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -250,6 +251,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (string.IsNullOrEmpty(this.HubName))
             {
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
+            }
+
+            try
+            {
+                NameValidator.ValidateBlobName(this.HubName);
+                NameValidator.ValidateContainerName(this.HubName.ToLowerInvariant());
+                NameValidator.ValidateTableName(this.HubName);
+                NameValidator.ValidateQueueName(this.HubName.ToLowerInvariant());
+            }
+            catch (ArgumentException e)
+            {
+                throw new ArgumentException(
+                    $"Task hub name '{this.HubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.", e);
             }
 
             if (this.ControlQueueBatchSize <= 0)

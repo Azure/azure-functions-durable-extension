@@ -22,11 +22,6 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor">
-            <summary>
-            Obsolete. Please use an alternate constructor overload.
-            </summary>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
@@ -35,17 +30,6 @@
             <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
             <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
-            <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>,
-            <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/> instances.
-            </summary>
-            <remarks>
-            A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
-            multiple Durable Functions applications from each other, even if they are using the same storage backend.
-            </remarks>
-            <value>The name of the default task hub.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -102,12 +86,28 @@
             Extension for registering a Durable Functions configuration with <c>JobHostConfiguration</c>.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)">
             <summary>
-            Enable running durable orchestrations implemented as functions.
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
             </summary>
-            <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
-            <param name="listenerConfig">Durable Functions configuration.</param>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="options">The configuration options for this extension.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,System.Action{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="configure">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions"/>.</param>
+            <returns>Returns the modified <paramref name="builder"/> object.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
@@ -315,6 +315,32 @@
             The type of a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.GuidManager">
+            <summary>
+            Class for creating deterministic <see cref="T:System.Guid"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload">
+            <summary>
+            Data structure containing orchestration instance creation HTTP endpoints.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload.CreateNewInstancePostUri">
+            <summary>
+            Gets the HTTP POST orchestration instance creation endpoint URL.
+            </summary>
+            <value>
+            The HTTP URL for creating a new orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpCreationPayload.CreateAndWaitOnNewInstancePostUri">
+            <summary>
+            Gets the HTTP POST orchestration instance create-and-wait endpoint URL.
+            </summary>
+            <value>
+            The HTTP URL for creating a new orchestration instance and waiting on its completion.
+            </value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
             <summary>
             Data structure containing status, terminate and send external event HTTP endpoints.
@@ -443,6 +469,12 @@
             Connection string provider which resolves connection strings from the WebJobs context.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider"/> class.
+            </summary>
+            <param name="hostConfiguration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the WebJobs host.</param>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
@@ -452,16 +484,7 @@
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId">
-            <summary>
-            Gets the instance ID of the currently executing orchestration.
-            </summary>
-            <remarks>
-            The instance ID is fixed when the parent orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be an arbitrary string value.
-            </remarks>
-            <value>
-            The ID of the current orchestration instance.
-            </value>
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput">
             <summary>
@@ -480,11 +503,7 @@
             </returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.GetInput``1">
-            <summary>
-            Gets the input of the current activity function as a deserialized value.
-            </summary>
-            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
-            <returns>The deserialized input value.</returns>
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput(System.Object)">
             <summary>
@@ -496,6 +515,30 @@
             <param name="output">
             The JSON-serializeable value to use as the activity function output.
             </param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.DurableActivityContextBase">
+            <summary>
+            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableActivityContextBase.InstanceId">
+            <summary>
+            Gets the instance ID of the currently executing orchestration.
+            </summary>
+            <remarks>
+            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+            </remarks>
+            <value>
+            The ID of the current orchestration instance.
+            </value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContextBase.GetInput``1">
+            <summary>
+            Gets the input of the current activity function as a deserialized value.
+            </summary>
+            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
+            <returns>The deserialized input value.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient">
             <summary>
@@ -529,13 +572,22 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RewindAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.PurgeInstanceHistoryAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
@@ -646,6 +698,23 @@
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String)">
+            <summary>
+            Sends an event notification message to a waiting orchestration instance.
+            </summary>
+            <remarks>
+            <para>
+            In order to handle the event, the target orchestration instance must be waiting for an
+            event named <paramref name="eventName"/> using the
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
+            </para><para>
+            If the specified instance is not found or not running, this operation will have no effect.
+            </para>
+            </remarks>
+            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+            <param name="eventName">The name of the event.</param>
+            <returns>A task that completes when the event notification message has been enqueued.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.Object)">
             <summary>
             Sends an event notification message to a waiting orchestration instance.
@@ -719,13 +788,14 @@
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Gets the status of the specified orchestration instance.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to query.</param>
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
             <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)">
@@ -744,6 +814,25 @@
             <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
             <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
             <returns>Returns orchestration status for all instances.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.PurgeInstanceHistoryAsync(System.String)">
+            <summary>
+            Purge the history for a concrete instance.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to purge.</param>
+            <returns>Returns a task which completes when the purge has completed.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+            <summary>
+            Purge the orchestration history for instances that match the conditions.
+            </summary>
+            <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
+            <param name="createdTimeTo">End creation time for querying instances for purging.</param>
+            <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
+            <returns>Returns a task which completes when the purge has completed.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Miy operation.</param>
+            <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
             <summary>
@@ -773,6 +862,9 @@
             </returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput``1">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.NewGuid">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)">
@@ -885,6 +977,17 @@
             </summary>
             <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
             <returns>The deserialized input value.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid">
+            <summary>
+            Creates a new GUID that is safe for replay within an orchestrator function.
+            </summary>
+            <remarks>
+            The default implementation of this method creates a name-based UUID using the algorithm from
+            RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+            instance ID and an internally managed sequence number.
+            </remarks>
+            <returns>The new <see cref="T:System.Guid"/> value.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">
             <summary>
@@ -1152,6 +1255,17 @@
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
             <returns>A durable task that completes when the durable timer expires.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
+            </remarks>
+            <param name="name">The name of the event to wait for.</param>
+            <returns>A durable task that completes when the external event is received.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
@@ -1163,6 +1277,21 @@
             <param name="name">The name of the event to wait for.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String,System.TimeSpan)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
+            </remarks>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <returns>A durable task that completes when the external event is received.</returns>
+            <exception cref="T:System.TimeoutException">
+            The external event was not received before the timeout expired.
+            </exception>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan)">
             <summary>
@@ -1225,7 +1354,7 @@
             </summary>
             <remarks>
             An external client can fetch the status of an orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>.
             </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name">
@@ -1310,7 +1439,7 @@
             <remarks>
             The history log can be large and is therefore <c>null</c> by default.
             It is populated only when explicitly requested in the call to
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>.
             </remarks>
             <value>
             The output as a <c>JArray</c> object or <c>null</c>.
@@ -1575,6 +1704,29 @@
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
+            <summary>
+            Gets or sets the name of the orchestrator function to start.
+            </summary>
+            <value>The name of the orchestrator function to start.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId">
+            <summary>
+            Gets or sets the instance ID to assign to the started orchestration.
+            </summary>
+            <remarks>
+            If this property value is null (the default), then a randomly generated instance ID will be assigned automatically.
+            </remarks>
+            <value>The instance ID to assign.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input">
+            <summary>
+            Gets or sets the JSON-serializeable input data for the orchestrator function.
+            </summary>
+            <value>JSON-serializeable input value for the orchestrator function.</value>
+        </member>
+    </members>
+</doc>
+r name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
             <summary>
             Gets or sets the name of the orchestrator function to start.
             </summary>

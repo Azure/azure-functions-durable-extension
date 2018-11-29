@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs
 
             this.client = new TaskHubClient(serviceClient);
             this.traceHelper = config.TraceHelper;
-            this.hubName = config.Options.HubName;
+            this.hubName = attribute.TaskHub ?? config.Options.HubName;
             this.attribute = attribute;
         }
 
@@ -170,17 +170,21 @@ namespace Microsoft.Azure.WebJobs
                 throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
             }
 
-            var service = (AzureStorageOrchestrationService)this.client.serviceClient;
+            var service = (AzureStorageOrchestrationService)this.client.ServiceClient;
             await service.RewindTaskOrchestrationAsync(instanceId, reason);
 
             this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
         }
 
         /// <inheritdoc />
-        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false)
+        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true)
         {
-            OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
-            if (state?.OrchestrationInstance == null)
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            var storageService = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            IList<OrchestrationState> stateList = await storageService.GetOrchestrationStateAsync(instanceId, allExecutions: false, fetchInput: showInput);
+
+            OrchestrationState state = stateList?.FirstOrDefault();
+            if (state == null || state.OrchestrationInstance == null)
             {
                 return null;
             }
@@ -192,7 +196,7 @@ namespace Microsoft.Azure.WebJobs
         public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
-            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(cancellationToken);
 
             var results = new List<DurableOrchestrationStatus>();
@@ -208,7 +212,7 @@ namespace Microsoft.Azure.WebJobs
         public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
-            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.serviceClient;
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             IList<OrchestrationState> states = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), cancellationToken);
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
@@ -217,6 +221,49 @@ namespace Microsoft.Azure.WebJobs
             }
 
             return results;
+        }
+
+        /// <inheritdoc />
+        public override Task PurgeInstanceHistoryAsync(string instanceId)
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            return serviceClient.PurgeInstanceHistoryAsync(instanceId);
+        }
+
+        /// <inheritdoc />
+        public override Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            return serviceClient.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+        }
+
+        /// <inheritdoc />
+        internal override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
+            DateTime createdTimeFrom,
+            DateTime? createdTimeTo,
+            IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
+            int pageSize,
+            string continuationToken,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);
+
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (var state in statusContext.OrchestrationState)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            var result = new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = results,
+                ContinuationToken = statusContext.ContinuationToken,
+            };
+
+            return result;
         }
 
         private static JToken ParseToJToken(string value)

@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -6,13 +6,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -71,6 +76,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         extendedSessions,
                         orchestratorFunctionNames);
                 }
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates task hub name configured via the <see cref="OrchestrationClientAttribute"/> when
+        /// simple orchestrator function which that doesn't call any activity functions is executed.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HelloWorld_OrchestrationClientTaskHub()
+        {
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.HelloWorld_OrchestrationClientTaskHub),
+                enableExtendedSessions: false);
+
+            Dictionary<string, string> appSettings = new Dictionary<string, string>
+            {
+                { "TestTaskHub", taskHubName },
+            };
+
+            using (var clientHost = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorld_OrchestrationClientTaskHub) + "_Unused",
+                enableExtendedSessions: false,
+                nameResolver: new SimpleNameResolver(appSettings)))
+            using (var orchestrationHost = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorld_OrchestrationClientTaskHub),
+                enableExtendedSessions: false))
+            {
+                await clientHost.StartAsync();
+                await orchestrationHost.StartAsync();
+
+                // First, start and complete an orchestration on the main orchestration host.
+                var client = await orchestrationHost.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SayHelloInline),
+                    "World",
+                    this.output,
+                    useTaskHubFromAppSettings: false);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+
+                // Next, start an orchestration from the client host and verify that it completes on the orchestration host.
+                client = await clientHost.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SayHelloInline),
+                    "World",
+                    this.output,
+                    useTaskHubFromAppSettings: true);
+                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+
+                await orchestrationHost.StopAsync();
+                await clientHost.StopAsync();
             }
         }
 
@@ -151,6 +215,103 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task HelloWorldOrchestration_Activity_HistoryInputOutput(bool extendedSessions)
         {
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true, true);
+        }
+
+        /// <summary>
+        ///  End-to-end test which runs a simple orchestrator function that calls a single activity function and verifies that the generated GUID-s from the DurableOrchestrationContext are the same.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task HelloWorldActivityWithNewGUID(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivityWithDeterministicGuid),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorldActivityWithNewGUID),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("True", status.Output.ToString());
+            }
+        }
+
+        /// <summary>
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates unique GUIDs.
+        ///  The tests creates 10,000 GUIDs and validates that all the values are unique.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task VerifyUniqueGuids(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.VerifyUniqueGuids),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.VerifyUniqueGuids),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Empty(status.Input.ToString());
+                Assert.Equal("True", status.Output.ToString());
+            }
+        }
+
+        /// <summary>
+        ///  End-to-end test which  validates that <see cref="DurableOrchestrationContext"/> NewGuid method creates the same GUIDs on replay.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task VerifySameGuidsOnReplay(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.VerifySameGuidGeneratedOnReplay),
+            };
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.VerifySameGuidsOnReplay),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                DurableOrchestrationStatus status =
+                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Empty(status.Input.ToString());
+                Assert.Equal("True", status.Output.ToString());
+            }
         }
 
         private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
@@ -380,19 +541,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr");
 
-                // TODO: Sleeping to avoid a race condition where multiple ContinueAsNew messages
-                //       are processed by the same instance at the same time, resulting in a corrupt
-                //       storage failure in DTFx.
+                // TODO: Sleeping to avoid a race condition where events can get dropped.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                await Task.Delay(2000);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
                 await client.RaiseEventAsync("operation", "decr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client.RaiseEventAsync("operation", "incr");
-                await Task.Delay(2000);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
@@ -403,7 +563,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The end message will cause the actor to complete itself.
                 await client.RaiseEventAsync("operation", "end");
 
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(waitTimeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int)status?.Output);
@@ -456,6 +616,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Sending this last item will cause the actor to complete itself.
                 await client.RaiseEventAsync("newItem", "item5");
+
+                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates the wait-for-full-batch case using an actor pattern.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task BatchedActorOrchestrationDeleteLastItemAlways(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.BatchedActorOrchestrationDeleteLastItemAlways),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActorRemoveLast), null, this.output);
+
+                // Perform some operations
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item5
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item4
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item3
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item2
+
+                // Make sure it's still running and didn't complete early (or fail).
+                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
+
+                // Sending this last event will cause the actor to complete itself.
+                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item1
 
                 status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
@@ -1573,7 +1772,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(stringLength, status?.Output.ToString().Count(c => c == TestOrchestrations.BigValueChar));
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -1607,7 +1806,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(timeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(stringLength, status?.Output.ToString().Count(c => c == TestActivities.BigValueChar));
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -1713,6 +1912,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatus_ShowInputFalse()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputFalse), false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+
+                DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false, showInput: false);
+                Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatus_ShowInputDefault()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputDefault), false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+
+                DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false);
+                Assert.Equal("1", status.Input.ToString());
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task Deserialize_DurableOrchestrationStatus()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.Deserialize_DurableOrchestrationStatus), false))
+            {
+                await host.StartAsync();
+
+                string instanceId = Guid.NewGuid().ToString();
+                DurableOrchestrationStatus input = new DurableOrchestrationStatus();
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.GetDurableOrchestrationStatus),
+                    input,
+                    this.output);
+                DurableOrchestrationStatus desereliazedStatus = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.NotNull(desereliazedStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, desereliazedStatus.RuntimeStatus);
+                Assert.True(desereliazedStatus.LastUpdatedTime > desereliazedStatus.CreatedTime);
+
+                await host.StopAsync();
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates that Activity function can get an instance of HttpManagementPayload and return via the orchestrator.
         /// </summary>
@@ -1741,7 +1994,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
-                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
+                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
 
                 await host.StopAsync();
             }
@@ -1772,7 +2025,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
-                this.ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
+                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -1812,24 +2065,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
                 var instanceId = client1.InstanceId;
                 taskHubName1 = client1.TaskHubName;
-                taskHubName2 = client2.TaskHubName;
 
                 // Perform some operations
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
 
-                // TODO: Sleeping to avoid a race condition where multiple ContinueAsNew messages
-                //       are processed by the same instance at the same time, resulting in a corrupt
-                //       storage failure in DTFx.
+                // TODO: Sleeping to avoid a race condition where events can get dropped.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                await Task.Delay(3000);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "decr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
-                await Task.Delay(3000);
+                await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client1.GetStatusAsync();
@@ -1889,25 +2140,319 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Purge_Single_Instance_History(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.Purge_Single_Instance_History),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                string instanceId = Guid.NewGuid().ToString();
+                string message = GenerateMediumRandomStringPayload().ToString();
+                TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync(true);
+                Assert.NotNull(orchestrationStatus);
+                Assert.Equal(instanceId, orchestrationStatus.InstanceId);
+                Assert.True(orchestrationStatus.History.Count > 0);
+
+                int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.True(blobCount > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(instanceId);
+
+                orchestrationStatus = await client.GetStatusAsync(true);
+                Assert.Null(orchestrationStatus);
+
+                blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Purge_All_History_By_TimePeriod(bool extendedSessions)
+        {
+            string testName = nameof(this.Purge_Partially_History_By_TimePeriod);
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                DateTime startDateTime = DateTime.Now;
+
+                string firstInstanceId = Guid.NewGuid().ToString();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string secondInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string thirdInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string fourthInstanceId = Guid.NewGuid().ToString();
+                string message = GenerateMediumRandomStringPayload().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, fourthInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.True(status.History.Count > 0);
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+
+                int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                Assert.True(blobCount > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(
+                    startDateTime,
+                    DateTime.UtcNow,
+                    new List<OrchestrationStatus>
+                    {
+                        OrchestrationStatus.Completed,
+                        OrchestrationStatus.Terminated,
+                        OrchestrationStatus.Failed,
+                    });
+
+                status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
+                Assert.Null(status);
+
+                blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Purge_Partially_History_By_TimePeriod(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.Purge_Partially_History_By_TimePeriod),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                DateTime startDateTime = DateTime.Now;
+
+                string firstInstanceId = Guid.NewGuid().ToString();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                DateTime endDateTime = DateTime.Now;
+                await Task.Delay(5000);
+
+                string secondInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string thirdInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
+                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(
+                    startDateTime,
+                    endDateTime,
+                    new List<OrchestrationStatus>
+                    {
+                        OrchestrationStatus.Completed,
+                        OrchestrationStatus.Terminated,
+                        OrchestrationStatus.Failed,
+                    });
+
+                status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.NotNull(status);
+                Assert.Equal(secondInstanceId, status.InstanceId);
+                Assert.True(status.History.Count > 0);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.NotNull(status);
+                Assert.Equal(thirdInstanceId, status.InstanceId);
+                Assert.True(status.History.Count > 0);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [InlineData("Task-Hub-Name-Test")]
+        [InlineData("1TaskHubNameTest")]
+        [InlineData("/TaskHubNameTest")]
+        [InlineData("-taskhubnametest")]
+        [InlineData("taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest")]
+        public async Task TaskHubName_Throws_ArgumentException(string taskHubName)
+        {
+            ArgumentException argumentException =
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        taskHubName,
+                        false))
+                    {
+                        await host.StartAsync();
+                    }
+                });
+
+            Assert.NotNull(argumentException);
+            Assert.Equal(
+                argumentException.Message.Contains($"{taskHubName}V1")
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                argumentException.Message);
+        }
+
+        private static StringBuilder GenerateMediumRandomStringPayload()
+        {
+            // Generate a medium random string payload
+            const int TargetPayloadSize = 128 * 1024; // 128 KB
+            const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 {}/<>.-";
+            var sb = new StringBuilder();
+            var random = new Random();
+            while (Encoding.Unicode.GetByteCount(sb.ToString()) < TargetPayloadSize)
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    sb.Append(Chars[random.Next(Chars.Length)]);
+                }
+            }
+
+            return sb;
+        }
+
+        private static async Task<int> GetBlobCount(string containerName, string directoryName)
+        {
+            string storageConnectionString = TestHelpers.GetStorageConnectionString();
+            CloudStorageAccount storageAccount;
+            if (!CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
+            {
+                return 0;
+            }
+
+            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+
+            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
+            await cloudBlobContainer.CreateIfNotExistsAsync();
+            CloudBlobDirectory instanceDirectory = cloudBlobContainer.GetDirectoryReference(directoryName);
+            int blobCount = 0;
+            BlobContinuationToken blobContinuationToken = null;
+            do
+            {
+                BlobResultSegment results = await instanceDirectory.ListBlobsSegmentedAsync(blobContinuationToken);
+                blobContinuationToken = results.ContinuationToken;
+                blobCount += results.Results.Count();
+            }
+            while (blobContinuationToken != null);
+
+            return blobCount;
+        }
+
+        private static async Task ValidateBlobUrlAsync(string taskHubName, string instanceId, string value)
+        {
+            CloudStorageAccount account = CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
+            Assert.StartsWith(account.BlobStorageUri.PrimaryUri.OriginalString, value);
+            Assert.Contains("/" + instanceId + "/", value);
+            Assert.EndsWith(".json.gz", value);
+
+            string containerName = $"{taskHubName.ToLowerInvariant()}-largemessages";
+            CloudBlobClient client = account.CreateCloudBlobClient();
+            CloudBlobContainer container = client.GetContainerReference(containerName);
+            Assert.True(await container.ExistsAsync(), $"Blob container {containerName} is expected to exist.");
+
+            await client.GetBlobReferenceFromServerAsync(new Uri(value));
+            CloudBlobDirectory instanceDirectory = container.GetDirectoryReference(instanceId);
+
+            string blobName = value.Split('/').Last();
+            CloudBlob blob = instanceDirectory.GetBlobReference(blobName);
+            Assert.True(await blob.ExistsAsync(), $"Blob named {blob.Uri} is expected to exist.");
+        }
+
+        private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
         {
             Assert.NotNull(httpManagementPayload);
             Assert.NotEmpty(httpManagementPayload.Id);
             string instanceId = httpManagementPayload.Id;
-            string notifucaitonUrl = TestConstants.NotificationUrlBase;
+            string notificationUrl = TestConstants.NotificationUrlBase;
             string taskHubName = extendedSessions
                 ? $"{defaultTaskHubName}EX"
                 : defaultTaskHubName;
             taskHubName += PlatformSpecificHelpers.VersionSuffix;
 
             Assert.Equal(
-                $"{notifucaitonUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
+                $"{notificationUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
-                $"{notifucaitonUrl}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey",
+                $"{notificationUrl}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.SendEventPostUri);
             Assert.Equal(
-                $"{notifucaitonUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey",
+                $"{notificationUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
         }
 

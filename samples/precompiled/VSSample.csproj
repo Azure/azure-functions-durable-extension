@@ -6,8 +6,8 @@
 
   <!-- Common packages for all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.6.2" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.21" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.7.0" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.24" />
   </ItemGroup>
 
   <!-- .NET Standard 2.0-specific packages -->
