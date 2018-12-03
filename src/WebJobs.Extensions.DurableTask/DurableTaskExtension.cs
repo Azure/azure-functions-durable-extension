@@ -17,6 +17,7 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
-#if !NETSTANDARD2_0
+        #if !NETSTANDARD2_0
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
         /// </summary>
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = new DurableTaskOptions();
             this.isOptionsConfigured = false;
         }
-#endif
+        #endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -96,10 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
-
-#if NETSTANDARD2_0
-            MaxConnectionHelper.SetMaxConnectionsPerServer(logger);
-#endif
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
