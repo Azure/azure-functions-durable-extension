@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const storage = require("azure-storage");
 
+const blobService = storage.createBlobService(process.env['AzureWebJobsStorage']);
+
 module.exports = function (context, filePath) {
     const container = "backups";
     const root = path.parse(filePath).root;
@@ -9,7 +11,6 @@ module.exports = function (context, filePath) {
         .substring(root.length)
         .replace("\\", "/");
     const outputLocation = `backups/${blobPath}`;
-    const blobService = storage.createBlobService(process.env['AzureWebJobsStorage']);
 
     blobService.createContainerIfNotExists(container, (error) => {
         if (error) {

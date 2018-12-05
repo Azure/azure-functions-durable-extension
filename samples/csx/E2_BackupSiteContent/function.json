@@ -5,6 +5,5 @@
       "type": "orchestrationTrigger",
       "direction": "in"
     }
-  ],
-  "disabled": false
+  ]
 }

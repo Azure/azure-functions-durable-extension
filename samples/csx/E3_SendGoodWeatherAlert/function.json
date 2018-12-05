@@ -13,6 +13,5 @@
         "authTokenSetting": "TwilioAuthToken",
         "direction": "out"
       }
-    ],
-    "disabled": false
+    ]
   }
