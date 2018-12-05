@@ -1,9 +1,10 @@
 const seedrandom = require("seedrandom");
 const uuidv1 = require("uuid/v1");
 
-module.exports = function (context, phoneNumber) {
-    // Get a random number generator with a random seed (not time-based)
-    const rand = seedrandom(uuidv1());
+// Get a random number generator with a random seed (not time-based)
+const rand = seedrandom(uuidv1());
+
+module.exports = async function (context, phoneNumber) {
     const challengeCode = Math.floor(rand() * 10000);
 
     context.log(`Sending verification code ${challengeCode} to ${phoneNumber}.`);
@@ -13,5 +14,5 @@ module.exports = function (context, phoneNumber) {
         to: phoneNumber
     };
 
-    context.done(null, challengeCode);
+    return challengeCode;
 };
