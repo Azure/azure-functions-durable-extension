@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class DurableOrchestrationContextBase
    ">
-    <meta name="generator" content="docfx 2.36.2.0">
+    <meta name="generator" content="docfx 2.40.4.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -165,7 +165,7 @@ at specific points in the orchestrator function code, making it deterministic an
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public abstract string InstanceId { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public virtual string InstanceId { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -268,7 +268,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L86">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L97">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">CallActivityAsync(String, Object)</h4>
@@ -350,7 +350,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync__1_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync%60%601(System.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L131">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L142">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityAsync__1_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync``1(System.String,System.Object)">CallActivityAsync&lt;TResult&gt;(String, Object)</h4>
@@ -448,7 +448,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L110">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L121">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">CallActivityWithRetryAsync(String, RetryOptions, Object)</h4>
@@ -541,7 +541,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync%60%601(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L153">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L164">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallActivityWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">CallActivityWithRetryAsync&lt;TResult&gt;(String, RetryOptions, Object)</h4>
@@ -650,7 +650,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L170">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L181">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.Object)">CallSubOrchestratorAsync(String, Object)</h4>
@@ -732,7 +732,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_System_String_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String%2CSystem.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L191">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L202">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_System_String_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.String,System.Object)">CallSubOrchestratorAsync(String, String, Object)</h4>
@@ -820,7 +820,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync__1_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync%60%601(System.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L212">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L223">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync__1_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.Object)">CallSubOrchestratorAsync&lt;TResult&gt;(String, Object)</h4>
@@ -918,7 +918,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync__1_System_String_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync%60%601(System.String%2CSystem.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L234">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L245">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorAsync__1_System_String_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">CallSubOrchestratorAsync&lt;TResult&gt;(String, String, Object)</h4>
@@ -1022,7 +1022,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L255">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L266">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">CallSubOrchestratorWithRetryAsync(String, RetryOptions, Object)</h4>
@@ -1115,7 +1115,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L280">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L291">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">CallSubOrchestratorWithRetryAsync(String, RetryOptions, String, Object)</h4>
@@ -1214,7 +1214,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync%60%601(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L305">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L316">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">CallSubOrchestratorWithRetryAsync&lt;TResult&gt;(String, RetryOptions, Object)</h4>
@@ -1323,7 +1323,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync%60%601(System.String%2CMicrosoft.Azure.WebJobs.RetryOptions%2CSystem.String%2CSystem.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L331">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L342">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CallSubOrchestratorWithRetryAsync__1_System_String_Microsoft_Azure_WebJobs_RetryOptions_System_String_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">CallSubOrchestratorWithRetryAsync&lt;TResult&gt;(String, RetryOptions, String, Object)</h4>
@@ -1438,7 +1438,7 @@ auto-generated, in which case it is formatted as a GUID, or it can be user-speci
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L418">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L455">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)">ContinueAsNew(Object)</h4>
@@ -1479,7 +1479,7 @@ instance restarts itself using this method.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_System_DateTime_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L344">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L355">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_System_DateTime_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime,System.Threading.CancellationToken)">CreateTimer(DateTime, CancellationToken)</h4>
@@ -1540,7 +1540,7 @@ Otherwise the underlying framework will keep the instance alive until the timer 
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer%60%601(System.DateTime%2C%60%600%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L362">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L373">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer__1_System_DateTime___0_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">CreateTimer&lt;T&gt;(DateTime, T, CancellationToken)</h4>
@@ -1668,10 +1668,47 @@ Otherwise the underlying framework will keep the instance alive until the timer 
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_NewGuid.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L80">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_NewGuid_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_NewGuid" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid">NewGuid()</h4>
+  <div class="markdown level1 summary"><p>Creates a new GUID that is safe for replay within an orchestrator function.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract Guid NewGuid()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Guid</span></td>
+        <td><p>The new <span class="xref">System.Guid</span> value.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_NewGuid_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The default implementation of this method creates a name-based UUID using the algorithm from
+RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+instance ID and an internally managed sequence number.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L429">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L466">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)">SetCustomStatus(Object)</h4>
@@ -1707,10 +1744,140 @@ value must not exceed 16 KB of UTF-16 encoded text.</p>
 </div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L384">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String)">WaitForExternalEvent(String)</h4>
+  <div class="markdown level1 summary"><p>Waits asynchronously for an event to be raised with name <code data-dev-comment-type="paramref" class="paramref">name</code>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public virtual Task WaitForExternalEvent(string name)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">name</span></td>
+        <td><p>The name of the event to wait for.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A durable task that completes when the external event is received.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>External clients can raise events to a waiting orchestration instance using
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_System_String_System_String_System_Object_">RaiseEventAsync(String, String, Object)</a> with the object parameter set to <code>null</code>.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_System_String_System_TimeSpan_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String%2CSystem.TimeSpan)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L411">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_System_String_System_TimeSpan_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String,System.TimeSpan)">WaitForExternalEvent(String, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Waits asynchronously for an event to be raised with name <code data-dev-comment-type="paramref" class="paramref">name</code>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public virtual Task WaitForExternalEvent(string name, TimeSpan timeout)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">name</span></td>
+        <td><p>The name of the event to wait for.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.TimeSpan</span></td>
+        <td><span class="parametername">timeout</span></td>
+        <td><p>The duration after which to throw a TimeoutException.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>A durable task that completes when the external event is received.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_System_String_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>External clients can raise events to a waiting orchestration instance using
+<a class="xref" href="Microsoft.Azure.WebJobs.DurableOrchestrationClient.html#Microsoft_Azure_WebJobs_DurableOrchestrationClient_RaiseEventAsync_System_String_System_String_System_Object_">RaiseEventAsync(String, String, Object)</a> with the object parameter set to <code>null</code>.</p>
+</div>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.TimeoutException</span></td>
+        <td><p>The external event was not received before the timeout expired.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent%60%601(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L374">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L396">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String)">WaitForExternalEvent&lt;T&gt;(String)</h4>
@@ -1780,7 +1947,7 @@ value must not exceed 16 KB of UTF-16 encoded text.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_System_TimeSpan_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent%60%601(System.String%2CSystem.TimeSpan)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L390">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L427">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_System_TimeSpan_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan)">WaitForExternalEvent&lt;T&gt;(String, TimeSpan)</h4>
@@ -1872,7 +2039,7 @@ value must not exceed 16 KB of UTF-16 encoded text.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_System_TimeSpan___0_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent%60%601(System.String%2CSystem.TimeSpan%2C%60%600)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L405">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L442">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_WaitForExternalEvent__1_System_String_System_TimeSpan___0_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">WaitForExternalEvent&lt;T&gt;(String, TimeSpan, T)</h4>

@@ -5,12 +5,12 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Class WebJobsConnectionStringProvider
+    <title>Class DurableActivityContextBase
    </title>
     <!-- Prevent search engine web crawlers from indexing or crawling this page -->
     <meta name="robots" content="none">
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Class WebJobsConnectionStringProvider
+    <meta name="title" content="Class DurableActivityContextBase
    ">
     <meta name="generator" content="docfx 2.40.4.0">
     
@@ -69,19 +69,20 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider">
+            <article class="content wrap" id="_content" data-uid="Microsoft.Azure.WebJobs.DurableActivityContextBase">
   
   
-  <h1 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider" class="text-break">Class WebJobsConnectionStringProvider
+  <h1 id="Microsoft_Azure_WebJobs_DurableActivityContextBase" data-uid="Microsoft.Azure.WebJobs.DurableActivityContextBase" class="text-break">Class DurableActivityContextBase
   </h1>
-  <div class="markdown level0 summary"><p>Connection string provider which resolves connection strings from the WebJobs context.</p>
+  <div class="markdown level0 summary"><p>Abstract base class for <a class="xref" href="Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a>.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
-    <div class="level1"><span class="xref">WebJobsConnectionStringProvider</span></div>
+    <div class="level1"><span class="xref">DurableActivityContextBase</span></div>
   </div>
+      <div class="level2"><a class="xref" href="Microsoft.Azure.WebJobs.DurableActivityContext.html">DurableActivityContext</a></div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
     <div>
@@ -106,84 +107,68 @@
       <span class="xref">System.Object.ToString()</span>
     </div>
   </div>
-  <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.html">Microsoft.Azure.WebJobs.Extensions.DurableTask</a></h6>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Microsoft.Azure.WebJobs.html">Microsoft.Azure.WebJobs</a></h6>
   <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
-  <h5 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider_syntax">Syntax</h5>
+  <h5 id="Microsoft_Azure_WebJobs_DurableActivityContextBase_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class WebJobsConnectionStringProvider : IConnectionStringResolver</code></pre>
+    <pre><code class="lang-csharp hljs">public abstract class DurableActivityContextBase</code></pre>
   </div>
-  <h3 id="constructors">Constructors
+  <h3 id="properties">Properties
   </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider__ctor_Microsoft_Extensions_Configuration_IConfiguration_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.%23ctor(Microsoft.Extensions.Configuration.IConfiguration)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContextBase_InstanceId.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContextBase.InstanceId%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/WebJobsConnectionStringProvider.cs/#L21">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContextBase.cs/#L21">View Source</a>
   </span>
-  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider__ctor_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.#ctor*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider__ctor_Microsoft_Extensions_Configuration_IConfiguration_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">WebJobsConnectionStringProvider(IConfiguration)</h4>
-  <div class="markdown level1 summary"><p>Initializes a new instance of the <a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.html">WebJobsConnectionStringProvider</a> class.</p>
+  <a id="Microsoft_Azure_WebJobs_DurableActivityContextBase_InstanceId_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContextBase.InstanceId*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableActivityContextBase_InstanceId" data-uid="Microsoft.Azure.WebJobs.DurableActivityContextBase.InstanceId">InstanceId</h4>
+  <div class="markdown level1 summary"><p>Gets the instance ID of the currently executing orchestration.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public WebJobsConnectionStringProvider(IConfiguration hostConfiguration)</code></pre>
+    <pre><code class="lang-csharp hljs">public virtual string InstanceId { get; }</code></pre>
   </div>
-  <h5 class="parameters">Parameters</h5>
+  <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
         <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">Microsoft.Extensions.Configuration.IConfiguration</span></td>
-        <td><span class="parametername">hostConfiguration</span></td>
-        <td><p>A <span class="xref">Microsoft.Extensions.Configuration.IConfiguration</span> object provided by the WebJobs host.</p>
-</td>
-      </tr>
-    </tbody>
-  </table>
-  <h3 id="methods">Methods
-  </h3>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider_Resolve_System_String_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/WebJobsConnectionStringProvider.cs/#L27">View Source</a>
-  </span>
-  <a id="Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider_Resolve_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve*"></a>
-  <h4 id="Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider_Resolve_System_String_" data-uid="Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">Resolve(String)</h4>
-  <div class="markdown level1 summary"><p>Looks up a connection string value given a name.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string Resolve(string connectionStringName)</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
         <th>Description</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><span class="xref">System.String</span></td>
-        <td><span class="parametername">connectionStringName</span></td>
-        <td><p>The name of the connection string.</p>
+        <td><p>The ID of the current orchestration instance.</p>
 </td>
       </tr>
     </tbody>
   </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableActivityContextBase_InstanceId_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
+auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.</p>
+</div>
+  <h3 id="methods">Methods
+  </h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContextBase_GetInput__1.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContextBase.GetInput%60%601%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContextBase.cs/#L28">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableActivityContextBase_GetInput_" data-uid="Microsoft.Azure.WebJobs.DurableActivityContextBase.GetInput*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableActivityContextBase_GetInput__1" data-uid="Microsoft.Azure.WebJobs.DurableActivityContextBase.GetInput``1">GetInput&lt;T&gt;()</h4>
+  <div class="markdown level1 summary"><p>Gets the input of the current activity function as a deserialized value.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract T GetInput&lt;T&gt;()</code></pre>
+  </div>
   <h5 class="returns">Returns</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
@@ -194,14 +179,28 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">System.String</span></td>
-        <td><p>Returns the resolved connection string value.</p>
+        <td><span class="xref">T</span></td>
+        <td><p>The deserialized input value.</p>
 </td>
       </tr>
     </tbody>
   </table>
-  <h5 class="implements">Implements</h5>
-      <div><a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver.html#Microsoft_Azure_WebJobs_Extensions_DurableTask_IConnectionStringResolver_Resolve_System_String_">IConnectionStringResolver.Resolve(String)</a></div>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td><p>Any data contract type that matches the JSON input.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
 </article>
           </div>
           
@@ -210,10 +209,10 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_Extensions_DurableTask_WebJobsConnectionStringProvider.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableActivityContextBase.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableActivityContextBase%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Improve this Doc</a>
                   </li>
                   <li>
-                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/WebJobsConnectionStringProvider.cs/#L12" class="contribution-link">View Source</a>
+                    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableActivityContextBase.cs/#L9" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
