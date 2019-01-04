@@ -56,6 +56,8 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool IsCompleted { get; set; }
 
+        internal OrchestrationFailureException OrchestrationException { get; set; }
+
         internal string HubName => this.config.Options.HubName;
 
         internal string Name => this.orchestrationName;

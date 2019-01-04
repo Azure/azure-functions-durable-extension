@@ -117,9 +117,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.IsReplaying));
                 }
 
-                throw new OrchestrationFailureException(
+                var orchestrationException = new OrchestrationFailureException(
                     $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
                     Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+
+                this.context.OrchestrationException = orchestrationException;
+
+                throw orchestrationException;
             }
             finally
             {
