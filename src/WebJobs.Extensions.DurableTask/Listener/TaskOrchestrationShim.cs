@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -117,9 +118,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.IsReplaying));
                 }
 
-                throw new OrchestrationFailureException(
+                var orchestrationException = new OrchestrationFailureException(
                     $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
                     Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+
+                this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
+
+                throw orchestrationException;
             }
             finally
             {
