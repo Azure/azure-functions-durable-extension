@@ -26,7 +26,7 @@ A clear and concise description of what the bug is. Please make an effort to fil
 - Function App name:
 - Function name(s):
 - Region:
-- Orchestration execution ID(s):
+- Orchestration instance ID(s):
 
 > If you don't want to share your Function App name or Functions names on GitHub, please be sure to provide your Invocation ID, Timestamp, and Region - we can use this to look up your Function App/Function. Provide an invocation id per Function. See the [Functions Host wiki](https://github.com/Azure/azure-webjobs-sdk-script/wiki/Sharing-Your-Function-App-name-privately) for more details.
 
