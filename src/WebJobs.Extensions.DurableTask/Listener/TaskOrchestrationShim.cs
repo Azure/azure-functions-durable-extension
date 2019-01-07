@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -118,10 +119,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 var orchestrationException = new OrchestrationFailureException(
-                    $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                    $"Orchestrator function '{this.context.Name}' failed: {exceptionDetails}",
                     Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
 
-                this.context.OrchestrationException = orchestrationException;
+                this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
 
                 throw orchestrationException;
             }

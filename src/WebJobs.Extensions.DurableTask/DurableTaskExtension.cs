@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
-using DurableTask.Core.Exceptions;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host;
@@ -328,7 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // 4. If an activity failed, indicate to the functions Host that this execution failed via an exception
                         if (context.IsCompleted && context.OrchestrationException != null)
                         {
-                            throw context.OrchestrationException;
+                            context.OrchestrationException.Throw();
                         }
                     },
 #pragma warning restore CS0618
