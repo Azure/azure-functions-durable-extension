@@ -372,13 +372,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     TriggerValue = context,
 
 #pragma warning disable CS0618 // Approved for use by this extension
-                    InvokeHandler = userCodeInvoker =>
+                    InvokeHandler = async userCodeInvoker =>
                     {
                         // 2. Configure the shim with the inner invoker to execute the user code.
                         shim.SetFunctionInvocationCallback(userCodeInvoker);
 
                         // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
-                        return next();
+                        await next();
+
+                        // 4. If an activity failed, indicate to the functions Host that this execution failed via an exception
+                        if (context.IsCompleted && context.OrchestrationException != null)
+                        {
+                            context.OrchestrationException.Throw();
+                        }
                     },
 #pragma warning restore CS0618
                 },
