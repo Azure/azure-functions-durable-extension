@@ -15,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private readonly bool preferFormattedMessages;
         private TraceEventSession currentSession;
+        private Thread backgroundTraceThread;
 
         public LogEventTraceListener()
             : this(preferFormattedMessages: false)
@@ -29,19 +30,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public event EventHandler<TraceLogEventArgs> OnTraceLog;
 
         public void CaptureLogs(
+            string sessionName,
             IDictionary<string, TraceEventLevel> providers,
             IDictionary<string, IEnumerable<int>> eventIdFilters = null)
         {
+            if (string.IsNullOrEmpty(sessionName))
+            {
+                throw new ArgumentException(nameof(sessionName));
+            }
+
+            if (providers == null)
+            {
+                throw new ArgumentException(nameof(providers));
+            }
+
             if (this.currentSession != null)
             {
                 throw new InvalidOperationException("A trace session is already running.");
             }
 
-            ThreadPool.QueueUserWorkItem(_ =>
+            this.backgroundTraceThread = new Thread(_ =>
             {
-                Thread.CurrentThread.Name = "ListenForEventTraceLogs";
+                Thread.CurrentThread.Name = $"ListenForEventTraceLogs: {sessionName}";
 
-                this.currentSession = new TraceEventSession("EtwListenerLogSession");
+                this.currentSession = new TraceEventSession(sessionName);
                 this.currentSession.Source.Dynamic.All += data =>
                 {
                     EventHandler<TraceLogEventArgs> handler = this.OnTraceLog;
@@ -91,6 +103,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // This is a blocking call.
                 this.currentSession.Source.Process();
             });
+
+            this.backgroundTraceThread.IsBackground = true;
+            this.backgroundTraceThread.Start();
         }
 
         private static bool ShouldExcludeEvent(TraceEvent traceEvent, IDictionary<string, IEnumerable<int>> eventIdFilters)
@@ -114,6 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void Stop()
         {
             this.currentSession?.Source.StopProcessing();
+            this.backgroundTraceThread.Join(TimeSpan.FromSeconds(10));
             this.currentSession?.Dispose();
             this.currentSession = null;
         }
