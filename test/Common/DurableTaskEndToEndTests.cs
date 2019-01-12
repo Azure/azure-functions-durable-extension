@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
@@ -21,12 +22,13 @@ using Xunit.Sdk;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class DurableTaskEndToEndTests
+    public class DurableTaskEndToEndTests : IDisposable
     {
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
         private readonly bool useTestLogger = true;
+        private readonly LogEventTraceListener eventSourceListener;
 
         private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 
@@ -34,6 +36,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
+            this.eventSourceListener = new LogEventTraceListener();
+            this.StartLogCapture();
+        }
+
+        public void Dispose()
+        {
+            this.eventSourceListener.Dispose();
+        }
+
+        private void StartLogCapture()
+        {
+            var traceConfig = new Dictionary<string, TraceEventLevel>
+            {
+                { "DurableTask-AzureStorage", TraceEventLevel.Informational },
+                { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
+            };
+
+            // Filter out some of the partition management informational events
+            var filteredEvents = new Dictionary<string, IEnumerable<int>>
+            {
+                { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
+            };
+
+            this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
+
+            string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
+            this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+        }
+
+        private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
+        {
+            this.output.WriteLine($"      ETW: {e.ProviderName} [{e.Level}] : {e.Message}");
         }
 
         /// <summary>
