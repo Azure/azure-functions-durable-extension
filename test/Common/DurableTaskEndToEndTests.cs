@@ -1914,16 +1914,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(JTokenType.Null, orchestrationStatus.CustomStatus?.Type);
 
                 // The orchestrator will wait for an external event, and use the payload to update its custom status.
-                await client.RaiseEventAsync("UpdateStatus", "updated status", this.output);
-                await Task.Delay(TimeSpan.FromSeconds(2));
-                orchestrationStatus = await client.GetStatusAsync();
-                Assert.Equal("updated status", (string)orchestrationStatus.CustomStatus);
+                const string statusValue = "updated status";
+                await client.RaiseEventAsync("UpdateStatus", statusValue, this.output);
+                await client.WaitForCustomStatusAsync(TimeSpan.FromSeconds(10), this.output, statusValue);
 
                 // Test clearing an existing custom status
                 await client.RaiseEventAsync("UpdateStatus", null, this.output);
-                await Task.Delay(TimeSpan.FromSeconds(2));
-                orchestrationStatus = await client.GetStatusAsync();
-                Assert.Equal(JTokenType.Null, orchestrationStatus.CustomStatus?.Type);
+                await client.WaitForCustomStatusAsync(TimeSpan.FromSeconds(10), this.output, JValue.CreateNull());
 
                 // Test setting the custom status to a complex object.
                 var newCustomStatus = new { Foo = "Bar", Count = 2, };
@@ -2122,19 +2119,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 taskHubName1 = client1.TaskHubName;
 
                 // Perform some operations
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr", this.output);
 
                 // TODO: Sleeping to avoid a race condition where events can get dropped.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
                 TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
                 await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr", this.output);
                 await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr", this.output);
                 await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "decr");
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "decr", this.output);
                 await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr");
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr", this.output);
                 await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
@@ -2144,7 +2141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
                 // The end message will cause the actor to complete itself.
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "end");
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "end", this.output);
 
                 status = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
@@ -2183,9 +2180,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var instanceId = client1.InstanceId;
 
                 // Perform some operations
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null);
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null);
-                await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null, this.output);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null, this.output);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null, this.output);
 
                 // Make sure it actually completed
                 var status = await client1.WaitForCompletionAsync(

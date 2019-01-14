@@ -67,8 +67,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
         }
 
-        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, string connectionName = null)
+        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, ITestOutputHelper output, string connectionName = null)
         {
+            output?.WriteLine($"Raising event {eventName} to {this.instanceId} in task hub {taskHubName}. Payload: {eventData}");
             await this.innerClient.RaiseEventAsync(taskHubName, instanceid, eventName, eventData);
         }
 
