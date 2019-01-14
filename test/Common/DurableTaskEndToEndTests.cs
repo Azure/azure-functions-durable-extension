@@ -551,12 +551,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the ContinueAsNew functionality by implementing a counter actor pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration(bool extendedSessions)
         {
+            const string testName = nameof(this.ActorOrchestration);
+
             string instanceId;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -573,19 +575,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
 
                 // Perform some operations
-                await client.RaiseEventAsync("operation", "incr");
+                await client.RaiseEventAsync("operation", "incr", this.output);
 
                 // TODO: Sleeping to avoid a race condition where events can get dropped.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
                 TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
-                await client.RaiseEventAsync("operation", "incr");
+                await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
-                await client.RaiseEventAsync("operation", "incr");
+                await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
-                await client.RaiseEventAsync("operation", "decr");
+                await client.RaiseEventAsync("operation", "decr", this.output);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
-                await client.RaiseEventAsync("operation", "incr");
+                await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
@@ -595,7 +597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
                 // The end message will cause the actor to complete itself.
-                await client.RaiseEventAsync("operation", "end");
+                await client.RaiseEventAsync("operation", "end", this.output);
 
                 status = await client.WaitForCompletionAsync(waitTimeout, this.output);
 
@@ -618,6 +620,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         new[] { nameof(TestOrchestrations.Counter) });
                 }
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources(testName, extendedSessions);
         }
 
         /// <summary>
@@ -639,17 +644,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActor), null, this.output);
 
                 // Perform some operations
-                await client.RaiseEventAsync("newItem", "item1");
-                await client.RaiseEventAsync("newItem", "item2");
-                await client.RaiseEventAsync("newItem", "item3");
-                await client.RaiseEventAsync("newItem", "item4");
+                await client.RaiseEventAsync("newItem", "item1", this.output);
+                await client.RaiseEventAsync("newItem", "item2", this.output);
+                await client.RaiseEventAsync("newItem", "item3", this.output);
+                await client.RaiseEventAsync("newItem", "item4", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
-                await client.RaiseEventAsync("newItem", "item5");
+                await client.RaiseEventAsync("newItem", "item5", this.output);
 
                 status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
@@ -678,17 +683,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.BatchActorRemoveLast), null, this.output);
 
                 // Perform some operations
-                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item5
-                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item4
-                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item3
-                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item2
+                await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item5
+                await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item4
+                await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item3
+                await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item2
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last event will cause the actor to complete itself.
-                await client.RaiseEventAsync("deleteItem"); // deletes last item in the list: item1
+                await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item1
 
                 status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
 
@@ -716,9 +721,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ParallelBatchActor), null, this.output);
 
                 // Perform some operations
-                await client.RaiseEventAsync("newItem", "item1");
-                await client.RaiseEventAsync("newItem", "item2");
-                await client.RaiseEventAsync("newItem", "item3");
+                await client.RaiseEventAsync("newItem", "item1", this.output);
+                await client.RaiseEventAsync("newItem", "item2", this.output);
+                await client.RaiseEventAsync("newItem", "item3", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 await Task.Delay(TimeSpan.FromSeconds(2));
@@ -726,7 +731,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
-                await client.RaiseEventAsync("newItem", "item4");
+                await client.RaiseEventAsync("newItem", "item4", this.output);
                 status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await host.StopAsync();
@@ -734,23 +739,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ExternalEvents_MultipleNamesLooping(bool extendedSessions)
         {
+            const string testName = nameof(this.ExternalEvents_MultipleNamesLooping);
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ExternalEvents_MultipleNamesLooping),
+                testName,
                 extendedSessions))
             {
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter2), null, this.output);
 
                 // Perform some operations
-                await client.RaiseEventAsync("incr", null);
-                await client.RaiseEventAsync("incr", null);
-                await client.RaiseEventAsync("done", null);
+                await client.RaiseEventAsync("incr", null, this.output);
+                await client.RaiseEventAsync("incr", null, this.output);
+                await client.RaiseEventAsync("done", null, this.output);
 
                 // Make sure it actually completed
                 var status = await client.WaitForCompletionAsync(
@@ -761,6 +767,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources(testName, extendedSessions);
         }
 
         /// <summary>
@@ -897,7 +906,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // TODO: This requirement may not be ideal and should be revisited.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
                 await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
-                await client.RaiseEventAsync("approval", eventData: true);
+                await client.RaiseEventAsync("approval", eventData: true, output: this.output);
 
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -999,7 +1008,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Don't send any notification - let the internal timeout expire
                 if (sendEvent)
                 {
-                    await client.RaiseEventAsync("Approval", "ApprovalValue");
+                    await client.RaiseEventAsync("Approval", "ApprovalValue", this.output);
                 }
 
                 var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
@@ -1884,15 +1893,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SetStatusOrchestration(bool extendedSessions)
         {
+            const string testName = nameof(this.SetStatusOrchestration);
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.SetStatusOrchestration),
+                testName,
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -1904,20 +1914,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(JTokenType.Null, orchestrationStatus.CustomStatus?.Type);
 
                 // The orchestrator will wait for an external event, and use the payload to update its custom status.
-                await client.RaiseEventAsync("UpdateStatus", "updated status");
+                await client.RaiseEventAsync("UpdateStatus", "updated status", this.output);
                 await Task.Delay(TimeSpan.FromSeconds(2));
                 orchestrationStatus = await client.GetStatusAsync();
                 Assert.Equal("updated status", (string)orchestrationStatus.CustomStatus);
 
                 // Test clearing an existing custom status
-                await client.RaiseEventAsync("UpdateStatus", null);
+                await client.RaiseEventAsync("UpdateStatus", null, this.output);
                 await Task.Delay(TimeSpan.FromSeconds(2));
                 orchestrationStatus = await client.GetStatusAsync();
                 Assert.Equal(JTokenType.Null, orchestrationStatus.CustomStatus?.Type);
 
                 // Test setting the custom status to a complex object.
                 var newCustomStatus = new { Foo = "Bar", Count = 2, };
-                await client.RaiseEventAsync("UpdateStatus", newCustomStatus);
+                await client.RaiseEventAsync("UpdateStatus", newCustomStatus, this.output);
                 orchestrationStatus = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(newCustomStatus.Foo, (string)orchestrationStatus.CustomStatus["Foo"]);
                 Assert.Equal(newCustomStatus.Count, (int)orchestrationStatus.CustomStatus["Count"]);
@@ -1925,6 +1935,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources(testName, extendedSessions);
         }
 
         [Fact]
@@ -1950,7 +1963,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetStatus_ShowInputFalse()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputFalse), false))
+            const string testName = nameof(this.GetStatus_ShowInputFalse);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false))
             {
                 await host.StartAsync();
 
@@ -1959,13 +1973,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false, showInput: false);
                 Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources(testName, false);
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetStatus_ShowInputDefault()
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_ShowInputDefault), false))
+            const string testName = nameof(this.GetStatus_ShowInputDefault);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false))
             {
                 await host.StartAsync();
 
@@ -1974,6 +1992,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false);
                 Assert.Equal("1", status.Input.ToString());
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources(testName, false);
         }
 
         [Fact]
@@ -2081,7 +2102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration_WithTaskHubName(bool extendedSessions)
@@ -2136,10 +2157,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host1.StopAsync();
                 await host2.StopAsync();
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources("ActorOrchestration1", extendedSessions);
+            await TestHelpers.DeleteTaskHubResources("ActorOrchestration2", extendedSessions);
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ExternalEvents_WithTaskHubName_MultipleNamesLooping(bool extendedSessions)
@@ -2172,6 +2197,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host1.StopAsync();
                 await host2.StopAsync();
             }
+
+            // Delete task hub resources only if tests succeed
+            await TestHelpers.DeleteTaskHubResources("MultipleNamesLooping1", extendedSessions);
+            await TestHelpers.DeleteTaskHubResources("MultipleNamesLooping2", extendedSessions);
         }
 
         [Theory]

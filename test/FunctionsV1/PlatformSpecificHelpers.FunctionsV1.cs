@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const string VersionSuffix = "V1";
         public const string TestCategory = "Functions" + VersionSuffix;
+        public const string FlakeyTestCategory = TestCategory + "_Flakey";
 
         public static JobHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
