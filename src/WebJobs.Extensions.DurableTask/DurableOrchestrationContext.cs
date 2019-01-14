@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +56,8 @@ namespace Microsoft.Azure.WebJobs
         internal bool ContinuedAsNew { get; private set; }
 
         internal bool IsCompleted { get; set; }
+
+        internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
         internal string HubName => this.config.Options.HubName;
 
