@@ -602,7 +602,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 status = await client.WaitForCompletionAsync(waitTimeout, this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(3, (int)status?.Output);
+                Assert.Equal(3, (int?)status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
                 Assert.NotEqual(initialValue, status?.Input);
@@ -2185,19 +2185,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null, this.output);
 
                 // Make sure it actually completed
-                var status = await client1.WaitForCompletionAsync(
-                    TimeSpan.FromSeconds(1000),
-                    this.output);
+                var status = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(2, status.Output);
+                Assert.Equal(2, (int)status.Output);
 
                 await host1.StopAsync();
                 await host2.StopAsync();
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources("MultipleNamesLooping1", extendedSessions);
-            await TestHelpers.DeleteTaskHubResources("MultipleNamesLooping2", extendedSessions);
         }
 
         [Theory]
