@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -86,6 +88,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static string GetStorageConnectionString()
         {
             return Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+        }
+
+        public static Task DeleteTaskHubResources(string testName, bool enableExtendedSessions)
+        {
+            string hubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            var settings = new AzureStorageOrchestrationServiceSettings
+            {
+                TaskHubName = hubName,
+                StorageConnectionString = GetStorageConnectionString(),
+            };
+
+            var service = new AzureStorageOrchestrationService(settings);
+            return service.DeleteAsync();
         }
 
         public static void AssertLogMessageSequence(

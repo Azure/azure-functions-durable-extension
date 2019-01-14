@@ -55,18 +55,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return status;
         }
 
-        public async Task RaiseEventAsync(string eventName)
+        public async Task RaiseEventAsync(string eventName, ITestOutputHelper output)
         {
+            output?.WriteLine($"Raising event {eventName} to {this.instanceId}.");
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName);
         }
 
-        public async Task RaiseEventAsync(string eventName, object eventData)
+        public async Task RaiseEventAsync(string eventName, object eventData, ITestOutputHelper output)
         {
+            output?.WriteLine($"Raising event {eventName} to {this.instanceId}. Payload: {eventData}");
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
         }
 
-        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, string connectionName = null)
+        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, ITestOutputHelper output, string connectionName = null)
         {
+            output?.WriteLine($"Raising event {eventName} to {this.instanceId} in task hub {taskHubName}. Payload: {eventData}");
             await this.innerClient.RaiseEventAsync(taskHubName, instanceid, eventName, eventData);
         }
 
@@ -85,6 +88,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
+                output.WriteLine($"Waiting for instance {this.instanceId} to start.");
+
                 DurableOrchestrationStatus status = await this.GetStatusAsync();
                 if (status != null && status.RuntimeStatus != OrchestrationRuntimeStatus.Pending)
                 {
@@ -104,6 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
+                output.WriteLine($"Waiting for instance {this.instanceId} to complete.");
+
                 DurableOrchestrationStatus status = await this.GetStatusAsync(showHistory, showHistoryOutput);
                 if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||

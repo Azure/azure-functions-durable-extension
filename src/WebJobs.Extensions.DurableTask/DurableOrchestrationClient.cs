@@ -155,6 +155,10 @@ namespace Microsoft.Azure.WebJobs
                 state.OrchestrationStatus == OrchestrationStatus.Pending ||
                 state.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
             {
+                // Terminate events are not supposed to target any particular execution ID.
+                // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
+                state.OrchestrationInstance.ExecutionId = null;
+
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
@@ -434,6 +438,10 @@ namespace Microsoft.Azure.WebJobs
                 status.OrchestrationStatus == OrchestrationStatus.Pending ||
                 status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
             {
+                // External events are not supposed to target any particular execution ID.
+                // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
+                status.OrchestrationInstance.ExecutionId = null;
+
                 await taskHubClient.RaiseEventAsync(status.OrchestrationInstance, eventName, eventData);
 
                 this.traceHelper.FunctionScheduled(
