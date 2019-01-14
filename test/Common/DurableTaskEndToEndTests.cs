@@ -620,9 +620,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         new[] { nameof(TestOrchestrations.Counter) });
                 }
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources(testName, extendedSessions);
         }
 
         /// <summary>
@@ -767,9 +764,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources(testName, extendedSessions);
         }
 
         /// <summary>
@@ -1932,9 +1926,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources(testName, extendedSessions);
         }
 
         [Fact]
@@ -1970,9 +1961,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false, showInput: false);
                 Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources(testName, false);
         }
 
         [Fact]
@@ -1989,9 +1977,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableOrchestrationStatus status = await client.GetStatusAsync(showHistory: false, showHistoryOutput: false);
                 Assert.Equal("1", status.Input.ToString());
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources(testName, false);
         }
 
         [Fact]
@@ -2154,10 +2139,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host1.StopAsync();
                 await host2.StopAsync();
             }
-
-            // Delete task hub resources only if tests succeed
-            await TestHelpers.DeleteTaskHubResources("ActorOrchestration1", extendedSessions);
-            await TestHelpers.DeleteTaskHubResources("ActorOrchestration2", extendedSessions);
         }
 
         [Theory]
