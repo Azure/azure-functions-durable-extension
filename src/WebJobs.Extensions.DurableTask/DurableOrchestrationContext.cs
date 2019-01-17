@@ -30,6 +30,9 @@ namespace Microsoft.Azure.WebJobs
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly Dictionary<string, Queue> bufferedExternalEvents =
+            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
+
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
         private readonly List<Func<Task>> deferredTasks;
@@ -276,6 +279,27 @@ namespace Microsoft.Azure.WebJobs
                 Stack taskCompletionSources;
                 TaskCompletionSource<T> tcs;
 
+                // Check the queue to see if any events came in while an orchestrator wasn't listening
+                Queue queue;
+                if (this.bufferedExternalEvents.TryGetValue(name, out queue))
+                {
+                    object input = queue.Dequeue();
+
+                    tcs = new TaskCompletionSource<T>();
+                    Type buffType = tcs.GetType();
+                    Type genericTypeArgument = buffType.GetGenericArguments()[0];
+
+                    if (queue.Count == 0)
+                    {
+                        this.bufferedExternalEvents.Remove(name);
+                    }
+
+                    object deserialized = MessagePayloadDataConverter.Default.Deserialize(input.ToString(), genericTypeArgument);
+                    MethodInfo trySetResult = buffType.GetMethod("TrySetResult");
+                    trySetResult.Invoke(tcs, new[] { deserialized });
+                }
+
+                // Set up the stack for listening to external events
                 if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
                     tcs = new TaskCompletionSource<T>();
@@ -527,13 +551,23 @@ namespace Microsoft.Azure.WebJobs
                 }
                 else
                 {
-                    // The orchestrator was not waiting for any event by this name, so the event will be dropped.
-                    this.config.TraceHelper.ExternalEventDropped(
-                        this.HubName,
-                        this.Name,
-                        this.InstanceId,
-                        name,
-                        this.IsReplaying);
+                    // Add the event to an in-memory queue so we don't drop the event
+                    Queue bufferedEvents;
+                    if (!this.bufferedExternalEvents.TryGetValue(name, out bufferedEvents))
+                    {
+                        bufferedEvents = new Queue();
+                        this.bufferedExternalEvents[name] = bufferedEvents;
+                    }
+
+                    bufferedEvents.Enqueue(input);
+
+                    //// The orchestrator was not waiting for any event by this name, so the event will be dropped.
+                    //this.config.TraceHelper.ExternalEventDropped(
+                    //    this.HubName,
+                    //    this.Name,
+                    //    this.InstanceId,
+                    //    name,
+                    //    this.IsReplaying);
                 }
             }
         }
