@@ -240,7 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [Event(215, Level = EventLevel.Warning)]
-        public void ExternalEventDropped(
+        public void ExternalEventSaved(
             string TaskHub,
             string AppName,
             string SlotName,

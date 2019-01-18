@@ -473,5 +473,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return "Done";
         }
+
+        public static async Task<int> WaitForEventAndCallActivity(
+            [OrchestrationTrigger] DurableOrchestrationContext context)
+        {
+            int sum = 0;
+
+            // Sums all of the inputs and intermediate sums
+            // If the 4 inputs are 0-4, then the calls are as following:
+            // 0 + (0 + 0) = 0
+            // 0 + (0 + 1) = 1
+            // 1 + (1 + 2) = 4
+            // 4 + (4 + 3) = 11
+            // 11 + (11 + 4) = 26
+            for (int i = 0; i < 5; i++)
+            {
+                int number = await context.WaitForExternalEvent<int>("add");
+                sum += await context.CallActivityAsync<int>("Add", (sum, number));
+            }
+
+            return sum;
+        }
     }
 }

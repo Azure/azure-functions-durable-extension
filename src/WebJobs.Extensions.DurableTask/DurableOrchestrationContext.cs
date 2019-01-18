@@ -301,20 +301,27 @@ namespace Microsoft.Azure.WebJobs
                     }
                 }
 
-                this.config.TraceHelper.FunctionListening(
-                    this.config.Options.HubName,
-                    this.orchestrationName,
-                    this.InstanceId,
-                    reason: $"WaitForExternalEvent:{name}",
-                    isReplay: this.innerContext.IsReplaying);
-
                 // Check the queue to see if any events came in before the orchestrator was listening
                 if (this.bufferedExternalEvents.TryGetValue(name, out Queue queue))
                 {
                     object input = queue.Dequeue();
 
+                    if (queue.Count == 0)
+                    {
+                        this.bufferedExternalEvents.Remove(name);
+                    }
+
                     // We can call raise event right away, since we already have an event's input
                     this.RaiseEvent(name, input.ToString());
+                }
+                else
+                {
+                    this.config.TraceHelper.FunctionListening(
+                    this.config.Options.HubName,
+                    this.orchestrationName,
+                    this.InstanceId,
+                    reason: $"WaitForExternalEvent:{name}",
+                    isReplay: this.innerContext.IsReplaying);
                 }
 
                 return tcs.Task;
@@ -548,6 +555,13 @@ namespace Microsoft.Azure.WebJobs
                     }
 
                     bufferedEvents.Enqueue(input);
+
+                    this.config.TraceHelper.ExternalEventSaved(
+                        this.HubName,
+                        this.Name,
+                        this.InstanceId,
+                        name,
+                        this.IsReplaying);
                 }
             }
         }
