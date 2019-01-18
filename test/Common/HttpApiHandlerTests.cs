@@ -85,6 +85,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["terminatePostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["purgeInstanceHitoryByInstanceIdDeleteUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/?createdTimeFrom={{createdTimeFrom}}&createdTimeTo={{createdTimeTo}}&runtimeStatus={{runtimeStatus,runtimeStatus,...}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["purgeInstanceHitoryWithFiltersDeleteUri"]);
         }
 
         [Fact]
@@ -104,6 +110,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/?createdTimeFrom={{createdTimeFrom}}&createdTimeTo={{createdTimeTo}}&runtimeStatus={{runtimeStatus,runtimeStatus,...}}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
         }
 
         [Fact]
@@ -123,6 +135,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/?createdTimeFrom={{createdTimeFrom}}&createdTimeTo={{createdTimeTo}}&runtimeStatus={{runtimeStatus,runtimeStatus,...}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
         }
 
         [Fact]
@@ -142,6 +160,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
                 httpManagementPayload.TerminatePostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/?createdTimeFrom={{createdTimeFrom}}&createdTimeTo={{createdTimeTo}}&runtimeStatus={{runtimeStatus,runtimeStatus,...}}&taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
         }
 
         [Fact]
@@ -161,6 +185,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=SampleHubVS&connection=TestConnection&code=mykey",
                 httpManagementPayload.TerminatePostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/?createdTimeFrom={{createdTimeFrom}}&createdTimeTo={{createdTimeTo}}&runtimeStatus={{runtimeStatus,runtimeStatus,...}}&taskHub=SampleHubVS&connection=TestConnection&code=mykey",
+                httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
         }
 
         [Fact]
@@ -196,6 +226,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
                 status["terminatePostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["purgeInstanceHitoryByInstanceIdDeleteUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/?createdTimeFrom={{createdTimeFrom}}&createdTimeTo={{createdTimeTo}}&runtimeStatus={{runtimeStatus,runtimeStatus,...}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                status["purgeInstanceHitoryWithFiltersDeleteUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
         }
 

@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -50,7 +51,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationClientAttribute attribute)
         {
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
-            return this.CreateCheckStatusResponseMessage(request, httpManagementPayload.Id, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri, httpManagementPayload.RewindPostUri);
+            return this.CreateCheckStatusResponseMessage(
+                request,
+                httpManagementPayload.Id,
+                httpManagementPayload.StatusQueryGetUri,
+                httpManagementPayload.SendEventPostUri,
+                httpManagementPayload.TerminatePostUri,
+                httpManagementPayload.RewindPostUri,
+                httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri,
+                httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -104,7 +113,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    return this.CreateCheckStatusResponseMessage(request, instanceId, httpManagementPayload.StatusQueryGetUri, httpManagementPayload.SendEventPostUri, httpManagementPayload.TerminatePostUri, httpManagementPayload.RewindPostUri);
+                    return this.CreateCheckStatusResponseMessage(
+                        request,
+                        instanceId,
+                        httpManagementPayload.StatusQueryGetUri,
+                        httpManagementPayload.SendEventPostUri,
+                        httpManagementPayload.TerminatePostUri,
+                        httpManagementPayload.RewindPostUri,
+                        httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri,
+                        httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
                 }
             }
         }
@@ -141,11 +158,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
                 if (i < 0)
                 {
-                    // Retrive All Status or conditional query in case of the request URL ends e.g. /instances/
+                    // Retrieve All Status or conditional query in case of the request URL ends e.g. /instances/
                     if (request.Method == HttpMethod.Get
                         && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                     {
                         return await this.HandleGetStatusRequestAsync(request);
+                    }
+
+                    if (request.Method == HttpMethod.Delete
+                        && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return await this.HandleDeleteHistoryWithFiltersRequestAsync(request);
                     }
 
                     return request.CreateResponse(HttpStatusCode.NotFound);
@@ -160,6 +183,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (request.Method == HttpMethod.Get)
                     {
                         return await this.HandleGetStatusRequestAsync(request, instanceId);
+                    }
+
+                    if (request.Method == HttpMethod.Delete)
+                    {
+                        return await this.HandleDeleteHistoryByIdRequestAsync(request, instanceId);
                     }
                 }
                 else if (request.Method == HttpMethod.Post)
@@ -219,7 +247,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
-            var runtimeStatus = GetIEnumerableQueryParameterValue(queryNameValuePairs, RuntimeStatusParameter);
+            var runtimeStatus = GetIEnumerableQueryParameterValue<OrchestrationRuntimeStatus>(queryNameValuePairs, RuntimeStatusParameter);
             var pageSize = GetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter);
 
             var continuationToken = "";
@@ -251,6 +279,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var response = request.CreateResponse(HttpStatusCode.OK, results);
 
             response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> HandleDeleteHistoryByIdRequestAsync(
+            HttpRequestMessage request,
+            string instanceId)
+        {
+            DurableOrchestrationClientBase client = this.GetClient(request);
+            await client.PurgeInstanceHistoryAsync(instanceId);
+            var response = request.CreateResponse(HttpStatusCode.OK);
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> HandleDeleteHistoryWithFiltersRequestAsync(HttpRequestMessage request)
+        {
+            DurableOrchestrationClientBase client = this.GetClient(request);
+            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var createdTimeFrom =
+                GetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeFrom", DateTime.MinValue);
+
+            if (createdTimeFrom == DateTime.MinValue)
+            {
+                var badRequestResponse = request.CreateResponse(
+                    HttpStatusCode.BadRequest,
+                    "Please provide value for 'createdTimeFrom' parameter.");
+                return badRequestResponse;
+            }
+
+            var createdTimeTo =
+                GetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeTo", DateTime.UtcNow);
+            var runtimeStatusCollection =
+                GetIEnumerableQueryParameterValue<OrchestrationStatus>(queryNameValuePairs, "runtimeStatus");
+
+            await client.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatusCollection);
+            var response = request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
 
@@ -339,14 +402,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static IEnumerable<OrchestrationRuntimeStatus> GetIEnumerableQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        private static IEnumerable<T> GetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName) where T : struct
         {
-            var results = new List<OrchestrationRuntimeStatus>();
+            var results = new List<T>();
             var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
 
             foreach (var value in parameters.SelectMany(x => x.Split(',')))
             {
-                if (Enum.TryParse<OrchestrationRuntimeStatus>(value, out OrchestrationRuntimeStatus result))
+                if (Enum.TryParse(value, out T result))
                 {
                     results.Add(result);
                 }
@@ -587,7 +650,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            string instancePrefix = baseUrl + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
+            string allInstancesPrefix = baseUrl + InstancesControllerSegment;
+            string instancePrefix = allInstancesPrefix + WebUtility.UrlEncode(instanceId);
 
             string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.Options.HubName);
             string connection = WebUtility.UrlEncode(connectionName ?? this.config.Options.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage);
@@ -606,12 +670,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
+                PurgeInstanceHitoryByInstanceIdDeleteUri = instancePrefix + "?" + querySuffix,
+                PurgeInstanceHitoryWithFiltersDeleteUri = allInstancesPrefix + "?" + "createdTimeFrom={createdTimeFrom}&createdTimeTo={createdTimeTo}&runtimeStatus={runtimeStatus,runtimeStatus,...}&" + querySuffix,
             };
 
             return httpManagementPayload;
         }
 
-        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string rewindPostUri)
+        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string rewindPostUri, string purgeInstanceHitoryByInstanceIdDeleteUri, string purgeInstanceHitoryWithFiltersDeleteUri)
         {
             var response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -622,6 +688,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri,
                     terminatePostUri,
                     rewindPostUri,
+                    purgeInstanceHitoryByInstanceIdDeleteUri,
+                    purgeInstanceHitoryWithFiltersDeleteUri
                 });
 
             // Implement the async HTTP 202 pattern.
