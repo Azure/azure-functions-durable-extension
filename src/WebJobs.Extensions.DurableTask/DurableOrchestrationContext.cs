@@ -317,11 +317,11 @@ namespace Microsoft.Azure.WebJobs
                 else
                 {
                     this.config.TraceHelper.FunctionListening(
-                    this.config.Options.HubName,
-                    this.orchestrationName,
-                    this.InstanceId,
-                    reason: $"WaitForExternalEvent:{name}",
-                    isReplay: this.innerContext.IsReplaying);
+                        this.config.Options.HubName,
+                        this.orchestrationName,
+                        this.InstanceId,
+                        reason: $"WaitForExternalEvent:{name}",
+                        isReplay: this.innerContext.IsReplaying);
                 }
 
                 return tcs.Task;
