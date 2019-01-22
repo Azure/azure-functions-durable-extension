@@ -1566,6 +1566,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates that waiting for an external event and calling 
+        /// an activity multiple times in a row does not lead to dropped events.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForEventAndCallActivity_DroppedEventsTest()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForEventAndCallActivity_DroppedEventsTest),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                string orchestratorFunctionName = nameof(TestOrchestrations.WaitForEventAndCallActivity);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionName, null, this.output);
+
+                for (int i = 0; i < 5; i++)
+                {
+                    await client.RaiseEventAsync("add", i, this.output);
+                }
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                int output = (int)status?.Output;
+                this.output.WriteLine($"Orchestration output string: {output}");
+                Assert.Equal(26, output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
         /// </summary>
         [Theory]

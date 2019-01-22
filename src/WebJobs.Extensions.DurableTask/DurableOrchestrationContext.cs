@@ -30,6 +30,9 @@ namespace Microsoft.Azure.WebJobs
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly Dictionary<string, Queue> bufferedExternalEvents =
+            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
+
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
         private readonly List<Func<Task>> deferredTasks;
@@ -276,6 +279,7 @@ namespace Microsoft.Azure.WebJobs
                 Stack taskCompletionSources;
                 TaskCompletionSource<T> tcs;
 
+                // Set up the stack for listening to external events
                 if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
                     tcs = new TaskCompletionSource<T>();
@@ -297,12 +301,28 @@ namespace Microsoft.Azure.WebJobs
                     }
                 }
 
-                this.config.TraceHelper.FunctionListening(
-                    this.config.Options.HubName,
-                    this.orchestrationName,
-                    this.InstanceId,
-                    reason: $"WaitForExternalEvent:{name}",
-                    isReplay: this.innerContext.IsReplaying);
+                // Check the queue to see if any events came in before the orchestrator was listening
+                if (this.bufferedExternalEvents.TryGetValue(name, out Queue queue))
+                {
+                    object input = queue.Dequeue();
+
+                    if (queue.Count == 0)
+                    {
+                        this.bufferedExternalEvents.Remove(name);
+                    }
+
+                    // We can call raise event right away, since we already have an event's input
+                    this.RaiseEvent(name, input.ToString());
+                }
+                else
+                {
+                    this.config.TraceHelper.FunctionListening(
+                        this.config.Options.HubName,
+                        this.orchestrationName,
+                        this.InstanceId,
+                        reason: $"WaitForExternalEvent:{name}",
+                        isReplay: this.innerContext.IsReplaying);
+                }
 
                 return tcs.Task;
             }
@@ -527,8 +547,16 @@ namespace Microsoft.Azure.WebJobs
                 }
                 else
                 {
-                    // The orchestrator was not waiting for any event by this name, so the event will be dropped.
-                    this.config.TraceHelper.ExternalEventDropped(
+                    // Add the event to an (in-memory) queue, so we don't drop or lose it
+                    if (!this.bufferedExternalEvents.TryGetValue(name, out Queue bufferedEvents))
+                    {
+                        bufferedEvents = new Queue();
+                        this.bufferedExternalEvents[name] = bufferedEvents;
+                    }
+
+                    bufferedEvents.Enqueue(input);
+
+                    this.config.TraceHelper.ExternalEventSaved(
                         this.HubName,
                         this.Name,
                         this.InstanceId,

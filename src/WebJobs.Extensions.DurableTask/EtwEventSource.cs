@@ -239,8 +239,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(214, TaskHub, AppName, SlotName, FunctionName ?? string.Empty, InstanceId ?? string.Empty, Details, ExtensionVersion);
         }
 
-        [Event(215, Level = EventLevel.Warning)]
-        public void ExternalEventDropped(
+        [Event(215, Level = EventLevel.Informational, Version = 2)]
+        public void ExternalEventSaved(
             string TaskHub,
             string AppName,
             string SlotName,

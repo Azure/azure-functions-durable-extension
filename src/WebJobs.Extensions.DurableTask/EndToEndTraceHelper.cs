@@ -342,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void ExternalEventDropped(
+        public void ExternalEventSaved(
             string hubName,
             string functionName,
             string instanceId,
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            EtwEventSource.Instance.ExternalEventDropped(
+            EtwEventSource.Instance.ExternalEventSaved(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ShouldLogEvent(isReplay: false))
             {
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' dropped a '{eventName}' event. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    "{instanceId}: Function '{functionName} ({functionType})' saved a '{eventName}' event to an in-memory queue. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                     instanceId, functionName, functionType, eventName, FunctionState.ExternalEventDropped, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
