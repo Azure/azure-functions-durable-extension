@@ -61,16 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// The HTTP URL for purging instance history by instance ID.
         /// </value>
-        [JsonProperty("purgeInstanceHitoryByInstanceIdDeleteUri")]
-        public string PurgeInstanceHitoryByInstanceIdDeleteUri { get; internal set; }
-
-        /// <summary>
-        /// Gets the HTTP DELETE purge instance history with filters endpoint.
-        /// </summary>
-        /// <value>
-        /// The HTTP URL for purging instance history with filters.
-        /// </value>
-        [JsonProperty("purgeInstanceHitoryWithFiltersDeleteUri")]
-        public string PurgeInstanceHitoryWithFiltersDeleteUri { get; internal set; }
+        [JsonProperty("purgeHistoryDeleteUri")]
+        public string PurgeHistoryDeleteUri { get; internal set; }
     }
 }

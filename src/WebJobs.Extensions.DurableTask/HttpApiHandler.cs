@@ -58,8 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpManagementPayload.SendEventPostUri,
                 httpManagementPayload.TerminatePostUri,
                 httpManagementPayload.RewindPostUri,
-                httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri,
-                httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
+                httpManagementPayload.PurgeHistoryDeleteUri);
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -120,8 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         httpManagementPayload.SendEventPostUri,
                         httpManagementPayload.TerminatePostUri,
                         httpManagementPayload.RewindPostUri,
-                        httpManagementPayload.PurgeInstanceHitoryByInstanceIdDeleteUri,
-                        httpManagementPayload.PurgeInstanceHitoryWithFiltersDeleteUri);
+                        httpManagementPayload.PurgeHistoryDeleteUri);
                 }
             }
         }
@@ -670,14 +668,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
-                PurgeInstanceHitoryByInstanceIdDeleteUri = instancePrefix + "?" + querySuffix,
-                PurgeInstanceHitoryWithFiltersDeleteUri = allInstancesPrefix + "?" + "createdTimeFrom={createdTimeFrom}&createdTimeTo={createdTimeTo}&runtimeStatus={runtimeStatus,runtimeStatus,...}&" + querySuffix,
+                PurgeHistoryDeleteUri = instancePrefix + "?" + querySuffix,
             };
 
             return httpManagementPayload;
         }
 
-        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string rewindPostUri, string purgeInstanceHitoryByInstanceIdDeleteUri, string purgeInstanceHitoryWithFiltersDeleteUri)
+        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string rewindPostUri, string purgeHistoryDeleteUri)
         {
             var response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -688,8 +685,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri,
                     terminatePostUri,
                     rewindPostUri,
-                    purgeInstanceHitoryByInstanceIdDeleteUri,
-                    purgeInstanceHitoryWithFiltersDeleteUri
+                    purgeHistoryDeleteUri,
                 });
 
             // Implement the async HTTP 202 pattern.
