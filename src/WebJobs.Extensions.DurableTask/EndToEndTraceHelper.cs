@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay)
         {
             EtwEventSource.Instance.FunctionFailed(hubName, LocalAppName, LocalSlotName, functionName,
-                instanceId, reason, functionType.ToString(), ExtensionVersion, IsReplay: false);
+                instanceId, reason, functionType.ToString(), ExtensionVersion, isReplay);
             if (this.ShouldLogEvent(isReplay: false))
             {
                 this.logger.LogError(
