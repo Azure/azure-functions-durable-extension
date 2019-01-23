@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -285,9 +286,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId)
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
-            await client.PurgeInstanceHistoryAsync(instanceId);
-            var response = request.CreateResponse(HttpStatusCode.OK);
-            return response;
+            PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(instanceId);
+            if (purgeHistoryResult == null || purgeHistoryResult.RowsDeleted == 0)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            return request.CreateResponse(HttpStatusCode.OK);
         }
 
         private async Task<HttpResponseMessage> HandleDeleteHistoryWithFiltersRequestAsync(HttpRequestMessage request)
@@ -310,9 +315,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var runtimeStatusCollection =
                 GetIEnumerableQueryParameterValue<OrchestrationStatus>(queryNameValuePairs, "runtimeStatus");
 
-            await client.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatusCollection);
-            var response = request.CreateResponse(HttpStatusCode.OK);
-            return response;
+            PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatusCollection);
+
+            if (purgeHistoryResult == null || purgeHistoryResult.RowsDeleted == 0)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            return request.CreateResponse(HttpStatusCode.OK);
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(

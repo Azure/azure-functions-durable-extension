@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override Task PurgeInstanceHistoryAsync(string instanceId)
+        public override Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(string instanceId)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
+        public override Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
