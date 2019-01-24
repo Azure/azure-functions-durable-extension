@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             EtwEventSource.Instance.FunctionFailed(hubName, LocalAppName, LocalSlotName, functionName,
                 instanceId, reason, functionType.ToString(), ExtensionVersion, isReplay);
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay))
             {
                 this.logger.LogError(
                     "{instanceId}: Function '{functionName} ({functionType})' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
