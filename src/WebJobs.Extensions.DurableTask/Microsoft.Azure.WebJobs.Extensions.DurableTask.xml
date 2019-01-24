@@ -837,7 +837,7 @@
             <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
             <param name="createdTimeTo">End creation time for querying instances for purging.</param>
             <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-            <returns>Returns an instances of <see cref="T:DurableTask.AzureStorage.PurgeHistoryResult"/>.</returns>
+            <returns>Returns an instance of <see cref="T:DurableTask.AzureStorage.PurgeHistoryResult"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <summary>

@@ -292,7 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            return request.CreateResponse(HttpStatusCode.OK);
+            return request.CreateResponse(HttpStatusCode.OK, purgeHistoryResult);
         }
 
         private async Task<HttpResponseMessage> HandleDeleteHistoryWithFiltersRequestAsync(HttpRequestMessage request)
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            return request.CreateResponse(HttpStatusCode.OK);
+            return request.CreateResponse(HttpStatusCode.OK, purgeHistoryResult);
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(

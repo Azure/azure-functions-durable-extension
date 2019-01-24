@@ -284,7 +284,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
         /// <param name="createdTimeTo">End creation time for querying instances for purging.</param>
         /// <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-        /// <returns>Returns an instances of <see cref="PurgeHistoryResult"/>.</returns>
+        /// <returns>Returns an instance of <see cref="PurgeHistoryResult"/>.</returns>
         public abstract Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus);
 
         /// <summary>
