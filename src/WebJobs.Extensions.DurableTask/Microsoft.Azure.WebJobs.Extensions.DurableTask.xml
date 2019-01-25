@@ -828,7 +828,7 @@
             Purge the history for a concrete instance.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to purge.</param>
-            <returns>Returns an instance of <see cref="T:DurableTask.AzureStorage.PurgeHistoryResult"/>.</returns>
+            <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.PurgeHistoryResult"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <summary>
@@ -837,7 +837,7 @@
             <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
             <param name="createdTimeTo">End creation time for querying instances for purging.</param>
             <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-            <returns>Returns an instance of <see cref="T:DurableTask.AzureStorage.PurgeHistoryResult"/>.</returns>
+            <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.PurgeHistoryResult"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <summary>
@@ -1639,6 +1639,34 @@
             <value>
             The name of the orchestrator function or <c>null</c> to use the function name.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.PurgeHistoryResult">
+            <summary>
+            Class to hold statistics about this execution of purge history.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.PurgeHistoryResult.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Constructor for purge history statistics.
+            </summary>
+            <param name="storageRequests">Requests sent to storage.</param>
+            <param name="instancesDeleted">Number of instances deleted.</param>
+            <param name="rowsDeleted">Number of rows deleted.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.PurgeHistoryResult.StorageRequests">
+            <summary>
+            Number of requests sent to Storage during this execution of purge history.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.PurgeHistoryResult.InstancesDeleted">
+            <summary>
+            Number of instances deleted during this execution of purge history.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.PurgeHistoryResult.RowsDeleted">
+            <summary>
+            Number of rows deleted during this execution of purge history.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.RetryOptions">
             <summary>

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
