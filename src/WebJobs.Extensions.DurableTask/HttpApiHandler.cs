@@ -285,7 +285,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableOrchestrationClientBase client = this.GetClient(request);
             PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(instanceId);
-            if (purgeHistoryResult == null || purgeHistoryResult.RowsDeleted == 0)
+            if (purgeHistoryResult == null || purgeHistoryResult.InstancesDeleted == 0)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatusCollection);
 
-            if (purgeHistoryResult == null || purgeHistoryResult.RowsDeleted == 0)
+            if (purgeHistoryResult == null || purgeHistoryResult.InstancesDeleted == 0)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }

@@ -234,10 +234,7 @@ namespace Microsoft.Azure.WebJobs
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             DurableTask.AzureStorage.PurgeHistoryResult purgeHistoryResult =
                 await serviceClient.PurgeInstanceHistoryAsync(instanceId);
-            return new PurgeHistoryResult(
-                purgeHistoryResult.StorageRequests,
-                purgeHistoryResult.InstancesDeleted,
-                purgeHistoryResult.RowsDeleted);
+            return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }
 
         /// <inheritdoc />
@@ -247,10 +244,7 @@ namespace Microsoft.Azure.WebJobs
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             DurableTask.AzureStorage.PurgeHistoryResult purgeHistoryResult =
                 await serviceClient.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
-            return new PurgeHistoryResult(
-                purgeHistoryResult.StorageRequests,
-                purgeHistoryResult.InstancesDeleted,
-                purgeHistoryResult.RowsDeleted);
+            return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }
 
         /// <inheritdoc />
