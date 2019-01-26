@@ -228,19 +228,23 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override Task PurgeInstanceHistoryAsync(string instanceId)
+        public override async Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(string instanceId)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
-            return serviceClient.PurgeInstanceHistoryAsync(instanceId);
+            DurableTask.AzureStorage.PurgeHistoryResult purgeHistoryResult =
+                await serviceClient.PurgeInstanceHistoryAsync(instanceId);
+            return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }
 
         /// <inheritdoc />
-        public override Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
+        public override async Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
-            return serviceClient.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+            DurableTask.AzureStorage.PurgeHistoryResult purgeHistoryResult =
+                await serviceClient.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+            return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }
 
         /// <inheritdoc />

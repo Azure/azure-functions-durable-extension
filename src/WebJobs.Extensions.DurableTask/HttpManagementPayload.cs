@@ -54,5 +54,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         [JsonProperty("rewindPostUri")]
         public string RewindPostUri { get; internal set; }
+
+        /// <summary>
+        /// Gets the HTTP DELETE purge instance history by instance ID endpoint.
+        /// </summary>
+        /// <value>
+        /// The HTTP URL for purging instance history by instance ID.
+        /// </value>
+        [JsonProperty("purgeHistoryDeleteUri")]
+        public string PurgeHistoryDeleteUri { get; internal set; }
     }
 }
