@@ -210,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.Context.SetOutput(execution.Output);
             }
+            else
+            {
+                // Don't return executions unless the orchestrator has completed.
+                await Task.Delay(-1);
+            }
         }
 
         private async Task ProcessAsyncActions(AsyncAction[][] actions)
