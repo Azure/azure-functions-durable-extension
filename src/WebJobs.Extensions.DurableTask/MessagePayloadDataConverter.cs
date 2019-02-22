@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly JsonSerializerSettings ErrorSettings = new JsonSerializerSettings
         {
             ContractResolver = new ExceptionResolver(),
+            TypeNameHandling = TypeNameHandling.Objects,
         };
 
         // Default singleton instances
