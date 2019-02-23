@@ -549,7 +549,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -627,7 +627,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -696,7 +696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 retryCount,
                 TimeSpan.FromMilliseconds(1000),
@@ -765,7 +765,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -858,7 +858,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -918,16 +918,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 mockNameResolver.Object,
                 new TestConnectionStringResolver());
 
-            Assert.Equal("http://dummy.com/", extension.LifeCycleNotificationHelper.EventGridTopicEndpoint);
-            Assert.Equal(eventGridKeyValue, extension.LifeCycleNotificationHelper.EventGridKeyValue);
+            var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
+
+            Assert.Equal("http://dummy.com/", eventGridLifeCycleNotification.EventGridTopicEndpoint);
+            Assert.Equal(eventGridKeyValue, eventGridLifeCycleNotification.EventGridKeyValue);
 
             var handler =
-                (LifeCycleNotificationHelper.HttpRetryMessageHandler)extension.LifeCycleNotificationHelper
+                (EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler)eventGridLifeCycleNotification
                     .HttpMessageHandler;
 
             Assert.Equal(retryCount, handler.MaxRetryCount);
             Assert.Equal(retryInterval, handler.RetryWaitSpan);
             Assert.Equal(retryStatus.Select(s => (HttpStatusCode)s), handler.RetryTargetStatus);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeActivationSuccess()
+        {
+            var options = new DurableTaskOptions
+            {
+                CustomLifeCycleNotificationHelperType = typeof(TestLifeCycleNotificationHelper).AssemblyQualifiedName,
+            };
+
+            var extension = new DurableTaskExtension(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new TestConnectionStringResolver());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<TestLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeActivationFailed()
+        {
+            var options = new DurableTaskOptions
+            {
+                CustomLifeCycleNotificationHelperType = "Test.TestLifeCycleNotificationHelper",
+            };
+
+            var extension = new DurableTaskExtension(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new TestConnectionStringResolver());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeFallback()
+        {
+            var options = new DurableTaskOptions
+            {
+                EventGridKeySettingName = null,
+                EventGridTopicEndpoint = null,
+                CustomLifeCycleNotificationHelperType = null,
+            };
+
+            var extension = new DurableTaskExtension(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new TestConnectionStringResolver());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
         }
 
         private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
@@ -939,6 +1006,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return mock;
+        }
+
+        public class TestLifeCycleNotificationHelper : ILifeCycleNotificationHelper
+        {
+            public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, FunctionType functionType, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, FunctionType functionType, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, FunctionType functionType, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorTerminatedAsync(string hubName, string functionName, string instanceId, string reason)
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }

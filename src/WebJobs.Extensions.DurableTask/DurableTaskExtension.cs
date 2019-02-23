@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
-        #if !NETSTANDARD2_0
+#if !NETSTANDARD2_0
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
         /// </summary>
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = new DurableTaskOptions();
             this.isOptionsConfigured = false;
         }
-        #endif
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
-            this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(options.Value, nameResolver, this.TraceHelper);
+            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.isOptionsConfigured = true;
         }
 
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal HttpApiHandler HttpApiHandler { get; private set; }
 
-        internal LifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
+        internal ILifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
@@ -196,10 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.LifeCycleNotificationHelper = new LifeCycleNotificationHelper(
-                this.Options,
-                context.Config.NameResolver,
-                this.TraceHelper);
+            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.nameResolver = context.Config.NameResolver;
 #endif
         }
@@ -212,6 +209,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionName: string.Empty,
                 message: $"Initializing extension with the following settings: {this.Options.GetDebugString()}",
                 writeToUserLogs: true);
+        }
+
+        private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
+        {
+            // First: EventGrid
+            if (!string.IsNullOrEmpty(this.Options.EventGridTopicEndpoint) && !string.IsNullOrEmpty(this.Options.EventGridKeySettingName))
+            {
+                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
+            }
+
+            // Second: Custom LifeCycle Helper Type
+            if (!string.IsNullOrEmpty(this.Options.CustomLifeCycleNotificationHelperType))
+            {
+                var notificationType = Type.GetType(this.Options.CustomLifeCycleNotificationHelperType);
+
+                if (notificationType != null && typeof(ILifeCycleNotificationHelper).IsAssignableFrom(notificationType))
+                {
+                    return (ILifeCycleNotificationHelper)Activator.CreateInstance(notificationType);
+                }
+            }
+
+            // Fallback: Disable Notification
+            return new NullLifeCycleNotificationHelper();
         }
 
         /// <summary>
