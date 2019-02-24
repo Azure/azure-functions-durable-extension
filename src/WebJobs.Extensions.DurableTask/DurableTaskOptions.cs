@@ -204,6 +204,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool LogReplayEvents { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type name of a custom to use for handling lifecycle notification events.
+        /// </summary>
+        /// <value>Assembly qualified class name that implements <see cref="ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
         public string CustomLifeCycleNotificationHelperType { get; set; }
 
         // Used for mocking the lifecycle notification helper.

@@ -7,17 +7,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class NullLifeCycleNotificationHelper : ILifeCycleNotificationHelper
     {
-        public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, FunctionType functionType, bool isReplay)
+        public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, bool isReplay)
         {
             return Task.CompletedTask;
         }
 
-        public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, FunctionType functionType, bool isReplay)
+        public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, bool isReplay)
         {
             return Task.CompletedTask;
         }
 
-        public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, FunctionType functionType, bool isReplay)
+        public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, bool isReplay)
         {
             return Task.CompletedTask;
         }

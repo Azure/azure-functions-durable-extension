@@ -162,7 +162,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string functionName,
             string instanceId,
-            FunctionType functionType,
             bool isReplay)
         {
             if (!this.useTrace)
@@ -184,7 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             bool continuedAsNew,
-            FunctionType functionType,
             bool isReplay)
         {
             if (!this.useTrace)
@@ -206,7 +204,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             string reason,
-            FunctionType functionType,
             bool isReplay)
         {
             if (!this.useTrace)

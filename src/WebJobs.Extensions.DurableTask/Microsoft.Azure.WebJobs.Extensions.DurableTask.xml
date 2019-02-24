@@ -305,6 +305,12 @@
             Boolean value specifying if the replay events should be logged.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.CustomLifeCycleNotificationHelperType">
+            <summary>
+            Gets or sets the type name of a custom to use for handling lifecycle notification events.
+            </summary>
+            <value>Assembly qualified class name that implements <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
@@ -405,6 +411,53 @@
             </summary>
             <param name="connectionStringName">The name of the connection string.</param>
             <returns>Returns the resolved connection string value.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">
+            <summary>
+            Interface defining methods to life cycle notifications.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorStartingAsync(System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            The orchestrator was starting.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="isReplay">The orchestrator function is currently replaying itself.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorCompletedAsync(System.String,System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            The orchestrator was completed.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="continuedAsNew">The orchestration completed with ContinueAsNew as is in the process of restarting.</param>
+            <param name="isReplay">The orchestrator function is currently replaying itself.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorFailedAsync(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            The orchestrator was failed.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="reason">Additional data associated with the tracking event.</param>
+            <param name="isReplay">The orchestrator function is currently replaying itself.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorTerminatedAsync(System.String,System.String,System.String,System.String)">
+            <summary>
+            The orchestrator was terminated.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="reason">Additional data associated with the tracking event.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
@@ -1154,20 +1207,6 @@
             </exception>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
-            <summ       <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -1210,7 +1249,22 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAexception cref="T:System.InvalidOperationException">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+            </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="retryOptions">The retry option for the orchestrator function.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            The retry option object is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
             The current thread is different than the thread which started the orchestrator execution.
             </exception>
             <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
@@ -1678,33 +1732,6 @@
             </summary>
             <value>
             The TimeSpan of the max retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient">
-            <summary>
-            Gets or sets the backoff coefficient.
-            </summary>
-            <value>
-            The backoff coefficient used to determine rate of increase of backoff. Defaults to 1.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout">
-            <summary>
-            Gets or sets the timeout for retries.
-            </summary>
-            <value>
-            The TimeSpan timeout for retries, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts">
-            <summary>
-            Gets or sets the max number of attempts.
-            </summary>
-            <value>
-            The maximum number of retry attempts.
-            </value>
-        </member>
-        <memb retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient">
