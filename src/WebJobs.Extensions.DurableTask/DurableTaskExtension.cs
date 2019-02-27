@@ -214,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
         {
             // First: EventGrid
-            if (!string.IsNullOrEmpty(this.Options.EventGridTopicEndpoint) && !string.IsNullOrEmpty(this.Options.EventGridKeySettingName))
+            if (!string.IsNullOrEmpty(this.Options.EventGridTopicEndpoint) || !string.IsNullOrEmpty(this.Options.EventGridKeySettingName))
             {
                 return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
             }
