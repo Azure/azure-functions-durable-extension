@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class LifeCycleNotificationHelper
+    internal class EventGridLifeCycleNotificationHelper : ILifeCycleNotificationHelper
     {
         private readonly DurableTaskOptions config;
         private readonly EndToEndTraceHelper traceHelper;
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
-        public LifeCycleNotificationHelper(
+        public EventGridLifeCycleNotificationHelper(
             DurableTaskOptions config,
             INameResolver nameResolver,
             EndToEndTraceHelper traceHelper)
@@ -162,7 +162,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string functionName,
             string instanceId,
-            FunctionType functionType,
             bool isReplay)
         {
             if (!this.useTrace)
@@ -184,7 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             bool continuedAsNew,
-            FunctionType functionType,
             bool isReplay)
         {
             if (!this.useTrace)
@@ -206,7 +204,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             string reason,
-            FunctionType functionType,
             bool isReplay)
         {
             if (!this.useTrace)

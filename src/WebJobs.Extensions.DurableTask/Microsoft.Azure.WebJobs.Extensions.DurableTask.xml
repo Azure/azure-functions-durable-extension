@@ -305,6 +305,12 @@
             Boolean value specifying if the replay events should be logged.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.CustomLifeCycleNotificationHelperType">
+            <summary>
+            Gets or sets the type name of a custom to use for handling lifecycle notification events.
+            </summary>
+            <value>Assembly qualified class name that implements <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
@@ -405,6 +411,53 @@
             </summary>
             <param name="connectionStringName">The name of the connection string.</param>
             <returns>Returns the resolved connection string value.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">
+            <summary>
+            Interface defining methods to life cycle notifications.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorStartingAsync(System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            The orchestrator was starting.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="isReplay">The orchestrator function is currently replaying itself.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorCompletedAsync(System.String,System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            The orchestrator was completed.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="continuedAsNew">The orchestration completed with ContinueAsNew as is in the process of restarting.</param>
+            <param name="isReplay">The orchestrator function is currently replaying itself.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorFailedAsync(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            The orchestrator was failed.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="reason">Additional data associated with the tracking event.</param>
+            <param name="isReplay">The orchestrator function is currently replaying itself.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper.OrchestratorTerminatedAsync(System.String,System.String,System.String,System.String)">
+            <summary>
+            The orchestrator was terminated.
+            </summary>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">The ID to use for the orchestration instance.</param>
+            <param name="reason">Additional data associated with the tracking event.</param>
+            <returns>A task that completes when the lifecycle notification message has been sent.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
