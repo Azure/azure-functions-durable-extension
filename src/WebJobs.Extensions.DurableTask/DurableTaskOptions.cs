@@ -210,6 +210,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>Assembly qualified class name that implements <see cref="ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
         public string CustomLifeCycleNotificationHelperType { get; set; }
 
+        /// <summary>
+        /// Gets or sets the maximum queue polling interval.
+        /// </summary>
+        /// <value>Maximum interval for polling control and work-item queues.</value>
+        public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
@@ -248,6 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
+            sb.Append(nameof(this.MaxQueuePollingInterval)).Append(": ").Append(this.MaxQueuePollingInterval).Append(", ");
 
             return sb.ToString();
         }
@@ -302,6 +309,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.EventGridPublishRetryInterval > TimeSpan.FromMinutes(60))
             {
                 throw new InvalidOperationException($"{nameof(this.EventGridPublishRetryInterval)} must be non-negative and no more than 60 minutes.");
+            }
+
+            if (this.MaxQueuePollingInterval <= TimeSpan.Zero)
+            {
+                throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
             }
         }
     }

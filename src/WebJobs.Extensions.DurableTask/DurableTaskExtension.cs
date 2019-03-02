@@ -460,6 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 MaxConcurrentTaskActivityWorkItems = this.Options.MaxConcurrentActivityFunctions,
                 ExtendedSessionsEnabled = this.Options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
+                MaxQueuePollingInterval = this.Options.MaxQueuePollingInterval,
             };
         }
 
