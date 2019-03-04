@@ -408,7 +408,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static IEnumerable<T> GetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName) where T : struct
+        private static IEnumerable<T> GetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+            where T : struct
         {
             var results = new List<T>();
             var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };

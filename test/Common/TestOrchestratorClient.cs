@@ -155,7 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             while (sw.Elapsed < timeout);
 
             output.WriteLine($"Timeout expired. {status.Name} ({status.InstanceId}) currently shows a status of '{status.CustomStatus}'.");
-            Assert.Equal(expectedStatus, status.CustomStatus);
+            Assert.Equal(expectedStatus.ToString(), status.CustomStatus?.ToString());
             return status;
         }
     }

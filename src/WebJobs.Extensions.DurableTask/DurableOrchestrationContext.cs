@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -65,8 +64,6 @@ namespace Microsoft.Azure.WebJobs
         internal string HubName => this.config.Options.HubName;
 
         internal string Name => this.orchestrationName;
-
-        internal bool IsOutputSet => this.serializedOutput != null;
 
         internal IList<HistoryEvent> History { get; set; }
 
@@ -144,11 +141,6 @@ namespace Microsoft.Azure.WebJobs
         internal void SetOutput(object output)
         {
             this.ThrowIfInvalidAccess();
-
-            if (this.IsOutputSet)
-            {
-                throw new InvalidOperationException("The output has already been set of this orchestration instance.");
-            }
 
             if (output != null)
             {
