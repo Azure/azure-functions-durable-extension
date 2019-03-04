@@ -599,7 +599,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(3, (int?)status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
-                Assert.NotEqual(initialValue, status?.Input);
+                Assert.Equal(3, (int)status.Input);
 
                 await host.StopAsync();
 
@@ -648,7 +648,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(3, (int?)status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
-                Assert.NotEqual(initialValue, status?.Input);
+                Assert.Equal(3, (int)status.Input);
 
                 await host.StopAsync();
             }
@@ -2247,7 +2247,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(3, (int)status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
-                Assert.NotEqual(initialValue, status?.Input);
+                Assert.Equal(3, (int)status.Input);
 
                 await host1.StopAsync();
                 await host2.StopAsync();
