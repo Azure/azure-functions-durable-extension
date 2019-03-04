@@ -57,6 +57,8 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool ContinuedAsNew { get; private set; }
 
+        internal bool IsOutputSet => this.serializedOutput != null;
+
         internal bool IsCompleted { get; set; }
 
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
@@ -141,6 +143,11 @@ namespace Microsoft.Azure.WebJobs
         internal void SetOutput(object output)
         {
             this.ThrowIfInvalidAccess();
+
+            if (this.IsOutputSet)
+            {
+                throw new InvalidOperationException("The output has already been set of this orchestration instance.");
+            }
 
             if (output != null)
             {
