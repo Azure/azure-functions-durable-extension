@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -58,6 +57,8 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool ContinuedAsNew { get; private set; }
 
+        internal bool IsOutputSet => this.serializedOutput != null;
+
         internal bool IsCompleted { get; set; }
 
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
@@ -65,8 +66,6 @@ namespace Microsoft.Azure.WebJobs
         internal string HubName => this.config.Options.HubName;
 
         internal string Name => this.orchestrationName;
-
-        internal bool IsOutputSet => this.serializedOutput != null;
 
         internal IList<HistoryEvent> History { get; set; }
 
