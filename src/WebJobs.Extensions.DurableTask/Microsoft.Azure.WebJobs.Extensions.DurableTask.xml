@@ -311,6 +311,12 @@
             </summary>
             <value>Assembly qualified class name that implements <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxQueuePollingInterval">
+            <summary>
+            Gets or sets the maximum queue polling interval.
+            </summary>
+            <value>Maximum interval for polling control and work-item queues.</value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
@@ -478,6 +484,21 @@
             <summary>
             JSON-serializes the specified object and throws a <see cref="T:System.ArgumentException"/> if the
             resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult">
+            <summary>
+            The status of all orchestration instances with paging for a given query.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult.DurableOrchestrationState">
+            <summary>
+            A collection of statuses of orchestration instances matching the query description.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult.ContinuationToken">
+            <summary>
+            A token that can be used to resume the query with data not already returned by this query.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload">
@@ -890,9 +911,6 @@
             <summary>
             Gets the status of all orchestration instances with paging that match the specified conditions.
             </summary>
-            <remarks>
-            This is limited to <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpApiHandler"/> and it will not be published to external clients.
-            </remarks>
             <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
             <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
             <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>

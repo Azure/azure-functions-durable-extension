@@ -248,7 +248,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        internal override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
+        public override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
             DateTime createdTimeFrom,
             DateTime? createdTimeTo,
             IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
