@@ -488,7 +488,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult">
             <summary>
-            The status of of all orchestration instances with paging for a given query.
+            The status of all orchestration instances with paging for a given query.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult.DurableOrchestrationState">

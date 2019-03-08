@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// The status of of all orchestration instances with paging for a given query.
+    /// The status of all orchestration instances with paging for a given query.
     /// </summary>
     public class OrchestrationStatusQueryResult
     {
