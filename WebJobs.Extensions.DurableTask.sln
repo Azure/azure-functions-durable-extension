@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{51D8DC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V2", "test\FunctionsV2\WebJobs.Extensions.DurableTask.Tests.V2.csproj", "{F2A5DABB-36D4-4152-AF49-2570149899E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V1", "test\FunctionsV1\WebJobs.Extensions.DurableTask.Tests.V1.csproj", "{51499757-C642-46ED-89A2-EA3BA6FE5FE9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,10 +30,6 @@ Global
 		{F2A5DABB-36D4-4152-AF49-2570149899E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F2A5DABB-36D4-4152-AF49-2570149899E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F2A5DABB-36D4-4152-AF49-2570149899E1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -43,7 +37,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
 		{F2A5DABB-36D4-4152-AF49-2570149899E1} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
-		{51499757-C642-46ED-89A2-EA3BA6FE5FE9} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}

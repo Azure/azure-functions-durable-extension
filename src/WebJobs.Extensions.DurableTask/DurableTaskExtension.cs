@@ -28,9 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-#if NETSTANDARD2_0
     [Extension("DurableTask", "DurableTask")]
-#endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
@@ -52,27 +50,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
-        private readonly bool isOptionsConfigured;
-
         private INameResolver nameResolver;
         private AzureStorageOrchestrationService orchestrationService;
         private AzureStorageOrchestrationServiceSettings orchestrationServiceSettings;
         private TaskHubWorker taskHubWorker;
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
-
-#if !NETSTANDARD2_0
-        /// <summary>
-        /// Obsolete. Please use an alternate constructor overload.
-        /// </summary>
-        [Obsolete("The default constructor is obsolete and will be removed in future versions")]
-        public DurableTaskExtension()
-        {
-            // Options initialization happens later
-            this.Options = new DurableTaskOptions();
-            this.isOptionsConfigured = false;
-        }
-#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -87,8 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             INameResolver nameResolver,
             IConnectionStringResolver connectionStringResolver)
         {
-            // Options will be null in Functions v1 runtime - populated later.
-            this.Options = options?.Value ?? new DurableTaskOptions();
+            this.Options = options.Value;
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
 
@@ -102,25 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
-            this.isOptionsConfigured = true;
         }
-
-#if !NETSTANDARD2_0
-        /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
-        /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
-        /// </summary>
-        /// <remarks>
-        /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
-        /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
-        /// </remarks>
-        /// <value>The name of the default task hub.</value>
-        public string HubName
-        {
-            get { return this.Options.HubName; }
-            set { this.Options.HubName = value; }
-        }
-#endif
 
         internal DurableTaskOptions Options { get; }
 
@@ -137,13 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
             ConfigureLoaderHooks();
-
-            // Functions V1 has it's configuration initialized at startup time (now).
-            // For Functions V2 (and for some unit tests) configuration happens earlier in the pipeline.
-            if (!this.isOptionsConfigured)
-            {
-                this.InitializeForFunctionsV1(context);
-            }
 
             if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
             {
@@ -185,21 +142,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
-        }
-
-        private void InitializeForFunctionsV1(ExtensionConfigContext context)
-        {
-#if !NETSTANDARD2_0
-            context.ApplyConfig(this.Options, "DurableTask");
-
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
-
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
-            this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
-            this.nameResolver = context.Config.NameResolver;
-#endif
         }
 
         private void TraceConfigurationSettings()

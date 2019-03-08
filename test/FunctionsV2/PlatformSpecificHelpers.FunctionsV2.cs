@@ -10,12 +10,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     /// <summary>
     /// These helpers are specific to Functions v2.
-    /// IMPORTANT: Method signatures must be kept source compatible with the Functions v1 version.
     /// </summary>
     public static class PlatformSpecificHelpers
     {
         public const string VersionSuffix = "V2";
-        public const string TestCategory = "Functions" + VersionSuffix;
+        public const string TestCategory = "DurableFunctions" + VersionSuffix;
         public const string FlakeyTestCategory = TestCategory + "_Flakey";
 
         public static JobHost CreateJobHost(
