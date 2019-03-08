@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class WebJobsConnectionStringProvider : IConnectionStringResolver
     {
-#if NETSTANDARD2_0
         private readonly IConfiguration hostConfiguration;
 
         /// <summary>
@@ -28,12 +27,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.hostConfiguration.GetWebJobsConnectionString(connectionStringName);
         }
-#else
-            /// <inheritdoc />
-            public string Resolve(string connectionStringName)
-            {
-                return Microsoft.Azure.WebJobs.Host.AmbientConnectionStringProvider.Instance.GetConnectionString(connectionStringName);
-            }
-#endif
     }
 }

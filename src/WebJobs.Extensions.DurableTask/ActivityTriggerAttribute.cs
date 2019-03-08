@@ -12,13 +12,9 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{Activity}")]
-#if NETSTANDARD2_0
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]
 #pragma warning restore CS0618 // Type or member is obsolete
-#else
-    [Binding]
-#endif
     public sealed class ActivityTriggerAttribute : Attribute
     {
         /// <summary>
