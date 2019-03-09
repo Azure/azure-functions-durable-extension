@@ -141,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // We may need to revisit this assumption when Functions v2 adds support
                 // for "out-of-proc" .NET.
                 var isOutOfProc = !typeof(DurableOrchestrationContextBase).IsAssignableFrom(this.parameterInfo.ParameterType);
-                this.config.RegisterOrchestrator(this.orchestratorName, new OrchestratorInfo(context.Executor, isOutOfProc));
+                this.config.RegisterOrchestrator(this.orchestratorName, new RegisteredFunctionInfo(context.Executor, isOutOfProc));
 
                 var listener = new DurableTaskListener(
                     this.config,
