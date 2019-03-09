@@ -467,6 +467,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
+            orchestratorInfo.IsDeregistered = false;
+
             if (this.knownOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
@@ -485,7 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
         {
             RegisteredFunctionInfo existing;
-            if (this.knownOrchestrators.TryGetValue(orchestratorFunction, out existing))
+            if (this.knownOrchestrators.TryGetValue(orchestratorFunction, out existing) && !existing.IsDeregistered)
             {
                 existing.IsDeregistered = true;
 
@@ -529,7 +531,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterActivity(FunctionName activityFunction)
         {
             RegisteredFunctionInfo info;
-            if (this.knownActivities.TryGetValue(activityFunction, out info))
+            if (this.knownActivities.TryGetValue(activityFunction, out info) && !info.IsDeregistered)
             {
                 info.IsDeregistered = true;
 
