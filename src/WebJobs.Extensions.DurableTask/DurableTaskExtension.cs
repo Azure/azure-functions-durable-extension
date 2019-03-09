@@ -467,7 +467,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
-            orchestratorInfo.IsDeregistered = false;
+            if (orchestratorInfo != null)
+            {
+                orchestratorInfo.IsDeregistered = false;
+            }
 
             if (this.knownOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
             {
