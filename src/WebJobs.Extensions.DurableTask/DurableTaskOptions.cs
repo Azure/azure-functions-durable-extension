@@ -163,6 +163,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>A list of HTTP status codes, e.g. 400, 403.</value>
         public int[] EventGridPublishRetryHttpStatus { get; set; }
 
+
+        /// <summary>
+        /// Gets or sets if the 'Running' Event should be published to Event Grid.
+        /// </summary>
+        public bool EventGridPublishRunningEvent { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets if the 'Completed' Event should be published to Event Grid.
+        /// </summary>
+        public bool EventGridPublishCompletedEvent { get; set; } = true;
+
+
+        /// <summary>
+        /// Gets or sets if the 'Failed' Event should be published to Event Grid.
+        /// </summary>
+        public bool EventGridPublishFailedEvent { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets if the 'Terminated' Event should be published to Event Grid.
+        /// </summary>
+        public bool EventGridPublishTerminatedEvent { get; set; } = true;
+
         /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>

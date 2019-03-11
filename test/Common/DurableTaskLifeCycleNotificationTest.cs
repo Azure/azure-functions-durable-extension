@@ -116,6 +116,244 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        #region optouts
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationStartOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var functionName = nameof(TestOrchestrations.SayHelloInline);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+           
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Running", (string)o.subject);
+                    Assert.NotEqual("Running", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventGridPublishRunningEvent: false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    "World",
+                    this.output,
+                    createdInstanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationCompleteOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var functionName = nameof(TestOrchestrations.SayHelloInline);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Completed", (string)o.subject);
+                    Assert.NotEqual("Completed", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventGridPublishCompletedEvent: false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    "World",
+                    this.output,
+                    createdInstanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationFailed);
+            var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Failed", (string)o.subject);
+                    Assert.NotEqual("Failed", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventgridPublishFailedEvent: false))
+            {
+                await host.StartAsync();
+
+                // Null input should result in ArgumentNullException in the orchestration code.
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    null,
+                    this.output,
+                    createdInstanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationTerminateOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationTerminate);
+
+            // Using the counter orchestration because it will wait indefinitely for input.
+            var functionName = nameof(TestOrchestrations.Counter);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Terminated", (string)o.subject);
+                    Assert.NotEqual("Terminated", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventgridPublishTerminatedEvent: false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    0,
+                    this.output,
+                    createdInstanceId);
+
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.TerminateAsync("sayōnara");
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+        #endregion
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

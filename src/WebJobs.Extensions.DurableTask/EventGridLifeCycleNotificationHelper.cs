@@ -22,6 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
+        private readonly bool eventGridPublishRunningEvent;
+        private readonly bool eventGridPublishCompletedEvent;
+        private readonly bool eventGridPublishFailedEvent;
+        private readonly bool eventGridPublishTerminatedEvent;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
@@ -40,6 +44,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
             this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
+            this.eventGridPublishRunningEvent = config.EventGridPublishRunningEvent;
+            this.eventGridPublishCompletedEvent = config.EventGridPublishCompletedEvent;
+            this.eventGridPublishFailedEvent = config.EventGridPublishFailedEvent;
+            this.eventGridPublishTerminatedEvent = config.EventGridPublishTerminatedEvent;
+
             if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endpoint))
             {
                 this.eventGridTopicEndpoint = endpoint;
@@ -169,6 +178,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            if (!this.eventGridPublishRunningEvent)
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -186,6 +200,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay)
         {
             if (!this.useTrace)
+            {
+                return;
+            }
+
+            if (!this.eventGridPublishCompletedEvent)
             {
                 return;
             }
@@ -211,6 +230,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            if (!this.eventGridPublishFailedEvent)
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -227,6 +251,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason)
         {
             if (!this.useTrace)
+            {
+                return;
+            }
+
+            if (!this.eventGridPublishTerminatedEvent)
             {
                 return;
             }
