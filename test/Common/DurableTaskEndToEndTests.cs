@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
-        private readonly bool useTestLogger = true;
+        private readonly bool useTestLogger = IsLogFriendlyPlatform();
         private readonly LogEventTraceListener eventSourceListener;
 
         private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
@@ -45,24 +46,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.eventSourceListener.Dispose();
         }
 
+        // Testing on Linux currently throws exception in LogEventTraceListener.
+        // May also need to limit on OSX.
+        private static bool IsLogFriendlyPlatform()
+        {
+            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        }
+
         private void StartLogCapture()
         {
-            var traceConfig = new Dictionary<string, TraceEventLevel>
+            if (this.useTestLogger)
             {
-                { "DurableTask-AzureStorage", TraceEventLevel.Informational },
-                { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
-            };
+                var traceConfig = new Dictionary<string, TraceEventLevel>
+                {
+                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
+                    { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
+                };
 
-            // Filter out some of the partition management informational events
-            var filteredEvents = new Dictionary<string, IEnumerable<int>>
-            {
-                { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
-            };
+                // Filter out some of the partition management informational events
+                var filteredEvents = new Dictionary<string, IEnumerable<int>>
+                {
+                    { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
+                };
 
-            this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
+                this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
 
-            string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-            this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+                string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
+                this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+            }
         }
 
         private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
