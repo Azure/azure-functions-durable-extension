@@ -449,7 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan extendedSessionTimeout = TimeSpan.FromSeconds(
                 Math.Max(this.Options.ExtendedSessionIdleTimeoutInSeconds, 0));
 
-            return new AzureStorageOrchestrationServiceSettings
+            var settings = new AzureStorageOrchestrationServiceSettings
             {
                 StorageConnectionString = resolvedStorageConnectionString,
                 TaskHubName = taskHubNameOverride ?? this.Options.HubName,
@@ -464,8 +464,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 MaxQueuePollingInterval = this.Options.MaxQueuePollingInterval,
                 TrackingStoreStorageAccountDetails = this.GetStorageAccountDetailsOrNull(
                     this.Options.TrackingStoreConnectionStringName),
-                TrackingStoreNamePrefix = this.Options.TrackingStoreNamePrefix,
             };
+
+            if (!string.IsNullOrEmpty(this.Options.TrackingStoreNamePrefix))
+            {
+                settings.TrackingStoreNamePrefix = this.Options.TrackingStoreNamePrefix;
+            }
+
+            return settings;
         }
 
         private StorageAccountDetails GetStorageAccountDetailsOrNull(string connectionName)
