@@ -129,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void Stop()
         {
             this.currentSession?.Source.StopProcessing();
-            this.backgroundTraceThread.Join(TimeSpan.FromSeconds(10));
+            this.backgroundTraceThread?.Join(TimeSpan.FromSeconds(10));
             this.currentSession?.Dispose();
             this.currentSession = null;
         }
