@@ -462,6 +462,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtendedSessionsEnabled = this.Options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.Options.MaxQueuePollingInterval,
+                TrackingStoreStorageAccountDetails = this.GetStorageAccountDetailsOrNull(
+                    this.Options.TrackingStoreConnectionStringName),
+                TrackingStoreNamePrefix = this.Options.TrackingStoreNamePrefix,
+            };
+        }
+
+        private StorageAccountDetails GetStorageAccountDetailsOrNull(string connectionName)
+        {
+            if (string.IsNullOrEmpty(connectionName))
+            {
+                return null;
+            }
+
+            string resolvedStorageConnectionString = this.connectionStringResolver.Resolve(connectionName);
+            if (string.IsNullOrEmpty(resolvedStorageConnectionString))
+            {
+                throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
+            }
+
+            return new StorageAccountDetails
+            {
+                ConnectionString = resolvedStorageConnectionString,
             };
         }
 
