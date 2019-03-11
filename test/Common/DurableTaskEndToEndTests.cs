@@ -1416,9 +1416,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
-                string output = status.Output.ToString();
+                // Strip '\r' characters to make Windows and Unix output identical.
+                string output = status.Output.ToString().Replace("\r", string.Empty);
                 this.output.WriteLine($"Orchestration output string: {output}");
-                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\r\nParameter name: message\"", output);
+                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\nParameter name: message\"", output);
 
                 string subOrchestrationInstanceId = (string)status.CustomStatus;
                 Assert.NotNull(subOrchestrationInstanceId);
