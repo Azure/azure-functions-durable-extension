@@ -22,6 +22,11 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor">
+            <summary>
+            Obsolete. Please use an alternate constructor overload.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
@@ -30,6 +35,17 @@
             <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
             <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
+            <summary>
+            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>,
+            <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/> instances.
+            </summary>
+            <remarks>
+            A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
+            multiple Durable Functions applications from each other, even if they are using the same storage backend.
+            </remarks>
+            <value>The name of the default task hub.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -48,18 +64,6 @@
             Called by the Durable Task Framework: Not used.
             </summary>
             <param name="creator">This parameter is not used.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject(System.String,System.String)">
-            <summary>
-            Called by the Durable Task Framework: Returns the specified <see cref="T:DurableTask.Core.TaskOrchestration"/>.
-            </summary>
-            <param name="name">The name of the orchestration to return.</param>
-            <param name="version">Not used.</param>
-            <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})">
-            <summary>
-            Called by the durable task framework: Not       <param name="creator">This parameter is not used.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskOrchestration}#GetObject(System.String,System.String)">
             <summary>
@@ -260,25 +264,13 @@
             </summary>
             <value>A list of HTTP status codes, e.g. 400, 403.</value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRunningEvent">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishEventTypes">
             <summary>
-            Gets or sets if the 'Running' Event should be published to Event Grid.
+            gets or sets the event types that will be published to Event Grid. 
             </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishCompletedEvent">
-            <summary>
-            Gets or sets if the 'Completed' Event should be published to Event Grid.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishFailedEvent">
-            <summary>
-            Gets or sets if the 'Failed' Event should be published to Event Grid.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishTerminatedEvent">
-            <summary>
-            Gets or sets if the 'Terminated' Event should be published to Event Grid.
-            </summary>
+            <value>
+            An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+            </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled">
             <summary>
@@ -1031,26 +1023,6 @@
             <remarks>
             The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
             auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
-            </rdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
-            <summary>
-            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId">
-            <summary>
-            Gets the instance ID of the currently executing orchestration.
-            </summary>
-            <remarks>
-            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
             </remarks>
             <value>
             The ID of the current orchestration instance.
@@ -1102,7 +1074,23 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid">
             <summary>
             Creates a new GUID that is safe for replay within an orchestrator function.
-   ed function does not exist, is disabled, or is not an orchestrator function.
+            </summary>
+            <remarks>
+            The default implementation of this method creates a name-based UUID using the algorithm from
+            RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+            instance ID and an internally managed sequence number.
+            </remarks>
+            <returns>The new <see cref="T:System.Guid"/> value.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">
+            <summary>
+            Schedules an activity function named <paramref name="functionName"/> for execution.
+            </summary>
+            <param name="functionName">The name of the activity function to call.</param>
+            <param name="input">The JSON-serializeable input to pass to the activity function.</param>
+            <returns>A durable task that completes when the called function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
             <exception cref="T:System.InvalidOperationException">
             The current thread is different than the thread which started the orchestrator execution.
@@ -1145,21 +1133,6 @@
             </exception>
             <exception cref="T:System.InvalidOperationException">
             The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
-            <summary>
-            Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
-            </summary>
-            <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
-            <param name="functionName">The name of the activity function to call.</param>
-            <param name="retryOptions">The retry option for the activity function.</param>
-            <param name="input">The JSON-serializeable input to pass to the activity function.</param>
-            <returns>A durable task that completes when the called activity function completes or fails.</returns>
-            <exceptionecution.
             </exception>
             <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
             The activity function failed with an unhandled exception.
@@ -1217,6 +1190,21 @@
             </exception>
             <exception cref="T:System.InvalidOperationException">
             The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.Object)">
+            <summary>
+            Schedules an orchestration function named <paramref name="functionName"/> for execution.
+            </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
             <exception cref="T:System.InvalidOperationException">
             The current thread is different than the thread which started the orchestrator execution.
@@ -1316,22 +1304,6 @@
             <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
             <param name="functionName">The name of the orchestrator function to call.</param>
             <param name="retryOptions">The retry option for the orchestrator function.</param>
-            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentNullException">
-            The retry option object is null.
-            </exception>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </memberions">The retry option for the orchestrator function.</param>
             <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
             <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
             <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
