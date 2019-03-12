@@ -264,6 +264,14 @@
             </summary>
             <value>A list of HTTP status codes, e.g. 400, 403.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishEventTypes">
+            <summary>
+            gets or sets the event types that will be published to Event Grid. 
+            </summary>
+            <value>
+            An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+            </value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled">
             <summary>
             Gets or sets a flag indicating whether to enable extended sessions.

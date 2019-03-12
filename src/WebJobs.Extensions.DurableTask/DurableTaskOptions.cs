@@ -190,6 +190,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int[] EventGridPublishRetryHttpStatus { get; set; }
 
         /// <summary>
+        /// gets or sets the event types that will be published to Event Grid. 
+        /// </summary>
+        /// <value>
+        /// An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+        /// </value>
+        public string[] EventGridPublishEventTypes { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>

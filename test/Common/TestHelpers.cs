@@ -32,7 +32,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool logReplayEvents = true,
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
-            TimeSpan? maxQueuePollingInterval = null)
+            TimeSpan? maxQueuePollingInterval = null,
+            string[] eventGridPublishEventTypes = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 LogReplayEvents = logReplayEvents,
                 NotificationUrl = notificationUrl,
                 NotificationHandler = eventGridNotificationHandler,
+                EventGridPublishEventTypes = eventGridPublishEventTypes,
             };
 
             if (eventGridRetryCount.HasValue)

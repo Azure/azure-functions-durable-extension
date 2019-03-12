@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
+        private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
             this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
+
             if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endpoint))
             {
                 this.eventGridTopicEndpoint = endpoint;
@@ -56,6 +58,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                               .Select(x => (HttpStatusCode)x)
                                               .ToArray()
                                           ?? Array.Empty<HttpStatusCode>();
+
+                    if (config.EventGridPublishEventTypes == null || config.EventGridPublishEventTypes.Length == 0)
+                    {
+                        eventGridPublishEventTypes = (OrchestrationRuntimeStatus[])Enum.GetValues(typeof(OrchestrationRuntimeStatus));
+                    }
+                    else
+                    {
+                        var startedIndex = Array.FindIndex(config.EventGridPublishEventTypes, x => x == "Started");
+                        if (startedIndex > -1)
+                        {
+                            config.EventGridPublishEventTypes[startedIndex] = OrchestrationRuntimeStatus.Running.ToString();
+                        }
+
+                        OrchestrationRuntimeStatus parseAndvalidateEvents(string @event)
+                        {
+                            var success = Enum.TryParse(@event, out OrchestrationRuntimeStatus @enum);
+                            if (success)
+                            {
+                                switch (@enum)
+                                {
+                                    case OrchestrationRuntimeStatus.Canceled:
+                                    case OrchestrationRuntimeStatus.ContinuedAsNew:
+                                    case OrchestrationRuntimeStatus.Pending:
+                                        success = false;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                            if (!success)
+                            {
+                                throw new ArgumentException("Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.");
+                            }
+                            return @enum;
+                        }
+
+                        eventGridPublishEventTypes = config.EventGridPublishEventTypes.Select(x => parseAndvalidateEvents(x)).ToArray();
+                    }
 
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
                     // For more detail about the Event Grid, please refer this document.
@@ -169,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            if (!this.eventGridPublishEventTypes.Contains(OrchestrationRuntimeStatus.Running))
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -186,6 +232,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay)
         {
             if (!this.useTrace)
+            {
+                return;
+            }
+
+            if (!this.eventGridPublishEventTypes.Contains(OrchestrationRuntimeStatus.Completed))
             {
                 return;
             }
@@ -211,6 +262,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            if (!this.eventGridPublishEventTypes.Contains(OrchestrationRuntimeStatus.Failed))
+            {
+                return;
+            }
+
             EventGridEvent[] sendObject = this.CreateEventGridEvent(
                 hubName,
                 functionName,
@@ -227,6 +283,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason)
         {
             if (!this.useTrace)
+            {
+                return;
+            }
+
+            if (!this.eventGridPublishEventTypes.Contains(OrchestrationRuntimeStatus.Terminated))
             {
                 return;
             }
