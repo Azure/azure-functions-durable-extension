@@ -449,7 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan extendedSessionTimeout = TimeSpan.FromSeconds(
                 Math.Max(this.Options.ExtendedSessionIdleTimeoutInSeconds, 0));
 
-            return new AzureStorageOrchestrationServiceSettings
+            var settings = new AzureStorageOrchestrationServiceSettings
             {
                 StorageConnectionString = resolvedStorageConnectionString,
                 TaskHubName = taskHubNameOverride ?? this.Options.HubName,
@@ -462,6 +462,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtendedSessionsEnabled = this.Options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.Options.MaxQueuePollingInterval,
+                TrackingStoreStorageAccountDetails = this.GetStorageAccountDetailsOrNull(
+                    this.Options.TrackingStoreConnectionStringName),
+            };
+
+            if (!string.IsNullOrEmpty(this.Options.TrackingStoreNamePrefix))
+            {
+                settings.TrackingStoreNamePrefix = this.Options.TrackingStoreNamePrefix;
+            }
+
+            return settings;
+        }
+
+        private StorageAccountDetails GetStorageAccountDetailsOrNull(string connectionName)
+        {
+            if (string.IsNullOrEmpty(connectionName))
+            {
+                return null;
+            }
+
+            string resolvedStorageConnectionString = this.connectionStringResolver.Resolve(connectionName);
+            if (string.IsNullOrEmpty(resolvedStorageConnectionString))
+            {
+                throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
+            }
+
+            return new StorageAccountDetails
+            {
+                ConnectionString = resolvedStorageConnectionString,
             };
         }
 
