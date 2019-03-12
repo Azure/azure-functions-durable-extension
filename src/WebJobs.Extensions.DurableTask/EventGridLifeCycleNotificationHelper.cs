@@ -23,10 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
         private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
-        private readonly bool eventGridPublishRunningEvent;
-        private readonly bool eventGridPublishCompletedEvent;
-        private readonly bool eventGridPublishFailedEvent;
-        private readonly bool eventGridPublishTerminatedEvent;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
@@ -56,7 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (!string.IsNullOrEmpty(config.EventGridKeySettingName))
                 {
                     this.useTrace = true;
-
 
                     var retryStatusCode = config.EventGridPublishRetryHttpStatus?
                                               .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
