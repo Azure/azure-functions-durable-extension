@@ -27,7 +27,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,8 +37,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="$(SolutionDir)\.stylecop\stylecop.json" Link="stylecop.json" />
-    <Compile Include="$(SolutionDir)\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+    <AdditionalFiles Include="..\..\.stylecop\stylecop.json" Link="stylecop.json" />
+    <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
   </ItemGroup>
 
 </Project>
