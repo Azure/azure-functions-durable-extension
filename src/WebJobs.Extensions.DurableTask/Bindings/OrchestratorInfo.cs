@@ -5,18 +5,15 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class RegisteredFunctionInfo
+    internal class OrchestratorInfo
     {
-        internal RegisteredFunctionInfo(ITriggeredFunctionExecutor executor, bool isOutOfProc)
+        internal OrchestratorInfo(ITriggeredFunctionExecutor executor, bool isOutOfProc)
         {
             this.Executor = executor;
             this.IsOutOfProc = isOutOfProc;
         }
 
-        internal ITriggeredFunctionExecutor Executor { get; set; }
-
-        // This flag is set when a function is disabled or the host is shutting down.
-        internal bool IsDeregistered { get; set; }
+        internal ITriggeredFunctionExecutor Executor { get; }
 
         internal bool IsOutOfProc { get; }
     }

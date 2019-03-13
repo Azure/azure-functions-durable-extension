@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -44,11 +43,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient> cachedClients =
             new ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient>();
 
-        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownOrchestrators =
-            new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
+        private readonly ConcurrentDictionary<FunctionName, OrchestratorInfo> registeredOrchestrators =
+            new ConcurrentDictionary<FunctionName, OrchestratorInfo>();
 
-        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
-            new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
+        private readonly ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor> registeredActivities =
+            new ConcurrentDictionary<FunctionName, ITriggeredFunctionExecutor>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
@@ -284,8 +283,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionName activityFunction = new FunctionName(name);
 
-            RegisteredFunctionInfo info;
-            if (!this.knownActivities.TryGetValue(activityFunction, out info))
+            ITriggeredFunctionExecutor executor;
+            if (!this.registeredActivities.TryGetValue(activityFunction, out executor))
             {
                 string message = $"Activity function '{activityFunction}' does not exist.";
                 this.TraceHelper.ExtensionWarningEvent(
@@ -296,7 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException(message);
             }
 
-            return new TaskActivityShim(this, info.Executor, name);
+            return new TaskActivityShim(this, executor, name);
         }
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
@@ -318,8 +317,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             FunctionName orchestratorFunction = new FunctionName(context.Name);
 
-            RegisteredFunctionInfo info;
-            if (!this.knownOrchestrators.TryGetValue(orchestratorFunction, out info))
+            OrchestratorInfo info;
+            if (!this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info))
             {
                 string message = this.GetInvalidOrchestratorFunctionMessage(orchestratorFunction.Name);
                 this.TraceHelper.ExtensionWarningEvent(
@@ -493,97 +492,85 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
+        internal void RegisterOrchestrator(FunctionName orchestratorFunction, OrchestratorInfo orchestratorInfo)
         {
-            if (orchestratorInfo != null)
-            {
-                orchestratorInfo.IsDeregistered = false;
-            }
-
-            if (this.knownOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
+            if (!this.registeredOrchestrators.TryUpdate(orchestratorFunction, orchestratorInfo, null))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: orchestratorFunction.Name,
-                    message: $"Registered orchestrator function named {orchestratorFunction}.",
+                    message: $"Registering orchestrator function named {orchestratorFunction}.",
                     writeToUserLogs: false);
-            }
-            else
-            {
-                this.knownOrchestrators[orchestratorFunction] = orchestratorInfo;
+
+                if (!this.registeredOrchestrators.TryAdd(orchestratorFunction, orchestratorInfo))
+                {
+                    throw new ArgumentException(
+                        $"The orchestrator function named '{orchestratorFunction}' is already registered.");
+                }
             }
         }
 
         internal void DeregisterOrchestrator(FunctionName orchestratorFunction)
         {
-            RegisteredFunctionInfo existing;
-            if (this.knownOrchestrators.TryGetValue(orchestratorFunction, out existing) && !existing.IsDeregistered)
-            {
-                existing.IsDeregistered = true;
+            this.TraceHelper.ExtensionInformationalEvent(
+                this.Options.HubName,
+                instanceId: string.Empty,
+                functionName: orchestratorFunction.Name,
+                message: $"Deregistering orchestrator function named {orchestratorFunction}.",
+                writeToUserLogs: false);
 
-                this.TraceHelper.ExtensionInformationalEvent(
-                    this.Options.HubName,
-                    instanceId: string.Empty,
-                    functionName: orchestratorFunction.Name,
-                    message: $"Deregistered orchestrator function named {orchestratorFunction}.",
-                    writeToUserLogs: false);
-            }
+            this.registeredOrchestrators.TryRemove(orchestratorFunction, out _);
         }
 
-        internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
+        internal OrchestratorInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
         {
-            RegisteredFunctionInfo info;
-            this.knownOrchestrators.TryGetValue(orchestratorFunction, out info);
+            OrchestratorInfo info;
+            this.registeredOrchestrators.TryGetValue(orchestratorFunction, out info);
 
             return info;
         }
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
-            if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
-            {
-                existing.Executor = executor;
-            }
-            else
+            // Allow adding with a null key and subsequently updating with a non-null key.
+            if (!this.registeredActivities.TryUpdate(activityFunction, executor, null))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: activityFunction.Name,
-                    message: $"Registering activity function named {activityFunction}.",
+                    message: $"Registering orchestrator function named {activityFunction}.",
                     writeToUserLogs: false);
 
-                var info = new RegisteredFunctionInfo(executor, isOutOfProc: false);
-                this.knownActivities[activityFunction] = info;
+                if (!this.registeredActivities.TryAdd(activityFunction, executor))
+                {
+                    throw new ArgumentException($"The activity function named '{activityFunction}' is already registered.");
+                }
             }
         }
 
         internal void DeregisterActivity(FunctionName activityFunction)
         {
-            RegisteredFunctionInfo info;
-            if (this.knownActivities.TryGetValue(activityFunction, out info) && !info.IsDeregistered)
-            {
-                info.IsDeregistered = true;
+            this.TraceHelper.ExtensionInformationalEvent(
+                this.Options.HubName,
+                instanceId: string.Empty,
+                functionName: activityFunction.Name,
+                message: $"Deregistering orchestrator function named {activityFunction}.",
+                writeToUserLogs: false);
 
-                this.TraceHelper.ExtensionInformationalEvent(
-                    this.Options.HubName,
-                    instanceId: string.Empty,
-                    functionName: activityFunction.Name,
-                    message: $"Deregistered activity function named {activityFunction}.",
-                    writeToUserLogs: false);
-            }
+            this.registeredActivities.TryRemove(activityFunction, out _);
         }
 
         internal void ThrowIfFunctionDoesNotExist(string name, FunctionType functionType)
         {
             var functionName = new FunctionName(name);
 
-            if (functionType == FunctionType.Activity && !this.knownActivities.ContainsKey(functionName))
+            if (functionType == FunctionType.Activity && !this.registeredActivities.ContainsKey(functionName))
             {
                 throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
             }
-            else if (functionType == FunctionType.Orchestrator && !this.knownOrchestrators.ContainsKey(functionName))
+            else if (functionType == FunctionType.Orchestrator && !this.registeredOrchestrators.ContainsKey(functionName))
             {
                 throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
@@ -592,9 +579,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetInvalidActivityFunctionMessage(string name)
         {
             string message = $"The function '{name}' doesn't exist, is disabled, or is not an activity function. Additional info: ";
-            if (this.knownActivities.Keys.Count > 0)
+            if (this.registeredActivities.Keys.Count > 0)
             {
-                message += $"The following are the known activity functions: '{string.Join("', '", this.knownActivities.Keys)}'.";
+                message += $"The following are the active activity functions: '{string.Join("', '", this.registeredActivities.Keys)}'.";
             }
             else
             {
@@ -607,9 +594,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetInvalidOrchestratorFunctionMessage(string name)
         {
             string message = $"The function '{name}' doesn't exist, is disabled, or is not an orchestrator function. Additional info: ";
-            if (this.knownOrchestrators.Keys.Count > 0)
+            if (this.registeredOrchestrators.Keys.Count > 0)
             {
-                message += $"The following are the known orchestrator functions: '{string.Join("', '", this.knownOrchestrators.Keys)}'.";
+                message += $"The following are the active orchestrator functions: '{string.Join("', '", this.registeredOrchestrators.Keys)}'.";
             }
             else
             {
@@ -655,8 +642,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             using (await this.taskHubLock.AcquireAsync())
             {
                 if (this.isTaskHubWorkerStarted &&
-                    this.knownOrchestrators.Values.Count(info => !info.IsDeregistered) == 0 &&
-                    this.knownActivities.Values.Count(info => !info.IsDeregistered) == 0)
+                    this.registeredOrchestrators.Count == 0 &&
+                    this.registeredActivities.Count == 0)
                 {
                     this.TraceHelper.ExtensionInformationalEvent(
                         this.Options.HubName,
