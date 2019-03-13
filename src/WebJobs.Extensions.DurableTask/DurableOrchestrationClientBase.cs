@@ -119,7 +119,8 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started orchestratation instance.</returns>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -138,7 +139,8 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started orchestratation instance.</returns>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -215,8 +217,8 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         /// <param name="instanceId">The ID of the orchestration instance to terminate.</param>
         /// <param name="reason">The reason for terminating the orchestration instance.</param>
-        /// <returns>A task that completes when the terminate message is enqueued if necessary. The task contains a boolean that represents whether a
-        /// terminate message was enqueued or not.</returns>
+        /// <returns>A task that completes when the terminate message is enqueued if necessary. The task contains a boolean
+        /// that represents whether a terminate message was enqueued or not.</returns>
         public abstract Task<bool> TerminateAsync(string instanceId, string reason);
 
         /// <summary>

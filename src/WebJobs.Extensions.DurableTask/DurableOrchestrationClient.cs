@@ -136,8 +136,6 @@ namespace Microsoft.Azure.WebJobs
                 connectionName = this.attribute.ConnectionName;
             }
 
-
-
             var attribute = new OrchestrationClientAttribute
             {
                 TaskHub = taskHubName,
