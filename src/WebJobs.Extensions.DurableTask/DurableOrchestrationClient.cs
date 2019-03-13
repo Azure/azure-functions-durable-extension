@@ -136,6 +136,8 @@ namespace Microsoft.Azure.WebJobs
                 connectionName = this.attribute.ConnectionName;
             }
 
+
+
             var attribute = new OrchestrationClientAttribute
             {
                 TaskHub = taskHubName,
@@ -148,12 +150,10 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task TerminateAsync(string instanceId, string reason)
+        public override async Task<bool> TerminateAsync(string instanceId, string reason)
         {
-            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
-            if (state.OrchestrationStatus == OrchestrationStatus.Running ||
-                state.OrchestrationStatus == OrchestrationStatus.Pending ||
-                state.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+            if (IsOrchestrationRunning(state))
             {
                 // Terminate events are not supposed to target any particular execution ID.
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
@@ -162,13 +162,18 @@ namespace Microsoft.Azure.WebJobs
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
         /// <inheritdoc />
         public override async Task RewindAsync(string instanceId, string reason)
         {
-            OrchestrationState state = await this.GetOrchestrationInstanceAsync(instanceId);
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (state.OrchestrationStatus != OrchestrationStatus.Failed)
             {
                 throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
@@ -299,14 +304,19 @@ namespace Microsoft.Azure.WebJobs
             }
         }
 
-        private async Task<OrchestrationState> GetOrchestrationInstanceAsync(string instanceId)
+        private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)
+        {
+            return await GetOrchestrationInstanceStateAsync(this.client, instanceId);
+        }
+
+        private static async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(TaskHubClient client, string instanceId)
         {
             if (string.IsNullOrEmpty(instanceId))
             {
                 throw new ArgumentNullException(nameof(instanceId));
             }
 
-            OrchestrationState state = await this.client.GetOrchestrationStateAsync(instanceId);
+            OrchestrationState state = await client.GetOrchestrationStateAsync(instanceId);
             if (state?.OrchestrationInstance == null)
             {
                 throw new ArgumentException($"No instance with ID '{instanceId}' was found.", nameof(instanceId));
@@ -432,15 +442,13 @@ namespace Microsoft.Azure.WebJobs
             string eventName,
             object eventData)
         {
-            OrchestrationState status = await taskHubClient.GetOrchestrationStateAsync(instanceId);
+            OrchestrationState status = await GetOrchestrationInstanceStateAsync(taskHubClient, instanceId);
             if (status == null)
             {
                 return;
             }
 
-            if (status.OrchestrationStatus == OrchestrationStatus.Running ||
-                status.OrchestrationStatus == OrchestrationStatus.Pending ||
-                status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew)
+            if (IsOrchestrationRunning(status))
             {
                 // External events are not supposed to target any particular execution ID.
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
@@ -456,6 +464,22 @@ namespace Microsoft.Azure.WebJobs
                     functionType: FunctionType.Orchestrator,
                     isReplay: false);
             }
+            else
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                    hubName: taskHubName,
+                    functionName: status.Name,
+                    instanceId: instanceId,
+                    message: $"Cannot raise event for function in {status.Status} state");
+                throw new InvalidOperationException($"Cannot raise event for {eventName} because function is in {status.Status} state");
+            }
+        }
+
+        private static bool IsOrchestrationRunning(OrchestrationState status)
+        {
+            return status.OrchestrationStatus == OrchestrationStatus.Running ||
+                status.OrchestrationStatus == OrchestrationStatus.Pending ||
+                status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
         }
 
         private DurableOrchestrationStatus ConvertFrom(OrchestrationState orchestrationState, JArray historyArray = null)
