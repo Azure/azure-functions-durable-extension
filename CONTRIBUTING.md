@@ -7,7 +7,7 @@
 ## Pre-reqs
 
  - OS
-    - Windows 10 (suggested)k
+    - Windows 10 (suggested)
  - Language runtimes
     - .NET Core 2.0
  - Editor
@@ -42,7 +42,7 @@ The general flow for making a change to the script host is:
 ## Writing tests
 All tests for Durable Functions are found in [test/Common](https://github.com/Azure/azure-functions-durable-extension/tree/dev/test/Common). These tests are written using the [XUnit framework](https://xunit.github.io/). 
 
-NOTE: In order to run any tests you right in our CI pipeline, they must have one of the following attributes:
+NOTE: In order to run any tests you write in our CI pipeline, the test must have one of the following attributes:
 
  - `[Trait("Category", PlatformSpecificHelpers.TestCategory)]`
  - `[Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]`
