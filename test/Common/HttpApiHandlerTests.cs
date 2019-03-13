@@ -355,6 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryStatus_is_Success()
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>

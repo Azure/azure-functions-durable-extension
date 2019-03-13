@@ -32,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationStartAndCompleted(bool extendedSessionsEnabled)
@@ -117,6 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationFailed(bool extendedSessionsEnabled)
@@ -201,6 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationTerminate(bool extendedSessionsEnabled)
@@ -292,6 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationStartedOptOutOfEvent(bool extendedSessionsEnabled)
@@ -349,6 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationCompletedOptOutOfEvent(bool extendedSessionsEnabled)
@@ -406,6 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
@@ -464,6 +470,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationTerminatedOptOutOfEvent(bool extendedSessionsEnabled)
@@ -527,6 +534,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiReturnBadStatus(bool extendedSessionsEnabled)
@@ -792,6 +800,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiServiceUnavailableRetry(bool extendedSessionsEnabled)
@@ -871,6 +880,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiExceptionRetry(bool extendedSessionsEnabled)
@@ -949,6 +959,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiExceptionNoRetry(bool extendedSessionsEnabled)
@@ -1018,6 +1029,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiExceptionRetryCountOver(bool extendedSessionsEnabled)
@@ -1087,6 +1099,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiRetryStatus(bool extendedSessionsEnabled)

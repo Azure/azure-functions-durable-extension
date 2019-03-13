@@ -7,7 +7,7 @@
 ## Pre-reqs
 
  - OS
-    - Windows 10 (suggested)
+    - Windows 10 (suggested)k
  - Language runtimes
     - .NET Core 2.0
  - Editor
@@ -39,6 +39,16 @@ The general flow for making a change to the script host is:
 
 3. Run the unit tests via Visual Studio Test Explorer by selecting "Run All"
 
+## Writing tests
+All tests for Durable Functions are found in [test/Common](https://github.com/Azure/azure-functions-durable-extension/tree/dev/test/Common). These tests are written using the [XUnit framework](https://xunit.github.io/). 
+
+NOTE: In order to run any tests you right in our CI pipeline, they must have one of the following attributes:
+
+ - `[Trait("Category", PlatformSpecificHelpers.TestCategory)]`
+ - `[Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]`
+ - `[Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]`
+ 
+Please avoid writing flakey tests.
 
 ## Testing code changes locally (Visual Studio) 
 
