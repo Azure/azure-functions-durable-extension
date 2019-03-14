@@ -14,12 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class DurableTaskOptions
     {
         /// <summary>
-        /// The default task hub name to use when not explicitly configured.
-        /// </summary>
-        internal const string DefaultHubName = "DurableFunctionsHub";
-
-        /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
+        /// Gets or sets task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
         /// </summary>
         /// <remarks>
@@ -27,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
-        public string HubName { get; set; } = DefaultHubName;
+        public string HubName { get; set; }
 
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.

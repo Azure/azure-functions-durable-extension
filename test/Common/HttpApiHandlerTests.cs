@@ -804,9 +804,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetTestExtension()
         {
-            var options = new DurableTaskOptions();
-            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
-
+            var options = new DurableTaskOptions()
+            {
+                NotificationUrl = new Uri(TestConstants.NotificationUrl),
+                HubName = "DurableFunctionsHub",
+            };
             return GetTestExtension(options);
         }
 

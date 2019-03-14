@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -18,7 +17,6 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;

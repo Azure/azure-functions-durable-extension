@@ -114,14 +114,9 @@
             Configuration options for the Durable Task extension.
             </summary>
         </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.DefaultHubName">
-            <summary>
-            The default task hub name to use when not explicitly configured.
-            </summary>
-        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName">
             <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>,
+            Gets or sets task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>,
             <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/> instances.
             </summary>
             <remarks>
@@ -129,6 +124,17 @@
             multiple Durable Functions applications from each other, even if they are using the same storage backend.
             </remarks>
             <value>The name of the default task hub.</value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(Microsoft.Azure.WebJobs.INameResolver)">
+            <summary>
+            Sets the default value of the task hub name to the function application name. Should only be used if 
+            no value for HubName was already provided.
+            </summary>
+            <remarks>
+            This method utilizes the WEBSITE_SITE_NAME environment variable  that is set by the Azure App Service infrastructure.
+            If this environment variable is not present (i.e. running locally or on non-App Service infrastructure), we default
+            to localhost.
+            </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ControlQueueBatchSize">
             <summary>
@@ -197,6 +203,32 @@
             If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
             </remarks>
             <value>The name of a connection string that exists in the app's application settings.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection string to use for the 
+            durable tracking store (History and Instances tables).
+            </summary>
+            <remarks><para>
+            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AzureStorageConnectionStringName"/> connection string is used
+            for the durable tracking store.
+            </para><para>
+            This property is primarily useful when deploying multiple apps that need to share the same
+            tracking infrastructure. For example, when deploying two versions of an app side by side, using
+            the same tracking store allows both versions to save history into the same table, which allows
+            clients to query for instance status across all versions.
+            </para></remarks>
+            <value>The name of a connection string that exists in the app's application settings.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreNamePrefix">
+            <summary>
+            Gets or sets the name prefix to use for history and instance tables in Azure Storage.
+            </summary>
+            <remarks>
+            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName"/> is specified.
+            If no prefix is specified, the default prefix value is "DurableTask".
+            </remarks>
+            <value>The prefix to use when naming the generated Azure tables.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
             <summary>
