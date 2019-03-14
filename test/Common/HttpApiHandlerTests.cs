@@ -581,7 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var clientMock = new Mock<DurableOrchestrationClientBase>();
             clientMock
                 .Setup(x => x.TerminateAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(Task.FromResult(true))
+                .Returns(Task.CompletedTask)
                 .Callback((string instanceId, string reason) =>
                 {
                     actualInstanceId = instanceId;
