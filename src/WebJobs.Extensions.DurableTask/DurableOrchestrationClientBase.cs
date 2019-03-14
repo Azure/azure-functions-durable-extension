@@ -154,10 +154,10 @@ namespace Microsoft.Azure.WebJobs
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
         /// <see cref="DurableOrchestrationContext.WaitForExternalEvent(string)"/> API.
-        /// </para><para>
-        /// If the specified instance is not found or not running, this operation will throw an exception.
         /// </para>
         /// </remarks>
+        /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+        /// <exception cref="InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
         /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
         /// <param name="eventName">The name of the event.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
@@ -172,10 +172,10 @@ namespace Microsoft.Azure.WebJobs
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
         /// <see cref="DurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
-        /// </para><para>
-        /// If the specified instance is not found or not running, this operation will throw an exception.
         /// </para>
         /// </remarks>
+        /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+        /// <exception cref="InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
         /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
         /// <param name="eventName">The name of the event.</param>
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
@@ -195,6 +195,8 @@ namespace Microsoft.Azure.WebJobs
         /// If the specified instance is not found or not running, this operation will throw an exception.
         /// </para>
         /// </remarks>
+        /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+        /// <exception cref="InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
         /// <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
         /// <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
         /// <param name="eventName">The name of the event.</param>
@@ -212,14 +214,13 @@ namespace Microsoft.Azure.WebJobs
         /// Terminating an orchestration instance has no effect on any in-flight activity function executions
         /// or sub-orchestrations that were started by the current orchestration instance.
         /// </para>
-        /// <para>If the specified instance is not found, this operation will throw an exception.</para>
-        /// <para>If the specified instance is not running, this operation will not enqueue a terminate message.</para>
         /// </remarks>
+        /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+        /// <exception cref="InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
         /// <param name="instanceId">The ID of the orchestration instance to terminate.</param>
         /// <param name="reason">The reason for terminating the orchestration instance.</param>
-        /// <returns>A task that completes when the terminate message is enqueued if necessary. The task contains a boolean
-        /// that represents whether a terminate message was enqueued or not.</returns>
-        public abstract Task<bool> TerminateAsync(string instanceId, string reason);
+        /// <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
+        public abstract Task TerminateAsync(string instanceId, string reason);
 
         /// <summary>
         /// Rewinds the specified failed orchestration instance with a reason.

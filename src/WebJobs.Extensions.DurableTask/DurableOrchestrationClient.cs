@@ -148,7 +148,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<bool> TerminateAsync(string instanceId, string reason)
+        public override async Task TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationRunning(state))
@@ -160,11 +160,15 @@ namespace Microsoft.Azure.WebJobs
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
-                return true;
             }
             else
             {
-                return false;
+                this.traceHelper.ExtensionWarningEvent(
+                    hubName: this.hubName,
+                    functionName: state.Name,
+                    instanceId: instanceId,
+                    message: $"Cannot terminate orchestration instance in {state.Status} state");
+                throw new InvalidOperationException($"Cannot terminate the orchestration instance {instanceId} because instance is in {state.Status} state");
             }
         }
 
@@ -468,8 +472,8 @@ namespace Microsoft.Azure.WebJobs
                     hubName: taskHubName,
                     functionName: status.Name,
                     instanceId: instanceId,
-                    message: $"Cannot raise event for function in {status.Status} state");
-                throw new InvalidOperationException($"Cannot raise event for {eventName} because function is in {status.Status} state");
+                    message: $"Cannot raise event for instance in {status.Status} state");
+                throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.Status} state");
             }
         }
 

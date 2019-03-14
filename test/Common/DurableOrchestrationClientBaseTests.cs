@@ -77,14 +77,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
             var durableOrchestrationClient = new DurableOrchestrationClient(orchestrationServiceClientMock.Object, GetDurableTaskExtension(), new OrchestrationClientAttribute { });
 
-            var terminateEventPlaced = await durableOrchestrationClient.TerminateAsync("valid_instance_id", "any reason");
-            Assert.True(terminateEventPlaced);
+            await durableOrchestrationClient.TerminateAsync("valid_instance_id", "any reason");
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync("valid_instance_id", "any reason"), Times.Once());
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TerminateAsync_NonRunningOrchestrator_TerminateEventNotPlaced()
+        public async Task TerminateAsync_NonRunningOrchestrator_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -92,8 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Completed));
             var durableOrchestrationClient = new DurableOrchestrationClient(orchestrationServiceClientMock.Object, GetDurableTaskExtension(), new OrchestrationClientAttribute { });
 
-            var terminateEventPlaced = await durableOrchestrationClient.TerminateAsync("valid_instance_id", "any reason");
-            Assert.False(terminateEventPlaced);
+            await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await durableOrchestrationClient.TerminateAsync("invalid_instance_id", "any reason"));
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
