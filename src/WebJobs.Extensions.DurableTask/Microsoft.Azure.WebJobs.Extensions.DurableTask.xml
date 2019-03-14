@@ -198,6 +198,32 @@
             </remarks>
             <value>The name of a connection string that exists in the app's application settings.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection string to use for the 
+            durable tracking store (History and Instances tables).
+            </summary>
+            <remarks><para>
+            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AzureStorageConnectionStringName"/> connection string is used
+            for the durable tracking store.
+            </para><para>
+            This property is primarily useful when deploying multiple apps that need to share the same
+            tracking infrastructure. For example, when deploying two versions of an app side by side, using
+            the same tracking store allows both versions to save history into the same table, which allows
+            clients to query for instance status across all versions.
+            </para></remarks>
+            <value>The name of a connection string that exists in the app's application settings.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreNamePrefix">
+            <summary>
+            Gets or sets the name prefix to use for history and instance tables in Azure Storage.
+            </summary>
+            <remarks>
+            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName"/> is specified.
+            If no prefix is specified, the default prefix value is "DurableTask".
+            </remarks>
+            <value>The prefix to use when naming the generated Azure tables.</value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
             <summary>
             Gets or sets the base URL for the HTTP APIs managed by this extension.
@@ -767,7 +793,8 @@
             </summary>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the orchestration is started.</returns>
+            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+            orchestratation instance.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
@@ -783,7 +810,8 @@
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="instanceId">The ID to use for the new orchestration instance.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the orchestration is started.</returns>
+            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+            orchestratation instance.</returns>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
@@ -797,10 +825,10 @@
             In order to handle the event, the target orchestration instance must be waiting for an
             event named <paramref name="eventName"/> using the
             <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
-            </para><para>
-            If the specified instance is not found or not running, this operation will have no effect.
             </para>
             </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
             <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
             <param name="eventName">The name of the event.</param>
             <returns>A task that completes when the event notification message has been enqueued.</returns>
@@ -814,10 +842,10 @@
             In order to handle the event, the target orchestration instance must be waiting for an
             event named <paramref name="eventName"/> using the
             <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
-            </para><para>
-            If the specified instance is not found or not running, this operation will have no effect.
             </para>
             </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
             <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
             <param name="eventName">The name of the event.</param>
             <param name="eventData">The JSON-serializeable data associated with the event.</param>
@@ -833,9 +861,11 @@
             event named <paramref name="eventName"/> using the
             <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
             </para><para>
-            If the specified instance is not found or not running, this operation will have no effect.
+            If the specified instance is not found or not running, this operation will throw an exception.
             </para>
             </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
             <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
             <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
             <param name="eventName">The name of the event.</param>
@@ -848,12 +878,16 @@
             Terminates a running orchestration instance.
             </summary>
             <remarks>
+            <para>
             Terminating an orchestration instance has no effect on any in-flight activity function executions
             or sub-orchestrations that were started by the current orchestration instance.
+            </para>
             </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
             <param name="instanceId">The ID of the orchestration instance to terminate.</param>
             <param name="reason">The reason for terminating the orchestration instance.</param>
-            <returns>A task that completes when the terminate message is enqueued.</returns>
+            <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RewindAsync(System.String,System.String)">
             <summary>
