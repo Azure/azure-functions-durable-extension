@@ -352,6 +352,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return catchCount;
         }
 
+        public static async Task SubOrchestrationThrow([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            try
+            {
+                await ctx.CallSubOrchestratorAsync(nameof(TestOrchestrations.ThrowOrchestrator), message);
+            }
+            catch (FunctionFailedException e)
+            {
+                if (e.InnerException == null ||
+                    e.GetBaseException().GetType() != typeof(InvalidOperationException) ||
+                    !e.InnerException.Message.Contains(message))
+                {
+                    throw new Exception("InnerException was not the expected value.");
+                }
+
+                // rethrow the original exception
+                throw;
+            }
+        }
+
         // TODO: It's not currently possible to detect this failure except by examining logs.
         public static async Task IllegalAwait([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
