@@ -22,11 +22,6 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor">
-            <summary>
-            Obsolete. Please use an alternate constructor overload.
-            </summary>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
@@ -35,17 +30,6 @@
             <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
             <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
-            <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>,
-            <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/> instances.
-            </summary>
-            <remarks>
-            A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
-            multiple Durable Functions applications from each other, even if they are using the same storage backend.
-            </remarks>
-            <value>The name of the default task hub.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -102,12 +86,28 @@
             Extension for registering a Durable Functions configuration with <c>JobHostConfiguration</c>.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)">
             <summary>
-            Enable running durable orchestrations implemented as functions.
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
             </summary>
-            <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
-            <param name="listenerConfig">Durable Functions configuration.</param>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="options">The configuration options for this extension.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,System.Action{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="configure">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions"/>.</param>
+            <returns>Returns the modified <paramref name="builder"/> object.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
@@ -198,6 +198,32 @@
             </remarks>
             <value>The name of a connection string that exists in the app's application settings.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection string to use for the
+            durable tracking store (History and Instances tables).
+            </summary>
+            <remarks><para>
+            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AzureStorageConnectionStringName"/> connection string is used
+            for the durable tracking store.
+            </para><para>
+            This property is primarily useful when deploying multiple apps that need to share the same
+            tracking infrastructure. For example, when deploying two versions of an app side by side, using
+            the same tracking store allows both versions to save history into the same table, which allows
+            clients to query for instance status across all versions.
+            </para></remarks>
+            <value>The name of a connection string that exists in the app's application settings.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreNamePrefix">
+            <summary>
+            Gets or sets the name prefix to use for history and instance tables in Azure Storage.
+            </summary>
+            <remarks>
+            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName"/> is specified.
+            If no prefix is specified, the default prefix value is "DurableTask".
+            </remarks>
+            <value>The prefix to use when naming the generated Azure tables.</value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
             <summary>
             Gets or sets the base URL for the HTTP APIs managed by this extension.
@@ -266,10 +292,10 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishEventTypes">
             <summary>
-            gets or sets the event types that will be published to Event Grid. 
+            Gets or sets the event types that will be published to Event Grid.
             </summary>
             <value>
-            An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+            A list of strings. Possible values include 'Started', 'Completed', 'Failed', 'Terminated'.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled">
@@ -501,13 +527,15 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult.DurableOrchestrationState">
             <summary>
-            A collection of statuses of orchestration instances matching the query description.
+            Gets or sets a collection of statuses of orchestration instances matching the query description.
             </summary>
+            <value>A collection of orchestration instance status values.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult.ContinuationToken">
             <summary>
-            A token that can be used to resume the query with data not already returned by this query.
+            Gets or sets a token that can be used to resume the query with data not already returned by this query.
             </summary>
+            <value>A server-generated continuation token or <c>null</c> if there are no further continuations.</value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload">
             <summary>
@@ -558,6 +586,12 @@
             <summary>
             Connection string provider which resolves connection strings from the WebJobs context.
             </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider"/> class.
+            </summary>
+            <param name="hostConfiguration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the WebJobs host.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
@@ -1726,8 +1760,9 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.PurgeHistoryResult.InstancesDeleted">
             <summary>
-            Number of instances deleted during this execution of purge history.
+            Gets the number of deleted instances.
             </summary>
+            <value>The number of deleted instances.</value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.RetryOptions">
             <summary>

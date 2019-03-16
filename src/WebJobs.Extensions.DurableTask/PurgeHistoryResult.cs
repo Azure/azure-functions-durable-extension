@@ -21,8 +21,9 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Number of instances deleted during this execution of purge history.
+        /// Gets the number of deleted instances.
         /// </summary>
+        /// <value>The number of deleted instances.</value>
         [DataMember(Name = "instancesDeleted")]
         public int InstancesDeleted { get; }
     }
