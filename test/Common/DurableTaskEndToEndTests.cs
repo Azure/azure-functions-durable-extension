@@ -551,14 +551,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates the ContinueAsNew functionality by implementing a counter actor pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration(bool extendedSessions)
         {
-            const string testName = nameof(this.ActorOrchestration);
-
             string instanceId;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -572,14 +569,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceId = client.InstanceId;
 
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+                await client.WaitForStartupAsync(waitTimeout, this.output);
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
-
-                // TODO: Sleeping to avoid a race condition where events can get dropped.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
-                TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
                 await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
@@ -605,7 +599,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(3, (int?)status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
-                Assert.NotEqual(initialValue, status?.Input);
+                Assert.Equal(3, (int)status.Input);
 
                 await host.StopAsync();
 
@@ -619,6 +613,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         extendedSessions,
                         new[] { nameof(TestOrchestrations.Counter) });
                 }
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates the ContinueAsNew functionality by implementing a counter actor pattern,
+        /// and does so without any waiting between sending events.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ActorOrchestration_NoWaiting(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ActorOrchestration),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                int initialValue = 0;
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.RaiseEventAsync("operation", "decr", this.output);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.RaiseEventAsync("operation", "end", this.output);
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(3, (int?)status?.Output);
+
+                // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
+                Assert.Equal(3, (int)status.Input);
+
+                await host.StopAsync();
             }
         }
 
@@ -1084,6 +1116,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the orchestrator's exception handling behavior.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HandledSubOrchestratorException()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HandledActivityException),
+                enableExtendedSessions: true))
+            {
+                await host.StartAsync();
+
+                string message = $"Failure ID: {Guid.NewGuid()}";
+
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SubOrchestrationThrow),
+                    message,
+                    this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Contains(message, (string)status.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the handling of unhandled exceptions generated from orchestrator code.
         /// </summary>
         [Theory]
@@ -1375,7 +1436,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string output = status.Output.ToString();
                 this.output.WriteLine($"Orchestration output string: {output}");
-                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\"", output);
+                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\r\nParameter name: message\"", output);
 
                 string subOrchestrationInstanceId = (string)status.CustomStatus;
                 Assert.NotNull(subOrchestrationInstanceId);
@@ -1484,6 +1545,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the handling of unhandled exceptions generated from activity code
+        /// within a sub-orchestration.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UnhandledSubOrchestratorActivityException(bool extendedSessions)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.UnhandledSubOrchestratorActivityException),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                string exceptionMessage = "Kah-BOOOOM!!!";
+                var args = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.ThrowOrchestrator),
+                    Input = exceptionMessage,
+                };
+
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.CallOrchestrator),
+                    args,
+                    this.output);
+                var status = await client.WaitForCompletionAsync(timeout, this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                string output = (string)status?.Output;
+                this.output.WriteLine($"Orchestration output string: {output}");
+                Assert.StartsWith(
+                    string.Format(
+                        "Orchestrator function '{0}' failed: The orchestrator function '{1}' failed: \"The activity function '{2}' failed: \"{3}\"",
+                        nameof(TestOrchestrations.CallOrchestrator),
+                        nameof(TestOrchestrations.ThrowOrchestrator),
+                        nameof(TestActivities.ThrowActivity),
+                        exceptionMessage),
+                    output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the retries of unhandled exceptions generated from activity functions.
         /// </summary>
         [Theory]
@@ -1560,6 +1669,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains(orchestratorFunctionName, output);
                 Assert.Contains("Value cannot be null.", output);
                 Assert.Contains("Parameter name: retryOptions", output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates that waiting for an external event and calling
+        /// an activity multiple times in a row does not lead to dropped events.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForEventAndCallActivity_DroppedEventsTest()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForEventAndCallActivity_DroppedEventsTest),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                string orchestratorFunctionName = nameof(TestOrchestrations.WaitForEventAndCallActivity);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionName, null, this.output);
+
+                for (int i = 0; i < 5; i++)
+                {
+                    await client.RaiseEventAsync("add", i, this.output);
+                }
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                int output = (int)status?.Output;
+                this.output.WriteLine($"Orchestration output string: {output}");
+                Assert.Equal(26, output);
 
                 await host.StopAsync();
             }
@@ -2106,8 +2250,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Perform some operations
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr", this.output);
 
-                // TODO: Sleeping to avoid a race condition where events can get dropped.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/67
                 TimeSpan waitTimeout = TimeSpan.FromSeconds(10);
                 await client1.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "incr", this.output);
@@ -2134,7 +2276,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(3, (int)status?.Output);
 
                 // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
-                Assert.NotEqual(initialValue, status?.Input);
+                Assert.Equal(3, (int)status.Input);
 
                 await host1.StopAsync();
                 await host2.StopAsync();

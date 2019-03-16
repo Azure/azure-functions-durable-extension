@@ -77,7 +77,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
-                    FunctionType.Orchestrator,
                     this.context.IsReplaying));
             }
 
@@ -114,7 +113,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.Name,
                         this.context.InstanceId,
                         exceptionDetails,
-                        FunctionType.Orchestrator,
                         this.context.IsReplaying));
                 }
 
@@ -168,7 +166,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.Name,
                     this.context.InstanceId,
                     this.context.ContinuedAsNew,
-                    FunctionType.Orchestrator,
                     this.context.IsReplaying));
             }
 
@@ -212,6 +209,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (execution.IsDone)
             {
                 this.Context.SetOutput(execution.Output);
+            }
+            else
+            {
+                // Don't return executions unless the orchestrator has completed.
+                await Task.Delay(-1);
             }
         }
 

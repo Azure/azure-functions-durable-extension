@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs
     /// The `InnerException` property of this instance will contain additional information
     /// about the failed sub-orchestrator or activity function.
     /// </remarks>
+    [Serializable]
     public class FunctionFailedException : Exception
     {
         internal FunctionFailedException()

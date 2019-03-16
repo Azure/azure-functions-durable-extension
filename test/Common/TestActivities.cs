@@ -30,6 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return a * b;
         }
 
+        public static long Add([ActivityTrigger] DurableActivityContext ctx)
+        {
+            (long a, long b) = ctx.GetInput<(long, long)>();
+            return a + b;
+        }
+
         public static string[] GetFileList([ActivityTrigger] DurableActivityContext ctx)
         {
             string directory = ctx.GetInput<string>();
@@ -47,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static void ThrowActivity([ActivityTrigger] DurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
-            throw new Exception(message);
+            throw new InvalidOperationException(message);
         }
 
         public static string BigReturnValue([ActivityTrigger] int stringLength)

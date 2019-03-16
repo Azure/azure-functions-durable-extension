@@ -352,6 +352,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return catchCount;
         }
 
+        public static async Task SubOrchestrationThrow([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            try
+            {
+                await ctx.CallSubOrchestratorAsync(nameof(TestOrchestrations.ThrowOrchestrator), message);
+            }
+            catch (FunctionFailedException e)
+            {
+                if (e.InnerException == null ||
+                    e.GetBaseException().GetType() != typeof(InvalidOperationException) ||
+                    !e.InnerException.Message.Contains(message))
+                {
+                    throw new Exception("InnerException was not the expected value.");
+                }
+
+                // rethrow the original exception
+                throw;
+            }
+        }
+
         // TODO: It's not currently possible to detect this failure except by examining logs.
         public static async Task IllegalAwait([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
@@ -472,6 +494,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await Task.WhenAll(tasks);
 
             return "Done";
+        }
+
+        public static async Task<int> WaitForEventAndCallActivity(
+            [OrchestrationTrigger] DurableOrchestrationContext context)
+        {
+            int sum = 0;
+
+            // Sums all of the inputs and intermediate sums
+            // If the 4 inputs are 0-4, then the calls are as following:
+            // 0 + (0 + 0) = 0
+            // 0 + (0 + 1) = 1
+            // 1 + (1 + 2) = 4
+            // 4 + (4 + 3) = 11
+            // 11 + (11 + 4) = 26
+            for (int i = 0; i < 5; i++)
+            {
+                int number = await context.WaitForExternalEvent<int>("add");
+                sum += await context.CallActivityAsync<int>("Add", (sum, number));
+            }
+
+            return sum;
         }
     }
 }

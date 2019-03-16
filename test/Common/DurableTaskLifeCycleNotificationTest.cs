@@ -32,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationStartAndCompleted(bool extendedSessionsEnabled)
@@ -117,6 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationFailed(bool extendedSessionsEnabled)
@@ -201,6 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationTerminate(bool extendedSessionsEnabled)
@@ -292,6 +295,246 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationStartedOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var functionName = nameof(TestOrchestrations.SayHelloInline);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Running", (string)o.subject);
+                    Assert.NotEqual("Running", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventGridPublishEventTypes: new[] { "Completed", "Failed" }))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    "World",
+                    this.output,
+                    createdInstanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationCompletedOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var functionName = nameof(TestOrchestrations.SayHelloInline);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Completed", (string)o.subject);
+                    Assert.NotEqual("Completed", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventGridPublishEventTypes: new[] { "Started", "Failed" }))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    "World",
+                    this.output,
+                    createdInstanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationFailed);
+            var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Failed", (string)o.subject);
+                    Assert.NotEqual("Failed", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventGridPublishEventTypes: new[] { "Started", "Completed" }))
+            {
+                await host.StartAsync();
+
+                // Null input should result in ArgumentNullException in the orchestration code.
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    null,
+                    this.output,
+                    createdInstanceId);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OrchestrationTerminatedOptOutOfEvent(bool extendedSessionsEnabled)
+        {
+            var testName = nameof(this.OrchestrationTerminate);
+
+            // Using the counter orchestration because it will wait indefinitely for input.
+            var functionName = nameof(TestOrchestrations.Counter);
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            string createdInstanceId = Guid.NewGuid().ToString("N");
+
+            Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
+                (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
+
+            HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
+                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                functionName,
+                createdInstanceId,
+                eventGridKeyValue,
+                eventGridEndpoint,
+                responseGenerator,
+                handler: (JObject eventPayload) =>
+                {
+                    dynamic o = eventPayload;
+                    Assert.NotEqual("durable/orchestrator/Terminated", (string)o.subject);
+                    Assert.NotEqual("Terminated", (string)o.data.runtimeStatus);
+                },
+                asserts: out List<Action> eventGridRequestValidators);
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessionsEnabled,
+                eventGridKeySettingName,
+                mockNameResolver.Object,
+                eventGridEndpoint,
+                eventGridNotificationHandler: httpMessageHandler,
+                eventGridPublishEventTypes: new[] { "Started", "Failed", "Completed" }))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    functionName,
+                    0,
+                    this.output,
+                    createdInstanceId);
+
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.TerminateAsync("sayōnara");
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                eventGridRequestValidators.ForEach(v => v.Invoke());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiReturnBadStatus(bool extendedSessionsEnabled)
@@ -442,6 +685,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridKeySettingName} on AppSettings.", ex.Message);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ConfigurationWithMalformedEventGridTypes()
+        {
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                async () =>
+                {
+                    using (JobHost host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.OrchestrationTerminate),
+                        false /* extendedSessionsEnabled */,
+                        eventGridKeySettingName,
+                        mockNameResolver.Object,
+                        eventGridEndpoint,
+                        eventGridPublishEventTypes: new[] { "sstarted" }))
+                    {
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
+                });
+
+            Assert.Equal($"Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.", ex.Message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ConfigurationWithUnsupportedEventGridTypes()
+        {
+            var eventGridKeyValue = "testEventGridKey";
+            var eventGridKeySettingName = "eventGridKeySettingName";
+            var eventGridEndpoint = "http://dymmy.com/";
+            var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                async () =>
+                {
+                    using (JobHost host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.OrchestrationTerminate),
+                        false /* extendedSessionsEnabled */,
+                        eventGridKeySettingName,
+                        mockNameResolver.Object,
+                        eventGridEndpoint,
+                        eventGridPublishEventTypes: new[] { "Pending" }))
+                    {
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
+                });
+
+            Assert.Equal($"Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.", ex.Message);
+        }
+
         private HttpMessageHandler ConfigureEventGridMockHandler(
             string taskHubName,
             string functionName,
@@ -499,6 +800,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiServiceUnavailableRetry(bool extendedSessionsEnabled)
@@ -549,7 +851,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -578,6 +880,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiExceptionRetry(bool extendedSessionsEnabled)
@@ -627,7 +930,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -656,6 +959,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiExceptionNoRetry(bool extendedSessionsEnabled)
@@ -696,7 +1000,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 retryCount,
                 TimeSpan.FromMilliseconds(1000),
@@ -725,6 +1029,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiExceptionRetryCountOver(bool extendedSessionsEnabled)
@@ -765,7 +1070,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -794,6 +1099,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationEventGridApiRetryStatus(bool extendedSessionsEnabled)
@@ -858,7 +1164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception("subject is fault type");
                 });
 
-            var notificationHandler = new LifeCycleNotificationHelper.HttpRetryMessageHandler(
+            var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
                 TimeSpan.FromMilliseconds(1000),
@@ -918,16 +1224,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 mockNameResolver.Object,
                 new TestConnectionStringResolver());
 
-            Assert.Equal("http://dummy.com/", extension.LifeCycleNotificationHelper.EventGridTopicEndpoint);
-            Assert.Equal(eventGridKeyValue, extension.LifeCycleNotificationHelper.EventGridKeyValue);
+            var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
+
+            Assert.Equal("http://dummy.com/", eventGridLifeCycleNotification.EventGridTopicEndpoint);
+            Assert.Equal(eventGridKeyValue, eventGridLifeCycleNotification.EventGridKeyValue);
 
             var handler =
-                (LifeCycleNotificationHelper.HttpRetryMessageHandler)extension.LifeCycleNotificationHelper
+                (EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler)eventGridLifeCycleNotification
                     .HttpMessageHandler;
 
             Assert.Equal(retryCount, handler.MaxRetryCount);
             Assert.Equal(retryInterval, handler.RetryWaitSpan);
             Assert.Equal(retryStatus.Select(s => (HttpStatusCode)s), handler.RetryTargetStatus);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeActivationSuccess()
+        {
+            var options = new DurableTaskOptions
+            {
+                CustomLifeCycleNotificationHelperType = typeof(TestLifeCycleNotificationHelper).AssemblyQualifiedName,
+            };
+
+            var extension = new DurableTaskExtension(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new TestConnectionStringResolver());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<TestLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeActivationFailed()
+        {
+            var options = new DurableTaskOptions
+            {
+                CustomLifeCycleNotificationHelperType = "Test.TestLifeCycleNotificationHelper",
+            };
+
+            var extension = new DurableTaskExtension(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new TestConnectionStringResolver());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeFallback()
+        {
+            var options = new DurableTaskOptions
+            {
+                EventGridKeySettingName = null,
+                EventGridTopicEndpoint = null,
+                CustomLifeCycleNotificationHelperType = null,
+            };
+
+            var extension = new DurableTaskExtension(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new TestConnectionStringResolver());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
         }
 
         private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
@@ -939,6 +1312,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return mock;
+        }
+
+        public class TestLifeCycleNotificationHelper : ILifeCycleNotificationHelper
+        {
+            public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorTerminatedAsync(string hubName, string functionName, string instanceId, string reason)
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }

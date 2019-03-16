@@ -98,6 +98,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string AzureStorageConnectionStringName { get; set; }
 
         /// <summary>
+        /// Gets or sets the name of the Azure Storage connection string to use for the
+        /// durable tracking store (History and Instances tables).
+        /// </summary>
+        /// <remarks><para>
+        /// If not specified, the <see cref="AzureStorageConnectionStringName"/> connection string is used
+        /// for the durable tracking store.
+        /// </para><para>
+        /// This property is primarily useful when deploying multiple apps that need to share the same
+        /// tracking infrastructure. For example, when deploying two versions of an app side by side, using
+        /// the same tracking store allows both versions to save history into the same table, which allows
+        /// clients to query for instance status across all versions.
+        /// </para></remarks>
+        /// <value>The name of a connection string that exists in the app's application settings.</value>
+        public string TrackingStoreConnectionStringName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name prefix to use for history and instance tables in Azure Storage.
+        /// </summary>
+        /// <remarks>
+        /// This property is only used when <see cref="TrackingStoreConnectionStringName"/> is specified.
+        /// If no prefix is specified, the default prefix value is "DurableTask".
+        /// </remarks>
+        /// <value>The prefix to use when naming the generated Azure tables.</value>
+        public string TrackingStoreNamePrefix { get; set; }
+
+        /// <summary>
         /// Gets or sets the base URL for the HTTP APIs managed by this extension.
         /// </summary>
         /// <remarks>
@@ -164,6 +190,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int[] EventGridPublishRetryHttpStatus { get; set; }
 
         /// <summary>
+        /// Gets or sets the event types that will be published to Event Grid.
+        /// </summary>
+        /// <value>
+        /// A list of strings. Possible values include 'Started', 'Completed', 'Failed', 'Terminated'.
+        /// </value>
+        public string[] EventGridPublishEventTypes { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>
@@ -204,6 +238,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool LogReplayEvents { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type name of a custom to use for handling lifecycle notification events.
+        /// </summary>
+        /// <value>Assembly qualified class name that implements <see cref="ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
+        public string CustomLifeCycleNotificationHelperType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum queue polling interval.
+        /// </summary>
+        /// <value>Maximum interval for polling control and work-item queues.</value>
+        public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
@@ -241,8 +287,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.NotificationUrl)).Append(": ").Append(url).Append(", ");
             }
 
-            sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
+            sb.Append(nameof(this.TrackingStoreConnectionStringName)).Append(": ").Append(this.TrackingStoreConnectionStringName).Append(", ");
+            if (!string.IsNullOrEmpty(this.TrackingStoreConnectionStringName))
+            {
+                sb.Append(nameof(this.TrackingStoreNamePrefix)).Append(": ").Append(this.TrackingStoreNamePrefix).Append(", ");
+            }
 
+            sb.Append(nameof(this.MaxQueuePollingInterval)).Append(": ").Append(this.MaxQueuePollingInterval).Append(", ");
+            sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
             return sb.ToString();
         }
 
@@ -296,6 +348,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.EventGridPublishRetryInterval > TimeSpan.FromMinutes(60))
             {
                 throw new InvalidOperationException($"{nameof(this.EventGridPublishRetryInterval)} must be non-negative and no more than 60 minutes.");
+            }
+
+            if (this.MaxQueuePollingInterval <= TimeSpan.Zero)
+            {
+                throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
             }
         }
     }
