@@ -1131,7 +1131,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string message = $"Failure ID: {Guid.NewGuid()}";
 
-                // Empty string input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(
                     nameof(TestOrchestrations.SubOrchestrationThrow),
                     message,
