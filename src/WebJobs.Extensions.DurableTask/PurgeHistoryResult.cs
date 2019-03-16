@@ -1,11 +1,14 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Runtime.Serialization;
+
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
     /// Class to hold statistics about this execution of purge history.
     /// </summary>
+    [DataContract]
     public class PurgeHistoryResult
     {
         /// <summary>
@@ -20,6 +23,7 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Number of instances deleted during this execution of purge history.
         /// </summary>
+        [DataMember(Name = "instancesDeleted")]
         public int InstancesDeleted { get; }
     }
 }

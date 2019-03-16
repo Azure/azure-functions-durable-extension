@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string AzureStorageConnectionStringName { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the Azure Storage connection string to use for the 
+        /// Gets or sets the name of the Azure Storage connection string to use for the
         /// durable tracking store (History and Instances tables).
         /// </summary>
         /// <remarks><para>
@@ -190,10 +190,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int[] EventGridPublishRetryHttpStatus { get; set; }
 
         /// <summary>
-        /// gets or sets the event types that will be published to Event Grid. 
+        /// Gets or sets the event types that will be published to Event Grid.
         /// </summary>
         /// <value>
-        /// An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+        /// A list of strings. Possible values include 'Started', 'Completed', 'Failed', 'Terminated'.
         /// </value>
         public string[] EventGridPublishEventTypes { get; set; }
 

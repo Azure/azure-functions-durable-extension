@@ -1116,6 +1116,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the orchestrator's exception handling behavior.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HandledSubOrchestratorException()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HandledActivityException),
+                enableExtendedSessions: true))
+            {
+                await host.StartAsync();
+
+                string message = $"Failure ID: {Guid.NewGuid()}";
+
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SubOrchestrationThrow),
+                    message,
+                    this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Contains(message, (string)status.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the handling of unhandled exceptions generated from orchestrator code.
         /// </summary>
         [Theory]

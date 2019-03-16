@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static void ThrowActivity([ActivityTrigger] DurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
-            throw new Exception(message);
+            throw new InvalidOperationException(message);
         }
 
         public static string BigReturnValue([ActivityTrigger] int stringLength)
