@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -117,11 +118,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetDurableTaskExtension()
         {
+            var options = new DurableTaskOptions();
+            options.HubName = "DurableTaskHub";
+            options.StorageProvider = new StorageProviderOptions
+            {
+                AzureStorage = new AzureStorageOptions(),
+            };
+            IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var connectionStringResolver = new TestConnectionStringResolver();
             return new DurableTaskExtension(
-                new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions()),
+                wrappedOptions,
                 new LoggerFactory(),
                 TestHelpers.GetTestNameResolver(),
-                new TestConnectionStringResolver());
+                new OrchestrationServiceFactory(wrappedOptions, connectionStringResolver));
         }
     }
 }

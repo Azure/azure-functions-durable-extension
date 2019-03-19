@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -18,7 +17,6 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -53,11 +51,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
-        private INameResolver nameResolver;
-        private AzureStorageOrchestrationService orchestrationService;
-        private AzureStorageOrchestrationServiceSettings orchestrationServiceSettings;
+        private readonly IOrchestrationServiceFactory orchestrationServiceFactory;
+        private readonly INameResolver nameResolver;
+        private IOrchestrationService orchestrationService;
         private TaskHubWorker taskHubWorker;
-        private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
         /// <summary>
@@ -66,16 +63,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="options">The configuration options for this extension.</param>
         /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
-        /// <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
+        /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IConnectionStringResolver connectionStringResolver)
+            IOrchestrationServiceFactory orchestrationServiceFactory)
         {
             this.Options = options.Value;
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
-            this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
 
             if (loggerFactory == null)
             {
@@ -87,6 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            this.orchestrationServiceFactory = orchestrationServiceFactory;
         }
 
         internal DurableTaskOptions Options { get; }
@@ -144,8 +141,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<ActorTriggerAttribute>()
                 .BindToTrigger(new ActorTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
-            this.orchestrationServiceSettings = this.GetOrchestrationServiceSettings();
-            this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
+            this.orchestrationService = this.orchestrationServiceFactory.GetOrchestrationService();
+
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
@@ -276,8 +273,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string message = this.GetInvalidOrchestratorFunctionMessage(context.FunctionName);
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,
-                    context.FunctionName,
-                    context.InstanceId,
+                    orchestrationRuntimeState.Name,
+                    orchestrationRuntimeState.OrchestrationInstance.InstanceId,
                     message);
                 throw new InvalidOperationException(message);
             }
@@ -366,95 +363,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 attribute,
                 attr =>
                 {
-                    AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attr);
-
-                    AzureStorageOrchestrationService innerClient;
-                    if (this.orchestrationServiceSettings != null &&
-                        this.orchestrationService != null &&
-                        string.Equals(this.orchestrationServiceSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(this.orchestrationServiceSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // It's important that clients use the same AzureStorageOrchestrationService instance
-                        // as the host when possible to ensure we any send operations can be picked up
-                        // immediately instead of waiting for the next queue polling interval.
-                        innerClient = this.orchestrationService;
-                    }
-                    else
-                    {
-                        innerClient = new AzureStorageOrchestrationService(settings);
-                    }
-
+                    IOrchestrationServiceClient innerClient = this.orchestrationServiceFactory.GetOrchestrationClient(attribute);
                     return new DurableOrchestrationClient(innerClient, this, attr);
                 });
 
             return client;
-        }
-
-        internal AzureStorageOrchestrationServiceSettings GetOrchestrationServiceSettings(
-                OrchestrationClientAttribute attribute)
-        {
-            return this.GetOrchestrationServiceSettings(
-                connectionNameOverride: attribute.ConnectionName,
-                taskHubNameOverride: attribute.TaskHub);
-        }
-
-        internal AzureStorageOrchestrationServiceSettings GetOrchestrationServiceSettings(
-            string connectionNameOverride = null,
-            string taskHubNameOverride = null)
-        {
-            string connectionName = connectionNameOverride ?? this.Options.AzureStorageConnectionStringName ?? ConnectionStringNames.Storage;
-            string resolvedStorageConnectionString = this.connectionStringResolver.Resolve(connectionName);
-
-            if (string.IsNullOrEmpty(resolvedStorageConnectionString))
-            {
-                throw new InvalidOperationException("Unable to find an Azure Storage connection string to use for this binding.");
-            }
-
-            TimeSpan extendedSessionTimeout = TimeSpan.FromSeconds(
-                Math.Max(this.Options.ExtendedSessionIdleTimeoutInSeconds, 0));
-
-            var settings = new AzureStorageOrchestrationServiceSettings
-            {
-                StorageConnectionString = resolvedStorageConnectionString,
-                TaskHubName = taskHubNameOverride ?? this.Options.HubName,
-                PartitionCount = this.Options.PartitionCount,
-                ControlQueueBatchSize = this.Options.ControlQueueBatchSize,
-                ControlQueueVisibilityTimeout = this.Options.ControlQueueVisibilityTimeout,
-                WorkItemQueueVisibilityTimeout = this.Options.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.Options.MaxConcurrentOrchestratorFunctions,
-                MaxConcurrentTaskActivityWorkItems = this.Options.MaxConcurrentActivityFunctions,
-                ExtendedSessionsEnabled = this.Options.ExtendedSessionsEnabled,
-                ExtendedSessionIdleTimeout = extendedSessionTimeout,
-                MaxQueuePollingInterval = this.Options.MaxQueuePollingInterval,
-                TrackingStoreStorageAccountDetails = this.GetStorageAccountDetailsOrNull(
-                    this.Options.TrackingStoreConnectionStringName),
-            };
-
-            if (!string.IsNullOrEmpty(this.Options.TrackingStoreNamePrefix))
-            {
-                settings.TrackingStoreNamePrefix = this.Options.TrackingStoreNamePrefix;
-            }
-
-            return settings;
-        }
-
-        private StorageAccountDetails GetStorageAccountDetailsOrNull(string connectionName)
-        {
-            if (string.IsNullOrEmpty(connectionName))
-            {
-                return null;
-            }
-
-            string resolvedStorageConnectionString = this.connectionStringResolver.Resolve(connectionName);
-            if (string.IsNullOrEmpty(resolvedStorageConnectionString))
-            {
-                throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
-            }
-
-            return new StorageAccountDetails
-            {
-                ConnectionString = resolvedStorageConnectionString,
-            };
         }
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
