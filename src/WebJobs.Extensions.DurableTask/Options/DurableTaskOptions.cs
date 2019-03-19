@@ -4,7 +4,7 @@
 using System;
 using System.Net.Http;
 using System.Text;
-using Microsoft.WindowsAzure.Storage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -14,11 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class DurableTaskOptions
     {
         /// <summary>
-        /// The default task hub name to use when not explicitly configured.
-        /// </summary>
-        internal const string DefaultHubName = "DurableFunctionsHub";
-
-        /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
         /// </summary>
@@ -27,46 +22,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
-        public string HubName { get; set; } = DefaultHubName;
+        public string HubName { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of messages to pull from the control queue at a time.
+        /// The section of configuration related to storage providers.
         /// </summary>
-        /// <remarks>
-        /// Messages pulled from the control queue are buffered in memory until the internal
-        /// dispatcher is ready to process them.
-        /// </remarks>
-        /// <value>A positive integer configured by the host. The default value is <c>32</c>.</value>
-        public int ControlQueueBatchSize { get; set; } = 32;
-
-        /// <summary>
-        /// Gets or sets the partition count for the control queue.
-        /// </summary>
-        /// <remarks>
-        /// Increasing the number of partitions will increase the number of workers
-        /// that can concurrently execute orchestrator functions. However, increasing
-        /// the partition count can also increase the amount of load placed on the storage
-        /// account and on the thread pool if the number of workers is smaller than the
-        /// number of partitions.
-        /// </remarks>
-        /// <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
-        public int PartitionCount { get; set; } = 4;
-
-        /// <summary>
-        /// Gets or sets the visibility timeout of dequeued control queue messages.
-        /// </summary>
-        /// <value>
-        /// A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
-        /// </value>
-        public TimeSpan ControlQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Gets or sets the visibility timeout of dequeued work item queue messages.
-        /// </summary>
-        /// <value>
-        /// A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
-        /// </value>
-        public TimeSpan WorkItemQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
+        public StorageProviderOptions StorageProvider { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
@@ -87,41 +48,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
         /// </value>
         public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
-
-        /// <summary>
-        /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
-        /// </summary>
-        /// <remarks>
-        /// If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-        /// </remarks>
-        /// <value>The name of a connection string that exists in the app's application settings.</value>
-        public string AzureStorageConnectionStringName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the Azure Storage connection string to use for the 
-        /// durable tracking store (History and Instances tables).
-        /// </summary>
-        /// <remarks><para>
-        /// If not specified, the <see cref="AzureStorageConnectionStringName"/> connection string is used
-        /// for the durable tracking store.
-        /// </para><para>
-        /// This property is primarily useful when deploying multiple apps that need to share the same
-        /// tracking infrastructure. For example, when deploying two versions of an app side by side, using
-        /// the same tracking store allows both versions to save history into the same table, which allows
-        /// clients to query for instance status across all versions.
-        /// </para></remarks>
-        /// <value>The name of a connection string that exists in the app's application settings.</value>
-        public string TrackingStoreConnectionStringName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name prefix to use for history and instance tables in Azure Storage.
-        /// </summary>
-        /// <remarks>
-        /// This property is only used when <see cref="TrackingStoreConnectionStringName"/> is specified.
-        /// If no prefix is specified, the default prefix value is "DurableTask".
-        /// </remarks>
-        /// <value>The prefix to use when naming the generated Azure tables.</value>
-        public string TrackingStoreNamePrefix { get; set; }
 
         /// <summary>
         /// Gets or sets the base URL for the HTTP APIs managed by this extension.
@@ -244,12 +170,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>Assembly qualified class name that implements <see cref="ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
         public string CustomLifeCycleNotificationHelperType { get; set; }
 
-        /// <summary>
-        /// Gets or sets the maximum queue polling interval.
-        /// </summary>
-        /// <value>Maximum interval for polling control and work-item queues.</value>
-        public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
-
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
@@ -257,14 +177,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var sb = new StringBuilder(4096);
             sb.AppendLine("Initializing extension with the following settings:");
-            sb.Append(nameof(this.AzureStorageConnectionStringName)).Append(": ").Append(this.AzureStorageConnectionStringName).Append(", ");
+            sb.Append(nameof(this.HubName)).Append(":").Append(this.HubName).Append(", ");
+
+            sb.Append(nameof(this.StorageProvider)).Append(": { ");
+            this.StorageProvider.AddToDebugString(sb);
+            sb.Append(" }, ");
+
             sb.Append(nameof(this.MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
-            sb.Append(nameof(this.PartitionCount)).Append(": ").Append(this.PartitionCount).Append(", ");
-            sb.Append(nameof(this.ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
-            sb.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
-            sb.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
-
             sb.Append(nameof(this.ExtendedSessionsEnabled)).Append(": ").Append(this.ExtendedSessionsEnabled).Append(", ");
             if (this.ExtendedSessionsEnabled)
             {
@@ -287,15 +207,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.NotificationUrl)).Append(": ").Append(url).Append(", ");
             }
 
-            sb.Append(nameof(this.TrackingStoreConnectionStringName)).Append(": ").Append(this.TrackingStoreConnectionStringName).Append(", ");
-            if (!string.IsNullOrEmpty(this.TrackingStoreConnectionStringName))
-            {
-                sb.Append(nameof(this.TrackingStoreNamePrefix)).Append(": ").Append(this.TrackingStoreNamePrefix).Append(", ");
-            }
-
-            sb.Append(nameof(this.MaxQueuePollingInterval)).Append(": ").Append(this.MaxQueuePollingInterval).Append(", ");
             sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// A helper method to help retrieve the connection string name for the configured storage provider.
+        /// </summary>
+        /// <returns>The connection string name for the configured storage provider.</returns>
+        public string GetConnectionStringName()
+        {
+            return this.StorageProvider.GetConfiguredProvider().ConnectionStringName;
         }
 
         internal void Validate()
@@ -305,33 +227,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
-            try
-            {
-                NameValidator.ValidateBlobName(this.HubName);
-                NameValidator.ValidateContainerName(this.HubName.ToLowerInvariant());
-                NameValidator.ValidateTableName(this.HubName);
-                NameValidator.ValidateQueueName(this.HubName.ToLowerInvariant());
-            }
-            catch (ArgumentException e)
-            {
-                throw new ArgumentException(
-                    $"Task hub name '{this.HubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.", e);
-            }
+            this.StorageProvider.Validate();
 
-            if (this.ControlQueueBatchSize <= 0)
-            {
-                throw new InvalidOperationException($"{nameof(this.ControlQueueBatchSize)} must be a non-negative integer.");
-            }
+            // Each storage provider may have its own limitations for task hub names due to provider naming restrictions
+            this.StorageProvider.GetConfiguredProvider().ValidateHubName(this.HubName);
 
-            if (this.PartitionCount < 1 || this.PartitionCount > 16)
+            if (this.EventGridPublishRetryInterval <= TimeSpan.Zero ||
+                this.EventGridPublishRetryInterval > TimeSpan.FromMinutes(60))
             {
-                throw new InvalidOperationException($"{nameof(this.PartitionCount)} must be an integer value between 1 and 16.");
-            }
-
-            if (this.ControlQueueVisibilityTimeout < TimeSpan.FromMinutes(1) ||
-                this.ControlQueueVisibilityTimeout > TimeSpan.FromMinutes(60))
-            {
-                throw new InvalidOperationException($"{nameof(this.ControlQueueVisibilityTimeout)} must be between 1 and 60 minutes.");
+                throw new InvalidOperationException($"{nameof(this.EventGridPublishRetryInterval)} must be non-negative and no more than 60 minutes.");
             }
 
             if (this.MaxConcurrentActivityFunctions <= 0)
@@ -342,17 +246,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxConcurrentOrchestratorFunctions <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a non-negative integer value.");
-            }
-
-            if (this.EventGridPublishRetryInterval <= TimeSpan.Zero ||
-                this.EventGridPublishRetryInterval > TimeSpan.FromMinutes(60))
-            {
-                throw new InvalidOperationException($"{nameof(this.EventGridPublishRetryInterval)} must be non-negative and no more than 60 minutes.");
-            }
-
-            if (this.MaxQueuePollingInterval <= TimeSpan.Zero)
-            {
-                throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
             }
         }
     }

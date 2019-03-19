@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,6 +18,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestHelpers
     {
+        public const string AzureStorageProviderType = "azure_storage";
+        public const string EmulatorProviderType = "emulator";
         public const string LogCategory = "Host.Triggers.DurableTask";
 
         public static JobHost GetJobHost(
@@ -33,10 +36,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
-            string[] eventGridPublishEventTypes = null)
+            string[] eventGridPublishEventTypes = null,
+            string storageProviderType = AzureStorageProviderType)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
+                StorageProvider = new StorageProviderOptions(),
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
@@ -49,6 +54,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 NotificationHandler = eventGridNotificationHandler,
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
             };
+
+            if (string.Equals(storageProviderType, AzureStorageProviderType))
+            {
+                durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
+            }
+            else if (string.Equals(storageProviderType, EmulatorProviderType))
+            {
+                durableTaskOptions.StorageProvider.Emulator = new EmulatorStorageOptions();
+            }
+            else
+            {
+                throw new ArgumentException("Invalid storage provider type.", nameof(storageProviderType));
+            }
 
             if (eventGridRetryCount.HasValue)
             {
@@ -67,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (maxQueuePollingInterval != null)
             {
-                durableTaskOptions.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
+                durableTaskOptions.StorageProvider.AzureStorage.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
             }
 
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);

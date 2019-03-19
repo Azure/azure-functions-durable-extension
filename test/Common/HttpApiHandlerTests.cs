@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -28,6 +29,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions();
             options.NotificationUrl = null;
+            options.HubName = "DurableTaskHub";
+            options.StorageProvider = new StorageProviderOptions()
+            {
+                AzureStorage = new AzureStorageOptions(),
+            };
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
             var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
@@ -806,6 +812,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions();
             options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+            options.StorageProvider = new StorageProviderOptions
+            {
+                AzureStorage = new AzureStorageOptions(),
+            };
+            options.HubName = "DurableFunctionsHub";
 
             return GetTestExtension(options);
         }
@@ -839,7 +850,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new TestConnectionStringResolver())
+                    new OrchestrationServiceFactory(new OptionsWrapper<DurableTaskOptions>(options), new TestConnectionStringResolver()))
             {
             }
 

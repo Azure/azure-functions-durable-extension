@@ -13,8 +13,8 @@
             <summary>
             Create an actor id for an actor.
             </summary>
-            <param name="actorClass">the name of the actor class.</param>
-            <param name="actorKey">the actor key.</param>
+            <param name="actorClass">The name of the actor class.</param>
+            <param name="actorKey">The actor key.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.ActorId.ActorClass">
             <summary>
@@ -272,14 +272,14 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
             <param name="options">The configuration options for this extension.</param>
             <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
-            <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
+            <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -358,248 +358,6 @@
             <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
             <param name="configure">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions"/>.</param>
             <returns>Returns the modified <paramref name="builder"/> object.</returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
-            <summary>
-            Configuration options for the Durable Task extension.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.DefaultHubName">
-            <summary>
-            The default task hub name to use when not explicitly configured.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName">
-            <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/>,
-            <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext"/> instances.
-            </summary>
-            <remarks>
-            A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
-            multiple Durable Functions applications from each other, even if they are using the same storage backend.
-            </remarks>
-            <value>The name of the default task hub.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ControlQueueBatchSize">
-            <summary>
-            Gets or sets the number of messages to pull from the control queue at a time.
-            </summary>
-            <remarks>
-            Messages pulled from the control queue are buffered in memory until the internal
-            dispatcher is ready to process them.
-            </remarks>
-            <value>A positive integer configured by the host. The default value is <c>32</c>.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.PartitionCount">
-            <summary>
-            Gets or sets the partition count for the control queue.
-            </summary>
-            <remarks>
-            Increasing the number of partitions will increase the number of workers
-            that can concurrently execute orchestrator functions. However, increasing
-            the partition count can also increase the amount of load placed on the storage
-            account and on the thread pool if the number of workers is smaller than the
-            number of partitions.
-            </remarks>
-            <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ControlQueueVisibilityTimeout">
-            <summary>
-            Gets or sets the visibility timeout of dequeued control queue messages.
-            </summary>
-            <value>
-            A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.WorkItemQueueVisibilityTimeout">
-            <summary>
-            Gets or sets the visibility timeout of dequeued work item queue messages.
-            </summary>
-            <value>
-            A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentActivityFunctions">
-            <summary>
-            Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
-            </summary>
-            <remarks>
-            Increasing activity function concurrent can result in increased throughput but can
-            also increase the total CPU and memory usage on a single worker instance.
-            </remarks>
-            <value>
-            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentOrchestratorFunctions">
-            <summary>
-            Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
-            </summary>
-            <value>
-            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AzureStorageConnectionStringName">
-            <summary>
-            Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
-            </summary>
-            <remarks>
-            If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-            </remarks>
-            <value>The name of a connection string that exists in the app's application settings.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName">
-            <summary>
-            Gets or sets the name of the Azure Storage connection string to use for the 
-            durable tracking store (History and Instances tables).
-            </summary>
-            <remarks><para>
-            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AzureStorageConnectionStringName"/> connection string is used
-            for the durable tracking store.
-            </para><para>
-            This property is primarily useful when deploying multiple apps that need to share the same
-            tracking infrastructure. For example, when deploying two versions of an app side by side, using
-            the same tracking store allows both versions to save history into the same table, which allows
-            clients to query for instance status across all versions.
-            </para></remarks>
-            <value>The name of a connection string that exists in the app's application settings.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreNamePrefix">
-            <summary>
-            Gets or sets the name prefix to use for history and instance tables in Azure Storage.
-            </summary>
-            <remarks>
-            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TrackingStoreConnectionStringName"/> is specified.
-            If no prefix is specified, the default prefix value is "DurableTask".
-            </remarks>
-            <value>The prefix to use when naming the generated Azure tables.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
-            <summary>
-            Gets or sets the base URL for the HTTP APIs managed by this extension.
-            </summary>
-            <remarks>
-            This property is intended for use only by runtime hosts.
-            </remarks>
-            <value>
-            A URL pointing to the hosted function app that responds to status polling requests.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TraceInputsAndOutputs">
-            <summary>
-            Gets or sets a value indicating whether to trace the inputs and outputs of function calls.
-            </summary>
-            <remarks>
-            The default behavior when tracing function execution events is to include the number of bytes in the serialized
-            inputs and outputs for function calls. This provides minimal information about what the inputs and outputs look
-            like without bloating the logs or inadvertently exposing sensitive information to the logs. Setting
-            <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TraceInputsAndOutputs"/> to <c>true</c> will instead cause the default function logging to log
-            the entire contents of function inputs and outputs.
-            </remarks>
-            <value>
-            <c>true</c> to trace the raw values of inputs and outputs; otherwise <c>false</c>.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridTopicEndpoint">
-            <summary>
-            Gets or sets the URL of an Azure Event Grid custom topic endpoint.
-            When set, orchestration life cycle notification events will be automatically
-            published to this endpoint.
-            </summary>
-            <remarks>
-            Azure Event Grid topic URLs are generally expected to be in the form
-            https://{topic_name}.{region}.eventgrid.azure.net/api/events.
-            </remarks>
-            <value>
-            The Azure Event Grid custom topic URL.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridKeySettingName">
-            <summary>
-            Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridTopicEndpoint"/>.
-            </summary>
-            <value>
-            The name of the app setting that stores the Azure Event Grid key.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRetryCount">
-            <summary>
-            Gets or sets the Event Grid publish request retry count.
-            </summary>
-            <value>The number of retry attempts.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRetryInterval">
-            <summary>
-            Gets orsets the Event Grid publish request retry interval.
-            </summary>
-            <value>A <see cref="T:System.TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRetryHttpStatus">
-            <summary>
-            Gets or sets the Event Grid publish request http status.
-            </summary>
-            <value>A list of HTTP status codes, e.g. 400, 403.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishEventTypes">
-            <summary>
-            gets or sets the event types that will be published to Event Grid. 
-            </summary>
-            <value>
-            An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled">
-            <summary>
-            Gets or sets a flag indicating whether to enable extended sessions.
-            </summary>
-            <remarks>
-            <para>Extended sessions can improve the performance of orchestrator functions by allowing them to skip
-            replays when new messages are received within short periods of time.</para>
-            <para>Note that orchestrator functions which are extended this way will continue to count against the
-            <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentOrchestratorFunctions"/> limit. To avoid starvation, only half of the maximum
-            number of allowed concurrent orchestrator functions can be concurrently extended at any given time.
-            The <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionIdleTimeoutInSeconds"/> property can also be used to control how long an idle
-            orchestrator function is allowed to be extended.</para>
-            <para>It is recommended that this property be set to <c>false</c> during development to help
-            ensure that the orchestrator code correctly obeys the idempotency rules.</para>
-            </remarks>
-            <value>
-            <c>true</c> to enable extended sessions; otherwise <c>false</c>.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionIdleTimeoutInSeconds">
-            <summary>
-            Gets or sets the amount of time in seconds before an idle session times out. The default value is 30 seconds.
-            </summary>
-            <remarks>
-            This setting is applicable when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled"/> is set to <c>true</c>.
-            </remarks>
-            <value>
-            The number of seconds before an idle session times out.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.LogReplayEvents">
-            <summary>
-            Gets or sets if logs for replay events need to be recorded.
-            </summary>
-            <remarks>
-            The default value is false, which disables the logging of replay events.
-            </remarks>
-            <value>
-            Boolean value specifying if the replay events should be logged.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.CustomLifeCycleNotificationHelperType">
-            <summary>
-            Gets or sets the type name of a custom to use for handling lifecycle notification events.
-            </summary>
-            <value>Assembly qualified class name that implements <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxQueuePollingInterval">
-            <summary>
-            Gets or sets the maximum queue polling interval.
-            </summary>
-            <value>Maximum interval for polling control and work-item queues.</value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
@@ -749,6 +507,24 @@
             <param name="reason">Additional data associated with the tracking event.</param>
             <returns>A task that completes when the lifecycle notification message has been sent.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory">
+            <summary>
+            Interface defining methods to build orchestration services and orchestration service clients.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationService">
+            <summary>
+            Creates or retrieves a cached orchestration service to be used throughout the extension.
+            </summary>
+            <returns>An orchestration service to be used by the Durable Task Extension.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)">
+            <summary>
+            Creates or retrieves a cached orchestration service client to be used in a given function execution.
+            </summary>
+            <param name="attribute">An orchestration client attribute with parameters for the orchestration client.</param>
+            <returns>An orchestration service client to be used by a function.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.
@@ -782,6 +558,299 @@
             JSON-serializes the specified object and throws a <see cref="T:System.ArgumentException"/> if the
             resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions">
+            <summary>
+            Configuration options for the Azure Storage storage provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.ControlQueueBatchSize">
+            <summary>
+            Gets or sets the number of messages to pull from the control queue at a time.
+            </summary>
+            <remarks>
+            Messages pulled from the control queue are buffered in memory until the internal
+            dispatcher is ready to process them.
+            </remarks>
+            <value>A positive integer configured by the host. The default value is <c>32</c>.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.PartitionCount">
+            <summary>
+            Gets or sets the partition count for the control queue.
+            </summary>
+            <remarks>
+            Increasing the number of partitions will increase the number of workers
+            that can concurrently execute orchestrator functions. However, increasing
+            the partition count can also increase the amount of load placed on the storage
+            account and on the thread pool if the number of workers is smaller than the
+            number of partitions.
+            </remarks>
+            <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.ControlQueueVisibilityTimeout">
+            <summary>
+            Gets or sets the visibility timeout of dequeued control queue messages.
+            </summary>
+            <value>
+            A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.WorkItemQueueVisibilityTimeout">
+            <summary>
+            Gets or sets the visibility timeout of dequeued work item queue messages.
+            </summary>
+            <value>
+            A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.TrackingStoreConnectionStringName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection string to use for the
+            durable tracking store (History and Instances tables).
+            </summary>
+            <remarks><para>
+            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.CommonStorageProviderOptions.ConnectionStringName"/> connection string
+            is used for the durable tracking store.
+            </para><para>
+            This property is primarily useful when deploying multiple apps that need to share the same
+            tracking infrastructure. For example, when deploying two versions of an app side by side, using
+            the same tracking store allows both versions to save history into the same table, which allows
+            clients to query for instance status across all versions.
+            </para></remarks>
+            <value>The name of a connection string that exists in the app's application settings.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.TrackingStoreNamePrefix">
+            <summary>
+            Gets or sets the name prefix to use for history and instance tables in Azure Storage.
+            </summary>
+            <remarks>
+            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.TrackingStoreConnectionStringName"/> is specified.
+            If no prefix is specified, the default prefix value is "DurableTask".
+            </remarks>
+            <value>The prefix to use when naming the generated Azure tables.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.MaxQueuePollingInterval">
+            <summary>
+            Gets or sets the maximum queue polling interval.
+            </summary>
+            <value>Maximum interval for polling control and work-item queues.</value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.CommonStorageProviderOptions">
+            <summary>
+            A common set of properties that all storage providers share, as well as validation methods that
+            all storage provider options must implement.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.CommonStorageProviderOptions.ConnectionStringName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
+            </summary>
+            <remarks>
+            If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            </remarks>
+            <value>The name of a connection string that exists in the app's application settings.</value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.CommonStorageProviderOptions.ValidateHubName(System.String)">
+            <summary>
+            Throws an exception if the provided hub name violates any naming conventions for the storage provider.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.CommonStorageProviderOptions.Validate">
+            <summary>
+            Throws an exception if any of the settings of the storage provider are invalid.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EmulatorStorageOptions">
+            <summary>
+            Configuration options for the Emulator storage provider.
+            </summary>
+            <remarks>
+            At this time, there is no configuration available for the Emulator storage provider.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions">
+            <summary>
+            Configuration options for the various storage providers supported
+            by the Durable Task Extension.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.AzureStorage">
+            <summary>
+            The section for configuration related to the Azure Storage provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.Emulator">
+            <summary>
+            The section for configuration related to the Emulator provider.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
+            <summary>
+            Configuration options for the Durable Task extension.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName">
+            <summary>
+            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/>,
+            <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext"/> instances.
+            </summary>
+            <remarks>
+            A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
+            multiple Durable Functions applications from each other, even if they are using the same storage backend.
+            </remarks>
+            <value>The name of the default task hub.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StorageProvider">
+            <summary>
+            The section of configuration related to storage providers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentActivityFunctions">
+            <summary>
+            Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
+            </summary>
+            <remarks>
+            Increasing activity function concurrent can result in increased throughput but can
+            also increase the total CPU and memory usage on a single worker instance.
+            </remarks>
+            <value>
+            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentOrchestratorFunctions">
+            <summary>
+            Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
+            </summary>
+            <value>
+            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
+            <summary>
+            Gets or sets the base URL for the HTTP APIs managed by this extension.
+            </summary>
+            <remarks>
+            This property is intended for use only by runtime hosts.
+            </remarks>
+            <value>
+            A URL pointing to the hosted function app that responds to status polling requests.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TraceInputsAndOutputs">
+            <summary>
+            Gets or sets a value indicating whether to trace the inputs and outputs of function calls.
+            </summary>
+            <remarks>
+            The default behavior when tracing function execution events is to include the number of bytes in the serialized
+            inputs and outputs for function calls. This provides minimal information about what the inputs and outputs look
+            like without bloating the logs or inadvertently exposing sensitive information to the logs. Setting
+            <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.TraceInputsAndOutputs"/> to <c>true</c> will instead cause the default function logging to log
+            the entire contents of function inputs and outputs.
+            </remarks>
+            <value>
+            <c>true</c> to trace the raw values of inputs and outputs; otherwise <c>false</c>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridTopicEndpoint">
+            <summary>
+            Gets or sets the URL of an Azure Event Grid custom topic endpoint.
+            When set, orchestration life cycle notification events will be automatically
+            published to this endpoint.
+            </summary>
+            <remarks>
+            Azure Event Grid topic URLs are generally expected to be in the form
+            https://{topic_name}.{region}.eventgrid.azure.net/api/events.
+            </remarks>
+            <value>
+            The Azure Event Grid custom topic URL.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridKeySettingName">
+            <summary>
+            Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridTopicEndpoint"/>.
+            </summary>
+            <value>
+            The name of the app setting that stores the Azure Event Grid key.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRetryCount">
+            <summary>
+            Gets or sets the Event Grid publish request retry count.
+            </summary>
+            <value>The number of retry attempts.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRetryInterval">
+            <summary>
+            Gets orsets the Event Grid publish request retry interval.
+            </summary>
+            <value>A <see cref="T:System.TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishRetryHttpStatus">
+            <summary>
+            Gets or sets the Event Grid publish request http status.
+            </summary>
+            <value>A list of HTTP status codes, e.g. 400, 403.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EventGridPublishEventTypes">
+            <summary>
+            gets or sets the event types that will be published to Event Grid. 
+            </summary>
+            <value>
+            An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled">
+            <summary>
+            Gets or sets a flag indicating whether to enable extended sessions.
+            </summary>
+            <remarks>
+            <para>Extended sessions can improve the performance of orchestrator functions by allowing them to skip
+            replays when new messages are received within short periods of time.</para>
+            <para>Note that orchestrator functions which are extended this way will continue to count against the
+            <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentOrchestratorFunctions"/> limit. To avoid starvation, only half of the maximum
+            number of allowed concurrent orchestrator functions can be concurrently extended at any given time.
+            The <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionIdleTimeoutInSeconds"/> property can also be used to control how long an idle
+            orchestrator function is allowed to be extended.</para>
+            <para>It is recommended that this property be set to <c>false</c> during development to help
+            ensure that the orchestrator code correctly obeys the idempotency rules.</para>
+            </remarks>
+            <value>
+            <c>true</c> to enable extended sessions; otherwise <c>false</c>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionIdleTimeoutInSeconds">
+            <summary>
+            Gets or sets the amount of time in seconds before an idle session times out. The default value is 30 seconds.
+            </summary>
+            <remarks>
+            This setting is applicable when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled"/> is set to <c>true</c>.
+            </remarks>
+            <value>
+            The number of seconds before an idle session times out.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.LogReplayEvents">
+            <summary>
+            Gets or sets if logs for replay events need to be recorded.
+            </summary>
+            <remarks>
+            The default value is false, which disables the logging of replay events.
+            </remarks>
+            <value>
+            Boolean value specifying if the replay events should be logged.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.CustomLifeCycleNotificationHelperType">
+            <summary>
+            Gets or sets the type name of a custom to use for handling lifecycle notification events.
+            </summary>
+            <value>Assembly qualified class name that implements <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.GetConnectionStringName">
+            <summary>
+            A helper method to help retrieve the connection string name for the configured storage provider.
+            </summary>
+            <returns>The connection string name for the configured storage provider.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult">
             <summary>
@@ -1076,7 +1145,7 @@
             <param name="context">The context object.</param>
             <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
-            <returns>a task representing the result of the operation.</returns>
+            <returns>A task representing the result of the operation.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.String)">
             <summary>
@@ -1085,7 +1154,7 @@
             <param name="context">The context object.</param>
             <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
-            <returns>a task representing the completion of the operation on the actor.</returns>
+            <returns>A task representing the completion of the operation on the actor.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.Net.Http.HttpRequestMessage,System.String)">
             <summary>
@@ -1342,8 +1411,8 @@
             <summary>
             Gets a typed view of the state, by deserializing the JSON.
             </summary>
-            <typeparam name="TState">the JSON-serializable type of the actor state.</typeparam>
-            <returns>a typed view that allows reading and updating.</returns>
+            <typeparam name="TState">The JSON-serializable type of the actor state.</typeparam>
+            <returns>A typed view that allows reading and updating.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent``1">
             <summary>
@@ -1377,7 +1446,7 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.DestructOnExit">
             <summary>
-            Delete this actor after this operation completes.
+            Deletes this actor after this operation completes.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.IDurableOrchestrationClient">
@@ -1644,7 +1713,7 @@
             <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <param name="operationContent">The content (input argument) of the operation.</param>
-            <returns>a task representing the result of the operation.</returns>
+            <returns>A task representing the result of the operation.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
@@ -1654,7 +1723,7 @@
             <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <param name="operationContent">The content for the operation.</param>
-            <returns>a task representing the completion of the operation on the actor.</returns>
+            <returns>A task representing the completion of the operation on the actor.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
@@ -1980,8 +2049,8 @@
             </summary>
             <value>The name of a connection string that exists in the app's application settings.</value>
             <remarks>
-            The default behavior is to use the value specified in
-            <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AzureStorageConnectionStringName"/>. If no value exists there, then
+            The default behavior is to use the value specified by
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.GetConnectionStringName"/>. If no value exists there, then
             the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
             </remarks>
         </member>

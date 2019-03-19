@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -27,7 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>()
+                         .AddSingleton<IOrchestrationServiceFactory, OrchestrationServiceFactory>();
 
             return builder;
         }
