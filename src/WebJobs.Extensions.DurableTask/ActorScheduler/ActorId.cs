@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs
         {
             if (string.IsNullOrEmpty(actorClass))
             {
-                throw new ArgumentException("invalid actor reference: actor class must not be a null or empty string", actorClass);
+                throw new ArgumentNullException("invalid actor reference: actor class must not be a null or empty string", actorClass);
             }
 
             this.ActorClass = actorClass;
@@ -34,13 +34,13 @@ namespace Microsoft.Azure.WebJobs
         /// The name of the actor class.
         /// </summary>
         [JsonProperty("class")]
-        public string ActorClass { get; set; }
+        public string ActorClass { get; }
 
         /// <summary>
-        /// The actor key.
+        /// The actor key. Uniquely identifies an actor among all instances of the same class.
         /// </summary>
         [JsonProperty("key")]
-        public string ActorKey { get; set; }
+        public string ActorKey { get; }
 
         /// <inheritdoc/>
         public override string ToString()

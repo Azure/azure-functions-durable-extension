@@ -41,9 +41,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public TArgument GetArgument<TArgument>()
+        public T GetArgument<T>()
         {
-            return JsonConvert.DeserializeObject<TArgument>(this.Argument);
+            return JsonConvert.DeserializeObject<T>(this.Argument);
         }
 
         public object GetArgument(Type argumentType)

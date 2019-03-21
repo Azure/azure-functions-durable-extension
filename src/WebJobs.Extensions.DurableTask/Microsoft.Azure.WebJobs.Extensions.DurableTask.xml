@@ -23,7 +23,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.ActorId.ActorKey">
             <summary>
-            The actor key.
+            The actor key. Uniquely identifies an actor among all instances of the same class.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.ActorId.ToString">

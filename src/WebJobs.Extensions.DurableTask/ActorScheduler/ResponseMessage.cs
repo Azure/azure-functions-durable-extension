@@ -10,9 +10,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ResponseMessage
     {
+        [JsonProperty(PropertyName = "result")]
         public string Result { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "exceptionType", NullValueHandling = NullValueHandling.Ignore)]
         public string ExceptionType { get; set; }
 
         [JsonIgnore]
