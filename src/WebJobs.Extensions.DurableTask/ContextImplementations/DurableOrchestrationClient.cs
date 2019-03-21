@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Client for starting, querying, terminating, and raising events to orchestration instances.
     /// </summary>
-    public class DurableOrchestrationClient : DurableOrchestrationClientBase
+    internal class DurableOrchestrationClient : IDurableOrchestrationClient
     {
         private const string DefaultVersion = "";
         private const int MaxInstanceIdLength = 256;
@@ -45,23 +45,25 @@ namespace Microsoft.Azure.WebJobs
             this.attribute = attribute;
         }
 
-        /// <inheritdoc />
-        public override string TaskHubName => this.hubName;
+        public string TaskHubName => this.hubName;
 
         /// <inheritdoc />
-        public override HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
+        string IDurableOrchestrationClient.TaskHubName => this.hubName;
+
+        /// <inheritdoc />
+        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
             return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
         }
 
         /// <inheritdoc />
-        public override HttpManagementPayload CreateHttpManagementPayload(string instanceId)
+        HttpManagementPayload IDurableOrchestrationClient.CreateHttpManagementPayload(string instanceId)
         {
             return this.config.CreateHttpManagementPayload(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
         }
 
         /// <inheritdoc />
-        public override async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
             TimeSpan timeout,
@@ -76,7 +78,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
+        async Task<string> IDurableOrchestrationClient.StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
         {
             this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
 
@@ -107,7 +109,7 @@ namespace Microsoft.Azure.WebJobs
 
         /// <inheritdoc />
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
-        public override Task RaiseEventAsync(string instanceId, string eventName, object eventData)
+        Task IDurableOrchestrationClient.RaiseEventAsync(string instanceId, string eventName, object eventData)
         {
             if (string.IsNullOrEmpty(eventName))
             {
@@ -119,7 +121,7 @@ namespace Microsoft.Azure.WebJobs
 
         /// <inheritdoc />
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
-        public override Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null)
+        Task IDurableOrchestrationClient.RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName)
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
@@ -142,13 +144,13 @@ namespace Microsoft.Azure.WebJobs
                 ConnectionName = connectionName,
             };
 
-            TaskHubClient taskHubClient = this.config.GetClient(attribute).client;
+            TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
 
             return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData);
         }
 
         /// <inheritdoc />
-        public override async Task TerminateAsync(string instanceId, string reason)
+        async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationRunning(state))
@@ -173,7 +175,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task RewindAsync(string instanceId, string reason)
+        async Task IDurableOrchestrationClient.RewindAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (state.OrchestrationStatus != OrchestrationStatus.Failed)
@@ -188,7 +190,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true)
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             var storageService = (AzureStorageOrchestrationService)this.client.ServiceClient;
@@ -204,7 +206,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken))
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
@@ -220,7 +222,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken))
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
@@ -235,7 +237,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(string instanceId)
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
@@ -245,7 +247,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
@@ -255,13 +257,13 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override async Task<OrchestrationStatusQueryResult> GetStatusAsync(
+        async Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(
             DateTime createdTimeFrom,
             DateTime? createdTimeTo,
             IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
             int pageSize,
             string continuationToken,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             var serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
             var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);

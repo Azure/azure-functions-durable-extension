@@ -12,13 +12,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal class TestOrchestratorClient
     {
-        private readonly DurableOrchestrationClient innerClient;
+        private readonly IDurableOrchestrationClient innerClient;
         private readonly string functionName;
         private readonly string instanceId;
         private readonly DateTime instanceCreationTime;
 
         internal TestOrchestratorClient(
-            DurableOrchestrationClient innerClient,
+            IDurableOrchestrationClient innerClient,
             string functionName,
             string instanceId,
             DateTime instanceCreationTime)
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public string InstanceId => this.instanceId;
 
-        internal DurableOrchestrationClient InnerClient => this.innerClient;
+        internal IDurableOrchestrationClient InnerClient => this.innerClient;
 
         public async Task<DurableOrchestrationStatus> GetStatusAsync(bool showHistory = false, bool showHistoryOutput = false, bool showInput = true)
         {

@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.contract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(DurableActivityContext);
+            public Type TriggerValueType => typeof(IDurableActivityContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract => this.contract;
 
@@ -116,8 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     convertedValue = value;
                 }
-                else if (destinationType == typeof(DurableActivityContext) ||
-                    destinationType == typeof(DurableActivityContextBase))
+                else if (destinationType == typeof(IDurableActivityContext))
                 {
                     convertedValue = activityContext;
                 }
@@ -137,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Note that there could be conflicts in thiese dictionary keys, in which case
                 // the order here determines which binding rule will win.
                 var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                bindingData[InstanceIdBindingPropertyName] = activityContext.InstanceId;
+                bindingData[InstanceIdBindingPropertyName] = ((IDurableActivityContext)activityContext).InstanceId;
                 bindingData[this.parameterInfo.Name] = convertedValue;
                 bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
 
@@ -167,13 +166,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.parent.durableTaskConfig,
                     this.activityName,
                     context.Executor,
-                    isOrchestrator: false);
+                    FunctionType.Activity);
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static JObject ActivityContextToJObject(DurableActivityContext arg)
+            private static JObject ActivityContextToJObject(IDurableActivityContext arg)
             {
-                JToken token = arg.GetInputAsJson();
+                JToken token = ((DurableActivityContext)arg).GetInputAsJson();
                 if (token == null)
                 {
                     return null;

@@ -14,13 +14,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly FunctionName functionName;
         private readonly ITriggeredFunctionExecutor executor;
-        private readonly bool isOrchestrator;
+        private readonly FunctionType functionType;
 
         public DurableTaskListener(
             DurableTaskExtension config,
             FunctionName functionName,
             ITriggeredFunctionExecutor executor,
-            bool isOrchestrator)
+            FunctionType functionType)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.functionName = functionName;
-            this.isOrchestrator = isOrchestrator;
+            this.functionType = functionType;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -44,13 +44,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The actual listener is a task hub worker, which is shared by all orchestration
             // and activity function listeners in the function app. The task hub worker
             // gets shut down only when all durable functions are shut down.
-            if (this.isOrchestrator)
+            switch (this.functionType)
             {
-                this.config.DeregisterOrchestrator(this.functionName);
-            }
-            else
-            {
-                this.config.DeregisterActivity(this.functionName);
+                case FunctionType.Orchestrator:
+                    this.config.DeregisterOrchestrator(this.functionName);
+                    break;
+                case FunctionType.Actor:
+                    this.config.DeregisterActor(this.functionName);
+                    break;
+                case FunctionType.Activity:
+                    this.config.DeregisterActivity(this.functionName);
+                    break;
             }
 
             return this.config.StopTaskHubWorkerIfIdleAsync();

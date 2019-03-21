@@ -23,11 +23,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(OrchestrationClientAttribute clientAttribute)
         {
-            DurableOrchestrationClientBase client = this.config.GetClient(clientAttribute);
+            IDurableOrchestrationClient client = this.config.GetClient(clientAttribute);
             return new OrchestrationClientAsyncCollector(client);
         }
 
-        public string DurableOrchestrationClientToString(DurableOrchestrationClient client, OrchestrationClientAttribute attr)
+        public string DurableOrchestrationClientToString(IDurableOrchestrationClient client, OrchestrationClientAttribute attr)
         {
             var payload = new OrchestrationClientInputData
             {
@@ -50,9 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class OrchestrationClientAsyncCollector : IAsyncCollector<StartOrchestrationArgs>
         {
-            private readonly DurableOrchestrationClientBase client;
+            private readonly IDurableOrchestrationClient client;
 
-            public OrchestrationClientAsyncCollector(DurableOrchestrationClientBase client)
+            public OrchestrationClientAsyncCollector(IDurableOrchestrationClient client)
             {
                 this.client = client;
             }

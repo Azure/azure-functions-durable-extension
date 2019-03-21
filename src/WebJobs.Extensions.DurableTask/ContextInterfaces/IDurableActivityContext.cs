@@ -4,9 +4,9 @@
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Abstract base class for <see cref="DurableActivityContext"/>.
+    /// Provides functionality available to durable activities.
     /// </summary>
-    public abstract class DurableActivityContextBase
+    public interface IDurableActivityContext
     {
         /// <summary>
         /// Gets the instance ID of the currently executing orchestration.
@@ -18,13 +18,13 @@ namespace Microsoft.Azure.WebJobs
         /// <value>
         /// The ID of the current orchestration instance.
         /// </value>
-        public virtual string InstanceId { get; internal set; }
+        string InstanceId { get; }
 
         /// <summary>
         /// Gets the input of the current activity function as a deserialized value.
         /// </summary>
         /// <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
         /// <returns>The deserialized input value.</returns>
-        public abstract T GetInput<T>();
+        T GetInput<T>();
     }
 }

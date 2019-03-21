@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -15,20 +16,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static bool SayHelloWithActivityForRewindShouldFail { get; set; } = true;
 
-        public static string SayHelloInline([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static string SayHelloInline([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             return $"Hello, {input}!";
         }
 
-        public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             return output;
         }
 
-        public static async Task<bool> SayHelloWithActivityWithDeterministicGuid([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<bool> SayHelloWithActivityWithDeterministicGuid([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             Guid firstGuid = ctx.NewGuid();
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
         }
 
-        public static bool VerifyUniqueGuids([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static bool VerifyUniqueGuids([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             HashSet<Guid> guids = new HashSet<Guid>();
             for (int i = 0; i < 10000; i++)
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return true;
         }
 
-        public static async Task<bool> VerifySameGuidGeneratedOnReplay([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<bool> VerifySameGuidGeneratedOnReplay([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             Guid firstGuid = ctx.NewGuid();
             Guid firstOutputGuid = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.Echo), firstGuid);
@@ -76,14 +77,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return true;
         }
 
-        public static async Task<string> EchoWithActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<string> EchoWithActivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Echo), input);
             return output;
         }
 
-        public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<string> SayHelloWithActivityForRewind([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
-        public static async Task<string> SayHelloWithActivityAndCustomStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<string> SayHelloWithActivityAndCustomStatus([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             var customStatus = new { nextActions = new[] { "A", "B", "C" }, foo = 2, };
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
-        public static async Task<long> Factorial([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<long> Factorial([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             int n = ctx.GetInput<int>();
 
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result;
         }
 
-        public static async Task<long> DiskUsage([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<long> DiskUsage([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string directory = ctx.GetInput<string>();
             string[] files = await ctx.CallActivityAsync<string[]>(nameof(TestActivities.GetFileList), directory);
@@ -135,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return totalBytes;
         }
 
-        public static async Task<int> Counter([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<int> Counter([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             int currentValue = ctx.GetInput<int>();
             string operation = await ctx.WaitForExternalEvent<string>("operation");
@@ -165,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return currentValue;
         }
 
-        public static async Task BatchActor([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task BatchActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var requiredItems = new HashSet<string>(new[] { @"item1", @"item2", @"item3", @"item4", @"item5" });
 
@@ -183,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // we've received events for all the required items; safe to bail now!
         }
 
-        public static async Task BatchActorRemoveLast([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task BatchActorRemoveLast([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var requiredItems = new HashSet<string>(new[] { @"item1", @"item2", @"item3", @"item4", @"item5" });
 
@@ -201,7 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // we've received events for all the required items; safe to bail now!
         }
 
-        public static async Task<string> Approval([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<string> Approval([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             TimeSpan timeout = ctx.GetInput<TimeSpan>();
             DateTime deadline = ctx.CurrentUtcDateTime.Add(timeout);
@@ -226,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public static async Task<string> ApprovalWithTimeout([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<string> ApprovalWithTimeout([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             (TimeSpan timeout, string defaultValue) = ctx.GetInput<(TimeSpan, string)>();
             DateTime deadline = ctx.CurrentUtcDateTime.Add(timeout);
@@ -250,7 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return eventValue;
         }
 
-        public static async Task ThrowOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task ThrowOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
             if (string.IsNullOrEmpty(message) || message.Contains("null"))
@@ -263,7 +264,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallActivityAsync(nameof(TestActivities.ThrowActivity), message);
         }
 
-        public static async Task OrchestratorGreeting([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task OrchestratorGreeting([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
 
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 message);
         }
 
-        public static async Task OrchestratorThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task OrchestratorThrowWithRetry([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
 
@@ -292,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 message);
         }
 
-        public static async Task OrchestratorWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task OrchestratorWithRetry_NullRetryOptions([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
 
@@ -302,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallSubOrchestratorWithRetryAsync(nameof(TestOrchestrations.ThrowOrchestrator), options, message);
         }
 
-        public static async Task ActivityThrowWithRetry([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task ActivityThrowWithRetry([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
             if (string.IsNullOrEmpty(message))
@@ -317,7 +318,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallActivityWithRetryAsync(nameof(TestActivities.ThrowActivity), options, message);
         }
 
-        public static async Task ActivityWithRetry_NullRetryOptions([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task ActivityWithRetry_NullRetryOptions([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();
             if (string.IsNullOrEmpty(message))
@@ -332,7 +333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallActivityWithRetryAsync(nameof(TestActivities.ThrowActivity), options, message);
         }
 
-        public static async Task<int> TryCatchLoop([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<int> TryCatchLoop([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             int iterations = ctx.GetInput<int>();
             int catchCount = 0;
@@ -353,7 +354,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         // TODO: It's not currently possible to detect this failure except by examining logs.
-        public static async Task IllegalAwait([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task IllegalAwait([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             await ctx.CallActivityAsync(nameof(TestActivities.Hello), "Foo");
 
@@ -364,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallActivityAsync(nameof(TestActivities.Hello), "Bar");
         }
 
-        public static async Task<object> CallActivity([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<object> CallActivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
             var startArgs = ctx.GetInput<StartOrchestrationArgs>();
@@ -372,12 +373,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result;
         }
 
-        public static string ProvideParentInstanceId([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static string ProvideParentInstanceId([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             return ctx.ParentInstanceId;
         }
 
-        public static async Task<object> CallOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<object> CallOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // Using StartOrchestrationArgs to start an orchestrator function because it's easier than creating a new type.
             var startArgs = ctx.GetInput<StartOrchestrationArgs>();
@@ -388,19 +389,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result;
         }
 
-        public static async Task Timer([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task Timer([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             DateTime fireAt = ctx.GetInput<DateTime>();
             await ctx.CreateTimer(fireAt, CancellationToken.None);
         }
 
-        public static string BigReturnValue([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static string BigReturnValue([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             int stringLength = ctx.GetInput<int>();
             return new string(BigValueChar, stringLength);
         }
 
-        public static async Task SetStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task SetStatus([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             for (int i = 0; i < 3; i++)
             {
@@ -412,7 +413,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CreateTimer(ctx.CurrentUtcDateTime.AddSeconds(2), CancellationToken.None);
         }
 
-        public static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatus([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatus([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
             DurableOrchestrationStatus result = await ctx.CallActivityAsync<DurableOrchestrationStatus>(
@@ -421,7 +422,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result;
         }
 
-        public static async Task ParallelBatchActor([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task ParallelBatchActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
            Task item1 = ctx.WaitForExternalEvent<string>("newItem");
            Task item2 = ctx.WaitForExternalEvent<string>("newItem");
@@ -430,7 +431,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
            await Task.WhenAll(item1, item2, item3, item4);
         }
 
-        public static async Task<int> Counter2([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        public static async Task<int> Counter2([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             int value = 0;
             while (value < 100)
@@ -452,7 +453,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static async Task<HttpManagementPayload> ReturnHttpManagementPayload(
-            [OrchestrationTrigger] DurableOrchestrationContext ctx)
+            [OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             HttpManagementPayload activityPassedHttpManagementPayload =
                 await ctx.CallActivityAsync<HttpManagementPayload>(nameof(TestActivities.GetAndReturnHttpManagementPayload), null);
@@ -460,7 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static async Task<string> FanOutFanIn(
-            [OrchestrationTrigger] DurableOrchestrationContext context)
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             int parallelTasks = context.GetInput<int>();
             var tasks = new Task[parallelTasks];
@@ -475,7 +476,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static async Task<int> WaitForEventAndCallActivity(
-            [OrchestrationTrigger] DurableOrchestrationContext context)
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             int sum = 0;
 
@@ -493,6 +494,117 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return sum;
+        }
+
+        public static async Task<string> SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            // construct actor reference from actor name and a (deterministic) newguid key
+            var actor = new ActorRef("StringStore2", ctx.NewGuid().ToString());
+
+            // signal and call (both of these will be delivered close together)
+            ctx.SignalActor(actor, "set", "333");
+
+            var result = await ctx.CallActorAsync<string>(actor, "get");
+
+            if (result != "333")
+            {
+                return $"fail: wrong actor state: expected 333, got {result}";
+            }
+
+            // make another call to see if the state survives replay
+            result = await ctx.CallActorAsync<string>(actor, "get");
+
+            if (result != "333")
+            {
+                return $"fail: wrong actor state: expected 333, got {result}";
+            }
+
+            return "ok";
+        }
+
+        public static async Task<string> StringStoreWithCreateDelete([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            // construct actor reference from actor name and a (deterministic) new guid key
+            var actor = new ActorRef("StringStore2", ctx.NewGuid().ToString());
+            string result;
+
+            // does not exist, so get should throw
+            try
+            {
+                result = await ctx.CallActorAsync<string>(actor, "get");
+                return "fail: expected exception";
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            // still does not exist, so get should still throw
+            try
+            {
+                await ctx.CallActorAsync<string>(actor, "get");
+                return "fail: expected exception";
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            await ctx.CallActorAsync<string>(actor, "set", "aha");
+
+            result = await ctx.CallActorAsync<string>(actor, "get");
+
+            if (result != "aha")
+            {
+                return $"fail: wrong actor state: expected aha, got {result}";
+            }
+
+            await ctx.CallActorAsync<string>(actor, "delete");
+
+            // no longer exists, so get should again throw
+            try
+            {
+                await ctx.CallActorAsync<string>(actor, "get");
+                return "fail: expected exception";
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            // re-create the actor
+            await ctx.CallActorAsync<string>(actor, "set", "aha-aha");
+
+            result = await ctx.CallActorAsync<string>(actor, "get");
+
+            if (result != "aha-aha")
+            {
+                return $"fail: wrong actor state: expected aha-aha, got {result}";
+            }
+
+            // finally delete it
+            await ctx.CallActorAsync<string>(actor, "delete");
+
+            return "ok";
+        }
+
+        public static async Task UpdateTwoCounters([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var actor1 = new ActorRef("CounterActor", "1"); // construct actor reference from actor class and actor key
+            var actor2 = new ActorRef("CounterActor", "2"); // construct actor reference from actor class and actor key
+
+            using (await ctx.LockAsync(actor1, actor2))
+            {
+                await Task.WhenAll(
+                    ctx.CallActorAsync(actor1, "add", 42),
+                    ctx.CallActorAsync(actor2, "add", -42));
+            }
+        }
+
+        public static async Task SignalAndCallChatRoom([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var actor = new ActorRef("ChatRoom", "myChat"); // construct actor reference from actor class and actor key
+
+            ctx.SignalActor(actor, "Post", "Hello World");
+
+            var result = await ctx.CallActorAsync<List<KeyValuePair<DateTime, string>>>(actor, "Get");
         }
     }
 }

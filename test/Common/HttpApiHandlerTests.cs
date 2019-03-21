@@ -329,7 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
             };
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.GetStatusAsync(default(DateTime), default(DateTime), new List<OrchestrationRuntimeStatus>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(list));
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
             var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(list));
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var pageSize = 100;
             var continuationToken = "XXXX-XXXXXXXX-XXXXXXXXXXXX";
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, pageSize, continuationToken, It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(ctx));
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var runtimeStatusRunningString = OrchestrationRuntimeStatus.Running.ToString();
             var runtimeStatusCompletedString = OrchestrationRuntimeStatus.Completed.ToString();
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(list));
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0);
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.GetStatusAsync(createdTimeFrom, default(DateTime), new List<OrchestrationRuntimeStatus>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(list));
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string actualInstanceId = null;
             string actualReason = null;
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.TerminateAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(Task.CompletedTask)
@@ -589,7 +589,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 });
 
             clientMock
-                .Setup(x => x.GetStatusAsync(It.IsAny<string>()))
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true))
                 .Returns(Task.FromResult(
                     new DurableOrchestrationStatus
                     {
@@ -651,7 +651,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     rewindPostUri = testRewindPostUri,
                 });
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.StartNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
                 .Returns(Task.FromResult(testInstanceId));
@@ -712,7 +712,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     rewindPostUri = testRewindPostUri,
                 });
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.StartNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
                 .Returns(Task.FromResult(testInstanceId));
@@ -751,7 +751,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Content = new StringContent("badly formatted JSON string", Encoding.UTF8, "application/json"),
             };
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.StartNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
                 .Returns(Task.FromResult(testInstanceId));
@@ -787,7 +787,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Content = new StringContent("\"TestContent\"", Encoding.UTF8, "application/json"),
             };
 
-            var clientMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableOrchestrationClient>();
             clientMock
                 .Setup(x => x.StartNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
                 .Throws(new ArgumentException(exceptionMessage));
@@ -818,15 +818,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // Same as regular HTTP Api handler except you can specify a custom client object.
         private class ExtendedHttpApiHandler : HttpApiHandler
         {
-            private readonly DurableOrchestrationClientBase innerClient;
+            private readonly IDurableOrchestrationClient innerClient;
 
-            public ExtendedHttpApiHandler(DurableOrchestrationClientBase client)
+            public ExtendedHttpApiHandler(IDurableOrchestrationClient client)
                 : base(GetTestExtension(), null /* traceWriter */)
             {
                 this.innerClient = client;
             }
 
-            protected override DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
+            protected override IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
             {
                 return this.innerClient;
             }
@@ -843,7 +843,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
             }
 
-            protected internal override DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+            protected internal override IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
             {
                 var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
                 return new DurableOrchestrationClientMock(orchestrationServiceClientMock.Object, this, attribute);

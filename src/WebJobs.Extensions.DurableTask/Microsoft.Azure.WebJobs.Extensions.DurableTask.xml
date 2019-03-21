@@ -4,18 +4,133 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
-        <member name="T:Microsoft.Azure.WebJobs.ActivityTriggerAttribute">
+        <member name="T:Microsoft.Azure.WebJobs.ActorRef">
             <summary>
-            Trigger attribute used for durable activity functions.
+            A reference to an actor, used to identify actor instances.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Activity">
+        <member name="M:Microsoft.Azure.WebJobs.ActorRef.#ctor(System.String,System.String)">
             <summary>
-            Gets or sets the name of the activity function.
+            Create an actor reference for an actor.
             </summary>
-            <value>
-            The name of the activity function or <c>null</c> to use the function name.
-            </value>
+            <param name="actorClass">the name of the actor class.</param>
+            <param name="actorKey">the actor key.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorRef.ActorClass">
+            <summary>
+            The name of the actor class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorRef.ActorKey">
+            <summary>
+            The actor key.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.ActorRef.ToString">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.ActorRef.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.ActorRef.Equals(Microsoft.Azure.WebJobs.ActorRef)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.ActorRef.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.ActorRef.CompareTo(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">
+            <summary>
+            The exception that is thrown when application code violates the locking rules.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState">
+            <summary>
+            The persisted state of an actor scheduler, as handed forward between ContinueAsNew instances.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.ActorExists">
+            <summary>
+            Whether this actor exists or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.ActorState">
+            <summary>
+            The serialized actor state. This can be stale while CurrentStateView != null.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Queue">
+            <summary>
+            The queue of waiting operations, or null if none.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
+            <summary>
+            ephemeral, typed view of the state of the actor, for use by applications in deserialized form        /// </summary>
+            <typeparam name="TState">the type of the state.</typeparam>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActorContext">
+            <summary>
+            Context object passed to application code executing actor operations.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
+            <summary>
+            Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>
+            and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActorContext"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#CurrentUtcDateTime">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#IsReplaying">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#CallActivityAsync``1(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#IsLocked(System.Collections.Generic.IReadOnlyList{System.String}@)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#NewGuid">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#SignalActor(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#StartNewOrchestration(System.String,System.Object,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1">
+            <summary>
+            A little helper class for defining a custom JSON converter that can convert any
+            class <typeparamref name="T"/> that implements the conversion interface <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion"/>.
+            </summary>
+            <typeparam name="T">the class which should be converted.</typeparam>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion">
+            <summary>
+            Simple interface on objects to implement custom json conversion.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion.FromJson(Newtonsoft.Json.JsonReader,Newtonsoft.Json.JsonSerializer)">
+            <summary>
+            reads from json into this object.
+            </summary>
+            <param name="reader">The Newtonsoft.Json.JsonReader to read from.</param>
+            <param name="serializer">The calling serializer.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion.ToJson(Newtonsoft.Json.JsonWriter,Newtonsoft.Json.JsonSerializer)">
+            <summary>
+            writes this object to json.
+            </summary>
+            <param name="writer">The Newtonsoft.Json.JsonWriter to write to.</param>
+            <param name="serializer">The calling serializer.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension">
             <summary>
@@ -504,6 +619,19 @@
             Task activity implementation which delegates the implementation to a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActorShim">
+            <summary>
+            Implements the actor scheduler as a looping orchestration.
+            There is one such orchestration per actor.
+            The orchestration terminates if the actor is deleted and idle.
+            The orchestration calls ContinueAsNew when it is idle, but not deleted.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskCommonShim">
+            <summary>
+            Common functionality of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActorShim"/> and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim"/>.
+            /// </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">
             <summary>
             Task orchestration implementation which delegates the orchestration implementation to a function.
@@ -599,7 +727,7 @@
             The default parameter type for activity functions.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableActivityContext.InstanceId">
+        <member name="P:Microsoft.Azure.WebJobs.DurableActivityContext.Microsoft#Azure#WebJobs#IDurableActivityContext#InstanceId">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput">
@@ -618,7 +746,7 @@
             The parsed <c>JToken</c> representation of the activity input.
             </returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.GetInput``1">
+        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.Microsoft#Azure#WebJobs#IDurableActivityContext#GetInput``1">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput(System.Object)">
@@ -632,350 +760,65 @@
             The JSON-serializeable value to use as the activity function output.
             </param>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableActivityContextBase">
-            <summary>
-            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/>.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableActivityContextBase.InstanceId">
-            <summary>
-            Gets the instance ID of the currently executing orchestration.
-            </summary>
-            <remarks>
-            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
-            </remarks>
-            <value>
-            The ID of the current orchestration instance.
-            </value>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContextBase.GetInput``1">
-            <summary>
-            Gets the input of the current activity function as a deserialized value.
-            </summary>
-            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
-            <returns>The deserialized input value.</returns>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient">
             <summary>
             Client for starting, querying, terminating, and raising events to orchestration instances.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TaskHubName">
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TaskHubName">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.CreateHttpManagementPayload(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#StartNewAsync(System.String,System.String,System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.TerminateAsync(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RewindAsync(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RewindAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.PurgeInstanceHistoryAsync(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase">
-            <summary>
-            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TaskHubName">
-            <summary>
-            Gets the name of the task hub configured on this client instance.
-            </summary>
-            <value>
-            The name of the task hub.
-            </value>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
-            <summary>
-            Creates an HTTP response that is useful for checking the status of the specified instance.
-            </summary>
-            <remarks>
-            The payload of the returned <see cref="T:System.Net.Http.HttpResponseMessage"/> contains HTTP API URLs that can
-            be used to query the status of the orchestration, raise events to the orchestration, or
-            terminate the orchestration.
-            </remarks>
-            <param name="request">The HTTP request that triggered the current orchestration instance.</param>
-            <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateHttpManagementPayload(System.String)">
-            <summary>
-            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> class.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String)">
-            <summary>
-            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
-            or contains the payload containing the output of the completed orchestration.
-            </summary>
-            <remarks>
-            If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
-            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-            complete within this timeout, then the HTTP response will be identical to that of the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
-            </remarks>
-            <param name="request">The HTTP request that triggered the current function.</param>
-            <param name="instanceId">The unique ID of the instance to check.</param>
-            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)">
-            <summary>
-            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
-            or contains the payload containing the output of the completed orchestration.
-            </summary>
-            <remarks>
-            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
-            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-            complete within the specified timeout, then the HTTP response will be identical to that of the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
-            </remarks>
-            <param name="request">The HTTP request that triggered the current function.</param>
-            <param name="instanceId">The unique ID of the instance to check.</param>
-            <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
-            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
-            <summary>
-            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
-            or contains the payload containing the output of the completed orchestration.
-            </summary>
-            <remarks>
-            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
-            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
-            complete within the specified timeout, then the HTTP response will be identical to that of the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
-            </remarks>
-            <param name="request">The HTTP request that triggered the current function.</param>
-            <param name="instanceId">The unique ID of the instance to check.</param>
-            <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
-            <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
-            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.Object)">
-            <summary>
-            Starts a new execution of the specified orchestrator function.
-            </summary>
-            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-            orchestratation instance.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.StartNewAsync(System.String,System.String,System.Object)">
-            <summary>
-            Starts a new instance of the specified orchestrator function.
-            </summary>
-            <remarks>
-            If an orchestration instance with the specified ID already exists, the existing instance
-            will be silently replaced by this new instance.
-            </remarks>
-            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <param name="instanceId">The ID to use for the new orchestration instance.</param>
-            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-            orchestratation instance.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String)">
-            <summary>
-            Sends an event notification message to a waiting orchestration instance.
-            </summary>
-            <remarks>
-            <para>
-            In order to handle the event, the target orchestration instance must be waiting for an
-            event named <paramref name="eventName"/> using the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
-            </para>
-            </remarks>
-            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
-            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
-            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
-            <param name="eventName">The name of the event.</param>
-            <returns>A task that completes when the event notification message has been enqueued.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.Object)">
-            <summary>
-            Sends an event notification message to a waiting orchestration instance.
-            </summary>
-            <remarks>
-            <para>
-            In order to handle the event, the target orchestration instance must be waiting for an
-            event named <paramref name="eventName"/> using the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
-            </para>
-            </remarks>
-            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
-            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
-            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
-            <param name="eventName">The name of the event.</param>
-            <param name="eventData">The JSON-serializeable data associated with the event.</param>
-            <returns>A task that completes when the event notification message has been enqueued.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
-            <summary>
-            Sends an event notification message to a waiting orchestration instance.
-            </summary>
-            <remarks>
-            <para>
-            In order to handle the event, the target orchestration instance must be waiting for an
-            event named <paramref name="eventName"/> using the
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
-            </para><para>
-            If the specified instance is not found or not running, this operation will throw an exception.
-            </para>
-            </remarks>
-            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
-            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
-            <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
-            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
-            <param name="eventName">The name of the event.</param>
-            <param name="eventData">The JSON-serializeable data associated with the event.</param>
-            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
-            <returns>A task that completes when the event notification message has been enqueued.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.TerminateAsync(System.String,System.String)">
-            <summary>
-            Terminates a running orchestration instance.
-            </summary>
-            <remarks>
-            <para>
-            Terminating an orchestration instance has no effect on any in-flight activity function executions
-            or sub-orchestrations that were started by the current orchestration instance.
-            </para>
-            </remarks>
-            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
-            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
-            <param name="instanceId">The ID of the orchestration instance to terminate.</param>
-            <param name="reason">The reason for terminating the orchestration instance.</param>
-            <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.RewindAsync(System.String,System.String)">
-            <summary>
-            Rewinds the specified failed orchestration instance with a reason.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to rewind.</param>
-            <param name="reason">The reason for rewinding the orchestration instance.</param>
-            <returns>A task that completes when the rewind message is enqueued.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String)">
-            <summary>
-            Gets the status of the specified orchestration instance.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to query.</param>
-            <returns>Returns a task which completes when the status has been fetched.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean)">
-            <summary>
-            Gets the status of the specified orchestration instance.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to query.</param>
-            <param name="showHistory">Boolean marker for including execution history in the response.</param>
-            <returns>Returns a task which completes when the status has been fetched.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            Gets the status of the specified orchestration instance.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to query.</param>
-            <param name="showHistory">Boolean marker for including execution history in the response.</param>
-            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
-            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
-            <returns>Returns a task which completes when the status has been fetched.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.Threading.CancellationToken)">
-            <summary>
-            Gets all the status of the orchestration instances.
-            </summary>
-            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-            <returns>Returns orchestration status for all instances.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
-            <summary>
-            Gets the status of all orchestration instances that match the specified conditions.
-            </summary>
-            <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
-            <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
-            <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
-            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-            <returns>Returns orchestration status for all instances.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.PurgeInstanceHistoryAsync(System.String)">
-            <summary>
-            Purge the history for a concrete instance.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to purge.</param>
-            <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.PurgeHistoryResult"/>.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
-            <summary>
-            Purge the orchestration history for instances that match the conditions.
-            </summary>
-            <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
-            <param name="createdTimeTo">End creation time for querying instances for purging.</param>
-            <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-            <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.PurgeHistoryResult"/>.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
-            <summary>
-            Gets the status of all orchestration instances with paging that match the specified conditions.
-            </summary>
-            <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
-            <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
-            <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
-            <param name="pageSize">Number of records per one request.</param>
-            <param name="continuationToken">ContinuationToken of the pager.</param>
-            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-            <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
             <summary>
             Parameter data for orchestration bindings that can be used to schedule function-based activities.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CurrentUtcDateTime">
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#InstanceId">
             <inheritdoc />
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.IsReplaying">
+        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ParentInstanceId">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput">
@@ -994,10 +837,7 @@
             The parsed <c>JToken</c> representation of the orchestrator function input.
             </returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInput``1">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.NewGuid">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#GetInput``1">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)">
@@ -1009,123 +849,49 @@
             </remarks>
             <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#SetCustomStatus(System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityAsync``1(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
-            <summary>
-            Creates a durable timer that expires at a specified time.
-            </summary>
-            <remarks>
-            All durable timers created using this method must either expire or be cancelled
-            using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
-            </remarks>
-            <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
-            <param name="fireAt">The time at which the timer should expire.</param>
-            <param name="state">Any state to be preserved by the timer.</param>
-            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
-            <returns>A durable task that completes when the durable timer expires.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String,System.TimeSpan)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ContinueAsNew(System.Object)">
             <inheritdoc />
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync``1(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.ActorRef[])">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.DurableContextExtensions">
             <summary>
-            Abstract base class for <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>.
+            Defines convenient overloads for calling the context methods, for all the contexts.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.InstanceId">
-            <summary>
-            Gets the instance ID of the currently executing orchestration.
-            </summary>
-            <remarks>
-            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
-            </remarks>
-            <value>
-            The ID of the current orchestration instance.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ParentInstanceId">
-            <summary>
-            Gets the parent instance ID of the currently executing sub-orchestration.
-            </summary>
-            <remarks>
-            The parent instance ID is generated and fixed when the parent orchestrator function is scheduled. It can be either
-            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
-            </remarks>
-            <value>
-            The ID of the parent orchestration of the current sub-orchestration instance. The value will be available only in sub-orchestrations.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CurrentUtcDateTime">
-            <summary>
-            Gets the current date/time in a way that is safe for use by orchestrator functions.
-            </summary>
-            <remarks>
-            This date/time value is derived from the orchestration history. It always returns the same value
-            at specific points in the orchestrator function code, making it deterministic and safe for replay.
-            </remarks>
-            <value>The orchestration's current date/time in UTC.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.IsReplaying">
-            <summary>
-            Gets a value indicating whether the orchestrator function is currently replaying itself.
-            </summary>
-            <remarks>
-            This property is useful when there is logic that needs to run only when the orchestrator function
-            is *not* replaying. For example, certain types of application logging may become too noisy when duplicated
-            as part of orchestrator function replay. The orchestrator code could check to see whether the function is
-            being replayed and then issue the log statements when this value is <c>false</c>.
-            </remarks>
-            <value>
-            <c>true</c> if the orchestrator function is currently being replayed; otherwise <c>false</c>.
-            </value>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.GetInput``1">
-            <summary>
-            Gets the input of the current orchestrator function as a deserialized value.
-            </summary>
-            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
-            <returns>The deserialized input value.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.NewGuid">
-            <summary>
-            Creates a new GUID that is safe for replay within an orchestrator function.
-            </summary>
-            <remarks>
-            The default implementation of this method creates a name-based UUID using the algorithm from
-            RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
-            instance ID and an internally managed sequence number.
-            </remarks>
-            <returns>The new <see cref="T:System.Guid"/> value.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActivityAsync(Microsoft.Azure.WebJobs.IDeterministicExecutionContext,System.String,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution.
             </summary>
+            <param name="context">The context object.</param>
             <param name="functionName">The name of the activity function to call.</param>
             <param name="input">The JSON-serializeable input to pass to the activity function.</param>
             <returns>A durable task that completes when the called function completes or fails.</returns>
@@ -1139,10 +905,11 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActivityWithRetryAsync(Microsoft.Azure.WebJobs.IDeterministicExecutionContext,System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
             </summary>
+            <param name="context">The context object.</param>
             <param name="functionName">The name of the activity function to call.</param>
             <param name="retryOptions">The retry option for the activity function.</param>
             <param name="input">The JSON-serializeable input to pass to the activity function.</param>
@@ -1160,7 +927,323 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityAsync``1(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallSubOrchestratorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The sub-orchestrator function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallSubOrchestratorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,System.String,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallSubOrchestratorAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,System.Object)">
+            <summary>
+            Schedules an orchestration function named <paramref name="functionName"/> for execution.
+            </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+            <param name="context">The context object.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallSubOrchestratorWithRetryAsync(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="retryOptions">The retry option for the orchestrator function.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            The retry option object is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallSubOrchestratorWithRetryAsync(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="retryOptions">The retry option for the orchestrator function.</param>
+            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            The retry option object is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallSubOrchestratorWithRetryAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+            </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+            <param name="context">The context object.</param>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="retryOptions">The retry option for the orchestrator function.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            The retry option object is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CreateTimer(Microsoft.Azure.WebJobs.IInterleavingContext,System.DateTime,System.Threading.CancellationToken)">
+            <summary>
+            Creates a durable timer that expires at a specified time.
+            </summary>
+            <remarks>
+            All durable timers created using this method must either expire or be cancelled
+            using the <paramref name="cancelToken"/> before the orchestrator function completes.
+            Otherwise the underlying framework will keep the instance alive until the timer expires.
+            </remarks>
+            <param name="context">The context object.</param>
+            <param name="fireAt">The time at which the timer should expire.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+            <returns>A durable task that completes when the durable timer expires.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.WaitForExternalEvent(Microsoft.Azure.WebJobs.IInterleavingContext,System.String)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
+            </remarks>
+            <param name="context">The context object.</param>
+            <param name="name">The name of the event to wait for.</param>
+            <returns>A durable task that completes when the external event is received.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.WaitForExternalEvent(Microsoft.Azure.WebJobs.IInterleavingContext,System.String,System.TimeSpan)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
+            </remarks>
+            <param name="context">The context object.</param>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <returns>A durable task that completes when the external event is received.</returns>
+            <exception cref="T:System.TimeoutException">
+            The external event was not received before the timeout expired.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorRef,System.String)">
+            <summary>
+            Calls an operation on an actor and returns the result asynchronously.
+            </summary>
+            <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
+            <param name="context">The context object.</param>
+            <param name="actorReference">The target actor.</param>
+            <param name="operationName">The name of the operation.</param>
+            <returns>a task representing the result of the operation.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorRef,System.String)">
+            <summary>
+            Calls an operation on an actor and waits for it to complete.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="actorReference">The target actor.</param>
+            <param name="operationName">The name of the operation.</param>
+            <returns>a task representing the completion of the operation on the actor.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.Net.Http.HttpRequestMessage,System.String)">
+            <summary>
+            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+            or contains the payload containing the output of the completed orchestration.
+            </summary>
+            <remarks>
+            If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
+            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+            complete within this timeout, then the HTTP response will be identical to that of the
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
+            </remarks>
+            <param name="client">The client object.</param>
+            <param name="request">The HTTP request that triggered the current function.</param>
+            <param name="instanceId">The unique ID of the instance to check.</param>
+            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan)">
+            <summary>
+            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+            or contains the payload containing the output of the completed orchestration.
+            </summary>
+            <remarks>
+            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+            complete within the specified timeout, then the HTTP response will be identical to that of the
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
+            </remarks>
+            <param name="client">The client object.</param>
+            <param name="request">The HTTP request that triggered the current function.</param>
+            <param name="instanceId">The unique ID of the instance to check.</param>
+            <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.StartNewAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,System.Object)">
+            <summary>
+            Starts a new execution of the specified orchestrator function.
+            </summary>
+            <param name="client">The client object.</param>
+            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+            orchestratation instance.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.RaiseEventAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,System.String)">
+            <summary>
+            Sends an event notification message to a waiting orchestration instance.
+            </summary>
+            <remarks>
+            <para>
+            In order to handle the event, the target orchestration instance must be waiting for an
+            event named <paramref name="eventName"/> using the
+            <see cref="M:Microsoft.Azure.WebJobs.IInterleavingContext.WaitForExternalEvent``1(System.String)"/> API.
+            </para>
+            </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
+            <param name="client">The client object.</param>
+            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+            <param name="eventName">The name of the event.</param>
+            <returns>A task that completes when the event notification message has been enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.GetStatusAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String)">
+            <summary>
+            Gets the status of the specified orchestration instance.
+            </summary>
+            <param name="client">The client object.</param>
+            <param name="instanceId">The ID of the orchestration instance to query.</param>
+            <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.GetStatusAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,System.Boolean)">
+            <summary>
+            Gets the status of the specified orchestration instance.
+            </summary>
+            <param name="client">The client object.</param>
+            <param name="instanceId">The ID of the orchestration instance to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IDeterministicExecutionContext">
+            <summary>
+            Functionality available in all deterministic execution contexts, such as orchestrations or actor operations.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.CurrentUtcDateTime">
+            <summary>
+            Gets the current date/time in a way that is safe for use in orchestrations and actor operations.
+            </summary>
+            <remarks>
+            This date/time value is derived from the orchestration or actor history. It always returns the same value
+            at specific points in the orchestrator function code, making it deterministic and safe for replay.
+            </remarks>
+            <value>The orchestration or actor's current date/time in UTC.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.IsReplaying">
+            <summary>
+            Gets a value indicating whether the orchestration or operation is currently replaying itself.
+            </summary>
+            <remarks>
+            This property is useful when there is logic that needs to run only when *not* replaying. For example, certain types of application logging may become too noisy when duplicated
+            as part of replay. The application code could check to see whether the function is
+            being replayed and then issue the log statements when this value is <c>false</c>.
+            </remarks>
+            <value>
+            <c>true</c> if the orchestration or operation is currently being replayed; otherwise <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.IsLocked(System.Collections.Generic.IReadOnlyList{System.String}@)">
+            <summary>
+            Determines whether the current context is locked, and if so, what locks are currently owned.
+            </summary>
+            <param name="ownedLocks">the collection of owned locks.</param>
+            <remarks>
+            Note that the collection of owned locks can be empty even if the context is locked. This happens
+            if an orchestration calls a suborchestration without lending any locks.
+            </remarks>
+            <returns>true if the context already holds some locks.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.NewGuid">
+            <summary>
+            Creates a new GUID that is safe for replay within an orchestration or operation.
+            </summary>
+            <remarks>
+            The default implementation of this method creates a name-based UUID using the algorithm from
+            RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+            instance ID and an internally managed sequence number.
+            </remarks>
+            <returns>The new <see cref="T:System.Guid"/> value.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.CallActivityAsync``1(System.String,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution.
             </summary>
@@ -1178,7 +1261,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <summary>
             Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -1200,180 +1283,468 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.SignalActor(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
             <summary>
-            Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+            Signals an actor to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
             </summary>
+            <param name="actor">The target actor.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationContent">The content (input argument) of the operation.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.StartNewOrchestration(System.String,System.Object,System.String)">
+            <summary>
+            Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
+            Any result or exception is ignored (fire and forget).
+            </summary>
+            <typeparam name="TInput">The JSON-serializeable input type of the orchestrator function.</typeparam>
             <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <param name="input">the input to pass to the orchestrator function.</param>
+            <param name="instanceId">optionally, an instance id for the orchestration. By default, a random GUID is used.</param>
             <exception cref="T:System.ArgumentException">
             The specified function does not exist, is disabled, or is not an orchestrator function.
             </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The sub-orchestrator function failed with an unhandled exception.
-            </exception>
+            <returns>The instance id of the new orchestration.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync(System.String,System.String,System.Object)">
+        <member name="T:Microsoft.Azure.WebJobs.IDurableActivityContext">
             <summary>
-            Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+            Provides functionality available to durable activities.
             </summary>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.Object)">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActivityContext.InstanceId">
             <summary>
-            Schedules an orchestration function named <paramref name="functionName"/> for execution.
-            </summary>
-            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
-            <summary>
-            Schedules an orchestration function named <paramref name="functionName"/> for execution.
-            </summary>
-            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
-            <summary>
-            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-            </summary>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="retryOptions">The retry option for the orchestrator function.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentNullException">
-            The retry option object is null.
-            </exception>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
-            <summary>
-            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-            </summary>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="retryOptions">The retry option for the orchestrator function.</param>
-            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentNullException">
-            The retry option object is null.
-            </exception>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
-            <summary>
-            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-            </summary>
-            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="retryOptions">The retry option for the orchestrator function.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentNullException">
-            The retry option object is null.
-            </exception>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
-            <summary>
-            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
-            </summary>
-            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-            <param name="functionName">The name of the orchestrator function to call.</param>
-            <param name="retryOptions">The retry option for the orchestrator function.</param>
-            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
-            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-            <exception cref="T:System.ArgumentNullException">
-            The retry option object is null.
-            </exception>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-            <exception cref="T:System.InvalidOperationException">
-            The current thread is different than the thread which started the orchestrator execution.
-            </exception>
-            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
-            The activity function failed with an unhandled exception.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime,System.Threading.CancellationToken)">
-            <summary>
-            Creates a durable timer that expires at a specified time.
+            Gets the instance ID of the currently executing orchestration.
             </summary>
             <remarks>
-            All durable timers created using this method must either expire or be cancelled
-            using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
             </remarks>
-            <param name="fireAt">The time at which the timer should expire.</param>
-            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
-            <returns>A durable task that completes when the durable timer expires.</returns>
+            <value>
+            The ID of the current orchestration instance.
+            </value>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActivityContext.GetInput``1">
+            <summary>
+            Gets the input of the current activity function as a deserialized value.
+            </summary>
+            <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
+            <returns>The deserialized input value.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IDurableActorContext">
+            <summary>
+            Provides functionality for application code implementing an actor operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.ActorClass">
+            <summary>
+            Gets the class of the currently executing actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.Key">
+            <summary>
+            Gets the key of the currently executing actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.Self">
+            <summary>
+            Gets an actor reference for the currently executing actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.OperationName">
+            <summary>
+            Gets the name of the operation that was called.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.Logger">
+            <summary>
+            A logger for logging information about this actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.NewlyConstructed">
+            <summary>
+            Whether this actor is freshly constructed, i.e. did not exist prior to this operation being called.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetStateAs``1(Newtonsoft.Json.Formatting,Newtonsoft.Json.JsonSerializerSettings)">
+            <summary>
+            Gets a typed view of the state, by deserializing the JSON.
+            </summary>
+            <typeparam name="TState">the JSON-serializable type of the actor state.</typeparam>
+            <returns>a typed view that allows reading and updating.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetArgument``1">
+            <summary>
+            Gets the argument that was passed to this operation as a deserialized value.
+            </summary>
+            <typeparam name="TArgument">The JSON-serializable type used for the operation argument.</typeparam>
+            <returns>the value of the argument, or default(<typeparamref name="TArgument"/>) if none was given.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetArgument(System.Type)">
+            <summary>
+            Gets the argument that was passed to this operation as a deserialized value.
+            </summary>
+            <param name="argumentType">The JSON-serializable type used for the operation argument.</param>
+            <returns>the value of the argument, or default(<paramref name="argumentType"/>) if none was given.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return``1(``0)">
+            <summary>
+            Returns the given result to the caller of this operation. 
+            </summary>
+            <typeparam name="TResult">the type of the result.</typeparam>
+            <param name="result">the result to return.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return(System.Object,System.Type)">
+            <summary>
+            Returns the given result to the caller of this operation. 
+            </summary>
+            <param name="result">the result to return.</param>
+            <param name="resultType">optionally, the type of the result.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.DestructOnExit">
+            <summary>
+            Delete this actor after this operation completes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IStateView`1">
+            <summary>
+            A typed view of the current state of the actor.
+            </summary>
+            <typeparam name="TState">The JSON-serializable type used for this actor.</typeparam>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IStateView`1.Value">
+            <summary>
+            The current state of the actor.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IStateView">
+            <summary>
+            A view of the current state of the actor.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IStateView.WriteBack">
+            <summary>
+            Serializes the current state to JSON.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IDurableOrchestrationClient">
+            <summary>
+            Provides functionality available to durable orchestration clients.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.TaskHubName">
+            <summary>
+            Gets the name of the task hub configured on this client instance.
+            </summary>
+            <value>
+            The name of the task hub.
+            </value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
+            <summary>
+            Creates an HTTP response that is useful for checking the status of the specified instance.
+            </summary>
+            <remarks>
+            The payload of the returned <see cref="T:System.Net.Http.HttpResponseMessage"/> contains HTTP API URLs that can
+            be used to query the status of the orchestration, raise events to the orchestration, or
+            terminate the orchestration.
+            </remarks>
+            <param name="request">The HTTP request that triggered the current orchestration instance.</param>
+            <param name="instanceId">The ID of the orchestration instance to check.</param>
+            <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.CreateHttpManagementPayload(System.String)">
+            <summary>
+            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to check.</param>
+            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> class.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
+            <summary>
+            Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+            or contains the payload containing the output of the completed orchestration.
+            </summary>
+            <remarks>
+            If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+            contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+            complete within the specified timeout, then the HTTP response will be identical to that of the
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)"/> API.
+            </remarks>
+            <param name="request">The HTTP request that triggered the current function.</param>
+            <param name="instanceId">The unique ID of the instance to check.</param>
+            <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+            <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+            <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
+            <summary>
+            Starts a new instance of the specified orchestrator function.
+            </summary>
+            <remarks>
+            If an orchestration instance with the specified ID already exists, the existing instance
+            will be silently replaced by this new instance.
+            </remarks>
+            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+            <param name="instanceId">The ID to use for the new orchestration instance.</param>
+            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+            orchestratation instance.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)">
+            <summary>
+            Sends an event notification message to a waiting orchestration instance.
+            </summary>
+            <remarks>
+            <para>
+            In order to handle the event, the target orchestration instance must be waiting for an
+            event named <paramref name="eventName"/> using the
+            <see cref="M:Microsoft.Azure.WebJobs.IInterleavingContext.WaitForExternalEvent``1(System.String)"/> API.
+            </para>
+            </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
+            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+            <param name="eventName">The name of the event.</param>
+            <param name="eventData">The JSON-serializeable data associated with the event.</param>
+            <returns>A task that completes when the event notification message has been enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+            <summary>
+            Sends an event notification message to a waiting orchestration instance.
+            </summary>
+            <remarks>
+            <para>
+            In order to handle the event, the target orchestration instance must be waiting for an
+            event named <paramref name="eventName"/> using the
+            <see cref="M:Microsoft.Azure.WebJobs.IInterleavingContext.WaitForExternalEvent``1(System.String)"/> API.
+            </para><para>
+            If the specified instance is not found or not running, this operation will throw an exception.
+            </para>
+            </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
+            <param name="taskHubName">The TaskHubName of the orchestration that will handle the event.</param>
+            <param name="instanceId">The ID of the orchestration instance that will handle the event.</param>
+            <param name="eventName">The name of the event.</param>
+            <param name="eventData">The JSON-serializeable data associated with the event.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+            <returns>A task that completes when the event notification message has been enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.TerminateAsync(System.String,System.String)">
+            <summary>
+            Terminates a running orchestration instance.
+            </summary>
+            <remarks>
+            <para>
+            Terminating an orchestration instance has no effect on any in-flight activity function executions
+            or sub-orchestrations that were started by the current orchestration instance.
+            </para>
+            </remarks>
+            <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
+            <exception cref="T:System.InvalidOperationException">The orchestration instance with the provided instance id is not running.</exception>
+            <param name="instanceId">The ID of the orchestration instance to terminate.</param>
+            <param name="reason">The reason for terminating the orchestration instance.</param>
+            <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RewindAsync(System.String,System.String)">
+            <summary>
+            Rewinds the specified failed orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to rewind.</param>
+            <param name="reason">The reason for rewinding the orchestration instance.</param>
+            <returns>A task that completes when the rewind message is enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Gets the status of the specified orchestration instance.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
+            <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all the status of the orchestration instances.
+            </summary>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+            <returns>Returns orchestration status for all instances.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+            <summary>
+            Gets the status of all orchestration instances that match the specified conditions.
+            </summary>
+            <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+            <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+            <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+            <returns>Returns orchestration status for all instances.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.String)">
+            <summary>
+            Purge the history for a concrete instance.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to purge.</param>
+            <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.PurgeHistoryResult"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+            <summary>
+            Purge the orchestration history for instances that match the conditions.
+            </summary>
+            <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
+            <param name="createdTimeTo">End creation time for querying instances for purging.</param>
+            <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
+            <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.PurgeHistoryResult"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets the status of all orchestration instances with paging that match the specified conditions.
+            </summary>
+            <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
+            <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
+            <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
+            <param name="pageSize">Number of records per one request.</param>
+            <param name="continuationToken">ContinuationToken of the pager.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+            <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IDurableOrchestrationContext">
+            <summary>
+            Provides functionality available to orchestration code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableOrchestrationContext.InstanceId">
+            <summary>
+            Gets the instance ID of the currently executing orchestration.
+            </summary>
+            <remarks>
+            The instance ID is generated and fixed when the orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+            </remarks>
+            <value>
+            The ID of the current orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IDurableOrchestrationContext.ParentInstanceId">
+            <summary>
+            Gets the parent instance ID of the currently executing sub-orchestration.
+            </summary>
+            <remarks>
+            The parent instance ID is generated and fixed when the parent orchestrator function is scheduled. It can be either
+            auto-generated, in which case it is formatted as a GUID, or it can be user-specified with any format.
+            </remarks>
+            <value>
+            The ID of the parent orchestration of the current sub-orchestration instance. The value will be available only in sub-orchestrations.
+            </value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationContext.GetInput``1">
+            <summary>
+            Gets the input of the current orchestrator function as a deserialized value.
+            </summary>
+            <typeparam name="TInput">Any data contract type that matches the JSON input.</typeparam>
+            <returns>The deserialized input value.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationContext.ContinueAsNew(System.Object)">
+            <summary>
+            Restarts the orchestration by clearing its history.
+            </summary>
+            <remarks>
+            <para>Large orchestration histories can consume a lot of memory and cause delays in
+            instance load times. This method can be used to periodically truncate the stored
+            history of an orchestration instance.</para>
+            <para>Note that any unprocessed external events will be discarded when an orchestration
+            instance restarts itself using this method.</para>
+            </remarks>
+            <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationContext.SetCustomStatus(System.Object)">
+            <summary>
+            Sets the JSON-serializeable status of the current orchestrator function.
+            </summary>
+            <remarks>
+            The <paramref name="customStatusObject"/> value is serialized to JSON and will
+            be made available to the orchestration status query APIs. The serialized JSON
+            value must not exceed 16 KB of UTF-16 encoded text.
+            </remarks>
+            <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IInterleavingActorContext">
+            <summary>
+            Provides functionality available to actor operations running in interleaving mode.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IInterleavingContext">
+            <summary>
+            Provides functionality available to orchestration code and reentrant actor code.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync``1(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+            <summary>
+            Calls an operation on an actor, passing an argument, and returns the result asynchronously.
+            </summary>
+            <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
+            <param name="actorReference">The target actor.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationContent">The content (input argument) of the operation.</param>
+            <returns>a task representing the result of the operation.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorReference"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+            <summary>
+            Calls an operation on an actor, passing an argument, and waits for it to complete.
+            </summary>
+            <param name="actorReference">The target actor.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationContent">The content (input argument) of the operation.</param>
+            <returns>a task representing the completion of the operation on the actor.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorReference"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
+            <summary>
+            Schedules an orchestration function named <paramref name="functionName"/> for execution.
+            </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+            <summary>
+            Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+            </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+            <param name="functionName">The name of the orchestrator function to call.</param>
+            <param name="retryOptions">The retry option for the orchestrator function.</param>
+            <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+            <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+            <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            The retry option object is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            The current thread is different than the thread which started the orchestrator execution.
+            </exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.FunctionFailedException">
+            The activity function failed with an unhandled exception.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
             <summary>
             Creates a durable timer that expires at a specified time.
             </summary>
@@ -1388,51 +1759,25 @@
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
             <returns>A durable task that completes when the durable timer expires.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String)">
-            <summary>
-            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
-            </summary>
-            <remarks>
-            External clients can raise events to a waiting orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
-            </remarks>
-            <param name="name">The name of the event to wait for.</param>
-            <returns>A durable task that completes when the external event is received.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.WaitForExternalEvent``1(System.String)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
             </summary>
             <remarks>
             External clients can raise events to a waiting orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
             </remarks>
             <param name="name">The name of the event to wait for.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String,System.TimeSpan)">
-            <summary>
-            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
-            </summary>
-            <remarks>
-            External clients can raise events to a waiting orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
-            </remarks>
-            <param name="name">The name of the event to wait for.</param>
-            <param name="timeout">The duration after which to throw a TimeoutException.</param>
-            <returns>A durable task that completes when the external event is received.</returns>
-            <exception cref="T:System.TimeoutException">
-            The external event was not received before the timeout expired.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.WaitForExternalEvent``1(System.String,System.TimeSpan)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
             </summary>
             <remarks>
             External clients can raise events to a waiting orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
             </remarks>
             <param name="name">The name of the event to wait for.</param>
             <param name="timeout">The duration after which to throw a TimeoutException.</param>
@@ -1442,13 +1787,13 @@
             The external event was not received before the timeout expired.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
             </summary>
             <remarks>
             External clients can raise events to a waiting orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
             </remarks>
             <param name="name">The name of the event to wait for.</param>
             <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
@@ -1457,29 +1802,16 @@
             <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
             if the timeout expires.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.LockAsync(Microsoft.Azure.WebJobs.ActorRef[])">
             <summary>
-            Restarts the orchestration by clearing its history.
+            Acquires one or more locks, for the specified actors.
             </summary>
             <remarks>
-            <para>Large orchestration histories can consume a lot of memory and cause delays in
-            instance load times. This method can be used to periodically truncate the stored
-            history of an orchestration instance.</para>
-            <para>Note that any unprocessed external events will be discarded when an orchestration
-            instance restarts itself using this method.</para>
+            Locks can only be acquired if the current context does not hold any locks already.
             </remarks>
-            <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)">
-            <summary>
-            Sets the JSON-serializeable status of the current orchestrator function.
-            </summary>
-            <remarks>
-            The <paramref name="customStatusObject"/> value is serialized to JSON and will
-            be made available to the orchestration status query APIs. The serialized JSON
-            value must not exceed 16 KB of UTF-16 encoded text.
-            </remarks>
-            <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
+            <param name="actors">The actors whose locks should be acquired.</param>
+            <returns>An IDisposable that releases the lock when disposed.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks.</exception>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
@@ -1487,7 +1819,7 @@
             </summary>
             <remarks>
             An external client can fetch the status of an orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>.
+            <see cref="!:DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
             </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name">
@@ -1559,7 +1891,7 @@
             Gets the custom status payload (if any) that was set by the orchestrator function.
             </summary>
             <remarks>
-            Orchestrator functions can set a custom status using <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetCustomStatus(System.Object)"/>.
+            Orchestrator functions can set a custom status using <see cref="!:DurableOrchestrationContext.SetCustomStatus"/>.
             </remarks>
             <value>
             The custom status as either a <c>JToken</c> object or <c>null</c> if no custom status has been set.
@@ -1572,7 +1904,7 @@
             <remarks>
             The history log can be large and is therefore <c>null</c> by default.
             It is populated only when explicitly requested in the call to
-            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>.
+            <see cref="!:DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
             </remarks>
             <value>
             The output as a <c>JArray</c> object or <c>null</c>.
@@ -1737,22 +2069,6 @@
             The orchestration was scheduled but has not yet started.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute">
-            <summary>
-            Trigger attribute used for durable orchestrator functions.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Orchestration">
-            <summary>
-            Gets or sets the name of the orchestrator function.
-            </summary>
-            <remarks>
-            If not specified, the function name is used as the name of the orchestration.
-            </remarks>
-            <value>
-            The name of the orchestrator function or <c>null</c> to use the function name.
-            </value>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.PurgeHistoryResult">
             <summary>
             Class to hold statistics about this execution of purge history.
@@ -1872,6 +2188,51 @@
             Gets or sets the JSON-serializeable input data for the orchestrator function.
             </summary>
             <value>JSON-serializeable input value for the orchestrator function.</value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.ActivityTriggerAttribute">
+            <summary>
+            Trigger attribute used for durable activity functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Activity">
+            <summary>
+            Gets or sets the name of the activity function.
+            </summary>
+            <value>
+            The name of the activity function or <c>null</c> to use the function name.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.ActorTriggerAttribute">
+            <summary>
+            Trigger attribute used for durable actor functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorTriggerAttribute.ActorClassName">
+            <summary>
+            Gets or sets the name of the actor class.
+            </summary>
+            <remarks>
+            If not specified, the function name is used as the name of the actor class.
+            </remarks>
+            <value>
+            The name of the actor class or <c>null</c> to use the function name.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute">
+            <summary>
+            Trigger attribute used for durable orchestrator functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Orchestration">
+            <summary>
+            Gets or sets the name of the orchestrator function.
+            </summary>
+            <remarks>
+            If not specified, the function name is used as the name of the orchestration.
+            </remarks>
+            <value>
+            The name of the orchestrator function or <c>null</c> to use the function name.
+            </value>
         </member>
     </members>
 </doc>

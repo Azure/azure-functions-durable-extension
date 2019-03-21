@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -12,48 +14,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const char BigValueChar = '*';
 
-        public static string Hello([ActivityTrigger] DurableActivityContextBase ctx)
+        public static string Hello([ActivityTrigger] IDurableActivityContext ctx)
         {
             string input = ctx.GetInput<string>();
             return $"Hello, {input}!";
         }
 
-        public static object Echo([ActivityTrigger] DurableActivityContext ctx)
+        public static object Echo([ActivityTrigger] IDurableActivityContext ctx)
         {
             object obj = ctx.GetInput<object>();
             return obj;
         }
 
-        public static long Multiply([ActivityTrigger] DurableActivityContext ctx)
+        public static long Multiply([ActivityTrigger] IDurableActivityContext ctx)
         {
             (long a, long b) = ctx.GetInput<(long, long)>();
             return a * b;
         }
 
-        public static long Add([ActivityTrigger] DurableActivityContext ctx)
+        public static long Add([ActivityTrigger] IDurableActivityContext ctx)
         {
             (long a, long b) = ctx.GetInput<(long, long)>();
             return a + b;
         }
 
-        public static string[] GetFileList([ActivityTrigger] DurableActivityContext ctx)
+        public static string[] GetFileList([ActivityTrigger] IDurableActivityContext ctx)
         {
             string directory = ctx.GetInput<string>();
             string[] files = Directory.GetFiles(directory, "*", SearchOption.TopDirectoryOnly);
             return files;
         }
 
-        public static long GetFileSize([ActivityTrigger] DurableActivityContext ctx)
+        public static long GetFileSize([ActivityTrigger] IDurableActivityContext ctx)
         {
             string fileName = ctx.GetInput<string>();
             var info = new FileInfo(fileName);
             return info.Length;
         }
 
-        public static void ThrowActivity([ActivityTrigger] DurableActivityContext ctx)
+        public static void ThrowActivity([ActivityTrigger] IDurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
             throw new Exception(message);
+        }
+
+        public static Task<string> ReadStringFromTextFile([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            string fileName = ctx.GetInput<string>();
+            using (StreamReader streamReader = new StreamReader(fileName, Encoding.UTF8))
+            {
+                return streamReader.ReadToEndAsync();
+            }
+        }
+
+        public static Task WriteStringToTextFile([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            var input = ctx.GetInput<string[]>();
+            var fileName = input[0];
+            var content = input[1];
+            using (var fileStream = new FileStream(fileName, FileMode.OpenOrCreate))
+            {
+                using (var streamWriter = new StreamWriter(fileStream, Encoding.UTF8))
+                {
+                    return streamWriter.WriteAsync(content);
+                }
+            }
         }
 
         public static string BigReturnValue([ActivityTrigger] int stringLength)
@@ -93,14 +118,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static HttpManagementPayload GetAndReturnHttpManagementPayload(
-            [ActivityTrigger] DurableActivityContext ctx,
-            [OrchestrationClient] DurableOrchestrationClient client)
+            [ActivityTrigger] IDurableActivityContext ctx,
+            [OrchestrationClient] IDurableOrchestrationClient client)
         {
             HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(ctx.InstanceId);
             return httpManagementPayload;
         }
 
-        public static DurableOrchestrationStatus UpdateDurableOrchestrationStatus([ActivityTrigger] DurableActivityContext ctx)
+        public static DurableOrchestrationStatus UpdateDurableOrchestrationStatus([ActivityTrigger] IDurableActivityContext ctx)
         {
             DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
             durableOrchestrationStatus.RuntimeStatus = OrchestrationRuntimeStatus.Completed;
@@ -109,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return durableOrchestrationStatus;
         }
 
-        public static Guid NewGuid([ActivityTrigger] DurableActivityContext ctx)
+        public static Guid NewGuid([ActivityTrigger] IDurableActivityContext ctx)
         {
             return Guid.NewGuid();
         }

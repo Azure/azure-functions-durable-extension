@@ -18,19 +18,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Task orchestration implementation which delegates the orchestration implementation to a function.
     /// </summary>
-    internal class TaskOrchestrationShim : TaskOrchestration
+    internal class TaskOrchestrationShim : TaskCommonShim
     {
-        private readonly DurableTaskExtension config;
         private readonly DurableOrchestrationContext context;
 
-        private Func<Task> functionInvocationCallback;
-
-        public TaskOrchestrationShim(
-            DurableTaskExtension config,
-            DurableOrchestrationContext context)
+        public TaskOrchestrationShim(DurableTaskExtension config, string name)
+            : base(config)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.context = context ?? throw new ArgumentNullException(nameof(context));
+            this.context = new DurableOrchestrationContext(config, name);
         }
 
         private enum AsyncActionType
@@ -42,38 +37,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ContinueAsNew = 4,
             CreateTimer = 5,
             WaitForExternalEvent = 6,
+            CallActor = 7,
         }
 
-        internal DurableOrchestrationContext Context => this.context;
+        public override DurableCommonContext Context => context;
 
-        public void SetFunctionInvocationCallback(Func<Task> callback)
+        public override RegisteredFunctionInfo GetFunctionInfo()
         {
-            this.functionInvocationCallback = callback ?? throw new ArgumentNullException(nameof(callback));
+            FunctionName orchestratorFunction = new FunctionName(this.Context.FunctionName);
+            return this.Config.GetOrchestratorInfo(orchestratorFunction);
+        }
+
+        public override string GetStatus()
+        {
+            return this.context.GetSerializedCustomStatus();
+        }
+
+        public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
+        {
+            this.Config.TraceHelper.ExternalEventRaised(
+                this.Context.HubName,
+                this.Context.Name,
+                this.Context.InstanceId,
+                eventName,
+                this.Config.GetIntputOutputTrace(serializedEventData),
+                this.Context.IsReplaying);
+
+            this.Context.RaiseEvent(eventName, serializedEventData);
         }
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            if (this.functionInvocationCallback == null)
+            if (this.FunctionInvocationCallback == null)
             {
-                throw new InvalidOperationException($"The {nameof(this.functionInvocationCallback)} has not been assigned!");
+                throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
             }
 
-            this.context.SetInnerContext(innerContext);
-            this.context.SetInput(serializedInput);
+            this.context.InnerContext = innerContext;
+            this.context.RawInput = serializedInput;
 
-            this.config.TraceHelper.FunctionStarting(
+            this.Config.TraceHelper.FunctionStarting(
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                this.config.GetIntputOutputTrace(serializedInput),
+                this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
-            var orchestratorInfo = this.config.GetOrchestratorInfo(new FunctionName(this.context.Name));
+            var orchestratorInfo = this.Config.GetOrchestratorInfo(new FunctionName(this.context.Name));
 
             if (!this.context.IsReplaying)
             {
-                this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
+                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
@@ -83,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             object returnValue;
             try
             {
-                Task invokeTask = this.functionInvocationCallback();
+                Task invokeTask = this.FunctionInvocationCallback();
                 if (invokeTask is Task<object> resultTask)
                 {
                     // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
@@ -98,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (Exception e)
             {
                 string exceptionDetails = e.ToString();
-                this.config.TraceHelper.FunctionFailed(
+                this.Config.TraceHelper.FunctionFailed(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
@@ -108,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (!this.context.IsReplaying)
                 {
-                    this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                         this.context.HubName,
                         this.context.Name,
                         this.context.InstanceId,
@@ -151,17 +166,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string serializedOutput = this.context.GetSerializedOutput();
 
-            this.config.TraceHelper.FunctionCompleted(
+            this.Config.TraceHelper.FunctionCompleted(
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                this.config.GetIntputOutputTrace(serializedOutput),
+                this.Config.GetIntputOutputTrace(serializedOutput),
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
             if (!this.context.IsReplaying)
             {
-                this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
@@ -172,30 +187,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serializedOutput;
         }
 
-        public override string GetStatus()
-        {
-            return this.context.GetSerializedCustomStatus();
-        }
-
-        public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
-        {
-            this.config.TraceHelper.ExternalEventRaised(
-                this.context.HubName,
-                this.context.Name,
-                this.context.InstanceId,
-                eventName,
-                this.config.GetIntputOutputTrace(serializedEventData),
-                this.context.IsReplaying);
-
-            this.context.RaiseEvent(eventName, serializedEventData);
-        }
-
         private async Task HandleOutOfProcExecution(JObject executionResult)
         {
             var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(executionResult.ToString());
             if (execution.CustomStatus != null)
             {
-                this.context.SetCustomStatus(execution.CustomStatus);
+                ((IDurableOrchestrationContext)this.context).SetCustomStatus(execution.CustomStatus);
             }
 
             await this.ProcessAsyncActions(execution.Actions);
@@ -203,12 +200,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!string.IsNullOrEmpty(execution.Error))
             {
                 throw new OrchestrationFailureException(
-                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}");
+                    $"Orchestrator function '{this.Context.Name}' failed: {execution.Error}");
             }
 
             if (execution.IsDone)
             {
-                this.Context.SetOutput(execution.Output);
+                this.context.SetOutput(execution.Output);
             }
             else
             {
@@ -235,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     switch (action.ActionType)
                     {
                         case AsyncActionType.CallActivity:
-                            tasks.Add(this.context.CallActivityAsync(action.FunctionName, action.Input));
+                            tasks.Add(this.Context.CallActivityAsync(action.FunctionName, action.Input));
                             break;
                         case AsyncActionType.CreateTimer:
                             using (var cts = new CancellationTokenSource())
@@ -257,11 +254,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CallSubOrchestratorWithRetry:
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
+                        case AsyncActionType.CallActor:
+                            var actorRef = TaskActorShim.GetActorRefFromSchedulerId(action.InstanceId);
+                            tasks.Add(((IInterleavingContext)this.context).CallActorAsync(actorRef, action.ExternalEventName, action.Input));
+                            break;
                         case AsyncActionType.ContinueAsNew:
-                            this.context.ContinueAsNew(action.Input);
+                            ((IDurableOrchestrationContext)this.context).ContinueAsNew(action.Input);
                             break;
                         case AsyncActionType.WaitForExternalEvent:
-                            tasks.Add(this.context.WaitForExternalEvent<object>(action.ExternalEventName));
+                            tasks.Add(this.Context.WaitForExternalEvent<object>(action.ExternalEventName));
                             break;
                         default:
                             break;

@@ -14,13 +14,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class OrchestrationTriggerAttributeBindingProvider : ITriggerBindingProvider
+    internal class ActorTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
-        public OrchestrationTriggerAttributeBindingProvider(
+        public ActorTriggerAttributeBindingProvider(
             DurableTaskExtension config,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
@@ -38,75 +38,73 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ParameterInfo parameter = context.Parameter;
-            OrchestrationTriggerAttribute trigger = parameter.GetCustomAttribute<OrchestrationTriggerAttribute>(inherit: false);
+            ActorTriggerAttribute trigger = parameter.GetCustomAttribute<ActorTriggerAttribute>(inherit: false);
             if (trigger == null)
             {
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
-            // Priority for getting the name is [OrchestrationTrigger], [FunctionName], method name
-            string name = trigger.Orchestration;
+            // Priority for getting the name is [ActorTrigger], [FunctionName], method name
+            string name = trigger.ActorClassName;
             if (string.IsNullOrEmpty(name))
             {
                 MemberInfo method = context.Parameter.Member;
                 name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
             }
 
-            // The orchestration name defaults to the method name.
-            var orchestratorName = new FunctionName(name);
-            this.config.RegisterOrchestrator(orchestratorName, null);
-            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
+            // The actor class name defaults to the method name.
+            var actorClassName = new FunctionName(name);
+            this.config.RegisterActor(actorClassName, null);
+            var binding = new ActorTriggerBinding(this.config, parameter, actorClassName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
-        private class OrchestrationTriggerBinding : ITriggerBinding
+        private class ActorTriggerBinding : ITriggerBinding
         {
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
-            private readonly FunctionName orchestratorName;
+            private readonly FunctionName actorClassName;
 
-            public OrchestrationTriggerBinding(
+            public ActorTriggerBinding(
                 DurableTaskExtension config,
                 ParameterInfo parameterInfo,
-                FunctionName orchestratorName)
+                FunctionName actorClassName)
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
-                this.orchestratorName = orchestratorName;
+                this.actorClassName = actorClassName;
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(IDurableOrchestrationContext);
+            public Type TriggerValueType => typeof(IDurableActorContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract { get; }
 
             private static IReadOnlyDictionary<string, Type> GetBindingDataContract(ParameterInfo parameterInfo)
             {
-                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
-                {
-                    // This binding supports return values of any type
-                    { "$return", typeof(object).MakeByRefType() },
-                };
+                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
 
                 // allow binding to the parameter name
                 contract[parameterInfo.Name] = parameterInfo.ParameterType;
+
+                // do not allow any return types (other than void)
 
                 return contract;
             }
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                var orchestrationContext = (DurableOrchestrationContext)value;
+                var actorContext = (DurableActorContext)value;
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object convertedValue = null;
-                if (destinationType == typeof(IDurableOrchestrationContext))
+                if (destinationType == typeof(IDurableActorContext))
                 {
-                    convertedValue = orchestrationContext;
+                    convertedValue = actorContext;
                 }
                 else if (destinationType == typeof(string))
                 {
-                    convertedValue = OrchestrationContextToString(orchestrationContext);
+                    convertedValue = ActorContextToString(actorContext);
                 }
 
                 var inputValueProvider = new ObjectValueProvider(
@@ -116,8 +114,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                 bindingData[this.parameterInfo.Name] = convertedValue;
 
-                // We don't specify any return value binding because we process the return value
-                // earlier in the pipeline via the InvokeHandler extensibility.
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
                 return Task.FromResult<ITriggerData>(triggerData);
             }
@@ -136,32 +132,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 // The current assumption is that in-proc (.NET) apps always use
-                // DurableOrchestrationContextBase or some derivative. Non-.NET apps
+                // IActorContext or some derivative. Non-.NET apps
                 // which cannot use these types are therefore assumed to be "out-of-proc".
                 // We may need to revisit this assumption when Functions v2 adds support
                 // for "out-of-proc" .NET.
-                var isOutOfProc = !typeof(IDurableOrchestrationContext).IsAssignableFrom(this.parameterInfo.ParameterType);
-                this.config.RegisterOrchestrator(this.orchestratorName, new RegisteredFunctionInfo(context.Executor, isOutOfProc));
+                var isOutOfProc = !typeof(IDurableActorContext).IsAssignableFrom(this.parameterInfo.ParameterType);
+                this.config.RegisterActor(this.actorClassName, new RegisteredFunctionInfo(context.Executor, isOutOfProc));
 
                 var listener = new DurableTaskListener(
                     this.config,
-                    this.orchestratorName,
+                    this.actorClassName,
                     context.Executor,
-                    FunctionType.Orchestrator);
+                    FunctionType.Actor);
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static string OrchestrationContextToString(DurableOrchestrationContext arg)
+            private static string ActorContextToString(DurableActorContext arg)
             {
                 var history = JArray.FromObject(arg.History);
-                var input = arg.GetInputAsJson();
 
+                // TODO figure out what exactly is needed here
                 var contextObject = new JObject(
                     new JProperty("history", history),
-                    new JProperty("input", input),
-                    new JProperty("instanceId", arg.InstanceId),
-                    new JProperty("isReplaying", arg.IsReplaying),
-                    new JProperty("parentInstanceId", arg.ParentInstanceId));
+                    new JProperty("actor", ((IDurableActorContext)arg).Self),
+                    new JProperty("isReplaying", arg.IsReplaying));
+
                 return contextObject.ToString();
             }
         }
