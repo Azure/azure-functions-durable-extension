@@ -262,21 +262,21 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc/>
-        Task<TResult> IInterleavingContext.CallActorAsync<TResult>(ActorRef actorReference, string operationName, object operationContent)
+        Task<TResult> IInterleavingContext.CallActorAsync<TResult>(ActorId actorId, string operationName, object operationContent)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<TResult>(actorReference.ActorClass, FunctionType.Actor, false, TaskActorShim.GetSchedulerIdFromActorRef(actorReference), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<TResult>(actorId.ActorClass, FunctionType.Actor, false, TaskActorShim.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
         }
 
         /// <inheritdoc/>
-        Task IInterleavingContext.CallActorAsync(ActorRef actorReference, string operationName, object operationContent)
+        Task IInterleavingContext.CallActorAsync(ActorId actorId, string operationName, object operationContent)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<object>(actorReference.ActorClass, FunctionType.Actor, false, TaskActorShim.GetSchedulerIdFromActorRef(actorReference), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<object>(actorId.ActorClass, FunctionType.Actor, false, TaskActorShim.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
         }
 
         ///<inheritdoc/>
-        Task<IDisposable> IInterleavingContext.LockAsync(params ActorRef[] actors)
+        Task<IDisposable> IInterleavingContext.LockAsync(params ActorId[] actors)
         {
             this.ThrowIfInvalidAccess();
             throw new NotImplementedException(); // TODO

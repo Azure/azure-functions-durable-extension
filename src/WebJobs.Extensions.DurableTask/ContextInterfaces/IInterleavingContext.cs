@@ -18,22 +18,22 @@ namespace Microsoft.Azure.WebJobs
         /// Calls an operation on an actor, passing an argument, and returns the result asynchronously.
         /// </summary>
         /// <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
-        /// <param name="actorReference">The target actor.</param>
+        /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationContent">The content (input argument) of the operation.</param>
         /// <returns>a task representing the result of the operation.</returns>
-        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorReference"/>.</exception>
-        Task<TResult> CallActorAsync<TResult>(ActorRef actorReference, string operationName, object operationContent);
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+        Task<TResult> CallActorAsync<TResult>(ActorId actorId, string operationName, object operationContent);
 
         /// <summary>
         /// Calls an operation on an actor, passing an argument, and waits for it to complete.
         /// </summary>
-        /// <param name="actorReference">The target actor.</param>
+        /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationContent">The content (input argument) of the operation.</param>
         /// <returns>a task representing the completion of the operation on the actor.</returns>
-        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorReference"/>.</exception>
-        Task CallActorAsync(ActorRef actorReference, string operationName, object operationContent);
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+        Task CallActorAsync(ActorId actorId, string operationName, object operationContent);
 
         /// <summary>
         /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
@@ -144,6 +144,6 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="actors">The actors whose locks should be acquired.</param>
         /// <returns>An IDisposable that releases the lock when disposed.</returns>
         /// <exception cref="LockingRulesViolationException">if the context already holds some locks.</exception>
-        Task<IDisposable> LockAsync(params ActorRef[] actors);
+        Task<IDisposable> LockAsync(params ActorId[] actors);
     }
 }

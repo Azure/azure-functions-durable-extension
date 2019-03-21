@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets an actor reference for the currently executing actor.
         /// </summary>
-        ActorRef Self { get; }
+        ActorId Self { get; }
 
         /// <summary>
         /// Gets the name of the operation that was called.

@@ -259,24 +259,24 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
         /// <param name="context">The context object.</param>
-        /// <param name="actorReference">The target actor.</param>
+        /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <returns>a task representing the result of the operation.</returns>
-        public static Task<TResult> CallActorAsync<TResult>(this IInterleavingContext context, ActorRef actorReference, string operationName)
+        public static Task<TResult> CallActorAsync<TResult>(this IInterleavingContext context, ActorId actorId, string operationName)
         {
-            return context.CallActorAsync<TResult>(actorReference, operationName, null);
+            return context.CallActorAsync<TResult>(actorId, operationName, null);
         }
 
         /// <summary>
         /// Calls an operation on an actor and waits for it to complete.
         /// </summary>
         /// <param name="context">The context object.</param>
-        /// <param name="actorReference">The target actor.</param>
+        /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <returns>a task representing the completion of the operation on the actor.</returns>
-        public static Task CallActorAsync(this IInterleavingContext context, ActorRef actorReference, string operationName)
+        public static Task CallActorAsync(this IInterleavingContext context, ActorId actorId, string operationName)
         {
-            return context.CallActorAsync<object>(actorReference, operationName, null);
+            return context.CallActorAsync<object>(actorId, operationName, null);
         }
 
         /// <summary>

@@ -39,27 +39,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             : base(config)
         {
             this.SchedulerId = schedulerId;
-            this.ActorRef = GetActorRefFromSchedulerId(schedulerId);
-            this.context = new DurableActorContext(config, this.ActorRef);
+            this.ActorId = GetActorIdFromSchedulerId(schedulerId);
+            this.context = new DurableActorContext(config, this.ActorId);
         }
 
         public override DurableCommonContext Context => context;
 
         public string SchedulerId { get; private set; }
 
-        public ActorRef ActorRef { get; private set; }
+        public ActorId ActorId { get; private set; }
 
-        public static string GetSchedulerIdFromActorRef(ActorRef actor)
+        public static string GetSchedulerIdFromActorId(ActorId actor)
         {
             return $"@{@actor.ActorClass}@{actor.ActorKey}";
         }
 
-        public static ActorRef GetActorRefFromSchedulerId(string schedulerId)
+        public static ActorId GetActorIdFromSchedulerId(string schedulerId)
         {
             var pos = schedulerId.IndexOf('@', 1);
             var actorClass = schedulerId.Substring(1, pos - 1);
             var actorKey = schedulerId.Substring(pos + 1);
-            return new ActorRef(actorClass, actorKey);
+            return new ActorId(actorClass, actorKey);
         }
 
         public override RegisteredFunctionInfo GetFunctionInfo()
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (Exception e)
             {
                 // exception must be sent with response back to caller
-                this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.ActorRef);
+                this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.ActorId);
 
                 string exceptionDetails = e.ToString();
 

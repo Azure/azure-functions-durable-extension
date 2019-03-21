@@ -10,16 +10,16 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// A reference to an actor, used to identify actor instances.
+    /// A unique identifier for an actor, consisting of actor class and actor key.
     /// </summary>
-    public struct ActorRef : IEquatable<ActorRef>, IComparable
+    public struct ActorId : IEquatable<ActorId>, IComparable
     {
         /// <summary>
-        /// Create an actor reference for an actor.
+        /// Create an actor id for an actor.
         /// </summary>
         /// <param name="actorClass">the name of the actor class.</param>
         /// <param name="actorKey">the actor key.</param>
-        public ActorRef(string actorClass, string actorKey)
+        public ActorId(string actorClass, string actorKey)
         {
             if (string.IsNullOrEmpty(actorClass))
             {
@@ -51,11 +51,11 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            return (obj is ActorRef other) && this.Equals(other);
+            return (obj is ActorId other) && this.Equals(other);
         }
 
         /// <inheritdoc/>
-        public bool Equals(ActorRef other)
+        public bool Equals(ActorId other)
         {
             return (this.ActorClass, this.ActorKey).Equals((other.ActorClass, other.ActorKey));
         }
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc/>
         public int CompareTo(object obj)
         {
-            var other = (ActorRef)obj;
+            var other = (ActorId)obj;
             return ((IComparable)(this.ActorKey, this.ActorClass))
                       .CompareTo((other.ActorKey, other.ActorClass));
         }

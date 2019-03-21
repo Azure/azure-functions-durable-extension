@@ -499,7 +499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // construct actor reference from actor name and a (deterministic) newguid key
-            var actor = new ActorRef("StringStore2", ctx.NewGuid().ToString());
+            var actor = new ActorId("StringStore2", ctx.NewGuid().ToString());
 
             // signal and call (both of these will be delivered close together)
             ctx.SignalActor(actor, "set", "333");
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> StringStoreWithCreateDelete([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // construct actor reference from actor name and a (deterministic) new guid key
-            var actor = new ActorRef("StringStore2", ctx.NewGuid().ToString());
+            var actor = new ActorId("StringStore2", ctx.NewGuid().ToString());
             string result;
 
             // does not exist, so get should throw
@@ -587,8 +587,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task UpdateTwoCounters([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var actor1 = new ActorRef("CounterActor", "1"); // construct actor reference from actor class and actor key
-            var actor2 = new ActorRef("CounterActor", "2"); // construct actor reference from actor class and actor key
+            var actor1 = new ActorId("CounterActor", "1"); // construct actor reference from actor class and actor key
+            var actor2 = new ActorId("CounterActor", "2"); // construct actor reference from actor class and actor key
 
             using (await ctx.LockAsync(actor1, actor2))
             {
@@ -600,7 +600,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task SignalAndCallChatRoom([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var actor = new ActorRef("ChatRoom", "myChat"); // construct actor reference from actor class and actor key
+            var actor = new ActorId("ChatRoom", "myChat"); // construct actor reference from actor class and actor key
 
             ctx.SignalActor(actor, "Post", "Hello World");
 

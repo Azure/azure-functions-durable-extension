@@ -124,10 +124,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        void IDeterministicExecutionContext.SignalActor(ActorRef actor, string operationName, object operationContent)
+        void IDeterministicExecutionContext.SignalActor(ActorId actor, string operationName, object operationContent)
         {
             this.ThrowIfInvalidAccess();
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(actor.ActorClass, FunctionType.Actor, true, TaskActorShim.GetSchedulerIdFromActorRef(actor), operationName, null, operationContent);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(actor.ActorClass, FunctionType.Actor, true, TaskActorShim.GetSchedulerIdFromActorId(actor), operationName, null, operationContent);
             var ignoredValue = alreadyCompletedTask.Result; // just so we see exceptions during testing
         }
 

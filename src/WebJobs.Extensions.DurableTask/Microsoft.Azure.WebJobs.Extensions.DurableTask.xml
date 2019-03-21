@@ -4,41 +4,41 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
-        <member name="T:Microsoft.Azure.WebJobs.ActorRef">
+        <member name="T:Microsoft.Azure.WebJobs.ActorId">
             <summary>
-            A reference to an actor, used to identify actor instances.
+            A unique identifier for an actor, consisting of actor class and actor key.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorRef.#ctor(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.ActorId.#ctor(System.String,System.String)">
             <summary>
-            Create an actor reference for an actor.
+            Create an actor id for an actor.
             </summary>
             <param name="actorClass">the name of the actor class.</param>
             <param name="actorKey">the actor key.</param>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorRef.ActorClass">
+        <member name="P:Microsoft.Azure.WebJobs.ActorId.ActorClass">
             <summary>
             The name of the actor class.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorRef.ActorKey">
+        <member name="P:Microsoft.Azure.WebJobs.ActorId.ActorKey">
             <summary>
             The actor key.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorRef.ToString">
+        <member name="M:Microsoft.Azure.WebJobs.ActorId.ToString">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorRef.Equals(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.ActorId.Equals(System.Object)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorRef.Equals(Microsoft.Azure.WebJobs.ActorRef)">
+        <member name="M:Microsoft.Azure.WebJobs.ActorId.Equals(Microsoft.Azure.WebJobs.ActorId)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorRef.GetHashCode">
+        <member name="M:Microsoft.Azure.WebJobs.ActorId.GetHashCode">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorRef.CompareTo(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.ActorId.CompareTo(System.Object)">
             <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">
@@ -100,7 +100,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#NewGuid">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#SignalActor(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#StartNewOrchestration(System.String,System.Object,System.String)">
@@ -873,13 +873,13 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ContinueAsNew(System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync``1(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.ActorRef[])">
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.ActorId[])">
             <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableContextExtensions">
@@ -1093,22 +1093,22 @@
             The external event was not received before the timeout expired.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorRef,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.String)">
             <summary>
             Calls an operation on an actor and returns the result asynchronously.
             </summary>
             <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
             <param name="context">The context object.</param>
-            <param name="actorReference">The target actor.</param>
+            <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <returns>a task representing the result of the operation.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorRef,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.String)">
             <summary>
             Calls an operation on an actor and waits for it to complete.
             </summary>
             <param name="context">The context object.</param>
-            <param name="actorReference">The target actor.</param>
+            <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <returns>a task representing the completion of the operation on the actor.</returns>
         </member>
@@ -1283,7 +1283,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.SignalActor(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
             <summary>
             Signals an actor to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
             </summary>
@@ -1681,26 +1681,26 @@
             Provides functionality available to orchestration code and reentrant actor code.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync``1(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
             <summary>
             Calls an operation on an actor, passing an argument, and returns the result asynchronously.
             </summary>
             <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
-            <param name="actorReference">The target actor.</param>
+            <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <param name="operationContent">The content (input argument) of the operation.</param>
             <returns>a task representing the result of the operation.</returns>
-            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorReference"/>.</exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync(Microsoft.Azure.WebJobs.ActorRef,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
             <summary>
             Calls an operation on an actor, passing an argument, and waits for it to complete.
             </summary>
-            <param name="actorReference">The target actor.</param>
+            <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <param name="operationContent">The content (input argument) of the operation.</param>
             <returns>a task representing the completion of the operation on the actor.</returns>
-            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorReference"/>.</exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
             <summary>
@@ -1802,7 +1802,7 @@
             <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
             if the timeout expires.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.LockAsync(Microsoft.Azure.WebJobs.ActorRef[])">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.LockAsync(Microsoft.Azure.WebJobs.ActorId[])">
             <summary>
             Acquires one or more locks, for the specified actors.
             </summary>

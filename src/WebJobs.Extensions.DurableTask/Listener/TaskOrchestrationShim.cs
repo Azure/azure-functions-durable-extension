@@ -255,8 +255,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
                         case AsyncActionType.CallActor:
-                            var actorRef = TaskActorShim.GetActorRefFromSchedulerId(action.InstanceId);
-                            tasks.Add(((IInterleavingContext)this.context).CallActorAsync(actorRef, action.ExternalEventName, action.Input));
+                            var actorId = TaskActorShim.GetActorIdFromSchedulerId(action.InstanceId);
+                            tasks.Add(((IInterleavingContext)this.context).CallActorAsync(actorId, action.ExternalEventName, action.Input));
                             break;
                         case AsyncActionType.ContinueAsNew:
                             ((IDurableOrchestrationContext)this.context).ContinueAsNew(action.Input);

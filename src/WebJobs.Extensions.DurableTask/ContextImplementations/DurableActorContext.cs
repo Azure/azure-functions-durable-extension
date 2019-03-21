@@ -16,9 +16,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class DurableActorContext : DurableCommonContext, IDurableActorContext
     {
-        private readonly ActorRef self;
+        private readonly ActorId self;
 
-        public DurableActorContext(DurableTaskExtension config, ActorRef actor)
+        public DurableActorContext(DurableTaskExtension config, ActorId actor)
          : base(config, actor.ActorClass)
         {
             this.self = actor;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         string IDurableActorContext.Key => this.self.ActorKey;
 
-        ActorRef IDurableActorContext.Self => this.self;
+        ActorId IDurableActorContext.Self => this.self;
 
         string IDurableActorContext.OperationName
         {

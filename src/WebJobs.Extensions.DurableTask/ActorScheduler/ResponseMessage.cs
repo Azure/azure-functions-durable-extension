@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, ActorRef actor)
+        public void SetExceptionResult(Exception exception, string operation, ActorId actor)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 

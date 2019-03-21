@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="actor">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationContent">The content (input argument) of the operation.</param>
-        void SignalActor(ActorRef actor, string operationName, object operationContent = null);
+        void SignalActor(ActorId actor, string operationName, object operationContent = null);
 
         /// <summary>
         /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
