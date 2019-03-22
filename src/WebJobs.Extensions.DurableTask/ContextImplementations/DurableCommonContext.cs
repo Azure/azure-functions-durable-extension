@@ -190,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case FunctionType.Activity:
                     System.Diagnostics.Debug.Assert(instanceId == null, "The instanceId parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
-                    System.Diagnostics.Debug.Assert(!oneWay, "The operation parameter should not be used for activity functions.");
+                    System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
                     if (retryOptions == null)
                     {
                         callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);

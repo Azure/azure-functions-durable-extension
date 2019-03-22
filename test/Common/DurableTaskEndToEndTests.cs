@@ -2288,7 +2288,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "start", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(3000), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("start", status?.Input);
@@ -2320,7 +2320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "start", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("start", status?.Input);
