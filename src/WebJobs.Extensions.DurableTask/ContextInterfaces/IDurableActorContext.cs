@@ -53,18 +53,18 @@ namespace Microsoft.Azure.WebJobs
         IStateView<TState> GetStateAs<TState>(Formatting formatting = Formatting.Indented, JsonSerializerSettings settings = null);
 
         /// <summary>
-        /// Gets the argument that was passed to this operation as a deserialized value.
+        /// Gets the content that was passed to this operation as a deserialized value.
         /// </summary>
-        /// <typeparam name="TArgument">The JSON-serializable type used for the operation argument.</typeparam>
-        /// <returns>the value of the argument, or default(<typeparamref name="TArgument"/>) if none was given.</returns>
-        TArgument GetArgument<TArgument>();
+        /// <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
+        /// <returns>the operation content, or default(<typeparamref name="T"/>) if none.</returns>
+        T GetOperationContent<T>();
 
         /// <summary>
-        /// Gets the argument that was passed to this operation as a deserialized value.
+        /// Gets the content that was passed to this operation as a deserialized value.
         /// </summary>
-        /// <param name="argumentType">The JSON-serializable type used for the operation argument.</param>
-        /// <returns>the value of the argument, or default(<paramref name="argumentType"/>) if none was given.</returns>
-        object GetArgument(Type argumentType);
+        /// <param name="contentType">The JSON-serializable type used for the operation content.</param>
+        /// <returns>the operation content, or default(<paramref name="contentType"/>) if none.</returns>
+        object GetOperationContent(Type contentType);
 
         /// <summary>
         /// Returns the given result to the caller of this operation. 

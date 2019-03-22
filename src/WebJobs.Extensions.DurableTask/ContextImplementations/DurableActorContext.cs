@@ -66,16 +66,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DestructOnExit = true;
         }
 
-        TArgument IDurableActorContext.GetArgument<TArgument>()
+        TArgument IDurableActorContext.GetOperationContent<TArgument>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetArgument<TArgument>();
+            return this.CurrentOperation.GetContent<TArgument>();
         }
 
-        object IDurableActorContext.GetArgument(Type argumentType)
+        object IDurableActorContext.GetOperationContent(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetArgument(argumentType);
+            return this.CurrentOperation.GetContent(argumentType);
         }
 
         IStateView<TState> IDurableActorContext.GetStateAs<TState>(Formatting formatting, JsonSerializerSettings settings)

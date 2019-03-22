@@ -1289,7 +1289,7 @@
             </summary>
             <param name="actor">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content (input argument) of the operation.</param>
+            <param name="operationContent">The content for the operation.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.StartNewOrchestration(System.String,System.Object,System.String)">
             <summary>
@@ -1371,19 +1371,19 @@
             <typeparam name="TState">the JSON-serializable type of the actor state.</typeparam>
             <returns>a typed view that allows reading and updating.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetArgument``1">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent``1">
             <summary>
-            Gets the argument that was passed to this operation as a deserialized value.
+            Gets the content that was passed to this operation as a deserialized value.
             </summary>
-            <typeparam name="TArgument">The JSON-serializable type used for the operation argument.</typeparam>
-            <returns>the value of the argument, or default(<typeparamref name="TArgument"/>) if none was given.</returns>
+            <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
+            <returns>the operation content, or default(<typeparamref name="T"/>) if none.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetArgument(System.Type)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent(System.Type)">
             <summary>
-            Gets the argument that was passed to this operation as a deserialized value.
+            Gets the content that was passed to this operation as a deserialized value.
             </summary>
-            <param name="argumentType">The JSON-serializable type used for the operation argument.</param>
-            <returns>the value of the argument, or default(<paramref name="argumentType"/>) if none was given.</returns>
+            <param name="contentType">The JSON-serializable type used for the operation content.</param>
+            <returns>the operation content, or default(<paramref name="contentType"/>) if none.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return``1(``0)">
             <summary>
@@ -1698,7 +1698,7 @@
             </summary>
             <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content (input argument) of the operation.</param>
+            <param name="operationContent">The content for the operation.</param>
             <returns>a task representing the completion of the operation on the actor.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         </member>

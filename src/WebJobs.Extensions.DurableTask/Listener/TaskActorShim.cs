@@ -252,7 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     this.context.HubName,
                                     this.context.Name,
                                     this.context.InstanceId,
-                                    this.Config.GetIntputOutputTrace(request.Argument),
+                                    this.Config.GetIntputOutputTrace(request.Content),
                                     FunctionType.Actor,
                                     this.context.IsReplaying);
             try

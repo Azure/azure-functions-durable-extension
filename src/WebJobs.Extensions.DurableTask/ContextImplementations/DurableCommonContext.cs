@@ -245,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         IsSignal = oneWay,
                         Operation = operation,
                     };
-                    request.SetArgument(input);
+                    request.SetContent(input);
                     var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
                     this.InnerContext.SendEvent(target, "op", jrequest);
 

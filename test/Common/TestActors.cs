@@ -15,8 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         //-------------- a very simple actor that stores a string -----------------
         // it offers two operations:
-        // "set" (takes a string argument, assigns it to the current state, does not return anything)
-        // "get" (no argument, returns a string containing the current state)
+        // "set" (takes a string, assigns it to the current state, does not return anything)
+        // "get" (returns a string containing the current state)
 
         public static void StringStoreActor([ActorTrigger(ActorClassName = "StringStore")] IDurableActorContext context)
         {
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (context.OperationName)
             {
                 case "set":
-                    state.Value = context.GetArgument<string>();
+                    state.Value = context.GetOperationContent<string>();
                     break;
 
                 case "get":
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "set":
-                    state.Value = context.GetArgument<string>();
+                    state.Value = context.GetOperationContent<string>();
                     break;
 
                 case "get":
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "add":
-                    state.Value += context.GetArgument<int>();
+                    state.Value += context.GetOperationContent<int>();
                     break;
 
                 case "read":
@@ -110,21 +110,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 case "set":
                     {
-                        var (name, number) = context.GetArgument<(int, int)>();
+                        var (name, number) = context.GetOperationContent<(int, int)>();
                         state.Value[name] = number;
                         break;
                     }
 
                 case "remove":
                     {
-                        var name = context.GetArgument<string>();
+                        var name = context.GetOperationContent<string>();
                         state.Value.Remove(name);
                         break;
                     }
 
                 case "lookup":
                     {
-                        var name = context.GetArgument<string>();
+                        var name = context.GetOperationContent<string>();
                         context.Return(state.Value[name]);
                         break;
                     }
@@ -156,21 +156,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 case "set":
                     {
-                        var (name, number) = context.GetArgument<(string, decimal)>();
+                        var (name, number) = context.GetOperationContent<(string, decimal)>();
                         state.Value[name] = number;
                         break;
                     }
 
                 case "remove":
                     {
-                        var name = context.GetArgument<string>();
+                        var name = context.GetOperationContent<string>();
                         state.Value.Remove(name);
                         break;
                     }
 
                 case "lookup":
                     {
-                        var name = context.GetArgument<string>();
+                        var name = context.GetOperationContent<string>();
                         context.Return(state.Value[name]);
                         break;
                     }
@@ -196,8 +196,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         //                  saved/restored to/from storage when the actor is deactivated/activated -----------------
         //
         // it offers three operations:
-        // "set" (takes a string argument, assigns it to the current state, does not return anything)
-        // "get" (no argument, returns a string containing the current state)
+        // "set" (takes a string assigns it to the current state, does not return anything)
+        // "get" (returns a string containing the current state)
         // "deactivate" destructs the actor (after saving its current state in the backing storage)
         //
         // since this is a unit test we use a file for simplicity but in a real scenario, you would use
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (context.OperationName)
             {
                 case "set":
-                    state.Value = context.GetArgument<string>();
+                    state.Value = context.GetOperationContent<string>();
                     break;
 
                 case "get":
@@ -263,12 +263,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // find the method corresponding to the operation
             var method = typeof(ChatRoom).GetMethod(context.OperationName);
 
-            // determine the type of the operation argument (= second method argument) and deserialize
-            var argumentType = method.GetParameters()[1].ParameterType;
-            var argument = context.GetArgument(argumentType);
+            // determine the type of the operation content (= second method argument) and deserialize
+            var contentType = method.GetParameters()[1].ParameterType;
+            var content = context.GetOperationContent(contentType);
 
             // invoke the method and return the result;
-            var result = method.Invoke(state.Value, new object[2] { context, argument });
+            var result = method.Invoke(state.Value, new object[2] { context, content });
             context.Return(result);
         }
 

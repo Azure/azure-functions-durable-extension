@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="actor">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <param name="operationContent">The content (input argument) of the operation.</param>
+        /// <param name="operationContent">The content for the operation.</param>
         void SignalActor(ActorId actor, string operationName, object operationContent = null);
 
         /// <summary>

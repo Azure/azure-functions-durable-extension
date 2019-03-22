@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool IsSignal { get; set; }
 
         [JsonProperty(PropertyName = "arg")]
-        public string Argument { get; set; }
+        public string Content { get; set; }
 
         [JsonProperty(PropertyName = "id")]
         public Guid Id { get; set; }
@@ -29,26 +29,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty(PropertyName = "parent")]
         public string ParentInstanceId { get; set; }
 
-        public void SetArgument(object obj)
+        public void SetContent(object obj)
         {
             if (obj is JToken jtoken)
             {
-                this.Argument = jtoken.ToString(Formatting.None);
+                this.Content = jtoken.ToString(Formatting.None);
             }
             else
             {
-                this.Argument = MessagePayloadDataConverter.Default.Serialize(obj);
+                this.Content = MessagePayloadDataConverter.Default.Serialize(obj);
             }
         }
 
-        public T GetArgument<T>()
+        public T GetContent<T>()
         {
-            return JsonConvert.DeserializeObject<T>(this.Argument);
+            return JsonConvert.DeserializeObject<T>(this.Content);
         }
 
-        public object GetArgument(Type argumentType)
+        public object GetContent(Type contentType)
         {
-            return JsonConvert.DeserializeObject(this.Argument, argumentType);
+            return JsonConvert.DeserializeObject(this.Content, contentType);
         }
     }
 }
