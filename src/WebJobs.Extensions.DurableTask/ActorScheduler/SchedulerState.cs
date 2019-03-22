@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text;
@@ -29,12 +32,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The queue of waiting operations, or null if none.
         /// </summary>
-        public Queue<OperationMessage> Queue { get; set; }
+        public Queue<OperationMessage> Queue { get; private set; }
 
-        [JsonIgnore]
         public bool IsEmpty => !ActorExists && (Queue == null || Queue.Count == 0);
 
-        [JsonIgnore]
         internal IStateView CurrentStateView { get; set; }
 
         internal void Enqueue(OperationMessage operationMessage)
@@ -70,6 +71,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return $"state.length={((this.ActorState != null) ? this.ActorState.Length : 0)} queue.count={((this.Queue != null) ? this.Queue.Count : 0)}";
         }
+
+        // To save space (e.g. avoid embedded CLR typenames) and for better human readability
+        // of the history we customize the JSON representation of the actor scheduler.
+        // It looks like:
+        //                  { state : "...",  queue : [ op1, op2, ... ] }
+        // where
+        // - the state property is only present if the actor exists
+        // - the queue property is present only if the queue is not empty
+        //
+        // Therefore, most of the time, when looking at an actor scheduler state in the history,
+        // it will be either {} or { state: "..." }
+        // (as the queue does not form except for busy actors).
 
         public void FromJson(JsonReader reader, JsonSerializer serializer)
         {

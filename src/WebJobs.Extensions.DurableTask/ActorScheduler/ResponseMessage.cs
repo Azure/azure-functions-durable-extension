@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Text;
@@ -39,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(exception);
         }
 
-        public TResult GetResult<TResult>()
+        public T GetResult<T>()
         {
             if (this.IsException)
             {
@@ -66,11 +69,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else if (this.Result == null)
             {
-                return default(TResult);
+                return default(T);
             }
             else
             {
-                return MessagePayloadDataConverter.Default.Deserialize<TResult>(this.Result);
+                return MessagePayloadDataConverter.Default.Deserialize<T>(this.Result);
             }
         }
     }
