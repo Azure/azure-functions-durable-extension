@@ -197,8 +197,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.nameResolver = context.Config.NameResolver;
+            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();            
 #endif
         }
 
