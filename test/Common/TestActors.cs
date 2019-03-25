@@ -5,8 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+using System.Text;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -20,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void StringStoreActor([ActorTrigger(ActorClassName = "StringStore")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<string>();
+            var state = context.GetState<string>();
 
             switch (context.OperationName)
             {
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void StringStoreActor2([ActorTrigger(ActorClassName = "StringStore2")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<string>();
+            var state = context.GetState<string>();
 
             switch (context.OperationName)
             {
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "get":
-                    if (context.NewlyConstructed)
+                    if (context.IsNewlyConstructed)
                     {
                         context.DestructOnExit();
                         throw new InvalidOperationException("must not call get on a non-existing actor");
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void CounterActor([ActorTrigger(ActorClassName = "Counter")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<int>();
+            var state = context.GetState<int>();
 
             switch (context.OperationName)
             {
@@ -104,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void PhoneBookActor([ActorTrigger(ActorClassName = "PhoneBook")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<JObject>();
+            var state = context.GetState<JObject>();
 
             switch (context.OperationName)
             {
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void PhoneBookActor2([ActorTrigger(ActorClassName = "PhoneBook2")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<Dictionary<string, decimal>>();
+            var state = context.GetState<Dictionary<string, decimal>>();
 
             switch (context.OperationName)
             {
@@ -205,9 +204,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async void StorageBackedStringStoreActor([ActorTrigger(ActorClassName = "StorageBackedStringStore")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<string>();
+            var state = context.GetState<string>();
 
-            if (context.NewlyConstructed)
+            if (context.IsNewlyConstructed)
             {
                 // check if there is a file containing a saved state we should restore
                 try
@@ -228,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "get":
-                    context.Return(state.Value);
+                    context.Return(state.Value.ToString());
                     break;
 
                 case "deactivate":
@@ -252,10 +251,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void ChatRoomActor([ActorTrigger(ActorClassName = "ChatRoom")] IDurableActorContext context)
         {
-            var state = context.GetStateAs<ChatRoom>();
+            var state = context.GetState<ChatRoom>();
 
             // if the actor is fresh call the constructor for the state
-            if (context.NewlyConstructed)
+            if (context.IsNewlyConstructed)
             {
                 state.Value = new ChatRoom(context);
             }
@@ -276,7 +275,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             public ChatRoom(IDurableActorContext ctx)
             {
-                ctx.Logger.LogInformation($"Creating ChatRoom instance {ctx.Key}");
                 this.ChatEntries = new SortedDictionary<DateTime, string>();
             }
 

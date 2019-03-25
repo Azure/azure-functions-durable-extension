@@ -533,29 +533,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActor(FunctionName actorFunction, RegisteredFunctionInfo actorInfo)
         {
-            if (!this.knownActors.TryUpdate(actorFunction, actorInfo, null))
+            if (actorInfo != null)
+            {
+                actorInfo.IsDeregistered = false;
+            }
+
+            if (this.knownActors.TryAdd(actorFunction, actorInfo))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: actorFunction.Name,
-                    message: $"Registering actor function named {actorFunction}.",
+                    message: $"Registered actor function named {actorFunction}.",
                     writeToUserLogs: false);
-
-                if (!this.knownActors.TryAdd(actorFunction, actorInfo))
-                {
-                    throw new ArgumentException(
-                        $"The actor function named '{actorFunction}' is already registered.");
-                }
+            }
+            else
+            {
+                this.knownActors[actorFunction] = actorInfo;
             }
         }
 
         internal void DeregisterActor(FunctionName actorFunction)
         {
-            RegisteredFunctionInfo info;
-            if (this.knownActors.TryGetValue(actorFunction, out info) && !info.IsDeregistered)
+            RegisteredFunctionInfo existing;
+            if (this.knownOrchestrators.TryGetValue(actorFunction, out existing) && !existing.IsDeregistered)
             {
-                info.IsDeregistered = true;
+                existing.IsDeregistered = true;
 
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,

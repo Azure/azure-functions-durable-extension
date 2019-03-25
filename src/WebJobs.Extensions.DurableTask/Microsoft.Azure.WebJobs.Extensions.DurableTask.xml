@@ -68,8 +68,47 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
             <summary>
-            ephemeral, typed view of the state of the actor, for use by applications in deserialized form        /// </summary>
-            <typeparam name="TState">the type of the state.</typeparam>
+            ephemeral, typed view of the state of the actor, for use by applications in deserialized form.
+            </summary>
+            <typeparam name="T">the type of the state.</typeparam>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
+            <summary>
+            The default parameter type for activity functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.Microsoft#Azure#WebJobs#IDurableActivityContext#InstanceId">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.GetRawInput">
+            <summary>
+            Returns the input of the task activity in its raw JSON string value.
+            </summary>
+            <returns>
+            The raw JSON-formatted activity input as a string value.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.GetInputAsJson">
+            <summary>
+            Gets the input of the current activity function instance as a <c>JToken</c>.
+            </summary>
+            <returns>
+            The parsed <c>JToken</c> representation of the activity input.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.Microsoft#Azure#WebJobs#IDurableActivityContext#GetInput``1">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.SetOutput(System.Object)">
+            <summary>
+            Sets the JSON-serializeable output of the activity function.
+            </summary>
+            <remarks>
+            If this method is not called explicitly, the return value of the activity function is used as the output.
+            </remarks>
+            <param name="output">
+            The JSON-serializeable value to use as the activity function output.
+            </param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActorContext">
             <summary>
@@ -78,7 +117,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
             <summary>
-            Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>
+            Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>
             and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActorContext"/>.
             </summary>
         </member>
@@ -106,31 +145,127 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#StartNewOrchestration(System.String,System.Object,System.String)">
             <inheritdoc/>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient">
             <summary>
-            A little helper class for defining a custom JSON converter that can convert any
-            class <typeparamref name="T"/> that implements the conversion interface <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion"/>.
-            </summary>
-            <typeparam name="T">the class which should be converted.</typeparam>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion">
-            <summary>
-            Simple interface on objects to implement custom json conversion.
+            Client for starting, querying, terminating, and raising events to orchestration instances.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion.FromJson(Newtonsoft.Json.JsonReader,Newtonsoft.Json.JsonSerializer)">
-            <summary>
-            reads from json into this object.
-            </summary>
-            <param name="reader">The Newtonsoft.Json.JsonReader to read from.</param>
-            <param name="serializer">The calling serializer.</param>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TaskHubName">
+            <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomJsonConverter`1.IConversion.ToJson(Newtonsoft.Json.JsonWriter,Newtonsoft.Json.JsonSerializer)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#StartNewAsync(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RewindAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext">
             <summary>
-            writes this object to json.
+            Parameter data for orchestration bindings that can be used to schedule function-based activities.
             </summary>
-            <param name="writer">The Newtonsoft.Json.JsonWriter to write to.</param>
-            <param name="serializer">The calling serializer.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#InstanceId">
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ParentInstanceId">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.GetRawInput">
+            <summary>
+            Returns the orchestrator function input as a raw JSON string value.
+            </summary>
+            <returns>
+            The raw JSON-formatted orchestrator function input.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.GetInputAsJson">
+            <summary>
+            Gets the input of the current orchestrator function instance as a <c>JToken</c>.
+            </summary>
+            <returns>
+            The parsed <c>JToken</c> representation of the orchestrator function input.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#GetInput``1">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.SetOutput(System.Object)">
+            <summary>
+            Sets the JSON-serializeable output of the current orchestrator function.
+            </summary>
+            <remarks>
+            If this method is not called explicitly, the return value of the orchestrator function is used as the output.
+            </remarks>
+            <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#SetCustomStatus(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String,System.TimeSpan)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ContinueAsNew(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.ActorId[])">
+            <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension">
             <summary>
@@ -188,10 +323,10 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)">
             <summary>
-            Gets a <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> instance.
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> instance.
             </summary>
             <param name="attribute">The attribute containing the client configuration parameters.</param>
-            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
             <inheritdoc/>
@@ -236,8 +371,8 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName">
             <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/>,
-            <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.DurableActivityContext"/> instances.
+            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/>,
+            <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext"/> instances.
             </summary>
             <remarks>
             A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
@@ -630,7 +765,7 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskCommonShim">
             <summary>
             Common functionality of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActorShim"/> and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim"/>.
-            /// </summary>
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">
             <summary>
@@ -721,166 +856,6 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableActivityContext">
-            <summary>
-            The default parameter type for activity functions.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableActivityContext.Microsoft#Azure#WebJobs#IDurableActivityContext#InstanceId">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.GetRawInput">
-            <summary>
-            Returns the input of the task activity in its raw JSON string value.
-            </summary>
-            <returns>
-            The raw JSON-formatted activity input as a string value.
-            </returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.GetInputAsJson">
-            <summary>
-            Gets the input of the current activity function instance as a <c>JToken</c>.
-            </summary>
-            <returns>
-            The parsed <c>JToken</c> representation of the activity input.
-            </returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.Microsoft#Azure#WebJobs#IDurableActivityContext#GetInput``1">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableActivityContext.SetOutput(System.Object)">
-            <summary>
-            Sets the JSON-serializeable output of the activity function.
-            </summary>
-            <remarks>
-            If this method is not called explicitly, the return value of the activity function is used as the output.
-            </remarks>
-            <param name="output">
-            The JSON-serializeable value to use as the activity function output.
-            </param>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient">
-            <summary>
-            Client for starting, querying, terminating, and raising events to orchestration instances.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TaskHubName">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#StartNewAsync(System.String,System.String,System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RewindAsync(System.String,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationContext">
-            <summary>
-            Parameter data for orchestration bindings that can be used to schedule function-based activities.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#InstanceId">
-            <inheritdoc />
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ParentInstanceId">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetRawInput">
-            <summary>
-            Returns the orchestrator function input as a raw JSON string value.
-            </summary>
-            <returns>
-            The raw JSON-formatted orchestrator function input.
-            </returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.GetInputAsJson">
-            <summary>
-            Gets the input of the current orchestrator function instance as a <c>JToken</c>.
-            </summary>
-            <returns>
-            The parsed <c>JToken</c> representation of the orchestrator function input.
-            </returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#GetInput``1">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.SetOutput(System.Object)">
-            <summary>
-            Sets the JSON-serializeable output of the current orchestrator function.
-            </summary>
-            <remarks>
-            If this method is not called explicitly, the return value of the orchestrator function is used as the output.
-            </remarks>
-            <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#SetCustomStatus(System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.String,System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CreateTimer``1(System.DateTime,``0,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String,System.TimeSpan)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ContinueAsNew(System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.ActorId[])">
-            <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableContextExtensions">
             <summary>
@@ -1225,12 +1200,12 @@
             <summary>
             Determines whether the current context is locked, and if so, what locks are currently owned.
             </summary>
-            <param name="ownedLocks">the collection of owned locks.</param>
+            <param name="ownedLocks">The collection of owned locks.</param>
             <remarks>
             Note that the collection of owned locks can be empty even if the context is locked. This happens
             if an orchestration calls a suborchestration without lending any locks.
             </remarks>
-            <returns>true if the context already holds some locks.</returns>
+            <returns><c>true</c> if the context already holds some locks.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.NewGuid">
             <summary>
@@ -1296,7 +1271,6 @@
             Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
             Any result or exception is ignored (fire and forget).
             </summary>
-            <typeparam name="TInput">The JSON-serializeable input type of the orchestrator function.</typeparam>
             <param name="functionName">The name of the orchestrator function to call.</param>
             <param name="input">the input to pass to the orchestrator function.</param>
             <param name="instanceId">optionally, an instance id for the orchestration. By default, a random GUID is used.</param>
@@ -1353,18 +1327,18 @@
             <summary>
             Gets the name of the operation that was called.
             </summary>
+            <remarks>
+            An operation invocation on an actor includes an operation name, which states what
+            operation to perform, and optionally an operation content, which
+            provides an input argument to the operation.
+            </remarks>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.Logger">
-            <summary>
-            A logger for logging information about this actor.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.NewlyConstructed">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.IsNewlyConstructed">
             <summary>
             Whether this actor is freshly constructed, i.e. did not exist prior to this operation being called.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetStateAs``1(Newtonsoft.Json.Formatting,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetState``1(Newtonsoft.Json.Formatting,Newtonsoft.Json.JsonSerializerSettings)">
             <summary>
             Gets a typed view of the state, by deserializing the JSON.
             </summary>
@@ -1373,56 +1347,37 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent``1">
             <summary>
-            Gets the content that was passed to this operation as a deserialized value.
+            Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
             </summary>
             <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
-            <returns>the operation content, or default(<typeparamref name="T"/>) if none.</returns>
+            <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
+            <remarks>
+            An operation invocation on an actor includes an operation name, which states what
+            operation to perform, and optionally an operation content, which
+            provides an input argument to the operation.
+            </remarks>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent(System.Type)">
             <summary>
-            Gets the content that was passed to this operation as a deserialized value.
+            Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
             </summary>
             <param name="contentType">The JSON-serializable type used for the operation content.</param>
-            <returns>the operation content, or default(<paramref name="contentType"/>) if none.</returns>
+            <returns>The operation content, or default(<paramref name="contentType"/>) if none.</returns>
+            <remarks>
+            An operation invocation on an actor includes an operation name, which states what
+            operation to perform, and optionally an operation content, which
+            provides an input argument to the operation.
+            </remarks>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return``1(``0)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return(System.Object)">
             <summary>
-            Returns the given result to the caller of this operation. 
-            </summary>
-            <typeparam name="TResult">the type of the result.</typeparam>
-            <param name="result">the result to return.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return(System.Object,System.Type)">
-            <summary>
-            Returns the given result to the caller of this operation. 
+            Returns the given result to the caller of this operation.
             </summary>
             <param name="result">the result to return.</param>
-            <param name="resultType">optionally, the type of the result.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.DestructOnExit">
             <summary>
             Delete this actor after this operation completes.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.IStateView`1">
-            <summary>
-            A typed view of the current state of the actor.
-            </summary>
-            <typeparam name="TState">The JSON-serializable type used for this actor.</typeparam>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.IStateView`1.Value">
-            <summary>
-            The current state of the actor.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.IStateView">
-            <summary>
-            A view of the current state of the actor.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.IStateView.WriteBack">
-            <summary>
-            Serializes the current state to JSON.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.IDurableOrchestrationClient">
@@ -1813,6 +1768,27 @@
             <returns>An IDisposable that releases the lock when disposed.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks.</exception>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.IStateView`1">
+            <summary>
+            A typed view of the current state of the actor.
+            </summary>
+            <typeparam name="TState">The JSON-serializable type used for this actor.</typeparam>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.IStateView`1.Value">
+            <summary>
+            The current state of the actor.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.IStateView">
+            <summary>
+            A view of the current state of the actor.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IStateView.WriteBack">
+            <summary>
+            Serializes the current state to JSON.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
             Represents the status of a durable orchestration instance.
@@ -1985,7 +1961,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute">
             <summary>
-            Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.DurableOrchestrationClient"/> instance.
+            Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/> instance.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub">

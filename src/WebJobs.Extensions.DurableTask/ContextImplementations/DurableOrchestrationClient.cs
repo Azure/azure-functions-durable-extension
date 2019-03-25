@@ -10,11 +10,11 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using AzureStorage = DurableTask.AzureStorage;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Client for starting, querying, terminating, and raising events to orchestration instances.
@@ -85,6 +85,10 @@ namespace Microsoft.Azure.WebJobs
             if (string.IsNullOrEmpty(instanceId))
             {
                 instanceId = Guid.NewGuid().ToString("N");
+            }
+            else if (instanceId.StartsWith("@"))
+            {
+                throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @.");
             }
 
             if (instanceId.Length > MaxInstanceIdLength)
@@ -241,7 +245,7 @@ namespace Microsoft.Azure.WebJobs
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
-            DurableTask.AzureStorage.PurgeHistoryResult purgeHistoryResult =
+            AzureStorage.PurgeHistoryResult purgeHistoryResult =
                 await serviceClient.PurgeInstanceHistoryAsync(instanceId);
             return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }
@@ -251,7 +255,7 @@ namespace Microsoft.Azure.WebJobs
         {
             // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
             AzureStorageOrchestrationService serviceClient = (AzureStorageOrchestrationService)this.client.ServiceClient;
-            DurableTask.AzureStorage.PurgeHistoryResult purgeHistoryResult =
+            AzureStorage.PurgeHistoryResult purgeHistoryResult =
                 await serviceClient.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
             return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }

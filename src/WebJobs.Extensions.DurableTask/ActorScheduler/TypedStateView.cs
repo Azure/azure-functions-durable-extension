@@ -9,15 +9,16 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// ephemeral, typed view of the state of the actor, for use by applications in deserialized form        /// </summary>
-    /// <typeparam name="TState">the type of the state.</typeparam>
-    internal class TypedStateView<TState> : IStateView<TState>, IStateView
+    /// ephemeral, typed view of the state of the actor, for use by applications in deserialized form.
+    /// </summary>
+    /// <typeparam name="T">the type of the state.</typeparam>
+    internal class TypedStateView<T> : IStateView<T>, IStateView
     {
         private readonly DurableActorContext context;
         private readonly Formatting formatting;
         private readonly JsonSerializerSettings settings;
 
-        private TState state;
+        private T state;
 
         private static JsonSerializerSettings defaultSettings = new JsonSerializerSettings()
         {
@@ -34,22 +35,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (actorState == null)
             {
-                this.state = default(TState);
+                this.state = default(T);
             }
             else
             {
-                this.state = JsonConvert.DeserializeObject<TState>(actorState);
+                this.state = JsonConvert.DeserializeObject<T>(actorState, this.settings);
             }
         }
 
-        public TState Value
+        public T Value
         {
             get
             {
                 this.context.ThrowIfInvalidAccess();
                 if (this.context.State?.CurrentStateView != this)
                 {
-                    throw new ObjectDisposedException(nameof(TypedStateView<TState>), "state view is no longer valid");
+                    throw new ObjectDisposedException(nameof(TypedStateView<T>), "The state view is no longer valid.");
                 }
 
                 return this.state;
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.ThrowIfInvalidAccess();
                 if (this.context.State?.CurrentStateView != this)
                 {
-                    throw new ObjectDisposedException(nameof(TypedStateView<TState>), "state view is no longer valid");
+                    throw new ObjectDisposedException(nameof(TypedStateView<T>), "The state view is no longer valid.");
                 }
 
                 this.state = value;
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void WriteBack()
         {
-            this.context.State.ActorState = JsonConvert.SerializeObject(this.state, typeof(TState), this.formatting, this.settings);
+            this.context.State.ActorState = JsonConvert.SerializeObject(this.state, typeof(T), this.formatting, this.settings);
         }
 
         void IDisposable.Dispose()
@@ -81,5 +82,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
     }
-
 }

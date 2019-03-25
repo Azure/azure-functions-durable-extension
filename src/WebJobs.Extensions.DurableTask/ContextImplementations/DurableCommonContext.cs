@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         bool IDeterministicExecutionContext.IsLocked(out IReadOnlyList<string> ownedLocks)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(); // TODO implement this.
         }
 
         /// <inheritdoc/>
@@ -127,8 +127,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDeterministicExecutionContext.SignalActor(ActorId actor, string operationName, object operationContent)
         {
             this.ThrowIfInvalidAccess();
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(actor.ActorClass, FunctionType.Actor, true, TaskActorShim.GetSchedulerIdFromActorId(actor), operationName, null, operationContent);
-            var ignoredValue = alreadyCompletedTask.Result; // just so we see exceptions during testing
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(actor.ActorClass, FunctionType.Actor, true, ActorId.GetSchedulerIdFromActorId(actor), operationName, null, operationContent);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signalling actors is synchronous");
+            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
         }
 
         /// <inheritdoc/>
@@ -136,6 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, instanceId, null, null, input);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "starting orchestrations is synchronous");
             return alreadyCompletedTask.Result;
         }
 
@@ -208,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 case FunctionType.Orchestrator:
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
+                    if (instanceId != null && instanceId.StartsWith("@"))
+                    {
+                        throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
+                    }
+
                     if (oneWay)
                     {
                         throw new NotImplementedException(); // TODO
@@ -234,7 +241,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 case FunctionType.Actor:
                     System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(operation), "The operation parameter is required.");
-                    System.Diagnostics.Debug.Assert(retryOptions == null, "retries are not supported for actor calls");
+                    System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for actor calls.");
+                    System.Diagnostics.Debug.Assert(instanceId != null, "Actor calls need to specify the target actor.");
 
                     var guid = this.NewGuid(); // deterministically replayable unique id for this request
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
@@ -246,8 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Operation = operation,
                     };
                     request.SetContent(input);
-                    var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
-                    this.InnerContext.SendEvent(target, "op", jrequest);
+                    this.InnerContext.SendEvent(target, "op", request);
 
                     if (!oneWay)
                     {
@@ -277,6 +284,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return default(TResult);
             }
+
+            System.Diagnostics.Debug.Assert(callTask != null, "Two-way operations are asynchronous, so callTask must not be null.");
 
             try
             {
@@ -311,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (exception != null && this.InnerContext.IsReplaying)
                 {
-                    // If this were not a replay, then the activity function trigger would have already
+                    // If this were not a replay, then the orchestrator/activity/actor function trigger would have already
                     // emitted a FunctionFailed trace with the full exception details.
                     this.Config.TraceHelper.FunctionFailed(
                         this.Config.Options.HubName,
@@ -325,7 +334,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.InnerContext.IsReplaying)
             {
-                // If this were not a replay, then the activity function trigger would have already
+                // If this were not a replay, then the orchestrator/activity/actor function trigger would have already
                 // emitted a FunctionCompleted trace with the actual output details.
                 this.Config.TraceHelper.FunctionCompleted(
                     this.Config.Options.HubName,

@@ -40,12 +40,12 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Determines whether the current context is locked, and if so, what locks are currently owned.
         /// </summary>
-        /// <param name="ownedLocks">the collection of owned locks.</param>
+        /// <param name="ownedLocks">The collection of owned locks.</param>
         /// <remarks>
         /// Note that the collection of owned locks can be empty even if the context is locked. This happens
         /// if an orchestration calls a suborchestration without lending any locks.
         /// </remarks>
-        /// <returns>true if the context already holds some locks.</returns>
+        /// <returns><c>true</c> if the context already holds some locks.</returns>
         bool IsLocked(out IReadOnlyList<string> ownedLocks);
 
         /// <summary>
@@ -111,7 +111,6 @@ namespace Microsoft.Azure.WebJobs
         /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
         /// Any result or exception is ignored (fire and forget).
         /// </summary>
-        /// <typeparam name="TInput">The JSON-serializeable input type of the orchestrator function.</typeparam>
         /// <param name="functionName">The name of the orchestrator function to call.</param>
         /// <param name="input">the input to pass to the orchestrator function.</param>
         /// <param name="instanceId">optionally, an instance id for the orchestration. By default, a random GUID is used.</param>

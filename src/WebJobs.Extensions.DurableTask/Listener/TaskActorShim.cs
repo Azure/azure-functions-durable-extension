@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,8 +12,6 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
-using DurableTask.Core.Middleware;
-using Microsoft.Azure.WebJobs.Host.Executors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -24,22 +25,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskActorShim : TaskCommonShim
     {
+        // each actor starts a limited number of operations before calling ContinueAsNew,
+        // to prevent the history from growing too large.
+        // TODO explore alternate heuristics, make configurable and/or compute based on state size
+        private const int OperationLimit = 20;
+
         private readonly DurableActorContext context;
 
-        private TaskCompletionSource<object> shutDownSignal
+        private readonly TaskCompletionSource<object> continueAsNewSignal
             = new TaskCompletionSource<object>();
 
         private Task lastStartedOperation = Task.CompletedTask;
 
-        private Dictionary<Guid, Task> currentReentrantRequests = new Dictionary<Guid, Task>();
-
-        private int remainingReceiveLimit = 20; // TODO make configurable and/or compute based on state size
+        private int numberOperationsStarted = 0;
 
         public TaskActorShim(DurableTaskExtension config, string schedulerId)
             : base(config)
         {
             this.SchedulerId = schedulerId;
-            this.ActorId = GetActorIdFromSchedulerId(schedulerId);
+            this.ActorId = ActorId.GetActorIdFromSchedulerId(schedulerId);
             this.context = new DurableActorContext(config, this.ActorId);
         }
 
@@ -48,19 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string SchedulerId { get; private set; }
 
         public ActorId ActorId { get; private set; }
-
-        public static string GetSchedulerIdFromActorId(ActorId actor)
-        {
-            return $"@{@actor.ActorClass}@{actor.ActorKey}";
-        }
-
-        public static ActorId GetActorIdFromSchedulerId(string schedulerId)
-        {
-            var pos = schedulerId.IndexOf('@', 1);
-            var actorClass = schedulerId.Substring(1, pos - 1);
-            var actorKey = schedulerId.Substring(pos + 1);
-            return new ActorId(actorClass, actorKey);
-        }
 
         public override RegisteredFunctionInfo GetFunctionInfo()
         {
@@ -72,26 +63,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.lastStartedOperation.IsCompleted)
             {
+                // the actor is not currently processing an operation
                 return "Available";
             }
             else
             {
                 if (this.context.State.Queue != null)
                 {
-                    return $"Busy ({this.context.State.Queue.Count} Queued)";
+                    // the actor is currently processing an operation, and more operations are waiting in the queue)
+                    return $"Busy ({this.context.State.Queue.Count} queued)";
                 }
                 else
                 {
+                    // the actor is currently processing an operation
                     return "Busy";
                 }
             }
         }
 
-        private void SignalShutdown()
+        private void SignalContinueAsNew()
         {
             MethodInfo trySetResult = typeof(TaskCompletionSource<object>).GetMethod("TrySetResult");
-            trySetResult.Invoke(this.shutDownSignal, new[] { (object)null });
-            this.shutDownSignal.TrySetResult(0);
+            trySetResult.Invoke(this.continueAsNewSignal, new[] { (object)null });
         }
 
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
@@ -108,20 +101,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var operationMessage = JsonConvert.DeserializeObject<OperationMessage>(serializedEventData);
 
-                if (this.lastStartedOperation.IsCompleted && this.remainingReceiveLimit > 0)
+                if (this.lastStartedOperation.IsCompleted && this.numberOperationsStarted < OperationLimit)
                 {
-                    this.lastStartedOperation = this.ProcessRequest(operationMessage);
-
-                    this.remainingReceiveLimit--;
+                    this.numberOperationsStarted++;
+                    this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
                 }
                 else
                 {
                     this.context.State.Enqueue(operationMessage);
-
-                    if (this.remainingReceiveLimit == 0)
-                    {
-                        this.SignalShutdown();
-                    }
                 }
             }
             else // it's a response
@@ -136,6 +123,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
             }
+
+            this.context.InnerContext = innerContext;
 
             if (this.GetFunctionInfo().IsOutOfProc)
             {
@@ -153,8 +142,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             try
             {
-                this.context.InnerContext = innerContext;
-
                 if (serializedInput == null)
                 {
                     // this instance was automatically started by DTFx
@@ -169,45 +156,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // if there were messages in the queue left over, start processing them
                 while (this.lastStartedOperation.IsCompleted && this.context.State.TryDequeue(out var request))
                 {
-                    this.lastStartedOperation = this.ProcessRequest(request);
+                    this.lastStartedOperation = this.ProcessRequestAsync(request);
                 }
 
-                await this.shutDownSignal.Task;
+                // wait for the continue as new signal, which restarts the history with a state snapshot
+                await this.continueAsNewSignal.Task;
 
-                await this.lastStartedOperation;
-
-                // TODO see if we can DTFx to restart orchestrations that are done
-                // in the meantime simply let's never be done
-                // bool continueAsNew = !this.context.State.IsEmpty;
-                bool continueAsNew = true;
-
-                if (continueAsNew)
+                // we must not call continue as new while an operation is still pending
+                while (!this.lastStartedOperation.IsCompleted)
                 {
-                    this.context.State.CurrentStateView?.WriteBack();
-                    var jstate = JToken.FromObject(this.context.State);
-                    this.context.InnerContext.ContinueAsNew(jstate);
+                    await this.lastStartedOperation;
                 }
+
+                this.context.State.CurrentStateView?.WriteBack();
+                var jstate = JToken.FromObject(this.context.State);
+                this.context.InnerContext.ContinueAsNew(jstate);
 
                 this.Config.TraceHelper.FunctionCompleted(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
                     this.context.State.ToString(),
-                    continueAsNew,
+                    true,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
 
-                if (!this.context.IsReplaying)
-                {
-                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        continueAsNew,
-                        this.context.IsReplaying));
-                }
+                // currently not calling this as it may be too heavy for actors
+                // if (!this.context.IsReplaying)
+                // {
+                //    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                //        this.context.HubName,
+                //        this.context.Name,
+                //        this.context.InstanceId,
+                //        true,
+                //        this.context.IsReplaying));
+                // }
 
-                return continueAsNew ? "continue" : "done";
+                return "continueAsNew";
             }
             catch (Exception e)
             {
@@ -239,12 +224,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private async Task ProcessRequest(OperationMessage request)
+        private async Task ProcessRequestAsync(OperationMessage request)
         {
             // set context for operation
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
-            this.context.Fresh = !this.context.State.ActorExists;
+            this.context.IsNewlyConstructed = !this.context.State.ActorExists;
             this.context.State.ActorExists = true;
             this.context.DestructOnExit = false;
 
@@ -299,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.InnerContext.SendEvent(target, guid, jresponse);
             }
 
-            // destruct actor state if application code requested it
+            // destruct the actor if the application code requested it
             if (destructOnExit)
             {
                 this.context.State.ActorExists = false;
@@ -307,16 +292,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.State.ActorState = null;
             }
 
-            // start next request waiting in the queue if there is one
-            if (this.context.State.TryDequeue(out var operationMessage))
+            // if we have reached the limit on the number of operations to process,
+            // call ContinueAsNew. This helps to limit the history size.
+            if (this.numberOperationsStarted >= OperationLimit)
             {
-                this.lastStartedOperation = this.ProcessRequest(operationMessage);
+                this.SignalContinueAsNew();
             }
-
-            // if there are no waiting requests and the actor is deleted, shut down
-            else if (destructOnExit)
+            else
             {
-                this.SignalShutdown();
+                // start next request waiting in the queue if there is one
+                if (this.context.State.TryDequeue(out var operationMessage))
+                {
+                    this.numberOperationsStarted++;
+                    this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
+                }
+
+                // if there are no requests waiting, and the actor no longer exists,
+                // call ContinueAsNew. This removes the history.
+                else if (!this.context.State.ActorExists)
+                {
+                    this.SignalContinueAsNew();
+                }
             }
         }
     }

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal ResponseMessage CurrentOperationResponse { get; set; }
 
-        internal bool Fresh { get; set; }
+        internal bool IsNewlyConstructed { get; set; }
 
         internal bool DestructOnExit { get; set; }
 
@@ -49,14 +49,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        ILogger IDurableActorContext.Logger => throw new NotImplementedException();
-
-        bool IDurableActorContext.NewlyConstructed
+        bool IDurableActorContext.IsNewlyConstructed
         {
             get
             {
                 this.ThrowIfInvalidAccess();
-                return this.Fresh;
+                return this.IsNewlyConstructed;
             }
         }
 
@@ -66,10 +64,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DestructOnExit = true;
         }
 
-        TArgument IDurableActorContext.GetOperationContent<TArgument>()
+        T IDurableActorContext.GetOperationContent<T>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetContent<TArgument>();
+            return this.CurrentOperation.GetContent<T>();
         }
 
         object IDurableActorContext.GetOperationContent(Type argumentType)
@@ -78,11 +76,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CurrentOperation.GetContent(argumentType);
         }
 
-        IStateView<TState> IDurableActorContext.GetStateAs<TState>(Formatting formatting, JsonSerializerSettings settings)
+        IStateView<TState> IDurableActorContext.GetState<TState>(Formatting formatting, JsonSerializerSettings settings)
         {
             this.ThrowIfInvalidAccess();
             if (this.State.CurrentStateView != null)
             {
+                // if the requested type is the same, we can use the already existing view
+                // otherwise we have to serialize the current view to JSON, and then
+                // deserialize it to the requested type
                 if (this.State.CurrentStateView is IStateView<TState> view)
                 {
                     return view;
@@ -96,13 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return newView;
         }
 
-        void IDurableActorContext.Return<TResult>(TResult result)
-        {
-            this.ThrowIfInvalidAccess();
-            this.CurrentOperationResponse.SetResult(result);
-        }
-
-        void IDurableActorContext.Return(object result, Type resultType)
+        void IDurableActorContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
             this.CurrentOperationResponse.SetResult(result);

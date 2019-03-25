@@ -33,80 +33,58 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the name of the operation that was called.
         /// </summary>
+        /// <remarks>
+        /// An operation invocation on an actor includes an operation name, which states what
+        /// operation to perform, and optionally an operation content, which
+        /// provides an input argument to the operation.
+        /// </remarks>
         string OperationName { get; }
-
-        /// <summary>
-        /// A logger for logging information about this actor.
-        /// </summary>
-        ILogger Logger { get; }
 
         /// <summary>
         /// Whether this actor is freshly constructed, i.e. did not exist prior to this operation being called.
         /// </summary>
-        bool NewlyConstructed { get; }
+        bool IsNewlyConstructed { get; }
 
         /// <summary>
         /// Gets a typed view of the state, by deserializing the JSON.
         /// </summary>
         /// <typeparam name="TState">the JSON-serializable type of the actor state.</typeparam>
         /// <returns>a typed view that allows reading and updating.</returns>
-        IStateView<TState> GetStateAs<TState>(Formatting formatting = Formatting.Indented, JsonSerializerSettings settings = null);
+        IStateView<TState> GetState<TState>(Formatting formatting = Formatting.Indented, JsonSerializerSettings settings = null);
 
         /// <summary>
-        /// Gets the content that was passed to this operation as a deserialized value.
+        /// Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
         /// </summary>
         /// <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
-        /// <returns>the operation content, or default(<typeparamref name="T"/>) if none.</returns>
+        /// <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
+        /// <remarks>
+        /// An operation invocation on an actor includes an operation name, which states what
+        /// operation to perform, and optionally an operation content, which
+        /// provides an input argument to the operation.
+        /// </remarks>
         T GetOperationContent<T>();
 
         /// <summary>
-        /// Gets the content that was passed to this operation as a deserialized value.
+        /// Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
         /// </summary>
         /// <param name="contentType">The JSON-serializable type used for the operation content.</param>
-        /// <returns>the operation content, or default(<paramref name="contentType"/>) if none.</returns>
+        /// <returns>The operation content, or default(<paramref name="contentType"/>) if none.</returns>
+        /// <remarks>
+        /// An operation invocation on an actor includes an operation name, which states what
+        /// operation to perform, and optionally an operation content, which
+        /// provides an input argument to the operation.
+        /// </remarks>
         object GetOperationContent(Type contentType);
 
-        /// <summary>
-        /// Returns the given result to the caller of this operation. 
-        /// </summary>
-        /// <typeparam name="TResult">the type of the result.</typeparam>
-        /// <param name="result">the result to return.</param>
-        void Return<TResult>(TResult result);
-
-        /// <summary>
-        /// Returns the given result to the caller of this operation. 
+         /// <summary>
+        /// Returns the given result to the caller of this operation.
         /// </summary>
         /// <param name="result">the result to return.</param>
-        /// <param name="resultType">optionally, the type of the result.</param>
-        void Return(object result, Type resultType = null);
+        void Return(object result);
 
         /// <summary>
         /// Delete this actor after this operation completes.
         /// </summary>
         void DestructOnExit();
     }
-
-    /// <summary>
-    /// A typed view of the current state of the actor.
-    /// </summary>
-    /// <typeparam name="TState">The JSON-serializable type used for this actor.</typeparam>
-    public interface IStateView<TState> : IStateView
-    {
-        /// <summary>
-        /// The current state of the actor.
-        /// </summary>
-        TState Value { get; set; }
-    }
-
-    /// <summary>
-    /// A view of the current state of the actor.
-    /// </summary>
-    public interface IStateView : IDisposable
-    {
-        /// <summary>
-        /// Serializes the current state to JSON.
-        /// </summary>
-        void WriteBack();
-    }
-
 }

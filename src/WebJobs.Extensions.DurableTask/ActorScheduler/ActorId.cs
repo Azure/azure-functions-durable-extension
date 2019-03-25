@@ -23,11 +23,11 @@ namespace Microsoft.Azure.WebJobs
         {
             if (string.IsNullOrEmpty(actorClass))
             {
-                throw new ArgumentNullException("invalid actor reference: actor class must not be a null or empty string", actorClass);
+                throw new ArgumentNullException(nameof(actorClass), "Invalid actor reference: actor class must not be a null or empty string.");
             }
 
             this.ActorClass = actorClass;
-            this.ActorKey = actorKey;
+            this.ActorKey = actorKey ?? throw new ArgumentNullException(nameof(actorKey), "Invalid actor reference: actor key must not be null.");
         }
 
         /// <summary>
@@ -42,10 +42,23 @@ namespace Microsoft.Azure.WebJobs
         [JsonProperty("key")]
         public string ActorKey { get; }
 
+        internal static string GetSchedulerIdFromActorId(ActorId actorId)
+        {
+            return $"@{actorId.ActorClass}@{actorId.ActorKey}";
+        }
+
+        internal static ActorId GetActorIdFromSchedulerId(string schedulerId)
+        {
+            var pos = schedulerId.IndexOf('@', 1);
+            var actorClass = schedulerId.Substring(1, pos - 1);
+            var actorKey = schedulerId.Substring(pos + 1);
+            return new ActorId(actorClass, actorKey);
+        }
+
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.ActorClass}:{this.ActorKey}";
+            return GetSchedulerIdFromActorId(this);
         }
 
         /// <inheritdoc/>

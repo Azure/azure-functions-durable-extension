@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Common functionality of <see cref="TaskActorShim"/> and <see cref="TaskOrchestrationShim"/>.
-    /// /// </summary>
+    /// </summary>
     internal abstract class TaskCommonShim : TaskOrchestration
     {
         public TaskCommonShim(DurableTaskExtension config)

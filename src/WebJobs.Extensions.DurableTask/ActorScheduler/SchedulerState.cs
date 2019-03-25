@@ -16,24 +16,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// The persisted state of an actor scheduler, as handed forward between ContinueAsNew instances.
     /// </summary>
-    [JsonConverter(typeof(CustomJsonConverter<SchedulerState>))]
-    internal class SchedulerState : CustomJsonConverter<SchedulerState>.IConversion
+    internal class SchedulerState
     {
         /// <summary>
         /// Whether this actor exists or not.
         /// </summary>
+        [JsonProperty(PropertyName = "exists", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool ActorExists { get; set; }
 
         /// <summary>
         /// The serialized actor state. This can be stale while CurrentStateView != null.
         /// </summary>
+        [JsonProperty(PropertyName = "state", NullValueHandling = NullValueHandling.Ignore)]
         public string ActorState { get; set; }
 
         /// <summary>
         /// The queue of waiting operations, or null if none.
         /// </summary>
+        [JsonProperty(PropertyName = "queue", NullValueHandling = NullValueHandling.Ignore)]
         public Queue<OperationMessage> Queue { get; private set; }
 
+        [JsonIgnore]
         public bool IsEmpty => !ActorExists && (Queue == null || Queue.Count == 0);
 
         internal IStateView CurrentStateView { get; set; }
@@ -70,84 +73,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override string ToString()
         {
             return $"state.length={((this.ActorState != null) ? this.ActorState.Length : 0)} queue.count={((this.Queue != null) ? this.Queue.Count : 0)}";
-        }
-
-        // To save space (e.g. avoid embedded CLR typenames) and for better human readability
-        // of the history we customize the JSON representation of the actor scheduler.
-        // It looks like:
-        //                  { state : "...",  queue : [ op1, op2, ... ] }
-        // where
-        // - the state property is only present if the actor exists
-        // - the queue property is present only if the queue is not empty
-        //
-        // Therefore, most of the time, when looking at an actor scheduler state in the history,
-        // it will be either {} or { state: "..." }
-        // (as the queue does not form except for busy actors).
-
-        public void FromJson(JsonReader reader, JsonSerializer serializer)
-        {
-            while (reader.Read())
-            {
-                if (reader.TokenType == JsonToken.PropertyName)
-                {
-                    switch (reader.Value as string)
-                    {
-                        case "state":
-                            {
-                                this.ActorState = reader.ReadAsString();
-                                this.ActorExists = true;
-                                break;
-                            }
-
-                        case "queue":
-                            {
-                                this.Queue = new Queue<OperationMessage>();
-
-                                while (reader.Read())
-                                {
-                                    if (reader.TokenType == JsonToken.StartObject)
-                                    {
-                                        this.Queue.Enqueue(serializer.Deserialize<OperationMessage>(reader));
-                                    }
-                                }
-
-                                break;
-                            }
-
-                        default:
-                            continue;
-                    }
-                }
-                else if (reader.TokenType == JsonToken.EndObject)
-                {
-                    return;
-                }
-            }
-        }
-
-        public void ToJson(JsonWriter writer, JsonSerializer serializer)
-        {
-            writer.WriteStartObject();
-
-            if (this.ActorExists)
-            {
-                writer.WritePropertyName("state");
-                writer.WriteValue(this.ActorState);
-            }
-
-            if (this.Queue != null && this.Queue.Count > 0)
-            {
-                writer.WritePropertyName("queue");
-                writer.WriteStartArray();
-                foreach (var o in this.Queue)
-                {
-                    serializer.Serialize(writer, o, typeof(OperationMessage));
-                }
-
-                writer.WriteEndArray();
-            }
-
-            writer.WriteEndObject();
         }
     }
 }

@@ -52,8 +52,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
             }
 
-            // The orchestration name defaults to the method name.
             var orchestratorName = new FunctionName(name);
+            if (name.StartsWith("@"))
+            {
+                throw new ArgumentException("Orchestration names must not start with @.");
+            }
+
             this.config.RegisterOrchestrator(orchestratorName, null);
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
@@ -113,8 +117,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue ?? value,
                     this.parameterInfo.ParameterType);
 
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                bindingData[this.parameterInfo.Name] = convertedValue;
+                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [this.parameterInfo.Name] = convertedValue,
+                };
 
                 // We don't specify any return value binding because we process the return value
                 // earlier in the pipeline via the InvokeHandler extensibility.

@@ -13,11 +13,10 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Parameter data for orchestration bindings that can be used to schedule function-based activities.
@@ -265,17 +264,17 @@ namespace Microsoft.Azure.WebJobs
         Task<TResult> IInterleavingContext.CallActorAsync<TResult>(ActorId actorId, string operationName, object operationContent)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<TResult>(actorId.ActorClass, FunctionType.Actor, false, TaskActorShim.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<TResult>(actorId.ActorClass, FunctionType.Actor, false, ActorId.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
         }
 
         /// <inheritdoc/>
         Task IInterleavingContext.CallActorAsync(ActorId actorId, string operationName, object operationContent)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<object>(actorId.ActorClass, FunctionType.Actor, false, TaskActorShim.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<object>(actorId.ActorClass, FunctionType.Actor, false, ActorId.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
         }
 
-        ///<inheritdoc/>
+        /// <inheritdoc/>
         Task<IDisposable> IInterleavingContext.LockAsync(params ActorId[] actors)
         {
             this.ThrowIfInvalidAccess();
