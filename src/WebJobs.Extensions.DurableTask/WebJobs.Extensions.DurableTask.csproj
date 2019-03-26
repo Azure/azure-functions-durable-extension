@@ -7,7 +7,7 @@
     <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
     <MajorVersion>1</MajorVersion>
     <MinorVersion>8</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>1</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
