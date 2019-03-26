@@ -45,6 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownOrchestrators =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
+        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActors =
+            new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
+
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
@@ -127,16 +130,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var rule = context.AddBindingRule<OrchestrationClientAttribute>()
                 .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
-                .AddConverter<DurableOrchestrationClient, string>(bindings.DurableOrchestrationClientToString);
+                .AddConverter<IDurableOrchestrationClient, string>(bindings.DurableOrchestrationClientToString);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
-            rule.BindToInput<DurableOrchestrationClient>(this.GetClient);
+            rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
+
+            context.AddBindingRule<ActorTriggerAttribute>()
+                .BindToTrigger(new ActorTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
             this.orchestrationServiceSettings = this.GetOrchestrationServiceSettings();
             this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
@@ -203,8 +209,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
         TaskOrchestration INameVersionObjectManager<TaskOrchestration>.GetObject(string name, string version)
         {
-            var context = new DurableOrchestrationContext(this, name);
-            return new TaskOrchestrationShim(this, context);
+            if (name.StartsWith("@"))
+            {
+                return new TaskActorShim(this, name);
+            }
+            else
+            {
+                return new TaskOrchestrationShim(this, name);
+            }
         }
 
         /// <summary>
@@ -243,8 +255,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            TaskOrchestrationShim shim = (TaskOrchestrationShim)dispatchContext.GetProperty<TaskOrchestration>();
-            DurableOrchestrationContext context = shim.Context;
+            TaskCommonShim shim = (TaskCommonShim)dispatchContext.GetProperty<TaskOrchestration>();
+            DurableCommonContext context = shim.Context;
 
             OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
 
@@ -256,18 +268,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance.InstanceId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
-            context.SetInput(orchestrationRuntimeState.Input);
+            context.RawInput = orchestrationRuntimeState.Input;
 
-            FunctionName orchestratorFunction = new FunctionName(context.Name);
-
-            RegisteredFunctionInfo info;
-            if (!this.knownOrchestrators.TryGetValue(orchestratorFunction, out info))
+            var info = shim.GetFunctionInfo();
+            if (info == null)
             {
-                string message = this.GetInvalidOrchestratorFunctionMessage(orchestratorFunction.Name);
+                string message = this.GetInvalidOrchestratorFunctionMessage(context.FunctionName);
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,
-                    orchestratorFunction.Name,
-                    orchestrationRuntimeState.OrchestrationInstance.InstanceId,
+                    context.FunctionName,
+                    context.InstanceId,
                     message);
                 throw new InvalidOperationException(message);
             }
@@ -309,6 +319,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await context.RunDeferredTasks();
         }
 
+        internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
+        {
+            this.knownOrchestrators.TryGetValue(orchestratorFunction, out var info);
+            return info;
+        }
+
+        internal RegisteredFunctionInfo GetActorInfo(FunctionName actorFunction)
+        {
+            this.knownActors.TryGetValue(actorFunction, out var info);
+            return info;
+        }
+
         // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
@@ -338,7 +360,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="attribute">The attribute containing the client configuration parameters.</param>
         /// <returns>Returns a <see cref="DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
-        protected internal virtual DurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        protected internal virtual IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -473,14 +495,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
-        {
-            RegisteredFunctionInfo info;
-            this.knownOrchestrators.TryGetValue(orchestratorFunction, out info);
-
-            return info;
-        }
-
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
             if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
@@ -513,6 +527,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId: string.Empty,
                     functionName: activityFunction.Name,
                     message: $"Deregistered activity function named {activityFunction}.",
+                    writeToUserLogs: false);
+            }
+        }
+
+        internal void RegisterActor(FunctionName actorFunction, RegisteredFunctionInfo actorInfo)
+        {
+            if (actorInfo != null)
+            {
+                actorInfo.IsDeregistered = false;
+            }
+
+            if (this.knownActors.TryAdd(actorFunction, actorInfo))
+            {
+                this.TraceHelper.ExtensionInformationalEvent(
+                    this.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: actorFunction.Name,
+                    message: $"Registered actor function named {actorFunction}.",
+                    writeToUserLogs: false);
+            }
+            else
+            {
+                this.knownActors[actorFunction] = actorInfo;
+            }
+        }
+
+        internal void DeregisterActor(FunctionName actorFunction)
+        {
+            RegisteredFunctionInfo existing;
+            if (this.knownOrchestrators.TryGetValue(actorFunction, out existing) && !existing.IsDeregistered)
+            {
+                existing.IsDeregistered = true;
+
+                this.TraceHelper.ExtensionInformationalEvent(
+                    this.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: actorFunction.Name,
+                    message: $"Deregistered actor function named {actorFunction}.",
                     writeToUserLogs: false);
             }
         }

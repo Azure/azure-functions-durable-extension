@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
 
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
             while (true)
             {
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
             PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(instanceId);
             if (purgeHistoryResult == null || purgeHistoryResult.InstancesDeleted == 0)
             {
@@ -295,7 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleDeleteHistoryWithFiltersRequestAsync(HttpRequestMessage request)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var createdTimeFrom =
                 GetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeFrom", DateTime.MinValue);
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
 
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, defaultValue: false);
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
 
             var status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                DurableOrchestrationClientBase client = this.GetClient(request);
+                IDurableOrchestrationClient client = this.GetClient(request);
 
                 object input = null;
                 if (request.Content != null)
@@ -516,7 +516,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            HttpRequestMessage request,
            string instanceId)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
 
             var status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string eventName)
         {
-            DurableOrchestrationClientBase client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request);
 
             var status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        private DurableOrchestrationClientBase GetClient(HttpRequestMessage request)
+        private IDurableOrchestrationClient GetClient(HttpRequestMessage request)
         {
             string taskHub = null;
             string connectionName = null;
@@ -615,7 +615,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // protected virtual to allow mocking in unit tests.
-        protected virtual DurableOrchestrationClientBase GetClient(OrchestrationClientAttribute attribute)
+        protected virtual IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
         {
             return this.config.GetClient(attribute);
         }

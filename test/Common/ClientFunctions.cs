@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         [NoAutomaticTrigger]
         public static async Task StartFunction(
-            [OrchestrationClient] DurableOrchestrationClient client,
+            [OrchestrationClient] IDurableOrchestrationClient client,
             string functionName,
             string instanceId,
             object input,
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // NOTE: The TestTaskHub app setting name must exist in order for the job host to successfully index this function.
         [NoAutomaticTrigger]
         public static async Task StartFunctionWithTaskHub(
-            [OrchestrationClient(TaskHub = "%TestTaskHub%")] DurableOrchestrationClient client,
+            [OrchestrationClient(TaskHub = "%TestTaskHub%")] IDurableOrchestrationClient client,
             string functionName,
             string instanceId,
             object input,
