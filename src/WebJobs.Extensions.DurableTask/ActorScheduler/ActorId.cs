@@ -17,8 +17,8 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Create an actor id for an actor.
         /// </summary>
-        /// <param name="actorClass">the name of the actor class.</param>
-        /// <param name="actorKey">the actor key.</param>
+        /// <param name="actorClass">The name of the actor class.</param>
+        /// <param name="actorKey">The actor key.</param>
         public ActorId(string actorClass, string actorKey)
         {
             if (string.IsNullOrEmpty(actorClass))

@@ -261,7 +261,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="context">The context object.</param>
         /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <returns>a task representing the result of the operation.</returns>
+        /// <returns>A task representing the result of the operation.</returns>
         public static Task<TResult> CallActorAsync<TResult>(this IInterleavingContext context, ActorId actorId, string operationName)
         {
             return context.CallActorAsync<TResult>(actorId, operationName, null);
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="context">The context object.</param>
         /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <returns>a task representing the completion of the operation on the actor.</returns>
+        /// <returns>A task representing the completion of the operation on the actor.</returns>
         public static Task CallActorAsync(this IInterleavingContext context, ActorId actorId, string operationName)
         {
             return context.CallActorAsync<object>(actorId, operationName, null);

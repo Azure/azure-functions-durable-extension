@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationContent">The content (input argument) of the operation.</param>
-        /// <returns>a task representing the result of the operation.</returns>
+        /// <returns>A task representing the result of the operation.</returns>
         /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         Task<TResult> CallActorAsync<TResult>(ActorId actorId, string operationName, object operationContent);
 
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="actorId">The target actor.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationContent">The content for the operation.</param>
-        /// <returns>a task representing the completion of the operation on the actor.</returns>
+        /// <returns>A task representing the completion of the operation on the actor.</returns>
         /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
         Task CallActorAsync(ActorId actorId, string operationName, object operationContent);
 

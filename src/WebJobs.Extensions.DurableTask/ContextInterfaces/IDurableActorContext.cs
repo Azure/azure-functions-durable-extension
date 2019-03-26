@@ -48,8 +48,8 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets a typed view of the state, by deserializing the JSON.
         /// </summary>
-        /// <typeparam name="TState">the JSON-serializable type of the actor state.</typeparam>
-        /// <returns>a typed view that allows reading and updating.</returns>
+        /// <typeparam name="TState">The JSON-serializable type of the actor state.</typeparam>
+        /// <returns>A typed view that allows reading and updating.</returns>
         IStateView<TState> GetState<TState>(Formatting formatting = Formatting.Indented, JsonSerializerSettings settings = null);
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs
         void Return(object result);
 
         /// <summary>
-        /// Delete this actor after this operation completes.
+        /// Deletes this actor after this operation completes.
         /// </summary>
         void DestructOnExit();
     }
