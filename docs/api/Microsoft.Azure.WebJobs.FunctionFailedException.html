@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class FunctionFailedException
    ">
-    <meta name="generator" content="docfx 2.40.4.0">
+    <meta name="generator" content="docfx 2.40.12.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -145,7 +145,8 @@ with an error.</p>
   <h6><strong>Assembly</strong>: Microsoft.Azure.WebJobs.Extensions.DurableTask.dll</h6>
   <h5 id="Microsoft_Azure_WebJobs_FunctionFailedException_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class FunctionFailedException : Exception, ISerializable</code></pre>
+    <pre><code class="lang-csharp hljs">[Serializable]
+public class FunctionFailedException : Exception, ISerializable</code></pre>
   </div>
   <h5 id="Microsoft_Azure_WebJobs_FunctionFailedException_remarks"><strong>Remarks</strong></h5>
   <div class="markdown level0 remarks"><p>The <code>InnerException</code> property of this instance will contain additional information

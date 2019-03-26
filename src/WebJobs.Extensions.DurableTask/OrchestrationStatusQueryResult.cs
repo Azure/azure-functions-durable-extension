@@ -11,13 +11,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class OrchestrationStatusQueryResult
     {
         /// <summary>
-        /// A collection of statuses of orchestration instances matching the query description.
+        /// Gets or sets a collection of statuses of orchestration instances matching the query description.
         /// </summary>
+        /// <value>A collection of orchestration instance status values.</value>
         public IEnumerable<DurableOrchestrationStatus> DurableOrchestrationState { get; set; }
 
         /// <summary>
-        /// A token that can be used to resume the query with data not already returned by this query.
+        /// Gets or sets a token that can be used to resume the query with data not already returned by this query.
         /// </summary>
+        /// <value>A server-generated continuation token or <c>null</c> if there are no further continuations.</value>
         public string ContinuationToken { get; set; }
     }
 }
