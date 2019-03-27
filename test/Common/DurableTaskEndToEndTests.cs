@@ -2284,7 +2284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates simple actor scenario.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration_SignalAndCallStringStore(bool extendedSessions)
@@ -2316,7 +2316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates simple actor scenario.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ActorOrchestration_StringStoreWithCreateDelete(bool extendedSessions)
