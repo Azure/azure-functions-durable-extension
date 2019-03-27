@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public static class PlatformSpecificHelpers
     {
         public const string VersionSuffix = "V2";
-        public const string TestCategory = "DurableFunctions" + VersionSuffix;
+        public const string TestCategory = "Functions" + VersionSuffix;
         public const string FlakeyTestCategory = TestCategory + "_Flakey";
 
         public static JobHost CreateJobHost(
