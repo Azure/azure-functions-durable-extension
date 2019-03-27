@@ -42,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return trait.Key.Equals("Category") &&
                 (trait.Value.Equals(PlatformSpecificHelpers.TestCategory) ||
                 trait.Value.Equals(PlatformSpecificHelpers.TestCategory + "_BVT") ||
+                trait.Value.Equals(PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies") ||
                 trait.Value.Equals(PlatformSpecificHelpers.FlakeyTestCategory));
         }
     }
