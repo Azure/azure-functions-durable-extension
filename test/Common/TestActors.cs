@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -86,8 +87,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     state.Value += context.GetOperationContent<int>();
                     break;
 
-                case "read":
+                case "get":
                     context.Return(state.Value);
+                    break;
+
+                case "set":
+                    state.Value = context.GetOperationContent<int>();
                     break;
 
                 case "delete":
@@ -191,39 +196,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        //-------------- an actor that stores a string, and whose state is
+        //-------------- an actor that stores text, and whose state is
         //                  saved/restored to/from storage when the actor is deactivated/activated -----------------
         //
         // it offers three operations:
-        // "set" (takes a string assigns it to the current state, does not return anything)
-        // "get" (returns a string containing the current state)
+        // "clear" sets the current value to empty
+        // "append" appends the string provided in the content to the current value
+        // "get" returns the current value
         // "deactivate" destructs the actor (after saving its current state in the backing storage)
-        //
-        // since this is a unit test we use a file for simplicity but in a real scenario, you would use
-        // cloud storage of some kind.
 
-        public static async void StorageBackedStringStoreActor([ActorTrigger(ActorClassName = "StorageBackedStringStore")] IDurableActorContext context)
+        public static async Task BlobBackedTextStoreActor([ActorTrigger(ActorClassName = "BlobBackedTextStore")] IDurableActorContext context)
         {
-            var state = context.GetState<string>();
+            // we define the actor state to be a string builder so we can more efficiently append to it
+            var state = context.GetState<StringBuilder>();
 
             if (context.IsNewlyConstructed)
             {
-                // check if there is a file containing a saved state we should restore
-                try
-                {
-                    state.Value = await context.CallActivityAsync<string>("ReadStringFromFile", BackingFileName(context.Key));
-                }
-                catch (FileNotFoundException)
-                {
-                    // there was no file so we null as the initial state
-                    state.Value = null;
-                }
+                // try to load state from existing blob
+                var currentFileContent = await context.CallActivityAsync<string>(
+                         nameof(TestActivities.LoadStringFromTextBlob),
+                         context.Key);
+                state.Value = new StringBuilder(currentFileContent ?? "");
             }
 
             switch (context.OperationName)
             {
-                case "set":
-                    state.Value = context.GetOperationContent<string>();
+                case "clear":
+                    state.Value.Clear();
+                    break;
+
+                case "append":
+                    state.Value.Append(context.GetOperationContent<string>());
                     break;
 
                 case "get":
@@ -231,19 +234,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "deactivate":
-                    string fileName = $"C:/actors/wbr-{context.Key}";
-                    await context.CallActivityAsync("WriteStringToFile", new string[] { fileName, state.Value });
+                    // first, store the current value in a blob
+                    await context.CallActivityAsync(
+                        nameof(TestActivities.WriteStringToTextBlob),
+                        (context.Key, state.Value.ToString()));
+
+                    // then, destruct this actor (and all of its state)
                     context.DestructOnExit();
                     break;
 
                 default:
                     throw new NotImplementedException("no such operation");
             }
-        }
-
-        private static string BackingFileName(string actorKey)
-        {
-            return $"C:/actors/{actorKey}"; // I am not bothering to sanitize the key for this simple sample
         }
 
         //-------------- an actor representing a chat room -----------------

@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -123,6 +124,36 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
         Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null);
+
+        /// <summary>
+        /// Signals an actor to perform an operation.
+        /// </summary>
+        /// <param name="actorId">The target actor.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationContent">The content for the operation.</param>
+        /// <returns>A task that completes when the signal has been reliably enqueued.</returns>
+        Task SignalActor(ActorId actorId, string operationName, object operationContent = null);
+
+        /// <summary>
+        /// Signals an actor to perform an operation.
+        /// </summary>
+        /// <param name="taskHubName">The TaskHubName of the target actor.</param>
+        /// <param name="actorId">The target actor.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationContent">The content for the operation.</param>
+        /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        Task SignalActor(string taskHubName, ActorId actorId, string operationName, object operationContent = null, string connectionName = null);
+
+        /// <summary>
+        /// Tries to read the current state of an actor. Returns default(<typeparamref name="T"/>) if the actor does not
+        /// exist, or if the JSON-serialized state of the actor is larger than 16KB.
+        /// </summary>
+        /// <typeparam name="T">The JSON-serializable type of the actor.</typeparam>
+        /// <param name="actorId">The target actor.</param>
+        /// <param name="settings">The settings to use for deserializing the JSON state.</param>
+        /// <returns>the current state of the actor, if successfully retrieved, or default(<typeparamref name="T"/>) otherwise.</returns>
+        Task<T> ReadActorState<T>(ActorId actorId, JsonSerializerSettings settings = null);
 
         /// <summary>
         /// Terminates a running orchestration instance.

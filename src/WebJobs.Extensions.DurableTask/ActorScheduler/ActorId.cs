@@ -33,14 +33,14 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// The name of the actor class.
         /// </summary>
-        [JsonProperty("class")]
-        public string ActorClass { get; }
+        [JsonProperty(PropertyName = "class", Required = Required.Always)]
+        public string ActorClass { get; private set; } // do not remove set, is needed by Json Deserializer
 
         /// <summary>
         /// The actor key. Uniquely identifies an actor among all instances of the same class.
         /// </summary>
-        [JsonProperty("key")]
-        public string ActorKey { get; }
+        [JsonProperty(PropertyName = "key", Required = Required.Always)]
+        public string ActorKey { get; private set; } // do not remove set, is needed by Json Deserializer
 
         internal static string GetSchedulerIdFromActorId(ActorId actorId)
         {

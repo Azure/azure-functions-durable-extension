@@ -53,16 +53,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.context.GetSerializedCustomStatus();
         }
 
+        public override void TraceAwait()
+        {
+            this.Config.TraceHelper.FunctionAwaited(
+                this.context.HubName,
+                this.context.Name,
+                this.context.FunctionType,
+                this.context.InstanceId,
+                null,
+                null,
+                this.context.IsReplaying);
+        }
+
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
         {
-            this.Config.TraceHelper.ExternalEventRaised(
-                this.Context.HubName,
-                this.Context.Name,
-                this.Context.InstanceId,
-                eventName,
-                this.Config.GetIntputOutputTrace(serializedEventData),
-                this.Context.IsReplaying);
-
             this.Context.RaiseEvent(eventName, serializedEventData);
         }
 
@@ -80,6 +84,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
+                null,
+                null,
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
@@ -117,6 +123,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
+                    null,
+                    null,
                     exceptionDetails,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
@@ -164,12 +172,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
+            // release any locks that were held by the orchestration
+            // just in case the application code did not do so already
+            this.context.ReleaseLocks();
+
             string serializedOutput = this.context.GetSerializedOutput();
 
             this.Config.TraceHelper.FunctionCompleted(
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
+                null,
+                null,
                 this.Config.GetIntputOutputTrace(serializedOutput),
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
@@ -262,7 +276,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             ((IDurableOrchestrationContext)this.context).ContinueAsNew(action.Input);
                             break;
                         case AsyncActionType.WaitForExternalEvent:
-                            tasks.Add(this.Context.WaitForExternalEvent<object>(action.ExternalEventName));
+                            tasks.Add(this.Context.WaitForExternalEvent<object>(action.ExternalEventName, "ExternalEvent"));
                             break;
                         default:
                             break;

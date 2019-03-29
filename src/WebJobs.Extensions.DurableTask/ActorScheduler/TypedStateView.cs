@@ -31,15 +31,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.formatting = formatting;
             this.settings = settings ?? defaultSettings;
 
-            var actorState = context.State.ActorState;
-
-            if (actorState == null)
+            if (context.State.ActorState == null)
             {
                 this.state = default(T);
             }
             else
             {
-                this.state = JsonConvert.DeserializeObject<T>(actorState, this.settings);
+                this.state = JsonConvert.DeserializeObject<T>(context.State.ActorState, this.settings);
             }
         }
 
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             get
             {
                 this.context.ThrowIfInvalidAccess();
-                if (this.context.State?.CurrentStateView != this)
+                if (this.context.CurrentStateView != this)
                 {
                     throw new ObjectDisposedException(nameof(TypedStateView<T>), "The state view is no longer valid.");
                 }
@@ -59,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             set
             {
                 this.context.ThrowIfInvalidAccess();
-                if (this.context.State?.CurrentStateView != this)
+                if (this.context.CurrentStateView != this)
                 {
                     throw new ObjectDisposedException(nameof(TypedStateView<T>), "The state view is no longer valid.");
                 }
@@ -75,10 +73,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         void IDisposable.Dispose()
         {
-            if (this.context.State?.CurrentStateView == this)
+            if (this.context.CurrentStateView == this)
             {
                 this.WriteBack();
-                this.context.State.CurrentStateView = null;
+                this.context.CurrentStateView = null;
             }
         }
     }

@@ -154,6 +154,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        Task IDurableOrchestrationClient.SignalActor(string taskHubName, ActorId actorId, string operationName, object operationContent, string connectionName)
+        {
+            if (string.IsNullOrEmpty(connectionName))
+            {
+                connectionName = this.attribute.ConnectionName;
+            }
+
+            var attribute = new OrchestrationClientAttribute
+            {
+                TaskHub = taskHubName,
+                ConnectionName = connectionName,
+            };
+
+            TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
+            return this.SignalActor(taskHubClient, taskHubName, actorId, operationName, operationContent);
+        }
+
+        /// <inheritdoc />
+        Task IDurableOrchestrationClient.SignalActor(ActorId actorId, string operationName, object operationContent)
+        {
+            if (string.IsNullOrEmpty(operationName))
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
+            return this.SignalActor(this.client, this.hubName, actorId, operationName, operationContent);
+        }
+
+        private async Task SignalActor(TaskHubClient client, string hubName, ActorId actorId, string operationName, object operationContent)
+        {
+            if (string.IsNullOrEmpty(operationName))
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
+            var guid = Guid.NewGuid(); // unique id for this request
+            var instanceId = ActorId.GetSchedulerIdFromActorId(actorId);
+            var instance = new OrchestrationInstance() { InstanceId = instanceId };
+            var request = new RequestMessage()
+            {
+                ParentInstanceId = null,
+                Id = guid,
+                IsSignal = true,
+                Operation = operationName,
+            };
+            if (operationContent != null)
+            {
+                request.SetContent(operationContent);
+            }
+
+            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
+            await client.RaiseEventAsync(instance, "op", jrequest);
+
+            this.traceHelper.FunctionScheduled(
+                hubName,
+                actorId.ActorClass,
+                ActorId.GetSchedulerIdFromActorId(actorId),
+                reason: $"ActorSignal:{operationName}",
+                functionType: FunctionType.Actor,
+                isReplay: false);
+        }
+
+        /// <inheritdoc />
         async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
@@ -265,6 +328,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return results;
+        }
+
+        /// <inheritdoc />
+        async Task<T> IDurableOrchestrationClient.ReadActorState<T>(ActorId actorId, JsonSerializerSettings settings)
+        {
+            // TODO this cast is to avoid to change DurableTask.Core. Change it to use TaskHubClient.
+            var storageService = (AzureStorageOrchestrationService)this.client.ServiceClient;
+            var instanceId = ActorId.GetSchedulerIdFromActorId(actorId);
+            IList<OrchestrationState> stateList = await storageService.GetOrchestrationStateAsync(instanceId, false);
+
+            OrchestrationState state = stateList?.FirstOrDefault();
+            if (state == null
+                || state.OrchestrationInstance == null
+                || string.IsNullOrEmpty(state.Status)
+                || state.Status.StartsWith("Large"))
+            {
+                return default(T);
+            }
+            else
+            {
+                return JsonConvert.DeserializeObject<T>(state.Status, settings);
+            }
         }
 
         /// <inheritdoc />

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -58,27 +59,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new Exception(message);
         }
 
-        public static Task<string> ReadStringFromTextFile([ActivityTrigger] IDurableActivityContext ctx)
+        public static async Task<string> LoadStringFromTextBlob(
+            [ActivityTrigger] string blobName)
         {
-            string fileName = ctx.GetInput<string>();
-            using (StreamReader streamReader = new StreamReader(fileName, Encoding.UTF8))
+            string connectionString = TestHelpers.GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            try
             {
-                return streamReader.ReadToEndAsync();
+                return await blob.DownloadTextAsync();
+            }
+            catch (StorageException e)
+                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
+            {
+                // if the blob does not exist, just return null.
+                return null;
             }
         }
 
-        public static Task WriteStringToTextFile([ActivityTrigger] IDurableActivityContext ctx)
+        public static async Task WriteStringToTextBlob(
+           [ActivityTrigger](string blobName, string content) input)
         {
-            var input = ctx.GetInput<string[]>();
-            var fileName = input[0];
-            var content = input[1];
-            using (var fileStream = new FileStream(fileName, FileMode.OpenOrCreate))
-            {
-                using (var streamWriter = new StreamWriter(fileStream, Encoding.UTF8))
-                {
-                    return streamWriter.WriteAsync(content);
-                }
-            }
+            string connectionString = TestHelpers.GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(input.blobName);
+            await blob.UploadTextAsync(input.content);
+        }
+
+        public static void DeleteTextFile([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            var filename = ctx.GetInput<string>();
+            var info = new FileInfo(filename);
+            info.Delete(); // would prefer async but it does not seem to exist
         }
 
         public static string BigReturnValue([ActivityTrigger] int stringLength)

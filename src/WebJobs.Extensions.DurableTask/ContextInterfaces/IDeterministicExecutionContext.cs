@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs
         /// if an orchestration calls a suborchestration without lending any locks.
         /// </remarks>
         /// <returns><c>true</c> if the context already holds some locks.</returns>
-        bool IsLocked(out IReadOnlyList<string> ownedLocks);
+        bool IsLocked(out IReadOnlyList<ActorId> ownedLocks);
 
         /// <summary>
         /// Creates a new GUID that is safe for replay within an orchestration or operation.

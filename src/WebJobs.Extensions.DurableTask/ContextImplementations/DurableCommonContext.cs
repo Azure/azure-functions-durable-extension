@@ -46,6 +46,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string FunctionName { get; }
 
+        internal abstract FunctionType FunctionType { get; }
+
+        protected List<ActorId> ContextLocks { get; set; }
+
+        protected string LockRequestId { get; set; }
+
         internal bool IsReplaying
         {
             get
@@ -112,9 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        bool IDeterministicExecutionContext.IsLocked(out IReadOnlyList<string> ownedLocks)
+        bool IDeterministicExecutionContext.IsLocked(out IReadOnlyList<ActorId> ownedLocks)
         {
-            throw new NotImplementedException(); // TODO implement this.
+            ownedLocks = this.ContextLocks;
+            return this.ContextLocks != null;
         }
 
         /// <inheritdoc/>
@@ -186,6 +193,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask = null;
+            ActorId? lockToUse = null;
+            string operationId = null;
+            string operationName = null;
 
             switch (functionType)
             {
@@ -219,22 +229,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         throw new NotImplementedException(); // TODO
                     }
-                    else if (retryOptions == null)
-                    {
-                        callTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
-                            functionName,
-                            version,
-                            instanceId,
-                            input);
-                    }
                     else
                     {
-                        callTask = this.InnerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(
-                            functionName,
-                            version,
-                            instanceId,
-                            retryOptions.GetRetryOptions(),
-                            input);
+                        if (this.ContextLocks != null)
+                        {
+                            throw new LockingRulesViolationException("While holding locks, cannot call suborchestrators.");
+                        }
+
+                        if (retryOptions == null)
+                        {
+                            callTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                input);
+                        }
+                        else
+                        {
+                            callTask = this.InnerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                retryOptions.GetRetryOptions(),
+                                input);
+                        }
                     }
 
                     break;
@@ -244,21 +262,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for actor calls.");
                     System.Diagnostics.Debug.Assert(instanceId != null, "Actor calls need to specify the target actor.");
 
+                    if (this.ContextLocks != null)
+                    {
+                        lockToUse = ActorId.GetActorIdFromSchedulerId(instanceId);
+                        if (oneWay)
+                        {
+                            if (this.ContextLocks.Contains(lockToUse.Value))
+                            {
+                                throw new LockingRulesViolationException("While holding locks, cannot signal actors whose lock is held.");
+                            }
+                        }
+                        else
+                        {
+                            if (!this.ContextLocks.Remove(lockToUse.Value))
+                            {
+                                throw new LockingRulesViolationException("While holding locks, cannot call actors whose lock is not held.");
+                            }
+                        }
+                    }
+
                     var guid = this.NewGuid(); // deterministically replayable unique id for this request
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
-                    var request = new OperationMessage()
+                    operationId = guid.ToString();
+                    operationName = operation;
+                    var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
                         Id = guid,
                         IsSignal = oneWay,
                         Operation = operation,
                     };
-                    request.SetContent(input);
-                    this.InnerContext.SendEvent(target, "op", request);
+                    if (input != null)
+                    {
+                        request.SetContent(input);
+                    }
+
+                    var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
+                    this.InnerContext.SendEvent(target, "op", jrequest);
 
                     if (!oneWay)
                     {
-                        callTask = this.WaitForResponseMessage<TResult>(guid);
+                        callTask = this.WaitForActorResponse<TResult>(guid, lockToUse);
                     }
 
                     break;
@@ -326,6 +370,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.Options.HubName,
                         functionName,
                         this.InstanceId,
+                        operationId,
+                        operationName,
                         reason: $"(replayed {exception.GetType().Name})",
                         functionType: functionType,
                         isReplay: true);
@@ -340,6 +386,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Config.Options.HubName,
                     functionName,
                     this.InstanceId,
+                    operationId,
+                    operationName,
                     output: "(replayed)",
                     continuedAsNew: false,
                     functionType: functionType,
@@ -349,7 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return output;
         }
 
-        internal Task<T> WaitForExternalEvent<T>(string name)
+        internal Task<T> WaitForExternalEvent<T>(string name, string reason)
         {
             lock (this.pendingExternalEvents)
             {
@@ -399,7 +447,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.Options.HubName,
                         this.FunctionName,
                         this.InstanceId,
-                        reason: $"WaitForExternalEvent:{name}",
+                        reason: $"WaitFor{reason}:{name}",
                         isReplay: this.InnerContext.IsReplaying);
                 }
 
@@ -407,9 +455,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal async Task<TResult> WaitForResponseMessage<TResult>(Guid guid)
+        internal async Task<TResult> WaitForActorResponse<TResult>(Guid guid, ActorId? lockToUse)
         {
-            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString());
+            string reason = $"WaitForActorResponse:{guid.ToString()}";
+            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "ActorResponse");
+
+            if (lockToUse.HasValue)
+            {
+                // the lock is available again now that the actor call returned
+                this.ContextLocks.Add(lockToUse.Value);
+            }
+
+            // can rethrow an exception if that was the result of the operation
             return response.GetResult<TResult>();
         }
 
@@ -432,6 +489,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
+
+                    if (deserializedObject is ResponseMessage responseMessage)
+                    {
+                        this.Config.TraceHelper.ActorResponseReceived(
+                            this.HubName,
+                            this.Name,
+                            this.InstanceId,
+                            name,
+                            this.Config.GetIntputOutputTrace(responseMessage.Result),
+                            this.IsReplaying);
+                    }
+                    else
+                    {
+                        this.Config.TraceHelper.ExternalEventRaised(
+                             this.HubName,
+                             this.Name,
+                             this.InstanceId,
+                             name,
+                             this.Config.GetIntputOutputTrace(input),
+                             this.IsReplaying);
+                    }
+
                     MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
                     trySetResult.Invoke(tcs, new[] { deserializedObject });
                 }
@@ -449,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Config.TraceHelper.ExternalEventSaved(
                         this.HubName,
                         this.Name,
+                        this.FunctionType,
                         this.InstanceId,
                         name,
                         this.IsReplaying);

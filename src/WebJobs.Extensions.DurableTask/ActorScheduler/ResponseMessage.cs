@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty(PropertyName = "result")]
         public string Result { get; set; }
 
-        [JsonProperty(PropertyName = "exceptionType", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "exceptionType", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string ExceptionType { get; set; }
 
         [JsonIgnore]
