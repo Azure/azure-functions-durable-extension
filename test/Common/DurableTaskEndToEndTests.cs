@@ -2281,7 +2281,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates a simple actor scenario involving a signal and two calls.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
@@ -2310,15 +2310,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("ok", (string)status?.Output);
 
                 // try to read the state of the actor directly from the client
-                var result = await client.InnerClient.ReadActorState<string>(new ActorId("StringStore2", guid.ToString()));
-                Assert.Equal("333", result);
+                var response = await client.InnerClient.ReadActorState<string>(new ActorId("StringStore2", guid.ToString()));
+                Assert.True(response.ActorExists);
+                Assert.Equal("333", response.ActorState);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates a simple actor scenario involving creation and deletion.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
@@ -2350,7 +2351,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates a simple actor scenario which sends a signal, and then polls
+        /// until the signal is delivered.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
@@ -2386,11 +2388,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates a simple actor scenario where an actor's state is
+        /// larger than what fits into Azure table rows.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
-        //[InlineData(true)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableActor_LargeActor(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LargeActor),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableActor_LargeActor),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var actorId = new ActorId("StringStore2", Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                var response = await client.InnerClient.ReadActorState<string>(actorId);
+                Assert.True(response.ActorExists);
+                Assert.Equal(100000, response.ActorState.Length);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates an actor scenario involving a blob-backed actor that stores text and,
+        /// when deactivated, saves its state to storage. The test concurrently runs an orchestration that
+        /// creates a load of "append" operations, and sends periodic "deactivate" operations to the actor.
+        /// At the end, it validates that all of the appends are reflected in the final state.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [InlineData(true)]
         [InlineData(false)]
         public async Task DurableActor_ActorToAndFromBlob(bool extendedSessions)
         {
@@ -2443,7 +2487,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates an actor scenario where three "LockedIncrement" orchestrations
+        /// concurrently increment a counter saved in blob storage, using a read-modify-write pattern, while holding
+        /// a lock on the same actor. This tests that the lock prevents the interleaving of these orchestrations.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
@@ -2466,7 +2512,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var actorPlayingALock = new ActorId("Counter", Guid.NewGuid().ToString()); // does not matter what actor we use
 
-                // start two concurrent increment operations
+                // start three concurrent increment operations
                 // the lock should prevent incorrect interleavings
 
                 var client1 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
@@ -2494,7 +2540,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates an actor scenario where a "LockedTransfer" orchestration locks
+        /// two "Counter" actors, and then in parallel increments/decrements them, respectively, using
+        /// a read-modify-write pattern.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
@@ -2522,12 +2570,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
+                // validate the state of the counters
+                var response1 = await client.InnerClient.ReadActorState<int>(counter1);
+                var response2 = await client.InnerClient.ReadActorState<int>(counter2);
+                Assert.True(response1.ActorExists);
+                Assert.True(response2.ActorExists);
+                Assert.Equal(-1, response1.ActorState);
+                Assert.Equal(1, response2.ActorState);
+
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates simple actor scenario.
+        /// End-to-end test which validates an actor scenario where a a number of "LockedTransfer" orchestrations
+        /// concurrently operate on a number of actors, in a classical dining-philosophers configuration.
+        /// This showcases the deadlock prevention mechanism achieved by the sequential, ordered lock acquisition.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
@@ -2553,7 +2611,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     counters[i] = new ActorId("Counter", Guid.NewGuid().ToString());
                 }
 
-                // in parallel, start one transfer counter, each decrementing a counter and incrementing
+                // in parallel, start one transfer per counter, each decrementing a counter and incrementing
                 // its successor (where the last one wraps around to the first)
                 // This is a pattern that would deadlock if we didn't order the lock acquisition.
                 var clients = new Task<TestOrchestratorClient>[numberActors];
@@ -2583,7 +2641,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 // in parallel, read all the actor states
-                var actorStates = new Task<int>[numberActors];
+                var actorStates = new Task<ActorStateResponse<int>>[numberActors];
                 for (int i = 0; i < numberActors; i++)
                 {
                     actorStates[i] = clients[i].Result.InnerClient.ReadActorState<int>(counters[i]);
@@ -2595,7 +2653,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // (since each participated in 2 transfers, one incrementing and one decrementing)
                 for (int i = 0; i < numberActors; i++)
                 {
-                    Assert.Equal(0, actorStates[i].Result);
+                    Assert.True(actorStates[i].Result.ActorExists);
+                    Assert.Equal(0, actorStates[i].Result.ActorState);
                 }
 
                 await host.StopAsync();

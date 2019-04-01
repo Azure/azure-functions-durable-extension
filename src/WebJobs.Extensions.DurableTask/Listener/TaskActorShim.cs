@@ -60,26 +60,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override string GetStatus()
         {
-            this.context.CurrentStateView?.WriteBack();
+            // We assemble a status object that compactly describes the current
+            // state of the actor scheduler. It excludes all potentially large data
+            // such as the actor state or the contents of the queue, so it always
+            // has reasonable latency.
 
-            if (!this.context.State.ActorExists || this.context.State.ActorState == null)
+            ActorCurrentOperationStatus opStatus = null;
+            if (this.context.CurrentOperation != null)
             {
-                return "";
+                opStatus = new ActorCurrentOperationStatus()
+                {
+                    Operation = this.context.CurrentOperation.Operation,
+                    Id = this.context.CurrentOperation.Id,
+                    ParentInstanceId = this.context.CurrentOperation.ParentInstanceId,
+                    StartTime = this.context.CurrentOperationStartTime,
+                };
             }
-            else
-            {
-                int payloadSizeInKB = (int)(Encoding.Unicode.GetByteCount(this.context.State.ActorState) / 1024.0);
 
-                if (payloadSizeInKB <= 16)
-                {
-                    return this.context.State.ActorState;
-                }
-                else
-                {
-                    // this is not a valid JSON string so it cannot be mistaken for the actual actor state
-                    return $"Large ({payloadSizeInKB} KB)";
-                }
-            }
+            return MessagePayloadDataConverter.Default.Serialize(new ActorStatus()
+            {
+                ActorExists = this.context.State.ActorExists,
+                QueueSize = this.context.State.Queue?.Count ?? 0,
+                LockedBy = this.context.State.LockedBy,
+                CurrentOperation = opStatus,
+            });
         }
 
         private void SignalContinueAsNew()
@@ -254,12 +258,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private Task ProcessLockRequestAsync(RequestMessage request)
         {
             this.Config.TraceHelper.ActorLockAcquired(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        request.ParentInstanceId,
-                        request.Id.ToString(),
-                        this.context.IsReplaying);
+                this.context.HubName,
+                this.context.Name,
+                this.context.InstanceId,
+                request.ParentInstanceId,
+                request.Id.ToString(),
+                this.context.IsReplaying);
 
             System.Diagnostics.Debug.Assert(this.context.State.LockedBy == null, "Lock not held already.");
             this.context.State.LockedBy = request.ParentInstanceId;
@@ -292,20 +296,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set context for operation
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
+            this.context.CurrentOperationStartTime = ((IDeterministicExecutionContext)this.context).CurrentUtcDateTime;
             this.context.IsNewlyConstructed = !this.context.State.ActorExists;
             this.context.State.ActorExists = true;
             this.context.DestructOnExit = false;
             this.context.IsCompleted = false;
 
             this.Config.TraceHelper.FunctionStarting(
-                                    this.context.HubName,
-                                    this.context.Name,
-                                    this.context.InstanceId,
-                                    request.Id.ToString(),
-                                    request.Operation,
-                                    this.Config.GetIntputOutputTrace(request.Content),
-                                    FunctionType.Actor,
-                                    this.context.IsReplaying);
+                this.context.HubName,
+                this.context.Name,
+                this.context.InstanceId,
+                request.Id.ToString(),
+                request.Operation,
+                this.Config.GetIntputOutputTrace(request.Content),
+                FunctionType.Actor,
+                this.context.IsReplaying);
             try
             {
                 Task invokeTask = this.FunctionInvocationCallback();
@@ -338,9 +343,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.InstanceId,
                     request.Id.ToString(),
                     request.Operation,
-                    e.ToString(),
-                    FunctionType.Actor,
-                    this.context.IsReplaying);
+                    reason: e.ToString(),
+                    functionType: FunctionType.Actor,
+                    isReplay: this.context.IsReplaying);
             }
 
             // read and clear context
@@ -382,9 +387,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     request.Id.ToString(),
                     request.Operation,
                     this.Config.GetIntputOutputTrace(response.Result),
-                    false,
-                    FunctionType.Actor,
-                    this.context.IsReplaying);
+                    continuedAsNew: false,
+                    functionType: FunctionType.Actor,
+                    isReplay: this.context.IsReplaying);
 
                 this.numberOperationsStarted++;
                 this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
@@ -400,9 +405,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     request.Id.ToString(),
                     request.Operation,
                     this.Config.GetIntputOutputTrace(response.Result),
-                    true,
-                    FunctionType.Actor,
-                    this.context.IsReplaying);
+                    continuedAsNew: true,
+                    functionType: FunctionType.Actor,
+                    isReplay: this.context.IsReplaying);
             }
         }
 
@@ -414,13 +419,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.context.CurrentOperation != null)
             {
                 this.Config.TraceHelper.FunctionAwaited(
-                this.context.HubName,
-                this.context.Name,
-                this.context.FunctionType,
-                this.context.InstanceId,
-                this.context.CurrentOperation?.Id.ToString(),
-                this.context.CurrentOperation?.Operation,
-                this.context.IsReplaying);
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.FunctionType,
+                    this.context.InstanceId,
+                    this.context.CurrentOperation?.Id.ToString() ?? string.Empty,
+                    this.context.CurrentOperation?.Operation ?? string.Empty,
+                    this.context.IsReplaying);
             }
         }
     }

@@ -341,7 +341,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(220, TaskHub, AppName, SlotName, FunctionName, InstanceId, RequestingInstance, RequestId, FunctionType, ExtensionVersion, IsReplay);
         }
 
-
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

@@ -194,8 +194,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Task<TResult> callTask = null;
             ActorId? lockToUse = null;
-            string operationId = null;
-            string operationName = null;
+            string operationId = string.Empty;
+            string operationName = string.Empty;
 
             switch (functionType)
             {

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public Queue<RequestMessage> Queue { get; private set; }
 
         /// <summary>
-        /// The instance that currently holds the lock of this actor.
+        /// The instance id of the orchestration that currently holds the lock of this actor.
         /// </summary>
         [JsonProperty(PropertyName = "lockedBy", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string LockedBy { get; set; }

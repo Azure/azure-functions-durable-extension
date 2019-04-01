@@ -610,6 +610,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        public static async Task<string> LargeActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var actorId = ctx.GetInput<ActorId>();
+
+            string content = new string('.', 100000);
+            await ctx.CallActorAsync<int>(actorId, "set", content);
+
+            var result = await ctx.CallActorAsync<string>(actorId, "get");
+            if (result != content)
+            {
+                return $"fail: wrong actor state";
+            }
+
+            return "ok";
+        }
+
         public static async Task<string> ActorToAndFromBlob([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // get the ids of the two actors used by this test

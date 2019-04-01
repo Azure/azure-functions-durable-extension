@@ -445,7 +445,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: isReplay);
 
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' queued '{operationName}' operation. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -476,7 +476,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: isReplay);
 
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' received an actor response. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -486,12 +486,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         public void ActorLockAcquired(
-                string hubName,
-                string functionName,
-                string instanceId,
-                string requestingInstance,
-                string requestId,
-                bool isReplay)
+            string hubName,
+            string functionName,
+            string instanceId,
+            string requestingInstance,
+            string requestId,
+            bool isReplay)
         {
             FunctionType functionType = FunctionType.Actor;
 
@@ -507,7 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: isReplay);
 
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' granted lock to request {requestId} by instance {requestingInstance}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -517,12 +517,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         public void ActorLockReleased(
-        string hubName,
-        string functionName,
-        string instanceId,
-        string requestingInstance,
-        string requestId,
-        bool isReplay)
+            string hubName,
+            string functionName,
+            string instanceId,
+            string requestingInstance,
+            string requestId,
+            bool isReplay)
         {
             FunctionType functionType = FunctionType.Actor;
 
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: isReplay);
 
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' released lock held by request {requestId} by instance {requestingInstance}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",

@@ -13,7 +13,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// A message that represents an operation request or a lock request
+    /// A message that represents an operation request or a lock request.
     /// </summary>
     internal class RequestMessage
     {

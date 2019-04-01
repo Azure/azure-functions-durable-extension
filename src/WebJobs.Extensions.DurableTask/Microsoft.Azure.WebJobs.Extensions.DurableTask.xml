@@ -4,6 +4,32 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
+        <member name="T:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus">
+            <summary>
+            Information about the current status of an operation executing on an actor.
+            Excludes potentially large data (such as the operation input content) so it can be read with low latency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.Operation">
+            <summary>
+            The name of the operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.Id">
+            <summary>
+            The unique identifier for this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.ParentInstanceId">
+            <summary>
+            The parent instance that called this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.StartTime">
+            <summary>
+            The UTC time at which the actor started processing this operation.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.ActorId">
             <summary>
             A unique identifier for an actor, consisting of actor class and actor key.
@@ -41,14 +67,51 @@
         <member name="M:Microsoft.Azure.WebJobs.ActorId.CompareTo(System.Object)">
             <inheritdoc/>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">
+        <member name="T:Microsoft.Azure.WebJobs.ActorStateResponse`1">
             <summary>
-            The exception that is thrown when application code violates the locking rules.
+            The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadActorState``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.String,Newtonsoft.Json.JsonSerializerSettings)"/>.
+            </summary>
+            <typeparam name="T">The JSON-serializable type of the actor.</typeparam>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorStateResponse`1.ActorExists">
+            <summary>
+            Whether this actor exists or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActorStateResponse`1.ActorState">
+            <summary>
+            The current state of the actor, if it exists, or default(<typeparamref name="T"/>) otherwise.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.ActorStatus">
+            <summary>
+            Information about the current status of an actor. Excludes potentially large data
+            (such as the actor state, or the contents of the queue) so it can always be read with low latency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.ActorExists">
+            <summary>
+            Whether this actor exists or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.QueueSize">
+            <summary>
+            The size of the queue, i.e. the number of operations that are waiting for the current operation to complete.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.LockedBy">
+            <summary>
+            The instance id of the orchestration that currently holds the lock of this actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.CurrentOperation">
+            <summary>
+            The operation that is currently executing on this actor.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage">
             <summary>
-            A message that represents an operation request or a lock request
+            A message that represents an operation request or a lock request.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Operation">
@@ -110,7 +173,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
             <summary>
-            The instance that currently holds the lock of this actor.
+            The instance id of the orchestration that currently holds the lock of this actor.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
@@ -218,10 +281,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#SignalActor(System.String,Microsoft.Azure.WebJobs.ActorId,System.String,System.Object,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object,System.String,System.String)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
@@ -237,9 +297,6 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#ReadActorState``1(Microsoft.Azure.WebJobs.ActorId,Newtonsoft.Json.JsonSerializerSettings)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
@@ -982,6 +1039,11 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">
+            <summary>
+            The exception that is thrown when application code violates the locking rules.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableContextExtensions">
             <summary>
             Defines convenient overloads for calling the context methods, for all the contexts.
@@ -1612,35 +1674,28 @@
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the event notification message has been enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object,System.String,System.String)">
             <summary>
             Signals an actor to perform an operation.
             </summary>
             <param name="actorId">The target actor.</param>
             <param name="operationName">The name of the operation.</param>
             <param name="operationContent">The content for the operation.</param>
-            <returns>A task that completes when the signal has been reliably enqueued.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.SignalActor(System.String,Microsoft.Azure.WebJobs.ActorId,System.String,System.Object,System.String)">
-            <summary>
-            Signals an actor to perform an operation.
-            </summary>
             <param name="taskHubName">The TaskHubName of the target actor.</param>
-            <param name="actorId">The target actor.</param>
-            <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content for the operation.</param>
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadActorState``1(Microsoft.Azure.WebJobs.ActorId,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadActorState``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.String,Newtonsoft.Json.JsonSerializerSettings)">
             <summary>
             Tries to read the current state of an actor. Returns default(<typeparamref name="T"/>) if the actor does not
             exist, or if the JSON-serialized state of the actor is larger than 16KB.
             </summary>
             <typeparam name="T">The JSON-serializable type of the actor.</typeparam>
             <param name="actorId">The target actor.</param>
+            <param name="taskHubName">The TaskHubName of the target actor.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <param name="settings">The settings to use for deserializing the JSON state.</param>
-            <returns>the current state of the actor, if successfully retrieved, or default(<typeparamref name="T"/>) otherwise.</returns>
+            <returns>a response containing the current state of the actor.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.TerminateAsync(System.String,System.String)">
             <summary>
@@ -1950,7 +2005,7 @@
             </summary>
             <remarks>
             An external client can fetch the status of an orchestration instance using
-            <see cref="!:DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>.
             </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableOrchestrationStatus.Name">
@@ -2022,7 +2077,7 @@
             Gets the custom status payload (if any) that was set by the orchestrator function.
             </summary>
             <remarks>
-            Orchestrator functions can set a custom status using <see cref="!:DurableOrchestrationContext.SetCustomStatus"/>.
+            Orchestrator functions can set a custom status using <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationContext.SetCustomStatus(System.Object)"/>.
             </remarks>
             <value>
             The custom status as either a <c>JToken</c> object or <c>null</c> if no custom status has been set.
@@ -2035,7 +2090,7 @@
             <remarks>
             The history log can be large and is therefore <c>null</c> by default.
             It is populated only when explicitly requested in the call to
-            <see cref="!:DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>.
             </remarks>
             <value>
             The output as a <c>JArray</c> object or <c>null</c>.

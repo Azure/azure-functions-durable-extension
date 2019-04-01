@@ -308,7 +308,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // use a deterministically replayable unique ID for this lock request, and to receive the response
             var lockRequestId = this.NewGuid();
 
-            // send lock request to first actor in the lock set, who will forward it to the next, etc.
+            // All the actors in actor[] need to be locked, but to avoid deadlock, the locks have to be acquired
+            // sequentially, in order. So, we send the lock request to the first actor; when the first lock
+            // is granted by the first actor, the first actor will forward the lock request to the second actor,
+            // and so on; after the last actor grants the last lock, a response is sent back here.
+
+            // send lock request to first actor in the lock set
             var target = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(actors[0]) };
             var request = new RequestMessage()
             {

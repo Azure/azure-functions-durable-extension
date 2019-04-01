@@ -30,6 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal RequestMessage CurrentOperation { get; set; }
 
+        internal DateTime CurrentOperationStartTime { get; set; }
+
         internal ResponseMessage CurrentOperationResponse { get; set; }
 
         internal bool IsNewlyConstructed { get; set; }
