@@ -59,9 +59,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return status;
         }
 
-        public Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, int pageSize, string continuationToken, CancellationToken cancellationToken)
+        public Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, string continuationToken, CancellationToken cancellationToken)
         {
-            return this.innerClient.GetStatusAsync(condition, pageSize, continuationToken, cancellationToken);
+            return this.innerClient.GetStatusAsync(condition, continuationToken, cancellationToken);
         }
 
         public async Task RaiseEventAsync(string eventName, ITestOutputHelper output)

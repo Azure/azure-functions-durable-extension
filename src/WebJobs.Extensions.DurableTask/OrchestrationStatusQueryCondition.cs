@@ -20,12 +20,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IEnumerable<OrchestrationRuntimeStatus> RuntimeStatus { get; set; }
 
         /// <summary>
-        /// Return orchestration instances which were created after this DateTime. 
+        /// Return orchestration instances which were created after this DateTime.
         /// </summary>
         public DateTime CreatedTimeFrom { get; set; }
 
         /// <summary>
-        /// Return orchestration instances which were created before this DateTime.</param>
+        /// Return orchestration instances which were created before this DateTime.
         /// </summary>
         public DateTime CreatedTimeTo { get; set; }
 
@@ -33,6 +33,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Return orchestration instances which matches the TaskHubNames.
         /// </summary>
         public IEnumerable<string> TaskHubNames { get; set; }
+
+        /// <summary>
+        /// Number of records per one request. The default value is 100.
+        /// </summary>
+        public int PageSize { get; set; } = 100;
 
         internal OrchestrationInstanceStatusQueryCondition Parse()
         {
