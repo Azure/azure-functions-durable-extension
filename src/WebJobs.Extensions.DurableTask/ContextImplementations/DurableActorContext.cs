@@ -24,9 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.self = actor;
         }
 
+        internal IStateView CurrentStateView { get; set; }
+
         internal SchedulerState State { get; set; }
 
-        internal OperationMessage CurrentOperation { get; set; }
+        internal RequestMessage CurrentOperation { get; set; }
+
+        internal DateTime CurrentOperationStartTime { get; set; }
 
         internal ResponseMessage CurrentOperationResponse { get; set; }
 
@@ -39,6 +43,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableActorContext.Key => this.self.ActorKey;
 
         ActorId IDurableActorContext.Self => this.self;
+
+        internal override FunctionType FunctionType => FunctionType.Actor;
 
         string IDurableActorContext.OperationName
         {
@@ -79,21 +85,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IStateView<TState> IDurableActorContext.GetState<TState>(Formatting formatting, JsonSerializerSettings settings)
         {
             this.ThrowIfInvalidAccess();
-            if (this.State.CurrentStateView != null)
+            if (this.CurrentStateView != null)
             {
                 // if the requested type is the same, we can use the already existing view
                 // otherwise we have to serialize the current view to JSON, and then
                 // deserialize it to the requested type
-                if (this.State.CurrentStateView is IStateView<TState> view)
+                if (this.CurrentStateView is IStateView<TState> view)
                 {
                     return view;
                 }
 
-                this.State.CurrentStateView.Dispose();
+                this.CurrentStateView.Dispose();
             }
 
             var newView = new TypedStateView<TState>(this, formatting, settings);
-            this.State.CurrentStateView = newView;
+            this.CurrentStateView = newView;
             return newView;
         }
 

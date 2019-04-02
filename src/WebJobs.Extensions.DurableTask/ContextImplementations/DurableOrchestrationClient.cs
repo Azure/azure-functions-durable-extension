@@ -154,6 +154,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        Task IDurableOrchestrationClient.SignalActor(ActorId actorId, string operationName, object operationContent, string taskHubName, string connectionName)
+        {
+            if (string.IsNullOrEmpty(taskHubName))
+            {
+                return this.SignalActor(this.client, this.hubName, actorId, operationName, operationContent);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(connectionName))
+                {
+                    connectionName = this.attribute.ConnectionName;
+                }
+
+                var attribute = new OrchestrationClientAttribute
+                {
+                    TaskHub = taskHubName,
+                    ConnectionName = connectionName,
+                };
+
+                TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
+                return this.SignalActor(taskHubClient, taskHubName, actorId, operationName, operationContent);
+            }
+        }
+
+        private async Task SignalActor(TaskHubClient client, string hubName, ActorId actorId, string operationName, object operationContent)
+        {
+            if (string.IsNullOrEmpty(operationName))
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
+            var guid = Guid.NewGuid(); // unique id for this request
+            var instanceId = ActorId.GetSchedulerIdFromActorId(actorId);
+            var instance = new OrchestrationInstance() { InstanceId = instanceId };
+            var request = new RequestMessage()
+            {
+                ParentInstanceId = null,
+                Id = guid,
+                IsSignal = true,
+                Operation = operationName,
+            };
+            if (operationContent != null)
+            {
+                request.SetContent(operationContent);
+            }
+
+            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
+            await client.RaiseEventAsync(instance, "op", jrequest);
+
+            this.traceHelper.FunctionScheduled(
+                hubName,
+                actorId.ActorClass,
+                ActorId.GetSchedulerIdFromActorId(actorId),
+                reason: $"ActorSignal:{operationName}",
+                functionType: FunctionType.Actor,
+                isReplay: false);
+        }
+
+        /// <inheritdoc />
         async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
@@ -265,6 +324,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return results;
+        }
+
+        Task<ActorStateResponse<T>> IDurableOrchestrationClient.ReadActorState<T>(ActorId actorId, string taskHubName, string connectionName, JsonSerializerSettings settings)
+        {
+            if (string.IsNullOrEmpty(taskHubName))
+            {
+                return this.ReadActorState<T>(this.client, this.hubName, actorId, settings);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(connectionName))
+                {
+                    connectionName = this.attribute.ConnectionName;
+                }
+
+                var attribute = new OrchestrationClientAttribute
+                {
+                    TaskHub = taskHubName,
+                    ConnectionName = connectionName,
+                };
+
+                TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
+                return this.ReadActorState<T>(taskHubClient, taskHubName, actorId, settings);
+            }
+        }
+
+        private async Task<ActorStateResponse<T>> ReadActorState<T>(TaskHubClient client, string hubName, ActorId actorId, JsonSerializerSettings settings)
+        {
+            var instanceId = ActorId.GetSchedulerIdFromActorId(actorId);
+            IList<OrchestrationState> stateList = await client.ServiceClient.GetOrchestrationStateAsync(instanceId, false);
+
+            OrchestrationState state = stateList?.FirstOrDefault();
+            if (state != null
+                & state.OrchestrationInstance != null
+                & state.Input != null)
+            {
+                var serializedState = state.Input;
+
+                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(state.Input, MessagePayloadDataConverter.MessageSettings);
+
+                if (schedulerState.ActorExists)
+                {
+                    return new ActorStateResponse<T>()
+                    {
+                        ActorExists = true,
+                        ActorState = JsonConvert.DeserializeObject<T>(schedulerState.ActorState, settings),
+                    };
+                }
+            }
+
+            return new ActorStateResponse<T>()
+            {
+                ActorExists = false,
+                ActorState = default(T),
+            };
         }
 
         /// <inheritdoc />

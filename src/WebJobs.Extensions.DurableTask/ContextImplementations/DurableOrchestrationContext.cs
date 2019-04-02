@@ -28,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string serializedOutput;
         private string serializedCustomStatus;
 
+        private LockReleaser lockReleaser = null;
+
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
             : base(config, functionName)
         {
@@ -38,6 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal bool IsOutputSet => this.serializedOutput != null;
 
         private string OrchestrationName => this.FunctionName;
+
+        internal override FunctionType FunctionType => FunctionType.Orchestrator;
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.InstanceId => this.InstanceId;
@@ -193,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<T> IInterleavingContext.WaitForExternalEvent<T>(string name)
         {
             this.ThrowIfInvalidAccess();
-            return this.WaitForExternalEvent<T>(name);
+            return this.WaitForExternalEvent<T>(name, "ExternalEvent");
         }
 
         /// <inheritdoc/>
@@ -220,7 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var timeoutAt = this.InnerContext.CurrentUtcDateTime + timeout;
             var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
-            var waitForEventTask = this.WaitForExternalEvent<T>(name);
+            var waitForEventTask = this.WaitForExternalEvent<T>(name, "ExternalEvent");
 
             waitForEventTask.ContinueWith(
                 t =>
@@ -275,10 +279,103 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<IDisposable> IInterleavingContext.LockAsync(params ActorId[] actors)
+        async Task<IDisposable> IInterleavingContext.LockAsync(params ActorId[] actors)
         {
             this.ThrowIfInvalidAccess();
-            throw new NotImplementedException(); // TODO
+            if (this.ContextLocks != null)
+            {
+                throw new LockingRulesViolationException("Cannot acquire more locks when already holding some locks.");
+            }
+
+            if (actors == null || actors.Length == 0)
+            {
+                throw new ArgumentException("The list of actors to lock must not be null or empty.", nameof(actors));
+            }
+
+            // acquire the locks in a globally fixed order to avoid deadlocks
+            Array.Sort(actors);
+
+            // remove duplicates if necessary. Probably quite rare, so no need to optimize more.
+            for (int i = 0; i < actors.Length - 1; i++)
+            {
+                if (actors[i].Equals(actors[i + 1]))
+                {
+                    actors = actors.Distinct().ToArray();
+                    break;
+                }
+            }
+
+            // use a deterministically replayable unique ID for this lock request, and to receive the response
+            var lockRequestId = this.NewGuid();
+
+            // All the actors in actor[] need to be locked, but to avoid deadlock, the locks have to be acquired
+            // sequentially, in order. So, we send the lock request to the first actor; when the first lock
+            // is granted by the first actor, the first actor will forward the lock request to the second actor,
+            // and so on; after the last actor grants the last lock, a response is sent back here.
+
+            // send lock request to first actor in the lock set
+            var target = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(actors[0]) };
+            var request = new RequestMessage()
+            {
+                Id = lockRequestId,
+                ParentInstanceId = this.InstanceId,
+                LockSet = actors,
+                Position = 0,
+            };
+
+            this.LockRequestId = lockRequestId.ToString();
+
+            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
+            this.InnerContext.SendEvent(target, "op", jrequest);
+
+            // wait for the response from the last actor in the lock set
+            await this.WaitForExternalEvent<ResponseMessage>(this.LockRequestId, "LockAcquisitionCompleted");
+
+            this.ContextLocks = new List<ActorId>(actors);
+
+            // return an IDisposable that releases the lock
+            this.lockReleaser = new LockReleaser(this);
+
+            return this.lockReleaser;
+        }
+
+        public void ReleaseLocks()
+        {
+            if (this.ContextLocks != null)
+            {
+                foreach (var actorId in this.ContextLocks)
+                {
+                    var instance = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(actorId) };
+                    var message = new ReleaseMessage()
+                    {
+                        ParentInstanceId = this.InstanceId,
+                        LockRequestId = this.LockRequestId,
+                    };
+                    this.InnerContext.SendEvent(instance, "release", message);
+                }
+
+                this.ContextLocks = null;
+                this.lockReleaser = null;
+                this.LockRequestId = null;
+            }
+        }
+
+        private class LockReleaser : IDisposable
+        {
+            private readonly DurableOrchestrationContext context;
+
+            public LockReleaser(DurableOrchestrationContext context)
+            {
+                this.context = context;
+            }
+
+            public void Dispose()
+            {
+                if (this.context.lockReleaser == this)
+                {
+                    this.context.ReleaseLocks();
+                }
+            }
         }
     }
 }

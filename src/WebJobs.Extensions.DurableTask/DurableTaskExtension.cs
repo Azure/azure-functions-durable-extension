@@ -306,11 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!context.IsCompleted)
             {
-                this.TraceHelper.FunctionAwaited(
-                    context.HubName,
-                    context.Name,
-                    context.InstanceId,
-                    context.IsReplaying);
+                shim.TraceAwait();
             }
 
             await context.RunDeferredTasks();

@@ -498,8 +498,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<string> SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            // construct actor reference from actor name and a (deterministic) newguid key
-            var actor = new ActorId("StringStore2", ctx.NewGuid().ToString());
+            // construct actor reference from actor name and a supplied GUID
+            var actor = new ActorId("StringStore2", ctx.GetInput<Guid>().ToString());
 
             // signal and call (both of these will be delivered close together)
             ctx.SignalActor(actor, "set", "333");
@@ -583,6 +583,175 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallActorAsync<string>(actor, "delete");
 
             return "ok";
+        }
+
+        public static async Task<string> PollCounterActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            // get the id of the two actors used by this test
+            var actorId = ctx.GetInput<ActorId>();
+
+            while (true)
+            {
+                var result = await ctx.CallActorAsync<int>(actorId, "get");
+
+                if (result != 0)
+                {
+                    if (result == 1)
+                    {
+                        return "ok";
+                    }
+                    else
+                    {
+                        return $"fail: wrong actor state: expected 1, got {result}";
+                    }
+                }
+
+                await ctx.CreateTimer(DateTime.UtcNow + TimeSpan.FromSeconds(1), CancellationToken.None);
+            }
+        }
+
+        public static async Task<string> LargeActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var actorId = ctx.GetInput<ActorId>();
+
+            string content = new string('.', 100000);
+            await ctx.CallActorAsync<int>(actorId, "set", content);
+
+            var result = await ctx.CallActorAsync<string>(actorId, "get");
+            if (result != content)
+            {
+                return $"fail: wrong actor state";
+            }
+
+            return "ok";
+        }
+
+        public static async Task<string> ActorToAndFromBlob([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            // get the ids of the two actors used by this test
+            var actorId = ctx.GetInput<ActorId>();
+
+            // activation loads from blob, but the latter does not exist so it will be empty
+            string result = await ctx.CallActorAsync<string>(actorId, "get");
+            if (result != "")
+            {
+                return $"fail: expected empty content, but got {result}";
+            }
+
+            const int sizeOfEachAppend = 10;
+            const int numberOfAppends = 50;
+
+            // let's send many signals to this actor to append characters
+            for (int i = 0; i < numberOfAppends; i++)
+            {
+                ctx.SignalActor(actorId, "append", new string('.', sizeOfEachAppend));
+            }
+
+            // then send a signal to deactivate
+            ctx.SignalActor(actorId, "deactivate");
+
+            // now try again to read the actor state - it should come back from storage intact
+            result = await ctx.CallActorAsync<string>(actorId, "get");
+            var numberDotsExpected = numberOfAppends * sizeOfEachAppend;
+            if (result != new string('.', numberDotsExpected))
+            {
+                return $"fail: expected {numberDotsExpected} dots, but the result (length {result.Length}) is different";
+            }
+
+            return "ok";
+        }
+
+        public static async Task<int> LockedBlobIncrement([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var actorPlayingTheRoleOfASimpleLock = ctx.GetInput<ActorId>();
+            int result;
+
+            if (ctx.IsLocked(out _))
+            {
+                throw new Exception("test failed: lock context is incorrect");
+            }
+
+            using (await ctx.LockAsync(actorPlayingTheRoleOfASimpleLock))
+            {
+                if (!ctx.IsLocked(out var ownedLocks)
+                    || ownedLocks.Count != 1
+                    || !ownedLocks.First().Equals(actorPlayingTheRoleOfASimpleLock))
+                {
+                    throw new Exception("test failed: lock context is incorrect");
+                }
+
+                // read current value from blob
+                var currentValue = await ctx.CallActivityAsync<string>(
+                            nameof(TestActivities.LoadStringFromTextBlob),
+                            actorPlayingTheRoleOfASimpleLock.ActorKey);
+
+                // increment
+                result = int.Parse(currentValue ?? "0") + 1;
+
+                // write result to blob
+                await ctx.CallActivityAsync(
+                          nameof(TestActivities.WriteStringToTextBlob),
+                          (actorPlayingTheRoleOfASimpleLock.ActorKey, result.ToString()));
+            }
+
+            if (ctx.IsLocked(out _))
+            {
+                throw new Exception("test failed: lock context is incorrect");
+            }
+
+            return result;
+        }
+
+        public static async Task<(int, int)> LockedTransfer([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var (from, to) = ctx.GetInput<(ActorId, ActorId)>();
+
+            if (from.Equals(to))
+            {
+                throw new ArgumentException("from and to must be distinct");
+            }
+
+            if (ctx.IsLocked(out _))
+            {
+                throw new Exception("test failed: lock context is incorrect");
+            }
+
+            int fromBalance;
+            int toBalance;
+
+            using (await ctx.LockAsync(from, to))
+            {
+                if (!ctx.IsLocked(out var ownedLocks)
+                    || ownedLocks.Count != 2
+                    || !ownedLocks.Contains(from)
+                    || !ownedLocks.Contains(to))
+                {
+                    throw new Exception("test failed: lock context is incorrect");
+                }
+
+                // read balances in parallel
+                var t1 = ctx.CallActorAsync<int>(from, "get");
+                var t2 = ctx.CallActorAsync<int>(to, "get");
+                fromBalance = await t1;
+                toBalance = await t2;
+
+                // modify
+                fromBalance--;
+                toBalance++;
+
+                // write balances in parallel
+                var t3 = ctx.CallActorAsync(from, "set", fromBalance);
+                var t4 = ctx.CallActorAsync(to, "set", toBalance);
+                await t3;
+                await t4;
+            }
+
+            if (ctx.IsLocked(out _))
+            {
+                throw new Exception("test failed: lock context is incorrect");
+            }
+
+            return (fromBalance, toBalance);
         }
 
         public static async Task UpdateTwoCounters([OrchestrationTrigger] IDurableOrchestrationContext ctx)
