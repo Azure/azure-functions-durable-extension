@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.ShouldLogEvent(isReplay))
             {
-                if (operationName == null)
+                if (string.IsNullOrEmpty(operationName))
                 {
                     this.logger.LogInformation(
                         "{instanceId}: Function '{functionName} ({functionType})' started. IsReplay: {isReplay}. Input: {input}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.ShouldLogEvent(isReplay))
             {
-                if (operationName == null)
+                if (string.IsNullOrEmpty(operationName))
                 {
                     this.logger.LogInformation(
                         "{instanceId}: Function '{functionName} ({functionType})' awaited. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.ShouldLogEvent(isReplay))
             {
-                if (operationName == null)
+                if (string.IsNullOrEmpty(operationName))
                 {
                     this.logger.LogInformation(
                         "{instanceId}: Function '{functionName} ({functionType})' completed. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId, operationId, operationName, reason, functionType.ToString(), ExtensionVersion, isReplay);
             if (this.ShouldLogEvent(isReplay))
             {
-                if (operationName == null)
+                if (string.IsNullOrEmpty(operationName))
                 {
                     this.logger.LogError(
                         "{instanceId}: Function '{functionName} ({functionType})' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
