@@ -195,7 +195,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.String,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext">
@@ -883,6 +883,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.PageSize">
             <summary>
             Number of records per one request. The default value is 100.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.ContinuationToken">
+            <summary>
+            ContinuationToken of the pager.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult">
@@ -1668,12 +1673,11 @@
             <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
             <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.String,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <summary>
             Gets the status of all orchestration instances with paging that match the specified conditions.
             </summary>
             <param name="condition">Return orchestration instances that match the specified conditions.</param>
-            <param name="continuationToken">ContinuationToken of the pager.</param>
             <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
             <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         </member>

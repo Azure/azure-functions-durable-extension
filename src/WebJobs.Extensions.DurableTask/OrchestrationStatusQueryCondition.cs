@@ -39,6 +39,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public int PageSize { get; set; } = 100;
 
+        /// <summary>
+        /// ContinuationToken of the pager.
+        /// </summary>
+        public string ContinuationToken { get; set; }
+
         internal OrchestrationInstanceStatusQueryCondition Parse()
         {
             return new OrchestrationInstanceStatusQueryCondition

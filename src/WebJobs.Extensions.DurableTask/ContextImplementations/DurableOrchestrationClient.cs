@@ -324,7 +324,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(
             OrchestrationStatusQueryCondition condition,
-            string continuationToken,
             CancellationToken cancellationToken)
         {
             // TODO this cast is to avoid to adding methods to the core IOrchestrationService/Client interface in DurableTask.Core. Eventually we will need
@@ -335,7 +334,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new NotSupportedException("Only the Azure Storage state provider is currently supported for the paginated orchestration status query.");
             }
 
-            var statusContext = await serviceClient.GetOrchestrationStateAsync(condition.Parse(), condition.PageSize, continuationToken, cancellationToken);
+            var statusContext = await serviceClient.GetOrchestrationStateAsync(condition.Parse(), condition.PageSize, condition.ContinuationToken, cancellationToken);
 
             return this.ConvertFrom(statusContext);
         }

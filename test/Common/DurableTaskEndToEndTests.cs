@@ -2623,8 +2623,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client2.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 await client3.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 // Perform some operations
-                var result1 = await client1.GetStatusAsync(condition1, null, CancellationToken.None);
-                var result2 = await client2.GetStatusAsync(condition2, null, CancellationToken.None);
+                var result1 = await client1.GetStatusAsync(condition1, CancellationToken.None);
+                var result2 = await client2.GetStatusAsync(condition2, CancellationToken.None);
 
                 Assert.Equal(1, result1.DurableOrchestrationState.Count());
                 Assert.Equal(2, result2.DurableOrchestrationState.Count());

@@ -207,9 +207,8 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the status of all orchestration instances with paging that match the specified conditions.
         /// </summary>
         /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
-        /// <param name="continuationToken">ContinuationToken of the pager.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
-        Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, string continuationToken, CancellationToken cancellationToken);
+        Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
     }
 }
