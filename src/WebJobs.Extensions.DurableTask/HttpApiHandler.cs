@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Extensions.Logging;
@@ -258,7 +259,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (pageSize > 0)
             {
-                var context = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, pageSize, continuationToken);
+                var condition = new OrchestrationStatusQueryCondition()
+                {
+                    CreatedTimeFrom = createdTimeFrom,
+                    CreatedTimeTo = createdTimeTo,
+                    RuntimeStatus = runtimeStatus,
+                    PageSize = pageSize,
+                    ContinuationToken = continuationToken,
+                };
+                var context = await client.GetStatusAsync(condition, CancellationToken.None);
                 statusForAllInstances = context.DurableOrchestrationState.ToList();
                 nextContinuationToken = context.ContinuationToken;
             }
