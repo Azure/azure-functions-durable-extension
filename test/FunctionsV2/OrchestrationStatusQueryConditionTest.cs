@@ -15,7 +15,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class OrchestrationStatusQueryConditionTest
     {
-
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Parse_OrchestrationStatusQueryCondition()
@@ -49,6 +48,5 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal(createdTimeTo, result.CreatedTimeTo);
             Assert.Equal(taskHubNames, result.TaskHubNames);
         }
-
     }
 }

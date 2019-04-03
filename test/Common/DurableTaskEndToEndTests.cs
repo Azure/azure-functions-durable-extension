@@ -2604,7 +2604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var condition1 = new OrchestrationStatusQueryCondition
                 {
                     RuntimeStatus = new List<OrchestrationRuntimeStatus>()
-                        {OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed},
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
                     CreatedTimeFrom = yesterday,
                     CreatedTimeTo = tomorrow,
                     TaskHubNames = new List<string>() { taskHubName1 },
@@ -2612,7 +2612,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var condition2 = new OrchestrationStatusQueryCondition
                 {
                     RuntimeStatus = new List<OrchestrationRuntimeStatus>()
-                        {OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed},
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
                     CreatedTimeFrom = yesterday,
                     CreatedTimeTo = tomorrow,
                     TaskHubNames = new List<string>() { taskHubName2 },
@@ -2622,11 +2622,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 await client2.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
                 await client3.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
                 // Perform some operations
                 var result1 = await client1.GetStatusAsync(condition1, CancellationToken.None);
                 var result2 = await client2.GetStatusAsync(condition2, CancellationToken.None);
 
-                Assert.Equal(1, result1.DurableOrchestrationState.Count());
+                Assert.Single(result1.DurableOrchestrationState);
                 Assert.Equal(2, result2.DurableOrchestrationState.Count());
 
                 await host1.StopAsync();
