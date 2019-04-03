@@ -415,11 +415,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         async Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(
-            DateTime createdTimeFrom,
-            DateTime? createdTimeTo,
-            IEnumerable<OrchestrationRuntimeStatus> runtimeStatus,
-            int pageSize,
-            string continuationToken,
+            OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken)
         {
             // TODO this cast is to avoid to adding methods to the core IOrchestrationService/Client interface in DurableTask.Core. Eventually we will need
@@ -430,21 +426,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new NotSupportedException("Only the Azure Storage state provider is currently supported for the paginated orchestration status query.");
             }
 
-            var statusContext = await serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), pageSize, continuationToken, cancellationToken);
+            var statusContext = await serviceClient.GetOrchestrationStateAsync(condition.Parse(), condition.PageSize, condition.ContinuationToken, cancellationToken);
 
-            var results = new List<DurableOrchestrationStatus>();
-            foreach (var state in statusContext.OrchestrationState)
-            {
-                results.Add(this.ConvertFrom(state));
-            }
-
-            var result = new OrchestrationStatusQueryResult
-            {
-                DurableOrchestrationState = results,
-                ContinuationToken = statusContext.ContinuationToken,
-            };
-
-            return result;
+            return this.ConvertFrom(statusContext);
         }
 
         private static JToken ParseToJToken(string value)
@@ -664,6 +648,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,
             };
+        }
+
+        private OrchestrationStatusQueryResult ConvertFrom(DurableStatusQueryResult statusContext)
+        {
+            var results = new List<DurableOrchestrationStatus>();
+            foreach (var state in statusContext.OrchestrationState)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            var result = new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = results,
+                ContinuationToken = statusContext.ContinuationToken,
+            };
+
+            return result;
         }
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)

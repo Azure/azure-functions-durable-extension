@@ -218,13 +218,9 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the status of all orchestration instances with paging that match the specified conditions.
         /// </summary>
-        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
-        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
-        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
-        /// <param name="pageSize">Number of records per one request.</param>
-        /// <param name="continuationToken">ContinuationToken of the pager.</param>
+        /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
-        Task<OrchestrationStatusQueryResult> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken));
+        Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
     }
 }

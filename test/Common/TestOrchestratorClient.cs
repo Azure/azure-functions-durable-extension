@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -56,6 +57,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return status;
+        }
+
+        public Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken)
+        {
+            return this.innerClient.GetStatusAsync(condition, cancellationToken);
         }
 
         public async Task RaiseEventAsync(string eventName, ITestOutputHelper output)

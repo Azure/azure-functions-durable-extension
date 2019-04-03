@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
@@ -2119,6 +2120,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
@@ -2887,6 +2890,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(status.History.Count > 0);
 
                 await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
+        {
+            var taskHubName1 = "GetStatus1";
+            var taskHubName2 = "GetStatus2";
+            await TestHelpers.DeleteTaskHubResources(taskHubName1, extendedSessions);
+            await TestHelpers.DeleteTaskHubResources(taskHubName2, extendedSessions);
+            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions, storageProviderType: storageProvider))
+            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions, storageProviderType: storageProvider))
+            {
+                await host1.StartAsync();
+                await host2.StartAsync();
+                var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "bar", this.output);
+                var client3 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "baz", this.output);
+
+                taskHubName1 = client1.TaskHubName;
+                taskHubName2 = client2.TaskHubName;
+                var instanceId = client1.InstanceId;
+
+                var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+                var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+                var condition1 = new OrchestrationStatusQueryCondition
+                {
+                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
+                    CreatedTimeFrom = yesterday,
+                    CreatedTimeTo = tomorrow,
+                    TaskHubNames = new List<string>() { taskHubName1 },
+                };
+                var condition2 = new OrchestrationStatusQueryCondition
+                {
+                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
+                    CreatedTimeFrom = yesterday,
+                    CreatedTimeTo = tomorrow,
+                    TaskHubNames = new List<string>() { taskHubName2 },
+                };
+
+                // Make sure it actually completed
+                await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                await client2.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                await client3.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+
+                // Perform some operations
+                var result1 = await client1.GetStatusAsync(condition1, CancellationToken.None);
+                var result2 = await client2.GetStatusAsync(condition2, CancellationToken.None);
+
+                Assert.Single(result1.DurableOrchestrationState);
+                Assert.Equal(2, result2.DurableOrchestrationState.Count());
+
+                await host1.StopAsync();
+                await host2.StopAsync();
             }
         }
 
