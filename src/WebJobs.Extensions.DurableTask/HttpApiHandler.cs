@@ -406,6 +406,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return new StatusResponsePayload
             {
+                Name = status.Name,
                 InstanceId = status.InstanceId,
                 RuntimeStatus = status.RuntimeStatus.ToString(),
                 Input = status.Input,

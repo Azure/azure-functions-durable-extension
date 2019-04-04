@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static void ThrowActivity([ActivityTrigger] IDurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
-            throw new Exception(message);
+            throw new InvalidOperationException(message);
         }
 
         public static async Task<string> LoadStringFromTextBlob(

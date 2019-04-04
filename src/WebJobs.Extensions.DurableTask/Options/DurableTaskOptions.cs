@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -116,10 +116,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int[] EventGridPublishRetryHttpStatus { get; set; }
 
         /// <summary>
-        /// gets or sets the event types that will be published to Event Grid. 
+        /// Gets or sets the event types that will be published to Event Grid.
         /// </summary>
         /// <value>
-        /// An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+        /// An list of strings. Possible values include 'Started', 'Completed', 'Failed', 'Terminated'.
         /// </value>
         public string[] EventGridPublishEventTypes { get; set; }
 
