@@ -12,6 +12,11 @@ namespace Microsoft.Azure.WebJobs
     public enum OrchestrationRuntimeStatus
     {
         /// <summary>
+        /// The status of the orchestration could not be determined.
+        /// </summary>
+        Unknown = -1,
+
+        /// <summary>
         /// The orchestration is running (it may be actively running or waiting for input).
         /// </summary>
         Running = 0,

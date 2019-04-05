@@ -26,9 +26,7 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta009">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.1-*" PrivateAssets="All"/>
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

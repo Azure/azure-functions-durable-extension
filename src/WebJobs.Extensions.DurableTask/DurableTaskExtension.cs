@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -49,6 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
+
+        private readonly ConcurrentDictionary<string, DurableOrchestrationContext> continueAsNewContexts =
+            new ConcurrentDictionary<string, DurableOrchestrationContext>(StringComparer.OrdinalIgnoreCase);
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
@@ -362,6 +366,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.Name,
                     context.InstanceId,
                     context.IsReplaying);
+            }
+
+            if (context.IsCompleted &&
+                context.ContinuedAsNew &&
+                context.PreserveUnprocessEvents)
+            {
+                // Reschedule any unprocessed external events so that they can be picked up
+                // in the next iteration.
+                context.RescheduleBufferedExternalEvents();
             }
 
             await context.RunDeferredTasks();

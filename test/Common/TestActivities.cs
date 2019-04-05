@@ -100,6 +100,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return httpManagementPayload;
         }
 
+        public static Task Delay([ActivityTrigger] TimeSpan duration)
+        {
+            return Task.Delay(duration);
+        }
+
         public static DurableOrchestrationStatus UpdateDurableOrchestrationStatus([ActivityTrigger] DurableActivityContext ctx)
         {
             DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
