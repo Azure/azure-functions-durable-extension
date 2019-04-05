@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs
 
         internal bool ContinuedAsNew { get; private set; }
 
-        internal bool PreserveUnprocessEvents { get; private set; }
+        internal bool PreserveUnprocessedEvents { get; private set; }
 
         internal bool IsOutputSet => this.serializedOutput != null;
 
@@ -387,13 +387,13 @@ namespace Microsoft.Azure.WebJobs
         public override void ContinueAsNew(object input) => this.ContinueAsNew(input, false);
 
         /// <inheritdoc />
-        public override void ContinueAsNew(object input, bool preserveUnprocessEvents)
+        public override void ContinueAsNew(object input, bool preserveUnprocessedEvents)
         {
             this.ThrowIfInvalidAccess();
 
             this.innerContext.ContinueAsNew(input);
             this.ContinuedAsNew = true;
-            this.PreserveUnprocessEvents = preserveUnprocessEvents;
+            this.PreserveUnprocessedEvents = preserveUnprocessedEvents;
         }
 
         private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(

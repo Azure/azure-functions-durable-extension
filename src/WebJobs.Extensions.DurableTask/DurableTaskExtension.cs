@@ -51,9 +51,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
-        private readonly ConcurrentDictionary<string, DurableOrchestrationContext> continueAsNewContexts =
-            new ConcurrentDictionary<string, DurableOrchestrationContext>(StringComparer.OrdinalIgnoreCase);
-
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly bool isOptionsConfigured;
@@ -370,7 +367,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (context.IsCompleted &&
                 context.ContinuedAsNew &&
-                context.PreserveUnprocessEvents)
+                context.PreserveUnprocessedEvents)
             {
                 // Reschedule any unprocessed external events so that they can be picked up
                 // in the next iteration.
