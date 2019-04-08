@@ -16,14 +16,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static string slotName;
 
         private readonly ILogger logger;
-        private readonly bool logReplayEvents;
+        private readonly bool traceReplayEvents;
 
         private long sequenceNumber;
 
-        public EndToEndTraceHelper(ILogger logger, bool logReplayEvents)
+        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.logReplayEvents = logReplayEvents;
+            this.traceReplayEvents = traceReplayEvents;
         }
 
         public static string LocalAppName
@@ -712,7 +712,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ShouldLogEvent(bool isReplay)
         {
-            return this.logReplayEvents || !isReplay;
+            return this.traceReplayEvents || !isReplay;
         }
 #pragma warning restore SA1117 // Parameters should be on same line or separate lines
     }
