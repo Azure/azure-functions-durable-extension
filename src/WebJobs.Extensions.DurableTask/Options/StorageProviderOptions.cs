@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
                 this.AzureStorage.AddToDebugString(builder);
                 builder.Append(" }, ");
             }
-            else if (this.AzureStorage != null)
+            else if (this.Emulator != null)
             {
                 builder.Append(nameof(this.Emulator)).Append(": { ");
                 this.Emulator.AddToDebugString(builder);

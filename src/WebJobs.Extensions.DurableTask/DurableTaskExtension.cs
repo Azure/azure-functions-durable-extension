@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.orchestrationServiceFactory = orchestrationServiceFactory;
@@ -112,10 +112,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options.Validate();
 
             // For 202 support
-            if (this.Options.NotificationUrl == null)
+            if (this.Options.Notifications != null && this.Options.Notifications.ApiUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
+                this.Options.Notifications.ApiUrl = context.GetWebhookHandler();
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
@@ -160,7 +160,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
         {
             // First: EventGrid
-            if (!string.IsNullOrEmpty(this.Options.EventGridTopicEndpoint) || !string.IsNullOrEmpty(this.Options.EventGridKeySettingName))
+            if (this.Options.Notifications != null 
+                && this.Options.Notifications.EventGrid != null
+                && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
             {
                 return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
             }
@@ -579,7 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetIntputOutputTrace(string rawInputOutputData)
         {
-            if (this.Options.TraceInputsAndOutputs)
+            if (this.Options.Tracing.TraceInputsAndOutputs)
             {
                 return rawInputOutputData;
             }

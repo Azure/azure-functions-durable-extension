@@ -238,9 +238,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents, string storageProvider)
+        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool traceReplayEvents, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(false, storageProvider, logReplayEvents: logReplayEvents);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(false, storageProvider, traceReplayEvents: traceReplayEvents);
         }
 
         /// <summary>
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, string storageProvider, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, string storageProvider, bool showHistory = false, bool showHistoryOutput = false, bool traceReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameof(this.HelloWorldOrchestration_Activity),
                 extendedSessions,
-                logReplayEvents: logReplayEvents,
+                traceReplayEvents: traceReplayEvents,
                 storageProviderType: storageProvider))
             {
                 await host.StartAsync();
@@ -434,7 +434,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.loggerProvider,
                         "HelloWorldOrchestration_Activity",
                         client.InstanceId,
-                        extendedSessions || !logReplayEvents,
+                        extendedSessions || !traceReplayEvents,
                         orchestratorFunctionNames,
                         activityFunctionName);
                 }

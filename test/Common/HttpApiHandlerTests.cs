@@ -27,8 +27,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         private void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
-            var options = new DurableTaskOptions();
-            options.NotificationUrl = null;
+            var options = new DurableTaskOptions()
+            {
+                Notifications = new NotificationOptions(),
+            };
+            options.Notifications.ApiUrl = null;
             options.HubName = "DurableTaskHub";
             options.StorageProvider = new StorageProviderOptions()
             {
@@ -819,7 +822,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
-            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+            options.Notifications = new NotificationOptions()
+            {
+                ApiUrl = new Uri(TestConstants.NotificationUrl),
+            };
             options.StorageProvider = new StorageProviderOptions
             {
                 AzureStorage = new AzureStorageOptions(),
