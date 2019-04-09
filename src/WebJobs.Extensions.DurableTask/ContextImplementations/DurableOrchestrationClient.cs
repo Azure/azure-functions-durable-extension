@@ -357,8 +357,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationState state = stateList?.FirstOrDefault();
             if (state != null
-                & state.OrchestrationInstance != null
-                & state.Input != null)
+                && state.OrchestrationInstance != null
+                && state.Input != null)
             {
                 var serializedState = state.Input;
 
