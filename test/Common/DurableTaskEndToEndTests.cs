@@ -628,7 +628,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ActorOrchestration),
+                nameof(this.ActorOrchestration_NoWaiting),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -1018,7 +1018,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var extendedSessions = false;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.TimerExpiration),
+                nameof(this.WaitForExternalEventWithTimeout),
                 extendedSessions))
             {
                 await host.StartAsync();
