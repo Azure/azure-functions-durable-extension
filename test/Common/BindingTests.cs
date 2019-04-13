@@ -39,9 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.FunctionName = nameof(TestActivities.BindToJObject);
                 startArgs.Input = new { Foo = "Bar" };
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 // The function checks to see if there is a property called "Foo" which is set to a value
                 // called "Bar" and returns true if this is the case. Otherwise returns false.
@@ -67,9 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var input = new { Foo = "Bar" };
                 startArgs.Input = input;
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 // The function echos back the 'Foo' input property value
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -92,9 +90,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.FunctionName = nameof(TestActivities.BindToDouble);
                 startArgs.Input = 3.14;
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 // The function echos back the input value
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -139,9 +136,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.FunctionName = nameof(TestActivities.BindToBlobViaParameterName);
                 startArgs.Input = OriginalBlobName;
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -198,9 +194,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 startArgs.FunctionName = nameof(TestActivities.BindToBlobViaJsonPayload);
                 startArgs.Input = data;
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
