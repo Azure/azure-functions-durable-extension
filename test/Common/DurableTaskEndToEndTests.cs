@@ -1101,7 +1101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Empty string input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(5, status?.Output);
@@ -2015,7 +2015,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Wait long enough for the sub-orchestration to be started and waiting for input.
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 await client.InnerClient.RaiseEventAsync(input.InstanceId, "approval", true);
 
                 status = await client.WaitForCompletionAsync(timeout, this.output);
