@@ -53,16 +53,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
             };
 
-            // Filter out some of the partition management informational events
-            var filteredEvents = new Dictionary<string, IEnumerable<int>>
-            {
-                { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
-            };
-
             this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
 
             string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-            this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+            this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
         }
 
         private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
@@ -755,7 +749,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item3", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 var status = await client.GetStatusAsync();
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
