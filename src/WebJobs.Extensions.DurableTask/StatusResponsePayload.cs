@@ -13,6 +13,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class StatusResponsePayload
     {
         /// <summary>
+        /// Name.
+        /// </summary>
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        /// <summary>
         /// InstanceId.
         /// </summary>
         [DataMember(Name = "instanceId")]

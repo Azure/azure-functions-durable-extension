@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     if (config.EventGridPublishEventTypes == null || config.EventGridPublishEventTypes.Length == 0)
                     {
-                        eventGridPublishEventTypes = (OrchestrationRuntimeStatus[])Enum.GetValues(typeof(OrchestrationRuntimeStatus));
+                        this.eventGridPublishEventTypes = (OrchestrationRuntimeStatus[])Enum.GetValues(typeof(OrchestrationRuntimeStatus));
                     }
                     else
                     {
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             config.EventGridPublishEventTypes[startedIndex] = OrchestrationRuntimeStatus.Running.ToString();
                         }
 
-                        OrchestrationRuntimeStatus parseAndvalidateEvents(string @event)
+                        OrchestrationRuntimeStatus ParseAndvalidateEvents(string @event)
                         {
                             var success = Enum.TryParse(@event, out OrchestrationRuntimeStatus @enum);
                             if (success)
@@ -92,10 +92,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             {
                                 throw new ArgumentException("Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.");
                             }
+
                             return @enum;
                         }
 
-                        eventGridPublishEventTypes = config.EventGridPublishEventTypes.Select(x => parseAndvalidateEvents(x)).ToArray();
+                        this.eventGridPublishEventTypes = config.EventGridPublishEventTypes.Select(
+                            x => ParseAndvalidateEvents(x)).ToArray();
                     }
 
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.

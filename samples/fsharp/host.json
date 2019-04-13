@@ -12,7 +12,7 @@
       "routePrefix": ""
     },
     "durableTask": {
-      "HubName": "SampleHubFSharp"
+      "hubName": "SampleHubFSharp"
     }
   }
 }

@@ -325,11 +325,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                 },
@@ -354,8 +356,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
 
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
@@ -368,12 +372,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
@@ -405,8 +411,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Running", actual[1].RuntimeStatus);
         }
@@ -419,12 +427,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
@@ -475,8 +485,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("YYYY-YYYYYYYY-YYYYYYYYYYYY", responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Running", actual[1].RuntimeStatus);
         }
@@ -489,12 +501,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
@@ -529,8 +543,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
@@ -543,12 +559,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
@@ -576,8 +594,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, default(DateTime), new List<OrchestrationRuntimeStatus>(), It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }

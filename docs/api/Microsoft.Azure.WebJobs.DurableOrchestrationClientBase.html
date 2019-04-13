@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class DurableOrchestrationClientBase
    ">
-    <meta name="generator" content="docfx 2.40.4.0">
+    <meta name="generator" content="docfx 2.40.12.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -256,6 +256,86 @@ terminate the orchestration.</p>
       <tr>
         <td><a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html">HttpManagementPayload</a></td>
         <td><p>Instance of the <a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.html">HttpManagementPayload</a> class.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_DateTime_System_Nullable_System_DateTime__System_Collections_Generic_IEnumerable_Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus__System_Int32_System_String_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime%2CSystem.Nullable%7BSystem.DateTime%7D%2CSystem.Collections.Generic.IEnumerable%7BMicrosoft.Azure.WebJobs.OrchestrationRuntimeStatus%7D%2CSystem.Int32%2CSystem.String%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationClientBase.cs/#L299">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationClientBase_GetStatusAsync_System_DateTime_System_Nullable_System_DateTime__System_Collections_Generic_IEnumerable_Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus__System_Int32_System_String_System_Threading_CancellationToken_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationClientBase.GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Int32,System.String,System.Threading.CancellationToken)">GetStatusAsync(DateTime, Nullable&lt;DateTime&gt;, IEnumerable&lt;OrchestrationRuntimeStatus&gt;, Int32, String, CancellationToken)</h4>
+  <div class="markdown level1 summary"><p>Gets the status of all orchestration instances with paging that match the specified conditions.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract Task&lt;OrchestrationStatusQueryResult&gt; GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable&lt;OrchestrationRuntimeStatus&gt; runtimeStatus, int pageSize, string continuationToken, CancellationToken cancellationToken = default(CancellationToken))</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.DateTime</span></td>
+        <td><span class="parametername">createdTimeFrom</span></td>
+        <td><p>Return orchestration instances which were created after this DateTime.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Nullable</span>&lt;<span class="xref">System.DateTime</span>&gt;</td>
+        <td><span class="parametername">createdTimeTo</span></td>
+        <td><p>Return orchestration instances which were created before this DateTime.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html">OrchestrationRuntimeStatus</a>&gt;</td>
+        <td><span class="parametername">runtimeStatus</span></td>
+        <td><p>Return orchestration instances which matches the runtimeStatus.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">pageSize</span></td>
+        <td><p>Number of records per one request.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">continuationToken</span></td>
+        <td><p>ContinuationToken of the pager.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
+        <td><span class="parametername">cancellationToken</span></td>
+        <td><p>Cancellation token that can be used to cancel the status query operation.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult.html">OrchestrationStatusQueryResult</a>&gt;</td>
+        <td><p>Returns each page of orchestration status for all instances and continuation token of next page.</p>
 </td>
       </tr>
     </tbody>
@@ -566,7 +646,7 @@ terminate the orchestration.</p>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public abstract Task PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable&lt;OrchestrationStatus&gt; runtimeStatus)</code></pre>
+    <pre><code class="lang-csharp hljs">public abstract Task&lt;PurgeHistoryResult&gt; PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable&lt;OrchestrationStatus&gt; runtimeStatus)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -608,8 +688,8 @@ terminate the orchestration.</p>
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>Returns a task which completes when the purge has completed.</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.PurgeHistoryResult.html">PurgeHistoryResult</a>&gt;</td>
+        <td><p>Returns an instance of <a class="xref" href="Microsoft.Azure.WebJobs.PurgeHistoryResult.html">PurgeHistoryResult</a>.</p>
 </td>
       </tr>
     </tbody>
@@ -628,7 +708,7 @@ terminate the orchestration.</p>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public abstract Task PurgeInstanceHistoryAsync(string instanceId)</code></pre>
+    <pre><code class="lang-csharp hljs">public abstract Task&lt;PurgeHistoryResult&gt; PurgeInstanceHistoryAsync(string instanceId)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -658,8 +738,8 @@ terminate the orchestration.</p>
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">System.Threading.Tasks.Task</span></td>
-        <td><p>Returns a task which completes when the purge has completed.</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Microsoft.Azure.WebJobs.PurgeHistoryResult.html">PurgeHistoryResult</a>&gt;</td>
+        <td><p>Returns an instance of <a class="xref" href="Microsoft.Azure.WebJobs.PurgeHistoryResult.html">PurgeHistoryResult</a>.</p>
 </td>
       </tr>
     </tbody>
