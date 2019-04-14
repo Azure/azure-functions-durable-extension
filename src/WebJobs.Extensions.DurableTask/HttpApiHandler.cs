@@ -293,12 +293,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
-            PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(instanceId);
-            if (purgeHistoryResult == null || purgeHistoryResult.InstancesDeleted == 0)
+            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId, showHistory: false);
+            if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
+            PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(instanceId);
             return request.CreateResponse(HttpStatusCode.OK, purgeHistoryResult);
         }
 

@@ -257,11 +257,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        void IDurableOrchestrationContext.ContinueAsNew(object input)
+        void IDurableOrchestrationContext.ContinueAsNew(object input, bool preserveUnprocessedEvents)
         {
             this.ThrowIfInvalidAccess();
             this.InnerContext.ContinueAsNew(input);
             this.ContinuedAsNew = true;
+            this.PreserveUnprocessedEvents = preserveUnprocessedEvents;
         }
 
         /// <inheritdoc/>
