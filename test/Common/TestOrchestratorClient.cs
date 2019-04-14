@@ -67,10 +67,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.RaiseEventAsync(this.instanceId, eventName, eventData);
         }
 
-        public async Task RaiseEventAsync(string taskHubName, string instanceid, string eventName, object eventData, ITestOutputHelper output, string connectionName = null)
+        public async Task RaiseEventAsync(
+            string taskHubName,
+            string instanceid,
+            string eventName,
+            object eventData,
+            ITestOutputHelper output,
+            string connectionName = null)
         {
             output?.WriteLine($"Raising event {eventName} to {this.instanceId} in task hub {taskHubName}. Payload: {eventData}");
-            await this.innerClient.RaiseEventAsync(taskHubName, instanceid, eventName, eventData);
+            await this.innerClient.RaiseEventAsync(
+                taskHubName,
+                instanceid,
+                eventName,
+                eventData,
+                connectionName);
         }
 
         public async Task TerminateAsync(string reason)
@@ -83,8 +94,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.RewindAsync(this.instanceId, reason);
         }
 
-        public async Task<DurableOrchestrationStatus> WaitForStartupAsync(TimeSpan timeout, ITestOutputHelper output)
+        public async Task<DurableOrchestrationStatus> WaitForStartupAsync(ITestOutputHelper output, TimeSpan? timeout = null)
         {
+            if (timeout == null)
+            {
+                // We wait up to 30 seconds for things to start. It shouldn't normally take this
+                // long, but for whatever reason a small minority of tests don't acquire all
+                // partitions in less than 10 seconds.
+                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+            }
+
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
@@ -104,8 +123,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to start.");
         }
 
-        public async Task<DurableOrchestrationStatus> WaitForCompletionAsync(TimeSpan timeout, ITestOutputHelper output, bool showHistory = false, bool showHistoryOutput = false)
+        public async Task<DurableOrchestrationStatus> WaitForCompletionAsync(
+            ITestOutputHelper output,
+            bool showHistory = false,
+            bool showHistoryOutput = false,
+            TimeSpan? timeout = null)
         {
+            if (timeout == null)
+            {
+                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+            }
+
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
