@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -307,6 +308,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!context.IsCompleted)
             {
                 shim.TraceAwait();
+            }
+
+            if (context.IsCompleted &&
+                context.PreserveUnprocessedEvents)
+            {
+                // Reschedule any unprocessed external events so that they can be picked up
+                // in the next iteration.
+                context.RescheduleBufferedExternalEvents();
             }
 
             await context.RunDeferredTasks();

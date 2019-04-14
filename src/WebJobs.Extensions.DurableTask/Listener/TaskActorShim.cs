@@ -203,6 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.CurrentStateView?.WriteBack();
                 var jstate = JToken.FromObject(this.context.State);
                 this.context.InnerContext.ContinueAsNew(jstate);
+                this.context.PreserveUnprocessedEvents = true;
 
                 // currently not calling this as it may be too heavy for actors
                 // if (!this.context.IsReplaying)

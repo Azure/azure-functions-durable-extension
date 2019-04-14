@@ -26,8 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
-        private readonly Dictionary<string, Queue> bufferedExternalEvents =
-            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
+            new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly List<Func<Task>> deferredTasks
             = new List<Func<Task>>();
@@ -47,6 +47,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string FunctionName { get; }
 
         internal abstract FunctionType FunctionType { get; }
+
+        internal bool PreserveUnprocessedEvents { get; set; }
 
         protected List<ActorId> ContextLocks { get; set; }
 
@@ -429,9 +431,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 // Check the queue to see if any events came in before the orchestrator was listening
-                if (this.bufferedExternalEvents.TryGetValue(name, out Queue queue))
+                if (this.bufferedExternalEvents.TryGetValue(name, out Queue<string> queue))
                 {
-                    object input = queue.Dequeue();
+                    string rawInput = queue.Dequeue();
 
                     if (queue.Count == 0)
                     {
@@ -439,7 +441,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     // We can call raise event right away, since we already have an event's input
-                    this.RaiseEvent(name, input.ToString());
+                    this.RaiseEvent(name, rawInput);
                 }
                 else
                 {
@@ -517,9 +519,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     // Add the event to an (in-memory) queue, so we don't drop or lose it
-                    if (!this.bufferedExternalEvents.TryGetValue(name, out Queue bufferedEvents))
+                    if (!this.bufferedExternalEvents.TryGetValue(name, out Queue<string> bufferedEvents))
                     {
-                        bufferedEvents = new Queue();
+                        bufferedEvents = new Queue<string>();
                         this.bufferedExternalEvents[name] = bufferedEvents;
                     }
 
@@ -532,6 +534,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.InstanceId,
                         name,
                         this.IsReplaying);
+                }
+            }
+        }
+
+        internal void RescheduleBufferedExternalEvents()
+        {
+            var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
+
+            foreach (var pair in this.bufferedExternalEvents)
+            {
+                string eventName = pair.Key;
+                Queue<string> events = pair.Value;
+
+                while (events.Count > 0)
+                {
+                    // Need to round-trip serialization since SendEvent always tries to serialize.
+                    string rawInput = events.Dequeue();
+                    JToken jsonData = JToken.Parse(rawInput);
+                    this.InnerContext.SendEvent(instance, eventName, jsonData);
                 }
             }
         }

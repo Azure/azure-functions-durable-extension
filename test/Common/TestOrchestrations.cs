@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (!done)
             {
-                ctx.ContinueAsNew(currentValue);
+                ctx.ContinueAsNew(currentValue, preserveUnprocessedEvents: true);
             }
 
             return currentValue;

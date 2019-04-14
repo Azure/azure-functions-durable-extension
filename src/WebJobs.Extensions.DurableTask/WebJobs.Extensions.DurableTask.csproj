@@ -26,9 +26,7 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta009">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.1-*" PrivateAssets="All"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -38,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.5.0" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.6.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.1.0" />
   </ItemGroup>
 

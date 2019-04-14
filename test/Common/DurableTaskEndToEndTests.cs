@@ -65,16 +65,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
                 };
 
-                // Filter out some of the partition management informational events
-                var filteredEvents = new Dictionary<string, IEnumerable<int>>
-                {
-                    { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
-                };
-
                 this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
 
                 string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-                this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+                this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
             }
         }
 
@@ -642,7 +636,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ActorOrchestration),
+                nameof(this.ActorOrchestration_NoWaiting),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
@@ -770,7 +764,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item3", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 var status = await client.GetStatusAsync();
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
@@ -1035,7 +1030,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var extendedSessions = false;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.TimerExpiration),
+                nameof(this.WaitForExternalEventWithTimeout),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -1123,7 +1118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Empty string input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(5, status?.Output);
@@ -2043,7 +2038,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Wait long enough for the sub-orchestration to be started and waiting for input.
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 await client.InnerClient.RaiseEventAsync(input.InstanceId, "approval", true);
 
                 status = await client.WaitForCompletionAsync(timeout, this.output);
