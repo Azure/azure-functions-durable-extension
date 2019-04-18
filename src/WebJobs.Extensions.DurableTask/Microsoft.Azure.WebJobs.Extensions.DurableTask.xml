@@ -176,12 +176,6 @@
             The instance id of the orchestration that currently holds the lock of this actor.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
-            <summary>
-            ephemeral, typed view of the state of the actor, for use by applications in deserialized form.
-            </summary>
-            <typeparam name="T">the type of the state.</typeparam>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
             <summary>
             The default parameter type for activity functions.
@@ -1567,18 +1561,25 @@
             Whether this actor is freshly constructed, i.e. did not exist prior to this operation being called.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetState``1(Newtonsoft.Json.Formatting,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetState``1">
             <summary>
-            Gets a typed view of the state, by deserializing the JSON.
+            Gets the current state of this actor, for reading and/or updating.
             </summary>
             <typeparam name="TState">The JSON-serializable type of the actor state.</typeparam>
-            <returns>A typed view that allows reading and updating.</returns>
+            <returns>The current state of this actor.</returns>
+            <exception cref="T:System.InvalidCastException">If the current state has an incompatible type.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.SetState(System.Object)">
+            <summary>
+            Sets the current state of this actor.
+            </summary>
+            <param name="state">The JSON-serializable state of the actor.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent``1">
             <summary>
             Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
             </summary>
-            <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
+            <typeparam name="T">The type used for the operation content.</typeparam>
             <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
             <remarks>
             An operation invocation on an actor includes an operation name, which states what
