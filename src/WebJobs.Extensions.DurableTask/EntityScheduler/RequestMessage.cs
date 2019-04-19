@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// contains at least one element, and has no repetitions.
         /// </summary>
         [JsonProperty(PropertyName = "lockset", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public ActorId[] LockSet { get; set; }
+        public EntityId[] LockSet { get; set; }
 
         /// <summary>
         /// For lock requests involving multiple locks, the message number.

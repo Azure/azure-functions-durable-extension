@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownOrchestrators =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
-        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActors =
+        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownEntities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
@@ -139,8 +139,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
-            context.AddBindingRule<ActorTriggerAttribute>()
-                .BindToTrigger(new ActorTriggerAttributeBindingProvider(this, context, this.TraceHelper));
+            context.AddBindingRule<EntityTriggerAttribute>()
+                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
             this.orchestrationService = this.orchestrationServiceFactory.GetOrchestrationService();
 
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (name.StartsWith("@"))
             {
-                return new TaskActorShim(this, name);
+                return new TaskEntityShim(this, name);
             }
             else
             {
@@ -327,9 +327,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return info;
         }
 
-        internal RegisteredFunctionInfo GetActorInfo(FunctionName actorFunction)
+        internal RegisteredFunctionInfo GetEntityInfo(FunctionName entityFunction)
         {
-            this.knownActors.TryGetValue(actorFunction, out var info);
+            this.knownEntities.TryGetValue(entityFunction, out var info);
             return info;
         }
 
@@ -449,40 +449,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void RegisterActor(FunctionName actorFunction, RegisteredFunctionInfo actorInfo)
+        internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
-            if (actorInfo != null)
+            if (entityInfo != null)
             {
-                actorInfo.IsDeregistered = false;
+                entityInfo.IsDeregistered = false;
             }
 
-            if (this.knownActors.TryAdd(actorFunction, actorInfo))
+            if (this.knownEntities.TryAdd(entityFunction, entityInfo))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
-                    functionName: actorFunction.Name,
-                    message: $"Registered actor function named {actorFunction}.",
+                    functionName: entityFunction.Name,
+                    message: $"Registered entity function named {entityFunction}.",
                     writeToUserLogs: false);
             }
             else
             {
-                this.knownActors[actorFunction] = actorInfo;
+                this.knownEntities[entityFunction] = entityInfo;
             }
         }
 
-        internal void DeregisterActor(FunctionName actorFunction)
+        internal void DeregisterEntity(FunctionName entityFunction)
         {
             RegisteredFunctionInfo existing;
-            if (this.knownOrchestrators.TryGetValue(actorFunction, out existing) && !existing.IsDeregistered)
+            if (this.knownOrchestrators.TryGetValue(entityFunction, out existing) && !existing.IsDeregistered)
             {
                 existing.IsDeregistered = true;
 
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
-                    functionName: actorFunction.Name,
-                    message: $"Deregistered actor function named {actorFunction}.",
+                    functionName: entityFunction.Name,
+                    message: $"Deregistered entity function named {entityFunction}.",
                     writeToUserLogs: false);
             }
         }

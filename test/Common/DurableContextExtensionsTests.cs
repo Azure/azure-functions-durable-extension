@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly Task<int> intResultTask = Task.FromResult(5);
         private readonly object inputObject = (object)3;
         private readonly string operationName = "myop";
-        private readonly ActorId actorId = new ActorId("a", "b");
+        private readonly EntityId entityId = new EntityId("a", "b");
         private readonly TimeSpan timeSpan = TimeSpan.FromMinutes(1);
 
         [Fact]
@@ -161,24 +161,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CallActorAsync_without_content_is_calling_extension_method()
+        public async Task CallEntityAsync_without_content_is_calling_extension_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
-            durableOrchestrationContextBaseMock.Setup(x => x.CallActorAsync<object>(this.actorId, this.operationName, null))
+            durableOrchestrationContextBaseMock.Setup(x => x.CallEntityAsync<object>(this.entityId, this.operationName, null))
                 .Returns(this.taskFromTen);
-            var result = durableOrchestrationContextBaseMock.Object.CallActorAsync(this.actorId, this.operationName);
+            var result = durableOrchestrationContextBaseMock.Object.CallEntityAsync(this.entityId, this.operationName);
             var resultValue = await (Task<object>)result;
             resultValue.Should().Be(this.stateValueTen);
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public Task CallActorAsync_with_resulttype_without_content_is_calling_extension_method()
+        public Task CallEntityAsync_with_resulttype_without_content_is_calling_extension_method()
         {
             var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
-            durableOrchestrationContextBaseMock.Setup(x => x.CallActorAsync<int>(this.actorId, this.operationName, null))
+            durableOrchestrationContextBaseMock.Setup(x => x.CallEntityAsync<int>(this.entityId, this.operationName, null))
                 .Returns(this.intResultTask);
-            var result = durableOrchestrationContextBaseMock.Object.CallActorAsync<int>(this.actorId, this.operationName);
+            var result = durableOrchestrationContextBaseMock.Object.CallEntityAsync<int>(this.entityId, this.operationName);
             result.Should().Be(this.intResultTask);
             return result;
         }

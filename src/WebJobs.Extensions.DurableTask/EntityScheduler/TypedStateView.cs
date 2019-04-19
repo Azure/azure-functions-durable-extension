@@ -9,12 +9,12 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// ephemeral, typed view of the state of the actor, for use by applications in deserialized form.
+    /// ephemeral, typed view of the state of the entity, for use by applications in deserialized form.
     /// </summary>
     /// <typeparam name="T">the type of the state.</typeparam>
     internal class TypedStateView<T> : IStateView<T>, IStateView
     {
-        private readonly DurableActorContext context;
+        private readonly DurableEntityContext context;
         private readonly Formatting formatting;
         private readonly JsonSerializerSettings settings;
 
@@ -25,19 +25,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TypeNameHandling = TypeNameHandling.None,
         };
 
-        public TypedStateView(DurableActorContext context, Formatting formatting, JsonSerializerSettings settings)
+        public TypedStateView(DurableEntityContext context, Formatting formatting, JsonSerializerSettings settings)
         {
             this.context = context;
             this.formatting = formatting;
             this.settings = settings ?? defaultSettings;
 
-            if (context.State.ActorState == null)
+            if (context.State.EntityState == null)
             {
                 this.state = default(T);
             }
             else
             {
-                this.state = JsonConvert.DeserializeObject<T>(context.State.ActorState, this.settings);
+                this.state = JsonConvert.DeserializeObject<T>(context.State.EntityState, this.settings);
             }
         }
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void WriteBack()
         {
-            this.context.State.ActorState = JsonConvert.SerializeObject(this.state, typeof(T), this.formatting, this.settings);
+            this.context.State.EntityState = JsonConvert.SerializeObject(this.state, typeof(T), this.formatting, this.settings);
         }
 
         void IDisposable.Dispose()

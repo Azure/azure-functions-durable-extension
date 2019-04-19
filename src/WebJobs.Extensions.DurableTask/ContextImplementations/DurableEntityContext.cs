@@ -12,16 +12,16 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Context object passed to application code executing actor operations.
+    /// Context object passed to application code executing entity operations.
     /// </summary>
-    internal class DurableActorContext : DurableCommonContext, IDurableActorContext
+    internal class DurableEntityContext : DurableCommonContext, IDurableEntityContext
     {
-        private readonly ActorId self;
+        private readonly EntityId self;
 
-        public DurableActorContext(DurableTaskExtension config, ActorId actor)
-         : base(config, actor.ActorClass)
+        public DurableEntityContext(DurableTaskExtension config, EntityId entity)
+         : base(config, entity.EntityName)
         {
-            this.self = actor;
+            this.self = entity;
         }
 
         internal IStateView CurrentStateView { get; set; }
@@ -38,15 +38,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool DestructOnExit { get; set; }
 
-        string IDurableActorContext.ActorClass => this.self.ActorClass;
+        string IDurableEntityContext.EntityName => this.self.EntityName;
 
-        string IDurableActorContext.Key => this.self.ActorKey;
+        string IDurableEntityContext.Key => this.self.EntityKey;
 
-        ActorId IDurableActorContext.Self => this.self;
+        EntityId IDurableEntityContext.Self => this.self;
 
-        internal override FunctionType FunctionType => FunctionType.Actor;
+        internal override FunctionType FunctionType => FunctionType.Entity;
 
-        string IDurableActorContext.OperationName
+        string IDurableEntityContext.OperationName
         {
             get
             {
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        bool IDurableActorContext.IsNewlyConstructed
+        bool IDurableEntityContext.IsNewlyConstructed
         {
             get
             {
@@ -64,25 +64,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        void IDurableActorContext.DestructOnExit()
+        void IDurableEntityContext.DestructOnExit()
         {
             this.ThrowIfInvalidAccess();
             this.DestructOnExit = true;
         }
 
-        T IDurableActorContext.GetOperationContent<T>()
+        T IDurableEntityContext.GetOperationContent<T>()
         {
             this.ThrowIfInvalidAccess();
             return this.CurrentOperation.GetContent<T>();
         }
 
-        object IDurableActorContext.GetOperationContent(Type argumentType)
+        object IDurableEntityContext.GetOperationContent(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
             return this.CurrentOperation.GetContent(argumentType);
         }
 
-        IStateView<TState> IDurableActorContext.GetState<TState>(Formatting formatting, JsonSerializerSettings settings)
+        IStateView<TState> IDurableEntityContext.GetState<TState>(Formatting formatting, JsonSerializerSettings settings)
         {
             this.ThrowIfInvalidAccess();
             if (this.CurrentStateView != null)
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return newView;
         }
 
-        void IDurableActorContext.Return(object result)
+        void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
             this.CurrentOperationResponse.SetResult(result);

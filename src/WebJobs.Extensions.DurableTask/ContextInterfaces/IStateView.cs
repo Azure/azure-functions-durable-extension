@@ -8,19 +8,19 @@ using System.Text;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// A typed view of the current state of the actor.
+    /// A typed view of the current state of the entity.
     /// </summary>
-    /// <typeparam name="TState">The JSON-serializable type used for this actor.</typeparam>
+    /// <typeparam name="TState">The JSON-serializable type used for this entity.</typeparam>
     public interface IStateView<TState> : IStateView
     {
         /// <summary>
-        /// The current state of the actor.
+        /// The current state of the entity.
         /// </summary>
         TState Value { get; set; }
     }
 
     /// <summary>
-    /// A view of the current state of the actor.
+    /// A view of the current state of the entity.
     /// </summary>
     public interface IStateView : IDisposable
     {

@@ -11,44 +11,44 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Provides functionality for application code implementing an actor operation.
+    /// Provides functionality for application code implementing an entity operation.
     /// </summary>
-    public interface IDurableActorContext : IDeterministicExecutionContext
+    public interface IDurableEntityContext : IDeterministicExecutionContext
     {
         /// <summary>
-        /// Gets the class of the currently executing actor.
+        /// Gets the name of the currently executing entity.
         /// </summary>
-        string ActorClass { get; }
+        string EntityName { get; }
 
         /// <summary>
-        /// Gets the key of the currently executing actor.
+        /// Gets the key of the currently executing entity.
         /// </summary>
         string Key { get; }
 
         /// <summary>
-        /// Gets an actor reference for the currently executing actor.
+        /// Gets an entity id for the currently executing entity.
         /// </summary>
-        ActorId Self { get; }
+        EntityId Self { get; }
 
         /// <summary>
         /// Gets the name of the operation that was called.
         /// </summary>
         /// <remarks>
-        /// An operation invocation on an actor includes an operation name, which states what
+        /// An operation invocation on an entity includes an operation name, which states what
         /// operation to perform, and optionally an operation content, which
         /// provides an input argument to the operation.
         /// </remarks>
         string OperationName { get; }
 
         /// <summary>
-        /// Whether this actor is freshly constructed, i.e. did not exist prior to this operation being called.
+        /// Whether this entity is freshly constructed, i.e. did not exist prior to this operation being called.
         /// </summary>
         bool IsNewlyConstructed { get; }
 
         /// <summary>
         /// Gets a typed view of the state, by deserializing the JSON.
         /// </summary>
-        /// <typeparam name="TState">The JSON-serializable type of the actor state.</typeparam>
+        /// <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
         /// <returns>A typed view that allows reading and updating.</returns>
         IStateView<TState> GetState<TState>(Formatting formatting = Formatting.Indented, JsonSerializerSettings settings = null);
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs
         /// <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
         /// <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
         /// <remarks>
-        /// An operation invocation on an actor includes an operation name, which states what
+        /// An operation invocation on an entity includes an operation name, which states what
         /// operation to perform, and optionally an operation content, which
         /// provides an input argument to the operation.
         /// </remarks>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="contentType">The JSON-serializable type used for the operation content.</param>
         /// <returns>The operation content, or default(<paramref name="contentType"/>) if none.</returns>
         /// <remarks>
-        /// An operation invocation on an actor includes an operation name, which states what
+        /// An operation invocation on an entity includes an operation name, which states what
         /// operation to perform, and optionally an operation content, which
         /// provides an input argument to the operation.
         /// </remarks>
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs
         void Return(object result);
 
         /// <summary>
-        /// Deletes this actor after this operation completes.
+        /// Deletes this entity after this operation completes.
         /// </summary>
         void DestructOnExit();
     }

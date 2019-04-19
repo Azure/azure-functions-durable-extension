@@ -10,18 +10,18 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Functionality available in all deterministic execution contexts, such as orchestrations or actor operations.
+    /// Functionality available in all deterministic execution contexts, such as orchestrations or entity operations.
     /// </summary>
     public interface IDeterministicExecutionContext
     {
         /// <summary>
-        /// Gets the current date/time in a way that is safe for use in orchestrations and actor operations.
+        /// Gets the current date/time in a way that is safe for use in orchestrations and entity operations.
         /// </summary>
         /// <remarks>
-        /// This date/time value is derived from the orchestration or actor history. It always returns the same value
+        /// This date/time value is derived from the orchestration or entity history. It always returns the same value
         /// at specific points in the orchestrator function code, making it deterministic and safe for replay.
         /// </remarks>
-        /// <value>The orchestration or actor's current date/time in UTC.</value>
+        /// <value>The orchestration or entity's current date/time in UTC.</value>
         DateTime CurrentUtcDateTime { get; }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs
         /// if an orchestration calls a suborchestration without lending any locks.
         /// </remarks>
         /// <returns><c>true</c> if the context already holds some locks.</returns>
-        bool IsLocked(out IReadOnlyList<ActorId> ownedLocks);
+        bool IsLocked(out IReadOnlyList<EntityId> ownedLocks);
 
         /// <summary>
         /// Creates a new GUID that is safe for replay within an orchestration or operation.
@@ -100,12 +100,12 @@ namespace Microsoft.Azure.WebJobs
         Task<TResult> CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input);
 
         /// <summary>
-        /// Signals an actor to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+        /// Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
         /// </summary>
-        /// <param name="actor">The target actor.</param>
+        /// <param name="entity">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationContent">The content for the operation.</param>
-        void SignalActor(ActorId actor, string operationName, object operationContent = null);
+        void SignalEntity(EntityId entity, string operationName, object operationContent = null);
 
         /// <summary>
         /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.

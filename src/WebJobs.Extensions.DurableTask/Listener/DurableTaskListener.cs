@@ -49,8 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case FunctionType.Orchestrator:
                     this.config.DeregisterOrchestrator(this.functionName);
                     break;
-                case FunctionType.Actor:
-                    this.config.DeregisterActor(this.functionName);
+                case FunctionType.Entity:
+                    this.config.DeregisterEntity(this.functionName);
                     break;
                 case FunctionType.Activity:
                     this.config.DeregisterActivity(this.functionName);
