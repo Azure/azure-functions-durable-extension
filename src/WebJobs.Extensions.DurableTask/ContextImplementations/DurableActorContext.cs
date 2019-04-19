@@ -92,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var result = (this.State.ActorState == null)
                     ? default(T)
-                    : JsonConvert.DeserializeObject<T>(this.State.ActorState);
+                    : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.ActorState);
                 this.CurrentState = result;
                 this.StateWasAccessed = true;
                 return result;
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.StateWasAccessed)
             {
-                this.State.ActorState = JsonConvert.SerializeObject(this.CurrentState);
+                this.State.ActorState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
 
                 this.CurrentState = null;
                 this.StateWasAccessed = false;

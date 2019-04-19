@@ -326,11 +326,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return results;
         }
 
-        Task<ActorStateResponse<T>> IDurableOrchestrationClient.ReadActorState<T>(ActorId actorId, string taskHubName, string connectionName, JsonSerializerSettings settings)
+        Task<ActorStateResponse<T>> IDurableOrchestrationClient.ReadActorState<T>(ActorId actorId, string taskHubName, string connectionName)
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.ReadActorState<T>(this.client, this.hubName, actorId, settings);
+                return this.ReadActorState<T>(this.client, this.hubName, actorId);
             }
             else
             {
@@ -346,11 +346,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
-                return this.ReadActorState<T>(taskHubClient, taskHubName, actorId, settings);
+                return this.ReadActorState<T>(taskHubClient, taskHubName, actorId);
             }
         }
 
-        private async Task<ActorStateResponse<T>> ReadActorState<T>(TaskHubClient client, string hubName, ActorId actorId, JsonSerializerSettings settings)
+        private async Task<ActorStateResponse<T>> ReadActorState<T>(TaskHubClient client, string hubName, ActorId actorId)
         {
             var instanceId = ActorId.GetSchedulerIdFromActorId(actorId);
             IList<OrchestrationState> stateList = await client.ServiceClient.GetOrchestrationStateAsync(instanceId, false);
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new ActorStateResponse<T>()
                     {
                         ActorExists = true,
-                        ActorState = JsonConvert.DeserializeObject<T>(schedulerState.ActorState, settings),
+                        ActorState = MessagePayloadDataConverter.Default.Deserialize<T>(schedulerState.ActorState),
                     };
                 }
             }
