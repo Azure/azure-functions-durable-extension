@@ -360,9 +360,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 && state.OrchestrationInstance != null
                 && state.Input != null)
             {
-                var serializedState = state.Input;
+                string serializedState;
 
-                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(state.Input, MessagePayloadDataConverter.MessageSettings);
+                if (this.client.ServiceClient is AzureStorageOrchestrationService service
+                    && state.Input.StartsWith("http"))
+                {
+                    // the input was compressed... read it back from blob
+                    serializedState = await service.DownloadLargeStatusField(state.Input);
+                }
+                else
+                {
+                    serializedState = state.Input;
+                }
+
+                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(serializedState, MessagePayloadDataConverter.MessageSettings);
 
                 if (schedulerState.ActorExists)
                 {
