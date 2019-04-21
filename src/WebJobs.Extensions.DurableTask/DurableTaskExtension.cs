@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -12,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host;
@@ -145,6 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.orchestrationService = this.orchestrationServiceFactory.GetOrchestrationService();
 
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
+            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.ActorMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
 
@@ -319,6 +320,73 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await context.RunDeferredTasks();
+        }
+
+        private async Task ActorMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            var actorShim = dispatchContext.GetProperty<TaskOrchestration>() as TaskActorShim;
+            if (actorShim == null)
+            {
+                // This is not an actor - skip.
+                await next();
+                return;
+            }
+
+            OrchestrationRuntimeState runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
+            DurableActorContext actorContext = (DurableActorContext)actorShim.Context;
+            actorContext.InstanceId = runtimeState.OrchestrationInstance.InstanceId;
+            actorContext.History = runtimeState.Events;
+            actorContext.RawInput = runtimeState.Input;
+
+            // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+            FunctionResult result = await actorShim.GetFunctionInfo().Executor.TryExecuteAsync(
+                new TriggeredFunctionData
+                {
+                    TriggerValue = actorShim.Context,
+
+#pragma warning disable CS0618 // Approved for use by this extension
+                    InvokeHandler = async userCodeInvoker =>
+                    {
+                        actorShim.SetFunctionInvocationCallback(userCodeInvoker);
+
+                        Task executeTask = null;
+
+                        bool eventsReceived = false;
+
+                        // Load all the external events into the actor shim
+                        foreach (HistoryEvent e in runtimeState.Events)
+                        {
+                            switch (e.EventType)
+                            {
+                                case EventType.OrchestratorStarted:
+                                    actorContext.CurrentOperationStartTime = e.Timestamp;
+                                    break;
+                                case EventType.ExecutionStarted:
+                                    executeTask = actorShim.ExecuteActor(runtimeState.Input);
+                                    break;
+                                case EventType.EventRaised:
+                                    eventsReceived = true;
+                                    EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
+                                    actorShim.RaiseActorEvent(eventRaisedEvent.Name, eventRaisedEvent.Input);
+                                    break;
+                                default:
+                                    // TODO: Anything else?
+                                    break;
+                            }
+                        }
+
+                        if (eventsReceived && executeTask != null)
+                        {
+                            // Wait for all the queued actor operations to complete
+                            await executeTask;
+                        }
+
+                        // Run the scheduler orchestration so that state can be persisted.
+                        await next();
+                    },
+#pragma warning restore CS0618
+                },
+                CancellationToken.None);
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)

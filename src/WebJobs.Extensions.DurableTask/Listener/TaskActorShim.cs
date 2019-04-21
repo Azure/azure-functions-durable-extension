@@ -3,11 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
@@ -34,9 +30,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly TaskCompletionSource<object> continueAsNewSignal
             = new TaskCompletionSource<object>();
 
+        private readonly TaskCompletionSource<object> doneProcessingHistoryEvents
+            = new TaskCompletionSource<object>();
+
         private Task lastStartedOperation = Task.CompletedTask;
 
         private int numberOperationsStarted = 0;
+
+        private List<Action<OrchestrationContext>> orchestrationActions;
+        private int pendingExternalEventHistoryRecordCount;
 
         public TaskActorShim(DurableTaskExtension config, string schedulerId)
             : base(config)
@@ -46,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context = new DurableActorContext(config, this.ActorId);
         }
 
-        public override DurableCommonContext Context => context;
+        public override DurableCommonContext Context => this.context;
 
         public string SchedulerId { get; private set; }
 
@@ -88,11 +90,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void SignalContinueAsNew()
         {
-            MethodInfo trySetResult = typeof(TaskCompletionSource<object>).GetMethod("TrySetResult");
-            trySetResult.Invoke(this.continueAsNewSignal, new[] { (object)null });
+            this.continueAsNewSignal.SetResult(null);
         }
 
-        public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
+        internal void RaiseActorEvent(string eventName, string serializedEventData)
         {
             if (eventName == "op")
             {
@@ -154,27 +155,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
+        public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
         {
-            if (this.FunctionInvocationCallback == null)
+            // no-op: the events were already processed outside of the DTFx context
+            this.pendingExternalEventHistoryRecordCount--;
+
+            if (this.pendingExternalEventHistoryRecordCount == 0)
             {
-                throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
+                // signal the main orchestration thread that it can now safely terminate.
+                this.doneProcessingHistoryEvents.SetResult(null);
             }
+        }
 
-            this.context.InnerContext = innerContext;
-
+        internal async Task<string> ExecuteActor(string serializedInput)
+        {
             if (this.GetFunctionInfo().IsOutOfProc)
             {
                 throw new NotImplementedException("out-of-proc actor support is not implemented yet");
-            }
-
-            if (!innerContext.IsReplaying)
-            {
-                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    this.context.IsReplaying));
             }
 
             try
@@ -190,6 +187,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
                 }
 
+                if (!this.context.State.ActorExists)
+                {
+                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        this.context.IsReplaying));
+                }
+
                 // restart the processing if needed
                 if (this.context.State.LockedBy == null && this.context.State.TryDequeue(out var request))
                 {
@@ -202,19 +208,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.context.CurrentStateView?.WriteBack();
                 var jstate = JToken.FromObject(this.context.State);
-                this.context.InnerContext.ContinueAsNew(jstate);
+                this.AddOrchestratorAction(ctx => ctx.ContinueAsNew(jstate));
                 this.context.PreserveUnprocessedEvents = true;
 
-                // currently not calling this as it may be too heavy for actors
-                // if (!this.context.IsReplaying)
-                // {
-                //    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                //        this.context.HubName,
-                //        this.context.Name,
-                //        this.context.InstanceId,
-                //        true,
-                //        this.context.IsReplaying));
-                // }
+                if (this.context.DestructOnExit)
+                {
+                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        true,
+                        this.context.IsReplaying));
+                }
 
                 return "continueAsNew";
             }
@@ -244,8 +249,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
+        {
+            // Wait until all the actor events have been processed.
+            await this.doneProcessingHistoryEvents.Task;
+
+            // REVIEW: Is it correct to fail the scheduler? Or should we keep it alive?
+            if (this.context.OrchestrationException != null)
+            {
+                this.context.OrchestrationException.Throw();
+            }
+
+            // Process any side-effecting operations, like signalling other actors
+            // or invoking ContinueAsNew.
+            if (this.orchestrationActions != null)
+            {
+                foreach (Action<OrchestrationContext> action in this.orchestrationActions)
+                {
+                    action(innerContext);
+                }
+
+                this.orchestrationActions.Clear();
+            }
+
+            // The return value is not used.
+            return string.Empty;
+        }
+
         private Task ProcessRequestAsync(RequestMessage request)
         {
+            this.pendingExternalEventHistoryRecordCount++;
+
             if (request.IsLockMessage)
             {
                 return this.ProcessLockRequestAsync(request);
@@ -276,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // send lock request to next actor in the lock set
                 var target = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(request.LockSet[request.Position]) };
-                this.context.InnerContext.SendEvent(target, "op", request);
+                this.AddOrchestratorAction(ctx => ctx.SendEvent(target, "op", request));
             }
             else
             {
@@ -286,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                 };
-                this.context.InnerContext.SendEvent(target, request.Id.ToString(), message);
+                this.AddOrchestratorAction(ctx => ctx.SendEvent(target, request.Id.ToString(), message));
             }
 
             return Task.CompletedTask;
@@ -297,7 +331,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set context for operation
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
-            this.context.CurrentOperationStartTime = ((IDeterministicExecutionContext)this.context).CurrentUtcDateTime;
             this.context.IsNewlyConstructed = !this.context.State.ActorExists;
             this.context.State.ActorExists = true;
             this.context.DestructOnExit = false;
@@ -363,7 +396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
                 var guid = request.Id.ToString();
                 var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
-                this.context.InnerContext.SendEvent(target, guid, jresponse);
+                this.AddOrchestratorAction(ctx => ctx.SendEvent(target, guid, jresponse));
             }
 
             // destruct the actor if the application code requested it
@@ -428,6 +461,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.CurrentOperation?.Operation ?? string.Empty,
                     this.context.IsReplaying);
             }
+        }
+
+        private void AddOrchestratorAction(Action<OrchestrationContext> action)
+        {
+            // TODO: This might need to be made thread-safe.
+            if (this.orchestrationActions == null)
+            {
+                this.orchestrationActions = new List<Action<OrchestrationContext>>();
+            }
+
+            this.orchestrationActions.Add(action);
         }
     }
 }

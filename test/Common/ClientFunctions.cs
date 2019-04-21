@@ -44,5 +44,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceId,
                 instanceCreationTime);
         }
+
+        [NoAutomaticTrigger]
+        public static void GetActorClient(
+            [OrchestrationClient] IDurableOrchestrationClient client,
+            ActorId actorId,
+            TestActorClient[] clientRef)
+        {
+            // Give a client object created via the binding back to the caller
+            clientRef[0] = new TestActorClient(client, actorId);
+        }
     }
 }

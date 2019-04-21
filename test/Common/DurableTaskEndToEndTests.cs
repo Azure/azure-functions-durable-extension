@@ -2665,6 +2665,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// Test which validates that actors can safely make async I/O calls.
+        /// </summary>
+        [Fact]
+        public async Task DurableActor_AsyncIO()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableActor_AsyncIO),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var actorId = new ActorId("HttpActor", Guid.NewGuid().ToString("N"));
+                TestActorClient client = await host.GetActorClientAsync(actorId, this.output);
+
+                await client.SignalActor(this.output, "get", "https://www.microsoft.com");
+                await client.SignalActor(this.output, "get", "https://bing.com");
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                var state = await client.WaitForActorState<IDictionary<string, string>>(this.output);
+                Assert.NotNull(state);
+
+                if (state.TryGetValue("error", out string error))
+                {
+                    throw new XunitException("Actor encountered an error: " + error);
+                }
+
+                Assert.True(state.ContainsKey("https://www.microsoft.com"));
+                Assert.Equal("200", state["https://www.microsoft.com"]);
+
+                Assert.True(state.ContainsKey("https://bing.com"));
+                Assert.Equal("200", state["https://bing.com"]);
+
+                Assert.Equal(2, state.Count);
+
+                await host.StopAsync();
+            }
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]

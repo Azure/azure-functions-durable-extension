@@ -2,12 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -19,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ActorId self;
 
         public DurableActorContext(DurableTaskExtension config, ActorId actor)
-         : base(config, actor.ActorClass)
+            : base(config, actor.ActorClass)
         {
             this.self = actor;
         }
@@ -115,8 +110,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException("No operation is being processed.");
             }
-
-            base.ThrowIfInvalidAccess();
         }
     }
 }

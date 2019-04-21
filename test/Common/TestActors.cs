@@ -3,16 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestActors
     {
+        private static readonly HttpClient SharedHttpClient = new HttpClient();
+
         //-------------- a very simple actor that stores a string -----------------
         // it offers two operations:
         // "set" (takes a string, assigns it to the current state, does not return anything)
@@ -245,6 +248,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 default:
                     throw new NotImplementedException("no such operation");
+            }
+        }
+
+        public static async Task HttpActor(
+            [ActorTrigger(ActorClassName = "HttpActor")] IDurableActorContext context,
+            ILogger log)
+        {
+            IStateView<Dictionary<string, int>> callHistory = context.GetState<Dictionary<string, int>>();
+            if (context.IsNewlyConstructed)
+            {
+                callHistory.Value = new Dictionary<string, int>();
+            }
+
+            string requestUri = context.GetOperationContent<string>();
+
+            log.LogInformation($"Calling {requestUri}");
+
+            int statusCode = await CallHttpAsync(requestUri);
+            callHistory.Value.Add(requestUri, statusCode);
+        }
+
+        private static async Task<int> CallHttpAsync(string requestUri)
+        {
+            using (HttpResponseMessage response = await SharedHttpClient.GetAsync(requestUri))
+            {
+                return (int)response.StatusCode;
             }
         }
 
