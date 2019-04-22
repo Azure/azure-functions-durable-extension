@@ -227,6 +227,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
+            if (this.StorageProvider == null)
+            {
+                this.StorageProvider = new StorageProviderOptions();
+            }
+
             this.StorageProvider.Validate();
 
             // Each storage provider may have its own limitations for task hub names due to provider naming restrictions
