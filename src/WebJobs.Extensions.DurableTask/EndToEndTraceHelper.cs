@@ -423,7 +423,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void ActorOperationQueued(
+        public void EntityOperationQueued(
             string hubName,
             string functionName,
             string instanceId,
@@ -431,9 +431,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string operationName,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Actor;
+            FunctionType functionType = FunctionType.Entity;
 
-            EtwEventSource.Instance.ActorOperationQueued(
+            EtwEventSource.Instance.EntityOperationQueued(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void ActorResponseReceived(
+        public void EntityResponseReceived(
             string hubName,
             string functionName,
             string instanceId,
@@ -462,9 +462,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string result,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Actor;
+            FunctionType functionType = FunctionType.Entity;
 
-            EtwEventSource.Instance.ActorResponseReceived(
+            EtwEventSource.Instance.EntityResponseReceived(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
@@ -479,13 +479,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' received an actor response. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    "{instanceId}: Function '{functionName} ({functionType})' received an entity response. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                     instanceId, functionName, functionType, operationId, FunctionState.ExternalEventRaised, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
 
-        public void ActorLockAcquired(
+        public void EntityLockAcquired(
             string hubName,
             string functionName,
             string instanceId,
@@ -493,9 +493,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string requestId,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Actor;
+            FunctionType functionType = FunctionType.Entity;
 
-            EtwEventSource.Instance.ActorLockAcquired(
+            EtwEventSource.Instance.EntityLockAcquired(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 requestingInstance,
                 requestId,
-                FunctionType.Actor.ToString(),
+                FunctionType.Entity.ToString(),
                 ExtensionVersion,
                 IsReplay: isReplay);
 
@@ -516,7 +516,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void ActorLockReleased(
+        public void EntityLockReleased(
             string hubName,
             string functionName,
             string instanceId,
@@ -524,9 +524,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string requestId,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Actor;
+            FunctionType functionType = FunctionType.Entity;
 
-            EtwEventSource.Instance.ActorLockReleased(
+            EtwEventSource.Instance.EntityLockReleased(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
@@ -534,7 +534,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 requestingInstance,
                 requestId,
-                FunctionType.Actor.ToString(),
+                FunctionType.Entity.ToString(),
                 ExtensionVersion,
                 IsReplay: isReplay);
 

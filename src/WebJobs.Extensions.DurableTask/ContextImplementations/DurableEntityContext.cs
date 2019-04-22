@@ -12,16 +12,16 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Context object passed to application code executing actor operations.
+    /// Context object passed to application code executing entity operations.
     /// </summary>
-    internal class DurableActorContext : DurableCommonContext, IDurableActorContext
+    internal class DurableEntityContext : DurableCommonContext, IDurableEntityContext
     {
-        private readonly ActorId self;
+        private readonly EntityId self;
 
-        public DurableActorContext(DurableTaskExtension config, ActorId actor)
-         : base(config, actor.ActorClass)
+        public DurableEntityContext(DurableTaskExtension config, EntityId entity)
+         : base(config, entity.EntityName)
         {
-            this.self = actor;
+            this.self = entity;
         }
 
         internal bool StateWasAccessed { get; set; }
@@ -40,15 +40,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool DestructOnExit { get; set; }
 
-        string IDurableActorContext.ActorClass => this.self.ActorClass;
+        string IDurableEntityContext.EntityName => this.self.EntityName;
 
-        string IDurableActorContext.Key => this.self.ActorKey;
+        string IDurableEntityContext.Key => this.self.EntityKey;
 
-        ActorId IDurableActorContext.Self => this.self;
+        EntityId IDurableEntityContext.Self => this.self;
 
-        internal override FunctionType FunctionType => FunctionType.Actor;
+        internal override FunctionType FunctionType => FunctionType.Entity;
 
-        string IDurableActorContext.OperationName
+        string IDurableEntityContext.OperationName
         {
             get
             {
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        bool IDurableActorContext.IsNewlyConstructed
+        bool IDurableEntityContext.IsNewlyConstructed
         {
             get
             {
@@ -66,33 +66,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        void IDurableActorContext.DestructOnExit()
+        void IDurableEntityContext.DestructOnExit()
         {
             this.ThrowIfInvalidAccess();
             this.DestructOnExit = true;
         }
 
-        T IDurableActorContext.GetOperationContent<T>()
+        T IDurableEntityContext.GetOperationContent<T>()
         {
             this.ThrowIfInvalidAccess();
             return this.CurrentOperation.GetContent<T>();
         }
 
-        object IDurableActorContext.GetOperationContent(Type argumentType)
+        object IDurableEntityContext.GetOperationContent(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
             return this.CurrentOperation.GetContent(argumentType);
         }
 
-        T IDurableActorContext.GetState<T>()
+        T IDurableEntityContext.GetState<T>()
         {
             this.ThrowIfInvalidAccess();
 
             if (!this.StateWasAccessed)
             {
-                var result = (this.State.ActorState == null)
+                var result = (this.State.EntityState == null)
                     ? default(T)
-                    : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.ActorState);
+                    : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.EntityState);
                 this.CurrentState = result;
                 this.StateWasAccessed = true;
                 return result;
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        void IDurableActorContext.SetState(object o)
+        void IDurableEntityContext.SetState(object o)
         {
             this.ThrowIfInvalidAccess();
 
@@ -115,14 +115,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.StateWasAccessed)
             {
-                this.State.ActorState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
+                this.State.EntityState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
 
                 this.CurrentState = null;
                 this.StateWasAccessed = false;
             }
         }
 
-        void IDurableActorContext.Return(object result)
+        void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
             this.CurrentOperationResponse.SetResult(result);

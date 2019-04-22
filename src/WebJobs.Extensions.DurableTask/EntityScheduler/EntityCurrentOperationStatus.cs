@@ -9,10 +9,10 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Information about the current status of an operation executing on an actor.
+    /// Information about the current status of an operation executing on an entity.
     /// Excludes potentially large data (such as the operation input content) so it can be read with low latency.
     /// </summary>
-    public class ActorCurrentOperationStatus
+    public class EntityCurrentOperationStatus
     {
         /// <summary>
         /// The name of the operation.
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs
         public string ParentInstanceId { get; set; }
 
         /// <summary>
-        /// The UTC time at which the actor started processing this operation.
+        /// The UTC time at which the entity started processing this operation.
         /// </summary>
         [JsonProperty(PropertyName = "startTime", Required = Required.Always)]
         public DateTime StartTime { get; set; }

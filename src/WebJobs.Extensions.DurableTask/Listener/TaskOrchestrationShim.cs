@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ContinueAsNew = 4,
             CreateTimer = 5,
             WaitForExternalEvent = 6,
-            CallActor = 7,
+            CallEntity = 7,
         }
 
         public override DurableCommonContext Context => context;
@@ -268,9 +268,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CallSubOrchestratorWithRetry:
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
-                        case AsyncActionType.CallActor:
-                            var actorId = ActorId.GetActorIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(((IInterleavingContext)this.context).CallActorAsync(actorId, action.ExternalEventName, action.Input));
+                        case AsyncActionType.CallEntity:
+                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                            tasks.Add(((IInterleavingContext)this.context).CallEntityAsync(entityId, action.ExternalEventName, action.Input));
                             break;
                         case AsyncActionType.ContinueAsNew:
                             ((IDurableOrchestrationContext)this.context).ContinueAsNew(action.Input);
