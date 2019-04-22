@@ -366,7 +366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     && state.Input.StartsWith("http"))
                 {
                     // the input was compressed... read it back from blob
-                    serializedState = await service.DownloadLargeStatusField(state.Input);
+                    serializedState = await service.DownloadBlobAsync(state.Input);
                 }
                 else
                 {
