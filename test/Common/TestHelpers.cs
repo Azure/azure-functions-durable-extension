@@ -11,6 +11,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -638,6 +639,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         internal static INameResolver GetTestNameResolver()
         {
             return new TestNameResolver(null);
+        }
+
+        public static async Task<string> LoadStringFromTextBlobAsync(string blobName)
+        {
+            string connectionString = GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            try
+            {
+                return await blob.DownloadTextAsync();
+            }
+            catch (StorageException e)
+                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
+            {
+                // if the blob does not exist, just return null.
+                return null;
+            }
+        }
+
+        public static async Task WriteStringToTextBlob(string blobName, string content)
+        {
+            string connectionString = GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            await blob.UploadTextAsync(content);
         }
 
         private class ExplicitTypeLocator : ITypeLocator

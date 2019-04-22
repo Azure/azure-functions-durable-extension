@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         bool IDeterministicExecutionContext.IsLocked(out IReadOnlyList<ActorId> ownedLocks)
         {
             ownedLocks = this.ContextLocks;
-            return this.ContextLocks != null;
+            return ownedLocks != null;
         }
 
         /// <inheritdoc/>
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal async Task<TResult> WaitForActorResponse<TResult>(Guid guid, ActorId? lockToUse)
         {
             string reason = $"WaitForActorResponse:{guid.ToString()}";
-            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "ActorResponse");
+            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), reason);
 
             if (lockToUse.HasValue)
             {

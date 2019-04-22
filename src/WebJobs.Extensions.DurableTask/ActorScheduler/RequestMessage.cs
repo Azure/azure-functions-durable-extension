@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int Position { get; set; }
 
         [JsonIgnore]
-        public bool IsLockMessage => LockSet != null;
+        public bool IsLockMessage => this.LockSet != null;
 
         public void SetContent(object obj)
         {

@@ -254,12 +254,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Wait until all the actor events have been processed.
             await this.doneProcessingHistoryEvents.Task;
 
-            // REVIEW: Is it correct to fail the scheduler? Or should we keep it alive?
-            if (this.context.OrchestrationException != null)
-            {
-                this.context.OrchestrationException.Throw();
-            }
-
             // Process any side-effecting operations, like signalling other actors
             // or invoking ContinueAsNew.
             if (this.orchestrationActions != null)
@@ -276,21 +270,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return string.Empty;
         }
 
-        private Task ProcessRequestAsync(RequestMessage request)
+        private async Task ProcessRequestAsync(RequestMessage request)
         {
             this.pendingExternalEventHistoryRecordCount++;
 
             if (request.IsLockMessage)
             {
-                return this.ProcessLockRequestAsync(request);
+                this.ProcessLockRequest(request);
             }
             else
             {
-                return this.ProcessOperationRequestAsync(request);
+                await this.ProcessOperationRequestAsync(request);
             }
         }
 
-        private Task ProcessLockRequestAsync(RequestMessage request)
+        private void ProcessLockRequest(RequestMessage request)
         {
             this.Config.TraceHelper.ActorLockAcquired(
                 this.context.HubName,
@@ -322,8 +316,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
                 this.AddOrchestratorAction(ctx => ctx.SendEvent(target, request.Id.ToString(), message));
             }
-
-            return Task.CompletedTask;
         }
 
         private async Task ProcessOperationRequestAsync(RequestMessage request)

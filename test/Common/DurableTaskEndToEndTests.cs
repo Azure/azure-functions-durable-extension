@@ -2442,11 +2442,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task DurableActor_ActorToAndFromBlob(bool extendedSessions)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.ActorToAndFromBlob),
-            };
-
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableActor_ActorToAndFromBlob),
@@ -2459,9 +2454,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var actorId = new ActorId("BlobBackedTextStore", Guid.NewGuid().ToString());
 
                 // first, start the orchestration
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.ActorToAndFromBlob),
+                    actorId,
+                    this.output);
 
-                DurableOrchestrationStatus status = null;
+                DurableOrchestrationStatus status;
                 var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 240);
 
                 while (true)
@@ -2554,10 +2552,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task DurableActor_SingleLockedTransfer(bool extendedSessions)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.LockedTransfer),
-            };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableActor_SingleLockedTransfer),
@@ -2568,7 +2562,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var counter1 = new ActorId("Counter", Guid.NewGuid().ToString());
                 var counter2 = new ActorId("Counter", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (counter1, counter2), this.output);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.LockedTransfer),
+                    (counter1, counter2),
+                    this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
 

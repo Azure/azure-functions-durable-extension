@@ -208,7 +208,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // "get" returns the current value
         // "deactivate" destructs the actor (after saving its current state in the backing storage)
 
-        public static async Task BlobBackedTextStoreActor([ActorTrigger(ActorClassName = "BlobBackedTextStore")] IDurableActorContext context)
+        public static async Task BlobBackedTextStoreActor(
+            [ActorTrigger(ActorClassName = "BlobBackedTextStore")] IDurableActorContext context)
         {
             // we define the actor state to be a string builder so we can more efficiently append to it
             var state = context.GetState<StringBuilder>();
@@ -216,9 +217,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (context.IsNewlyConstructed)
             {
                 // try to load state from existing blob
-                var currentFileContent = await context.CallActivityAsync<string>(
-                         nameof(TestActivities.LoadStringFromTextBlob),
+                var currentFileContent = await TestHelpers.LoadStringFromTextBlobAsync(
                          context.Key);
+
                 state.Value = new StringBuilder(currentFileContent ?? "");
             }
 
@@ -238,9 +239,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 case "deactivate":
                     // first, store the current value in a blob
-                    await context.CallActivityAsync(
-                        nameof(TestActivities.WriteStringToTextBlob),
-                        (context.Key, state.Value.ToString()));
+                    await TestHelpers.WriteStringToTextBlob(
+                        context.Key, state.Value.ToString());
 
                     // then, destruct this actor (and all of its state)
                     context.DestructOnExit();
