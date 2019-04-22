@@ -24,7 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.self = entity;
         }
 
-        internal IStateView CurrentStateView { get; set; }
+        internal bool StateWasAccessed { get; set; }
+
+        internal object CurrentState { get; set; }
 
         internal SchedulerState State { get; set; }
 
@@ -82,25 +84,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CurrentOperation.GetContent(argumentType);
         }
 
-        IStateView<TState> IDurableEntityContext.GetState<TState>(Formatting formatting, JsonSerializerSettings settings)
+        T IDurableEntityContext.GetState<T>()
         {
             this.ThrowIfInvalidAccess();
-            if (this.CurrentStateView != null)
+
+            if (!this.StateWasAccessed)
             {
-                // if the requested type is the same, we can use the already existing view
-                // otherwise we have to serialize the current view to JSON, and then
-                // deserialize it to the requested type
-                if (this.CurrentStateView is IStateView<TState> view)
-                {
-                    return view;
-                }
-
-                this.CurrentStateView.Dispose();
+                var result = (this.State.EntityState == null)
+                    ? default(T)
+                    : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.EntityState);
+                this.CurrentState = result;
+                this.StateWasAccessed = true;
+                return result;
             }
+            else
+            {
+                return (T)this.CurrentState;
+            }
+        }
 
-            var newView = new TypedStateView<TState>(this, formatting, settings);
-            this.CurrentStateView = newView;
-            return newView;
+        void IDurableEntityContext.SetState(object o)
+        {
+            this.ThrowIfInvalidAccess();
+
+            this.CurrentState = o;
+            this.StateWasAccessed = true;
+        }
+
+        internal void Writeback()
+        {
+            if (this.StateWasAccessed)
+            {
+                this.State.EntityState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
+
+                this.CurrentState = null;
+                this.StateWasAccessed = false;
+            }
         }
 
         void IDurableEntityContext.Return(object result)

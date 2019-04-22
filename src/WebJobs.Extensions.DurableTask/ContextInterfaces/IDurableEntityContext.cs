@@ -46,16 +46,23 @@ namespace Microsoft.Azure.WebJobs
         bool IsNewlyConstructed { get; }
 
         /// <summary>
-        /// Gets a typed view of the state, by deserializing the JSON.
+        /// Gets the current state of this entity, for reading and/or updating.
         /// </summary>
         /// <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
-        /// <returns>A typed view that allows reading and updating.</returns>
-        IStateView<TState> GetState<TState>(Formatting formatting = Formatting.Indented, JsonSerializerSettings settings = null);
+        /// <returns>The current state of this entity.</returns>
+        /// <exception cref="InvalidCastException">If the current state has an incompatible type.</exception>
+        TState GetState<TState>();
+
+        /// <summary>
+        /// Sets the current state of this entity.
+        /// </summary>
+        /// <param name="state">The JSON-serializable state of the entity.</param>
+        void SetState(object state);
 
         /// <summary>
         /// Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
         /// </summary>
-        /// <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
+        /// <typeparam name="T">The type used for the operation content.</typeparam>
         /// <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
         /// <remarks>
         /// An operation invocation on an entity includes an operation name, which states what

@@ -144,9 +144,8 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="entityId">The target entity.</param>
         /// <param name="taskHubName">The TaskHubName of the target entity.</param>
         /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
-        /// <param name="settings">The settings to use for deserializing the JSON state.</param>
         /// <returns>a response containing the current state of the entity.</returns>
-        Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(EntityId entityId, string taskHubName = null, string connectionName = null, JsonSerializerSettings settings = null);
+        Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(EntityId entityId, string taskHubName = null, string connectionName = null);
 
         /// <summary>
         /// Terminates a running orchestration instance.

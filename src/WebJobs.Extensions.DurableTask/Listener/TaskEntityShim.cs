@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // wait for the continue as new signal, which restarts the history with a state snapshot
                 await this.continueAsNewSignal.Task;
 
-                this.context.CurrentStateView?.WriteBack();
+                this.context.Writeback();
                 var jstate = JToken.FromObject(this.context.State);
                 this.context.InnerContext.ContinueAsNew(jstate);
                 this.context.PreserveUnprocessedEvents = true;
@@ -371,7 +371,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.context.State.EntityExists = false;
                 this.context.State.EntityState = null;
-                this.context.CurrentStateView = null;
+                this.context.CurrentState = null;
+                this.context.StateWasAccessed = false;
             }
 
             // if there are requests waiting in the queue that we can process now, and

@@ -361,12 +361,6 @@
             The instance id of the orchestration that currently holds the lock of this entity.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
-            <summary>
-            ephemeral, typed view of the state of the entity, for use by applications in deserialized form.
-            </summary>
-            <typeparam name="T">the type of the state.</typeparam>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
@@ -1483,18 +1477,25 @@
             Whether this entity is freshly constructed, i.e. did not exist prior to this operation being called.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.GetState``1(Newtonsoft.Json.Formatting,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.GetState``1">
             <summary>
-            Gets a typed view of the state, by deserializing the JSON.
+            Gets the current state of this entity, for reading and/or updating.
             </summary>
             <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
-            <returns>A typed view that allows reading and updating.</returns>
+            <returns>The current state of this entity.</returns>
+            <exception cref="T:System.InvalidCastException">If the current state has an incompatible type.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.SetState(System.Object)">
+            <summary>
+            Sets the current state of this entity.
+            </summary>
+            <param name="state">The JSON-serializable state of the entity.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.GetOperationContent``1">
             <summary>
             Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
             </summary>
-            <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
+            <typeparam name="T">The type used for the operation content.</typeparam>
             <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
             <remarks>
             An operation invocation on an entity includes an operation name, which states what
@@ -1643,7 +1644,7 @@
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)">
             <summary>
             Tries to read the current state of an entity. Returns default(<typeparamref name="T"/>) if the entity does not
             exist, or if the JSON-serialized state of the entity is larger than 16KB.
@@ -1652,7 +1653,6 @@
             <param name="entityId">The target entity.</param>
             <param name="taskHubName">The TaskHubName of the target entity.</param>
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
-            <param name="settings">The settings to use for deserializing the JSON state.</param>
             <returns>a response containing the current state of the entity.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.TerminateAsync(System.String,System.String)">
@@ -1932,27 +1932,6 @@
             <returns>An IDisposable that releases the lock when disposed.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks.</exception>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.IStateView`1">
-            <summary>
-            A typed view of the current state of the entity.
-            </summary>
-            <typeparam name="TState">The JSON-serializable type used for this entity.</typeparam>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.IStateView`1.Value">
-            <summary>
-            The current state of the entity.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.IStateView">
-            <summary>
-            A view of the current state of the entity.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.IStateView.WriteBack">
-            <summary>
-            Serializes the current state to JSON.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
             Represents the status of a durable orchestration instance.
@@ -2115,7 +2094,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.EntityStateResponse`1">
             <summary>
-            The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String,Newtonsoft.Json.JsonSerializerSettings)"/>.
+            The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)"/>.
             </summary>
             <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
         </member>

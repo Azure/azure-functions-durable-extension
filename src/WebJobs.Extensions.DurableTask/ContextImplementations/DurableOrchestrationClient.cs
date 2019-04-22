@@ -326,11 +326,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return results;
         }
 
-        Task<EntityStateResponse<T>> IDurableOrchestrationClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName, JsonSerializerSettings settings)
+        Task<EntityStateResponse<T>> IDurableOrchestrationClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName)
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.ReadEntityState<T>(this.client, this.hubName, entityId, settings);
+                return this.ReadEntityStateAsync<T>(this.client, this.hubName, entityId);
             }
             else
             {
@@ -346,11 +346,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
-                return this.ReadEntityState<T>(taskHubClient, taskHubName, entityId, settings);
+                return this.ReadEntityStateAsync<T>(taskHubClient, taskHubName, entityId);
             }
         }
 
-        private async Task<EntityStateResponse<T>> ReadEntityState<T>(TaskHubClient client, string hubName, EntityId entityId, JsonSerializerSettings settings)
+        private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(TaskHubClient client, string hubName, EntityId entityId)
         {
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             IList<OrchestrationState> stateList = await client.ServiceClient.GetOrchestrationStateAsync(instanceId, false);
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new EntityStateResponse<T>()
                     {
                         EntityExists = true,
-                        EntityState = JsonConvert.DeserializeObject<T>(schedulerState.EntityState, settings),
+                        EntityState = MessagePayloadDataConverter.Default.Deserialize<T>(schedulerState.EntityState),
                     };
                 }
             }
