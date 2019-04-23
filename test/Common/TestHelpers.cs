@@ -42,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var durableTaskOptions = new DurableTaskOptions
             {
-
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
@@ -63,7 +62,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
-
                 durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
             }
             else if (string.Equals(storageProviderType, EmulatorProviderType))
@@ -658,7 +656,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public class TestNameResolver : INameResolver
+        private class TestNameResolver : INameResolver
         {
             private static readonly Dictionary<string, string> DefaultAppSettings = new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase)
