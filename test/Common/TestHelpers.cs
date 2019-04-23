@@ -21,6 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string AzureStorageProviderType = "azure_storage";
         public const string EmulatorProviderType = "emulator";
         public const string LogCategory = "Host.Triggers.DurableTask";
+        public const string EmptyStorageProviderType = "empty";
 
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
@@ -41,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var durableTaskOptions = new DurableTaskOptions
             {
-                StorageProvider = new StorageProviderOptions(),
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
@@ -55,6 +55,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
             };
 
+            if (storageProviderType != null)
+            {
+                durableTaskOptions.StorageProvider = new StorageProviderOptions();
+            }
+
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
                 durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
@@ -62,10 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             else if (string.Equals(storageProviderType, EmulatorProviderType))
             {
                 durableTaskOptions.StorageProvider.Emulator = new EmulatorStorageOptions();
-            }
-            else
-            {
-                throw new ArgumentException("Invalid storage provider type.", nameof(storageProviderType));
             }
 
             if (eventGridRetryCount.HasValue)
