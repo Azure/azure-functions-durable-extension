@@ -254,7 +254,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            TaskCommonShim shim = (TaskCommonShim)dispatchContext.GetProperty<TaskOrchestration>();
+            TaskOrchestrationShim shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
+            if (shim == null)
+            {
+                // This is not an orchestration - skip.
+                await next();
+                return;
+            }
+
             DurableCommonContext context = shim.Context;
 
             OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
@@ -351,9 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         Task executeTask = null;
 
-                        bool eventsReceived = false;
-
-                        // Load all the external events into the actor shim
+                        // 2. Load all the external events into the actor shim
                         foreach (HistoryEvent e in runtimeState.Events)
                         {
                             switch (e.EventType)
@@ -365,28 +370,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     executeTask = actorShim.ExecuteActor(runtimeState.Input);
                                     break;
                                 case EventType.EventRaised:
-                                    eventsReceived = true;
                                     EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
                                     actorShim.RaiseActorEvent(eventRaisedEvent.Name, eventRaisedEvent.Input);
-                                    break;
-                                default:
-                                    // TODO: Anything else?
                                     break;
                             }
                         }
 
-                        if (eventsReceived && executeTask != null)
+                        if (actorShim.HasStartedOperations)
                         {
-                            // Wait for all the queued actor operations to complete
+                            // 3. Wait for all the queued actor operations to complete
+                            System.Diagnostics.Debug.Assert(executeTask != null, "The execute task should not be null unless we have invalid history events.");
                             await executeTask;
                         }
 
-                        // Run the scheduler orchestration so that state can be persisted.
+                        // 4. Run the scheduler orchestration so that state can be persisted.
                         await next();
                     },
 #pragma warning restore CS0618
                 },
                 CancellationToken.None);
+
+            await actorContext.RunDeferredTasks();
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)

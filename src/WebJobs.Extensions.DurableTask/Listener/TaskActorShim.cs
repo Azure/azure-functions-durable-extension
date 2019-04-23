@@ -54,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public ActorId ActorId { get; private set; }
 
+        internal bool HasStartedOperations => this.numberOperationsStarted > 0;
+
         public override RegisteredFunctionInfo GetFunctionInfo()
         {
             FunctionName actorFunction = new FunctionName(this.Context.FunctionName);
@@ -211,16 +213,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.AddOrchestratorAction(ctx => ctx.ContinueAsNew(jstate));
                 this.context.PreserveUnprocessedEvents = true;
 
-                if (this.context.DestructOnExit)
-                {
-                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        true,
-                        this.context.IsReplaying));
-                }
-
                 return "continueAsNew";
             }
             catch (Exception e)
@@ -294,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 request.Id.ToString(),
                 this.context.IsReplaying);
 
-            System.Diagnostics.Debug.Assert(this.context.State.LockedBy == null, "Lock not held already.");
+            ////System.Diagnostics.Debug.Assert(this.context.State.LockedBy == null, "Lock not held already.");
             this.context.State.LockedBy = request.ParentInstanceId;
 
             System.Diagnostics.Debug.Assert(request.LockSet[request.Position].Equals(this.ActorId), "position is correct");
@@ -316,6 +308,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
                 this.AddOrchestratorAction(ctx => ctx.SendEvent(target, request.Id.ToString(), message));
             }
+
+            this.SignalContinueAsNew();
         }
 
         private async Task ProcessOperationRequestAsync(RequestMessage request)
