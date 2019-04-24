@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly ActorId self;
 
-        private List<OutgoingMessage> outbox;
+        private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
         public DurableActorContext(DurableTaskExtension config, ActorId actor)
             : base(config, actor.ActorClass)
@@ -126,13 +126,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal override void SendActorMessage(OrchestrationInstance target, string eventName, object eventContent)
         {
-            lock (this)
+            lock (this.outbox)
             {
-                if (this.outbox == null)
-                {
-                    this.outbox = new List<OutgoingMessage>();
-                }
-
                 this.outbox.Add(new OutgoingMessage()
                 {
                     Target = target,
@@ -144,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void SendOutbox(OrchestrationContext innerContext)
         {
-            if (this.outbox != null)
+            lock (this.outbox)
             {
                 foreach (var message in this.outbox)
                 {
