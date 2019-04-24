@@ -266,17 +266,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<TResult> IInterleavingContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationContent)
+        Task<TResult> IInterleavingContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
         }
 
         /// <inheritdoc/>
-        Task IInterleavingContext.CallEntityAsync(EntityId entityId, string operationName, object operationContent)
+        Task IInterleavingContext.CallEntityAsync(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
         }
 
         /// <inheritdoc/>

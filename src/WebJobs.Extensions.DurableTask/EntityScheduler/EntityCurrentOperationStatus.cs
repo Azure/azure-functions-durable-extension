@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
     /// Information about the current status of an operation executing on an entity.
-    /// Excludes potentially large data (such as the operation input content) so it can be read with low latency.
+    /// Excludes potentially large data (such as the operation input) so it can be read with low latency.
     /// </summary>
     public class EntityCurrentOperationStatus
     {

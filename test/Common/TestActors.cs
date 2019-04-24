@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (context.OperationName)
             {
                 case "set":
-                    context.SetState(context.GetOperationContent<string>());
+                    context.SetState(context.GetInput<string>());
                     break;
 
                 case "get":
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "set":
-                    context.SetState(context.GetOperationContent<string>());
+                    context.SetState(context.GetInput<string>());
                     break;
 
                 case "get":
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "add":
-                    context.SetState(context.GetState<int>() + context.GetOperationContent<int>());
+                    context.SetState(context.GetState<int>() + context.GetInput<int>());
                     break;
 
                 case "get":
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "set":
-                    context.SetState(context.GetOperationContent<int>());
+                    context.SetState(context.GetInput<int>());
                     break;
 
                 case "delete":
@@ -113,21 +113,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 case "set":
                     {
-                        var (name, number) = context.GetOperationContent<(int, int)>();
+                        var (name, number) = context.GetInput<(int, int)>();
                         state[name] = number;
                         break;
                     }
 
                 case "remove":
                     {
-                        var name = context.GetOperationContent<string>();
+                        var name = context.GetInput<string>();
                         state.Remove(name);
                         break;
                     }
 
                 case "lookup":
                     {
-                        var name = context.GetOperationContent<string>();
+                        var name = context.GetInput<string>();
                         context.Return(state[name]);
                         break;
                     }
@@ -164,21 +164,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 case "set":
                     {
-                        var (name, number) = context.GetOperationContent<(string, decimal)>();
+                        var (name, number) = context.GetInput<(string, decimal)>();
                         state[name] = number;
                         break;
                     }
 
                 case "remove":
                     {
-                        var name = context.GetOperationContent<string>();
+                        var name = context.GetInput<string>();
                         state.Remove(name);
                         break;
                     }
 
                 case "lookup":
                     {
-                        var name = context.GetOperationContent<string>();
+                        var name = context.GetInput<string>();
                         context.Return(state[name]);
                         break;
                     }
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "append":
-                    context.GetState<StringBuilder>().Append(context.GetOperationContent<string>());
+                    context.GetState<StringBuilder>().Append(context.GetInput<string>());
                     break;
 
                 case "get":
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // determine the type of the operation content (= second method argument) and deserialize
             var contentType = method.GetParameters()[1].ParameterType;
-            var content = context.GetOperationContent(contentType);
+            var content = context.GetInput(contentType);
 
             // invoke the method and return the result;
             var result = method.Invoke(context.GetState<ChatRoom>(), new object[2] { context, content });

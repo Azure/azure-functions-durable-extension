@@ -35,8 +35,7 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <remarks>
         /// An operation invocation on an entity includes an operation name, which states what
-        /// operation to perform, and optionally an operation content, which
-        /// provides an input argument to the operation.
+        /// operation to perform, and optionally an operation input.
         /// </remarks>
         string OperationName { get; }
 
@@ -60,28 +59,26 @@ namespace Microsoft.Azure.WebJobs
         void SetState(object state);
 
         /// <summary>
-        /// Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
+        /// Gets the input for this operation, as a deserialized value.
         /// </summary>
-        /// <typeparam name="T">The type used for the operation content.</typeparam>
-        /// <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
+        /// <typeparam name="T">The JSON-serializable type used for the operation input.</typeparam>
+        /// <returns>The operation input, or default(<typeparamref name="T"/>) if none.</returns>
         /// <remarks>
         /// An operation invocation on an entity includes an operation name, which states what
-        /// operation to perform, and optionally an operation content, which
-        /// provides an input argument to the operation.
+        /// operation to perform, and optionally an operation input.
         /// </remarks>
-        T GetOperationContent<T>();
+        T GetInput<T>();
 
         /// <summary>
-        /// Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
+        /// Gets the input for this operation, as a deserialized value.
         /// </summary>
-        /// <param name="contentType">The JSON-serializable type used for the operation content.</param>
-        /// <returns>The operation content, or default(<paramref name="contentType"/>) if none.</returns>
+        /// <param name="inputType">The JSON-serializable type used for the operation input.</param>
+        /// <returns>The operation input, or default(<paramref name="inputType"/>) if none.</returns>
         /// <remarks>
         /// An operation invocation on an entity includes an operation name, which states what
-        /// operation to perform, and optionally an operation content, which
-        /// provides an input argument to the operation.
+        /// operation to perform, and optionally an operation input.
         /// </remarks>
-        object GetOperationContent(Type contentType);
+        object GetInput(Type inputType);
 
          /// <summary>
         /// Returns the given result to the caller of this operation.

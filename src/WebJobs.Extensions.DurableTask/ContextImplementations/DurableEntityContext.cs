@@ -72,16 +72,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DestructOnExit = true;
         }
 
-        T IDurableEntityContext.GetOperationContent<T>()
+        T IDurableEntityContext.GetInput<T>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetContent<T>();
+            return this.CurrentOperation.GetInput<T>();
         }
 
-        object IDurableEntityContext.GetOperationContent(Type argumentType)
+        object IDurableEntityContext.GetInput(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetContent(argumentType);
+            return this.CurrentOperation.GetInput(argumentType);
         }
 
         T IDurableEntityContext.GetState<T>()

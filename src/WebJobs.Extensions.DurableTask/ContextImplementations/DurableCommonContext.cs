@@ -133,10 +133,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        void IDeterministicExecutionContext.SignalEntity(EntityId entity, string operationName, object operationContent)
+        void IDeterministicExecutionContext.SignalEntity(EntityId entity, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationContent);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
             alreadyCompletedTask.Wait(); // just so we see exceptions during testing
         }
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                     if (input != null)
                     {
-                        request.SetContent(input);
+                        request.SetInput(input);
                     }
 
                     var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);

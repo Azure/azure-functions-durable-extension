@@ -154,11 +154,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task IDurableOrchestrationClient.SignalEntityAsync(EntityId entityId, string operationName, object operationContent, string taskHubName, string connectionName)
+        Task IDurableOrchestrationClient.SignalEntityAsync(EntityId entityId, string operationName, object operationInput, string taskHubName, string connectionName)
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.SignalEntityAsync(this.client, this.hubName, entityId, operationName, operationContent);
+                return this.SignalEntityAsync(this.client, this.hubName, entityId, operationName, operationInput);
             }
             else
             {
@@ -174,11 +174,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
-                return this.SignalEntityAsync(taskHubClient, taskHubName, entityId, operationName, operationContent);
+                return this.SignalEntityAsync(taskHubClient, taskHubName, entityId, operationName, operationInput);
             }
         }
 
-        private async Task SignalEntityAsync(TaskHubClient client, string hubName, EntityId entityId, string operationName, object operationContent)
+        private async Task SignalEntityAsync(TaskHubClient client, string hubName, EntityId entityId, string operationName, object operationInput)
         {
             if (string.IsNullOrEmpty(operationName))
             {
@@ -195,9 +195,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IsSignal = true,
                 Operation = operationName,
             };
-            if (operationContent != null)
+            if (operationInput != null)
             {
-                request.SetContent(operationContent);
+                request.SetInput(operationInput);
             }
 
             var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);

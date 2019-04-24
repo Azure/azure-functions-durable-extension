@@ -31,10 +31,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool IsSignal { get; set; }
 
         /// <summary>
-        /// The content the operation was called with.
+        /// The operation input.
         /// </summary>
-        [JsonProperty(PropertyName = "arg", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Content { get; set; }
+        [JsonProperty(PropertyName = "input", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string Input { get; set; }
 
         /// <summary>
         /// A unique identifier for this operation.
@@ -64,26 +64,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsLockMessage => LockSet != null;
 
-        public void SetContent(object obj)
+        public void SetInput(object obj)
         {
             if (obj is JToken jtoken)
             {
-                this.Content = jtoken.ToString(Formatting.None);
+                this.Input = jtoken.ToString(Formatting.None);
             }
             else
             {
-                this.Content = MessagePayloadDataConverter.Default.Serialize(obj);
+                this.Input = MessagePayloadDataConverter.Default.Serialize(obj);
             }
         }
 
-        public T GetContent<T>()
+        public T GetInput<T>()
         {
-            return JsonConvert.DeserializeObject<T>(this.Content);
+            return JsonConvert.DeserializeObject<T>(this.Input);
         }
 
-        public object GetContent(Type contentType)
+        public object GetInput(Type inputType)
         {
-            return JsonConvert.DeserializeObject(this.Content, contentType);
+            return JsonConvert.DeserializeObject(this.Input, inputType);
         }
     }
 }
