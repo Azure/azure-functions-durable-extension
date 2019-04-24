@@ -104,8 +104,8 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="entity">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <param name="operationContent">The content for the operation.</param>
-        void SignalEntity(EntityId entity, string operationName, object operationContent = null);
+        /// <param name="operationInput">The input for the operation.</param>
+        void SignalEntity(EntityId entity, string operationName, object operationInput = null);
 
         /// <summary>
         /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
