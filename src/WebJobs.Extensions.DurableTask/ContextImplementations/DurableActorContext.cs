@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using DurableTask.Core;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -12,6 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class DurableActorContext : DurableCommonContext, IDurableActorContext
     {
         private readonly ActorId self;
+
+        private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
         public DurableActorContext(DurableTaskExtension config, ActorId actor)
             : base(config, actor.ActorClass)
@@ -98,6 +102,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return newView;
         }
 
+        void IDurableActorContext.SignalActor(ActorId actor, string operationName, object operationContent)
+        {
+            this.ThrowIfInvalidAccess();
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(actor.ActorClass, FunctionType.Actor, true, ActorId.GetSchedulerIdFromActorId(actor), operationName, null, operationContent);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signalling actors is synchronous");
+            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+        }
+
         void IDurableActorContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
@@ -110,6 +122,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException("No operation is being processed.");
             }
+        }
+
+        internal override void SendActorMessage(OrchestrationInstance target, string eventName, object eventContent)
+        {
+            lock (this.outbox)
+            {
+                this.outbox.Add(new OutgoingMessage()
+                {
+                    Target = target,
+                    EventName = eventName,
+                    EventContent = eventContent,
+                });
+            }
+        }
+
+        internal void SendOutbox(OrchestrationContext innerContext)
+        {
+            lock (this.outbox)
+            {
+                foreach (var message in this.outbox)
+                {
+                    this.Config.TraceHelper.SendingActorMessage(
+                        this.InstanceId,
+                        this.ExecutionId,
+                        message.Target.InstanceId,
+                        message.EventName,
+                        message.EventContent);
+
+                    innerContext.SendEvent(message.Target, message.EventName, message.EventContent);
+                }
+
+                this.outbox.Clear();
+            }
+        }
+
+        internal override Guid NewGuid()
+        {
+            return Guid.NewGuid();
+        }
+
+        private struct OutgoingMessage
+        {
+            public OrchestrationInstance Target;
+            public string EventName;
+            public object EventContent;
         }
     }
 }

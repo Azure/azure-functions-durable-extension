@@ -85,5 +85,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return JsonConvert.DeserializeObject(this.Content, contentType);
         }
+
+        public override string ToString()
+        {
+            if (this.IsLockMessage)
+            {
+                return $"[Request lock {this.Id} by {this.ParentInstanceId}, position {this.Position}]";
+            }
+            else
+            {
+                return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId}]";
+            }
+        }
     }
 }

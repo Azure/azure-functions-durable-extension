@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ExceptionType { get; set; }
 
         [JsonIgnore]
-        public bool IsException => ExceptionType != null;
+        public bool IsException => this.ExceptionType != null;
 
         public void SetResult(object result)
         {
@@ -74,6 +74,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 return MessagePayloadDataConverter.Default.Deserialize<T>(this.Result);
+            }
+        }
+
+        public override string ToString()
+        {
+            if (this.IsException)
+            {
+                return $"[ExceptionResponse {this.Result}]";
+            }
+            else
+            {
+                return $"[Response {this.Result}]";
             }
         }
     }

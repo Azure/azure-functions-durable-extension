@@ -32,8 +32,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly List<Func<Task>> deferredTasks
             = new List<Func<Task>>();
 
-        private int newGuidCounter = 0;
-
         private bool isReplaying;
 
         internal DurableCommonContext(DurableTaskExtension config, string functionName)
@@ -68,6 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         internal string InstanceId { get; set; }
+
+        internal string ExecutionId { get; set; }
 
         internal string ParentInstanceId { get; set; }
 
@@ -150,20 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return alreadyCompletedTask.Result;
         }
 
-        internal Guid NewGuid()
-        {
-            // The name is a combination of the instance ID, the current orchestrator date/time, and a counter.
-            string guidNameValue = string.Concat(
-                this.InstanceId,
-                "_",
-                this.InnerContext.CurrentUtcDateTime.ToString("o"),
-                "_",
-                this.newGuidCounter.ToString());
-
-            this.newGuidCounter++;
-
-            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
-        }
+        internal abstract Guid NewGuid();
 
         internal virtual void ThrowIfInvalidAccess()
         {
@@ -198,6 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ActorId? lockToUse = null;
             string operationId = string.Empty;
             string operationName = string.Empty;
+            bool isActor = this is DurableActorContext;
 
             switch (functionType)
             {
@@ -205,6 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(instanceId == null, "The instanceId parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
+                    System.Diagnostics.Debug.Assert(!isActor, "Actors cannot call activities");
                     if (retryOptions == null)
                     {
                         callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
@@ -222,6 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 case FunctionType.Orchestrator:
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
+                    System.Diagnostics.Debug.Assert(oneWay || !isActor, "Actors cannot call orchestrations");
                     if (instanceId != null && instanceId.StartsWith("@"))
                     {
                         throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
@@ -263,6 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(operation), "The operation parameter is required.");
                     System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for actor calls.");
                     System.Diagnostics.Debug.Assert(instanceId != null, "Actor calls need to specify the target actor.");
+                    System.Diagnostics.Debug.Assert(oneWay || !isActor, "Actors cannot call actors");
 
                     if (this.ContextLocks != null)
                     {
@@ -299,8 +290,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.SetContent(input);
                     }
 
-                    var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
-                    this.InnerContext.SendEvent(target, "op", jrequest);
+                    this.SendActorMessage(target, "op", request);
 
                     if (!oneWay)
                     {
@@ -399,6 +389,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return output;
         }
 
+        internal abstract void SendActorMessage(OrchestrationInstance target, string eventName, object eventContent);
+
         internal Task<T> WaitForExternalEvent<T>(string name, string reason)
         {
             lock (this.pendingExternalEvents)
@@ -459,8 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal async Task<TResult> WaitForActorResponse<TResult>(Guid guid, ActorId? lockToUse)
         {
-            string reason = $"WaitForActorResponse:{guid.ToString()}";
-            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), reason);
+            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "ActorResponse");
 
             if (lockToUse.HasValue)
             {
@@ -497,6 +488,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.TraceHelper.ActorResponseReceived(
                             this.HubName,
                             this.Name,
+                            this.FunctionType,
                             this.InstanceId,
                             name,
                             this.Config.GetIntputOutputTrace(responseMessage.Result),

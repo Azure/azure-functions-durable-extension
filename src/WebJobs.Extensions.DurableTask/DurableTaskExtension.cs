@@ -6,11 +6,14 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
@@ -272,6 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance.InstanceId;
+            context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance.ExecutionId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.RawInput = orchestrationRuntimeState.Input;
@@ -342,6 +346,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationRuntimeState runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             DurableActorContext actorContext = (DurableActorContext)actorShim.Context;
             actorContext.InstanceId = runtimeState.OrchestrationInstance.InstanceId;
+            actorContext.ExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
             actorContext.History = runtimeState.Events;
             actorContext.RawInput = runtimeState.Input;
 
@@ -356,35 +361,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         actorShim.SetFunctionInvocationCallback(userCodeInvoker);
 
-                        Task executeTask = null;
-
-                        // 2. Load all the external events into the actor shim
-                        foreach (HistoryEvent e in runtimeState.Events)
+                        try
                         {
-                            switch (e.EventType)
+                            // 2. Load all the external events into the actor shim
+                            foreach (HistoryEvent e in runtimeState.Events)
                             {
-                                case EventType.OrchestratorStarted:
-                                    actorContext.CurrentOperationStartTime = e.Timestamp;
-                                    break;
-                                case EventType.ExecutionStarted:
-                                    executeTask = actorShim.ExecuteActor(runtimeState.Input);
-                                    break;
-                                case EventType.EventRaised:
-                                    EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
-                                    actorShim.RaiseActorEvent(eventRaisedEvent.Name, eventRaisedEvent.Input);
-                                    break;
+                                switch (e.EventType)
+                                {
+                                    case EventType.OrchestratorStarted:
+                                        actorContext.CurrentOperationStartTime = e.Timestamp;
+                                        break;
+                                    case EventType.ExecutionStarted:
+                                        actorShim.Rehydrate(runtimeState.Input);
+                                        break;
+                                    case EventType.EventRaised:
+                                        EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
+                                        this.TraceHelper.DeliveringActorMessage(
+                                            actorContext.InstanceId,
+                                            actorContext.ExecutionId,
+                                            e.EventId,
+                                            eventRaisedEvent.Name,
+                                            eventRaisedEvent.Input);
+                                        actorShim.ProcessMessage(eventRaisedEvent.Name, eventRaisedEvent.Input);
+                                        break;
+                                }
                             }
-                        }
 
-                        if (actorShim.HasStartedOperations)
-                        {
                             // 3. Wait for all the queued actor operations to complete
-                            System.Diagnostics.Debug.Assert(executeTask != null, "The execute task should not be null unless we have invalid history events.");
-                            await executeTask;
-                        }
+                            await actorShim.WaitForLastOperation();
 
-                        // 4. Run the scheduler orchestration so that state can be persisted.
-                        await next();
+                            // 4. Run the scheduler orchestration so that state can be persisted.
+                            await next();
+                        }
+                        catch (Exception e)
+                        {
+                            // something went wrong in our code (application exceptions don't make it here)
+
+                            string exceptionDetails = e.ToString();
+
+                            if (!actorContext.IsReplaying)
+                            {
+                                actorContext.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                                    actorContext.HubName,
+                                    actorContext.Name,
+                                    actorContext.InstanceId,
+                                    exceptionDetails,
+                                    actorContext.IsReplaying));
+                            }
+
+                            var actorSchedulerException = new OrchestrationFailureException(
+                                $"Actor scheduler {actorShim.ActorId} failed: {e.Message}",
+                                Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+
+                            actorContext.OrchestrationException = ExceptionDispatchInfo.Capture(actorSchedulerException);
+
+                            throw actorSchedulerException;
+                        }
                     },
 #pragma warning restore CS0618
                 },

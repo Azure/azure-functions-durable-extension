@@ -1609,6 +1609,14 @@
             Deletes this actor after this operation completes.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+            <summary>
+            Signals an actor to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+            </summary>
+            <param name="actor">The target actor.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationContent">The content for the operation.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.IDurableOrchestrationClient">
             <summary>
             Provides functionality available to durable orchestration clients.
