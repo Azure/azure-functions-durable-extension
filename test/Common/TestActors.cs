@@ -12,27 +12,29 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class TestActors
+    internal static class TestEntities
     {
+<<<<<<< HEAD
         private static readonly HttpClient SharedHttpClient = new HttpClient();
 
         //-------------- a very simple actor that stores a string -----------------
+=======
+        //-------------- a very simple entity that stores a string -----------------
+>>>>>>> v2
         // it offers two operations:
         // "set" (takes a string, assigns it to the current state, does not return anything)
         // "get" (returns a string containing the current state)
 
-        public static void StringStoreActor([ActorTrigger(ActorClassName = "StringStore")] IDurableActorContext context)
+        public static void StringStoreEntity([EntityTrigger(EntityName = "StringStore")] IDurableEntityContext context)
         {
-            var state = context.GetState<string>();
-
             switch (context.OperationName)
             {
                 case "set":
-                    state.Value = context.GetOperationContent<string>();
+                    context.SetState(context.GetInput<string>());
                     break;
 
                 case "get":
-                    context.Return(state.Value);
+                    context.Return(context.GetState<string>());
                     break;
 
                 default:
@@ -42,13 +44,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         //-------------- a slightly less trivial version of the same -----------------
         // as before with two differences:
-        // - "get" throws an exception if the actor does not already exist, i.e. state was not set to anything
-        // - a new operation "delete" deletes the actor, i.e. clears all state
+        // - "get" throws an exception if the entity does not already exist, i.e. state was not set to anything
+        // - a new operation "delete" deletes the entity, i.e. clears all state
 
-        public static void StringStoreActor2([ActorTrigger(ActorClassName = "StringStore2")] IDurableActorContext context)
+        public static void StringStoreEntity2([EntityTrigger(EntityName = "StringStore2")] IDurableEntityContext context)
         {
-            var state = context.GetState<string>();
-
             switch (context.OperationName)
             {
                 case "delete":
@@ -56,17 +56,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "set":
-                    state.Value = context.GetOperationContent<string>();
+                    context.SetState(context.GetInput<string>());
                     break;
 
                 case "get":
                     if (context.IsNewlyConstructed)
                     {
                         context.DestructOnExit();
-                        throw new InvalidOperationException("must not call get on a non-existing actor");
+                        throw new InvalidOperationException("must not call get on a non-existing entity");
                     }
 
-                    context.Return(state.Value);
+                    context.Return(context.GetState<string>());
                     break;
 
                 default:
@@ -74,28 +74,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        //-------------- An actor representing a counter object -----------------
+        //-------------- An entity representing a counter object -----------------
 
-        public static void CounterActor([ActorTrigger(ActorClassName = "Counter")] IDurableActorContext context)
+        public static void CounterEntity([EntityTrigger(EntityName = "Counter")] IDurableEntityContext context)
         {
-            var state = context.GetState<int>();
-
             switch (context.OperationName)
             {
                 case "increment":
-                    state.Value++;
+                    context.SetState(context.GetState<int>() + 1);
                     break;
 
                 case "add":
-                    state.Value += context.GetOperationContent<int>();
+                    context.SetState(context.GetState<int>() + context.GetInput<int>());
                     break;
 
                 case "get":
-                    context.Return(state.Value);
+                    context.Return(context.GetState<int>());
                     break;
 
                 case "set":
-                    state.Value = context.GetOperationContent<int>();
+                    context.SetState(context.GetInput<int>());
                     break;
 
                 case "delete":
@@ -103,42 +101,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 default:
-                    throw new NotImplementedException("no such actor operation");
+                    throw new NotImplementedException("no such entity operation");
             }
         }
 
-        //-------------- An actor representing a phone book, using an untyped json object -----------------
+        //-------------- An entity representing a phone book, using an untyped json object -----------------
 
-        public static void PhoneBookActor([ActorTrigger(ActorClassName = "PhoneBook")] IDurableActorContext context)
+        public static void PhoneBookEntity([EntityTrigger(EntityName = "PhoneBook")] IDurableEntityContext context)
         {
+            if (context.IsNewlyConstructed)
+            {
+                context.SetState(new JObject());
+            }
+
             var state = context.GetState<JObject>();
 
             switch (context.OperationName)
             {
                 case "set":
                     {
-                        var (name, number) = context.GetOperationContent<(int, int)>();
-                        state.Value[name] = number;
+                        var (name, number) = context.GetInput<(int, int)>();
+                        state[name] = number;
                         break;
                     }
 
                 case "remove":
                     {
-                        var name = context.GetOperationContent<string>();
-                        state.Value.Remove(name);
+                        var name = context.GetInput<string>();
+                        state.Remove(name);
                         break;
                     }
 
                 case "lookup":
                     {
-                        var name = context.GetOperationContent<string>();
-                        context.Return(state.Value[name]);
+                        var name = context.GetInput<string>();
+                        context.Return(state[name]);
                         break;
                     }
 
                 case "dump":
                     {
-                        context.Return(state.Value);
+                        context.Return(state);
                         break;
                     }
 
@@ -149,42 +152,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
 
                 default:
-                    throw new NotImplementedException("no such actor operation");
+                    throw new NotImplementedException("no such entity operation");
             }
         }
 
-        //-------------- An actor representing a phone book, using a typed C# dictionary -----------------
+        //-------------- An entity representing a phone book, using a typed C# dictionary -----------------
 
-        public static void PhoneBookActor2([ActorTrigger(ActorClassName = "PhoneBook2")] IDurableActorContext context)
+        public static void PhoneBookEntity2([EntityTrigger(EntityName = "PhoneBook2")] IDurableEntityContext context)
         {
+            if (context.IsNewlyConstructed)
+            {
+                context.SetState(new Dictionary<string, decimal>());
+            }
+
             var state = context.GetState<Dictionary<string, decimal>>();
 
             switch (context.OperationName)
             {
                 case "set":
                     {
-                        var (name, number) = context.GetOperationContent<(string, decimal)>();
-                        state.Value[name] = number;
+                        var (name, number) = context.GetInput<(string, decimal)>();
+                        state[name] = number;
                         break;
                     }
 
                 case "remove":
                     {
-                        var name = context.GetOperationContent<string>();
-                        state.Value.Remove(name);
+                        var name = context.GetInput<string>();
+                        state.Remove(name);
                         break;
                     }
 
                 case "lookup":
                     {
-                        var name = context.GetOperationContent<string>();
-                        context.Return(state.Value[name]);
+                        var name = context.GetInput<string>();
+                        context.Return(state[name]);
                         break;
                     }
 
                 case "dump":
                     {
-                        context.Return(state.Value);
+                        context.Return(state);
                         break;
                     }
 
@@ -195,54 +203,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
 
                 default:
-                    throw new NotImplementedException("no such actor operation");
+                    throw new NotImplementedException("no such entity operation");
             }
         }
 
-        //-------------- an actor that stores text, and whose state is
-        //                  saved/restored to/from storage when the actor is deactivated/activated -----------------
+        //-------------- an entity that stores text, and whose state is
+        //                  saved/restored to/from storage when the entity is deactivated/activated -----------------
         //
         // it offers three operations:
         // "clear" sets the current value to empty
         // "append" appends the string provided in the content to the current value
         // "get" returns the current value
-        // "deactivate" destructs the actor (after saving its current state in the backing storage)
+        // "deactivate" destructs the entity (after saving its current state in the backing storage)
 
+<<<<<<< HEAD
         public static async Task BlobBackedTextStoreActor(
             [ActorTrigger(ActorClassName = "BlobBackedTextStore")] IDurableActorContext context)
+=======
+        public static async Task BlobBackedTextStoreEntity([EntityTrigger(EntityName = "BlobBackedTextStore")] IDurableEntityContext context)
+>>>>>>> v2
         {
-            // we define the actor state to be a string builder so we can more efficiently append to it
-            var state = context.GetState<StringBuilder>();
-
             if (context.IsNewlyConstructed)
             {
                 // try to load state from existing blob
                 var currentFileContent = await TestHelpers.LoadStringFromTextBlobAsync(
                          context.Key);
+<<<<<<< HEAD
 
                 state.Value = new StringBuilder(currentFileContent ?? "");
+=======
+                context.SetState(new StringBuilder(currentFileContent ?? ""));
+>>>>>>> v2
             }
 
             switch (context.OperationName)
             {
                 case "clear":
-                    state.Value.Clear();
+                    context.GetState<StringBuilder>().Clear();
                     break;
 
                 case "append":
-                    state.Value.Append(context.GetOperationContent<string>());
+                    context.GetState<StringBuilder>().Append(context.GetInput<string>());
                     break;
 
                 case "get":
-                    context.Return(state.Value.ToString());
+                    context.Return(context.GetState<StringBuilder>().ToString());
                     break;
 
                 case "deactivate":
                     // first, store the current value in a blob
+<<<<<<< HEAD
                     await TestHelpers.WriteStringToTextBlob(
                         context.Key, state.Value.ToString());
+=======
+                    await context.CallActivityAsync(
+                        nameof(TestActivities.WriteStringToTextBlob),
+                        (context.Key, context.GetState<StringBuilder>().ToString()));
+>>>>>>> v2
 
-                    // then, destruct this actor (and all of its state)
+                    // then, destruct this entity (and all of its state)
                     context.DestructOnExit();
                     break;
 
@@ -251,6 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+<<<<<<< HEAD
         public static async Task HttpActor(
             [ActorTrigger(ActorClassName = "HttpActor")] IDurableActorContext context,
             ILogger log)
@@ -279,15 +299,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         //-------------- an actor representing a chat room -----------------
         // this example shows how to use reflection to define actors using a C# class.
+=======
+        //-------------- an entity representing a chat room -----------------
+        // this example shows how to use reflection to define entities using a C# class.
+>>>>>>> v2
 
-        public static void ChatRoomActor([ActorTrigger(ActorClassName = "ChatRoom")] IDurableActorContext context)
+        public static void ChatRoomEntity([EntityTrigger(EntityName = "ChatRoom")] IDurableEntityContext context)
         {
-            var state = context.GetState<ChatRoom>();
-
-            // if the actor is fresh call the constructor for the state
+            // if the entity is fresh call the constructor for the state
             if (context.IsNewlyConstructed)
             {
-                state.Value = new ChatRoom(context);
+                context.SetState(new ChatRoom(context));
             }
 
             // find the method corresponding to the operation
@@ -295,16 +317,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // determine the type of the operation content (= second method argument) and deserialize
             var contentType = method.GetParameters()[1].ParameterType;
-            var content = context.GetOperationContent(contentType);
+            var content = context.GetInput(contentType);
 
             // invoke the method and return the result;
-            var result = method.Invoke(state.Value, new object[2] { context, content });
+            var result = method.Invoke(context.GetState<ChatRoom>(), new object[2] { context, content });
             context.Return(result);
         }
 
         public class ChatRoom
         {
-            public ChatRoom(IDurableActorContext ctx)
+            public ChatRoom(IDurableEntityContext ctx)
             {
                 this.ChatEntries = new SortedDictionary<DateTime, string>();
             }
@@ -312,7 +334,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public SortedDictionary<DateTime, string> ChatEntries { get; set; }
 
             // an operation that adds a message to the chat
-            public DateTime Post(IDurableActorContext ctx, string content)
+            public DateTime Post(IDurableEntityContext ctx, string content)
             {
                 var timestamp = DateTime.UtcNow;
                 this.ChatEntries.Add(timestamp, content);
@@ -320,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // an operation that reads all messages in the chat, within range
-            public List<KeyValuePair<DateTime, string>> Read(IDurableActorContext ctx, DateTime? fromRange)
+            public List<KeyValuePair<DateTime, string>> Read(IDurableEntityContext ctx, DateTime? fromRange)
             {
                 if (fromRange.HasValue)
                 {

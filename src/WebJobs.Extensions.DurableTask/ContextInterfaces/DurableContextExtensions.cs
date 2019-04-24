@@ -255,28 +255,28 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Calls an operation on an actor and returns the result asynchronously.
+        /// Calls an operation on an entity and returns the result asynchronously.
         /// </summary>
         /// <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
         /// <param name="context">The context object.</param>
-        /// <param name="actorId">The target actor.</param>
+        /// <param name="entityId">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <returns>A task representing the result of the operation.</returns>
-        public static Task<TResult> CallActorAsync<TResult>(this IInterleavingContext context, ActorId actorId, string operationName)
+        public static Task<TResult> CallEntityAsync<TResult>(this IInterleavingContext context, EntityId entityId, string operationName)
         {
-            return context.CallActorAsync<TResult>(actorId, operationName, null);
+            return context.CallEntityAsync<TResult>(entityId, operationName, null);
         }
 
         /// <summary>
-        /// Calls an operation on an actor and waits for it to complete.
+        /// Calls an operation on an entity and waits for it to complete.
         /// </summary>
         /// <param name="context">The context object.</param>
-        /// <param name="actorId">The target actor.</param>
+        /// <param name="entityId">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <returns>A task representing the completion of the operation on the actor.</returns>
-        public static Task CallActorAsync(this IInterleavingContext context, ActorId actorId, string operationName)
+        /// <returns>A task representing the completion of the operation on the entity.</returns>
+        public static Task CallEntityAsync(this IInterleavingContext context, EntityId entityId, string operationName)
         {
-            return context.CallActorAsync<object>(actorId, operationName, null);
+            return context.CallEntityAsync<object>(entityId, operationName, null);
         }
 
         /// <summary>

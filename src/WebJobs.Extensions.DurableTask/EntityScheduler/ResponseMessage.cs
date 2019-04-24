@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, ActorId actor)
+        public void SetExceptionResult(Exception exception, string operation, EntityId entity)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Could not deserialize. Let's just wrap it legibly,
                     // to help developers figure out what happened
-                    e = new FunctionFailedException($"Actor operation threw {this.ExceptionType}, content = {this.Result}");
+                    e = new FunctionFailedException($"Entity operation threw {this.ExceptionType}, content = {this.Result}");
                 }
 
                 throw e;

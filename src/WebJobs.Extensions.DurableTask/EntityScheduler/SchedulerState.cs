@@ -14,21 +14,21 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// The persisted state of an actor scheduler, as handed forward between ContinueAsNew instances.
+    /// The persisted state of an entity scheduler, as handed forward between ContinueAsNew instances.
     /// </summary>
     internal class SchedulerState
     {
         /// <summary>
-        /// Whether this actor exists or not.
+        /// Whether this entity exists or not.
         /// </summary>
         [JsonProperty(PropertyName = "exists", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool ActorExists { get; set; }
+        public bool EntityExists { get; set; }
 
         /// <summary>
-        /// The serialized actor state. This can be stale while CurrentStateView != null.
+        /// The serialized entity state. This can be stale while CurrentStateView != null.
         /// </summary>
         [JsonProperty(PropertyName = "state", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string ActorState { get; set; }
+        public string EntityState { get; set; }
 
         /// <summary>
         /// The queue of waiting operations, or null if none.
@@ -37,13 +37,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public Queue<RequestMessage> Queue { get; private set; }
 
         /// <summary>
-        /// The instance id of the orchestration that currently holds the lock of this actor.
+        /// The instance id of the orchestration that currently holds the lock of this entity.
         /// </summary>
         [JsonProperty(PropertyName = "lockedBy", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string LockedBy { get; set; }
 
         [JsonIgnore]
-        public bool IsEmpty => !ActorExists && (Queue == null || Queue.Count == 0) && LockedBy == null;
+        public bool IsEmpty => !this.EntityExists && (this.Queue == null || this.Queue.Count == 0) && this.LockedBy == null;
 
         internal void Enqueue(RequestMessage operationMessage)
         {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override string ToString()
         {
-            return $"exists={this.ActorExists} queue.count={((this.Queue != null) ? this.Queue.Count : 0)}";
+            return $"exists={this.EntityExists} queue.count={((this.Queue != null) ? this.Queue.Count : 0)}";
         }
     }
 }

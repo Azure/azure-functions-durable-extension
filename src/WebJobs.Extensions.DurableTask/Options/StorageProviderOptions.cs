@@ -31,12 +31,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             {
                 var storageProviderOptions = new CommonStorageProviderOptions[] { this.AzureStorage, this.Emulator };
                 var activeProviders = storageProviderOptions.Where(provider => provider != null);
-                if (activeProviders.Count() != 1)
+                if (!activeProviders.Any())
                 {
-                    throw new InvalidOperationException("There must be exactly one storage provider configured.");
+                    // Assume azure storage with defaults
+                    this.AzureStorage = new AzureStorageOptions();
+                    this.configuredProvider = this.AzureStorage;
                 }
-
-                this.configuredProvider = activeProviders.First();
+                else if (activeProviders.Count() > 1)
+                {
+                    throw new InvalidOperationException("Only one storage provider can be configured per function application.");
+                }
+                else
+                {
+                    this.configuredProvider = activeProviders.First();
+                }
             }
 
             return this.configuredProvider;

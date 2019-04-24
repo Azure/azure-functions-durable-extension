@@ -8,10 +8,10 @@ using Microsoft.Azure.WebJobs.Description;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Trigger attribute used for durable actor functions.
+    /// Trigger attribute used for durable entity functions.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
-    [DebuggerDisplay("{Actor} ({Version})")]
+    [DebuggerDisplay("{EntityName} ({Version})")]
 #if NETSTANDARD2_0
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]
@@ -19,20 +19,20 @@ namespace Microsoft.Azure.WebJobs
 #else
     [Binding]
 #endif
-    public sealed class ActorTriggerAttribute : Attribute
+    public sealed class EntityTriggerAttribute : Attribute
     {
         /// <summary>
-        /// Gets or sets the name of the actor class.
+        /// Gets or sets the name of the entity.
         /// </summary>
         /// <remarks>
-        /// If not specified, the function name is used as the name of the actor class.
+        /// If not specified, the function name is used as the name of the entity.
         /// </remarks>
         /// <value>
-        /// The name of the actor class or <c>null</c> to use the function name.
+        /// The name of the entity or <c>null</c> to use the function name.
         /// </value>
 #pragma warning disable CS0618 // Type or member is obsolete
         [AutoResolve]
 #pragma warning restore CS0618 // Type or member is obsolete
-        public string ActorClassName { get; set; }
+        public string EntityName { get; set; }
     }
 }

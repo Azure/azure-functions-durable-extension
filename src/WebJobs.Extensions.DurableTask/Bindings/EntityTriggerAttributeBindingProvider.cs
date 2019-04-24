@@ -14,13 +14,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class ActorTriggerAttributeBindingProvider : ITriggerBindingProvider
+    internal class EntityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
-        public ActorTriggerAttributeBindingProvider(
+        public EntityTriggerAttributeBindingProvider(
             DurableTaskExtension config,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
@@ -38,45 +38,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ParameterInfo parameter = context.Parameter;
-            ActorTriggerAttribute trigger = parameter.GetCustomAttribute<ActorTriggerAttribute>(inherit: false);
+            EntityTriggerAttribute trigger = parameter.GetCustomAttribute<EntityTriggerAttribute>(inherit: false);
             if (trigger == null)
             {
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
-            // Priority for getting the name is [ActorTrigger], [FunctionName], method name
-            string name = trigger.ActorClassName;
+            // Priority for getting the name is [EntityTrigger], [FunctionName], method name
+            string name = trigger.EntityName;
             if (string.IsNullOrEmpty(name))
             {
                 MemberInfo method = context.Parameter.Member;
                 name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
             }
 
-            // The actor class name defaults to the method name.
-            var actorClassName = new FunctionName(name);
-            this.config.RegisterActor(actorClassName, null);
-            var binding = new ActorTriggerBinding(this.config, parameter, actorClassName);
+            // The entity class name defaults to the method name.
+            var entityName = new FunctionName(name);
+            this.config.RegisterEntity(entityName, null);
+            var binding = new EntityTriggerBinding(this.config, parameter, entityName);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
-        private class ActorTriggerBinding : ITriggerBinding
+        private class EntityTriggerBinding : ITriggerBinding
         {
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
-            private readonly FunctionName actorClassName;
+            private readonly FunctionName entityName;
 
-            public ActorTriggerBinding(
+            public EntityTriggerBinding(
                 DurableTaskExtension config,
                 ParameterInfo parameterInfo,
-                FunctionName actorClassName)
+                FunctionName entityName)
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
-                this.actorClassName = actorClassName;
+                this.entityName = entityName;
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(IDurableActorContext);
+            public Type TriggerValueType => typeof(IDurableEntityContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract { get; }
 
@@ -94,17 +94,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                var actorContext = (DurableActorContext)value;
+                var entityContext = (DurableEntityContext)value;
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object convertedValue = null;
-                if (destinationType == typeof(IDurableActorContext))
+                if (destinationType == typeof(IDurableEntityContext))
                 {
-                    convertedValue = actorContext;
+                    convertedValue = entityContext;
                 }
                 else if (destinationType == typeof(string))
                 {
-                    convertedValue = ActorContextToString(actorContext);
+                    convertedValue = EntityContextToString(entityContext);
                 }
 
                 var inputValueProvider = new ObjectValueProvider(
@@ -132,29 +132,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 // The current assumption is that in-proc (.NET) apps always use
-                // IActorContext or some derivative. Non-.NET apps
+                // IEntityContext or some derivative. Non-.NET apps
                 // which cannot use these types are therefore assumed to be "out-of-proc".
                 // We may need to revisit this assumption when Functions v2 adds support
                 // for "out-of-proc" .NET.
-                var isOutOfProc = !typeof(IDurableActorContext).IsAssignableFrom(this.parameterInfo.ParameterType);
-                this.config.RegisterActor(this.actorClassName, new RegisteredFunctionInfo(context.Executor, isOutOfProc));
+                var isOutOfProc = !typeof(IDurableEntityContext).IsAssignableFrom(this.parameterInfo.ParameterType);
+                this.config.RegisterEntity(this.entityName, new RegisteredFunctionInfo(context.Executor, isOutOfProc));
 
                 var listener = new DurableTaskListener(
                     this.config,
-                    this.actorClassName,
+                    this.entityName,
                     context.Executor,
-                    FunctionType.Actor);
+                    FunctionType.Entity);
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static string ActorContextToString(DurableActorContext arg)
+            private static string EntityContextToString(DurableEntityContext arg)
             {
                 var history = JArray.FromObject(arg.History);
 
                 // TODO figure out what exactly is needed here
                 var contextObject = new JObject(
                     new JProperty("history", history),
-                    new JProperty("actor", ((IDurableActorContext)arg).Self),
+                    new JProperty("entity", ((IDurableEntityContext)arg).Self),
                     new JProperty("isReplaying", arg.IsReplaying));
 
                 return contextObject.ToString();

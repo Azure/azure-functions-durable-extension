@@ -18,7 +18,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Common functionality of <see cref="TaskActorShim"/> and <see cref="TaskOrchestrationShim"/>.
+    /// Common functionality of <see cref="TaskEntityShim"/> and <see cref="TaskOrchestrationShim"/>.
     /// </summary>
     internal abstract class TaskCommonShim : TaskOrchestration
     {
