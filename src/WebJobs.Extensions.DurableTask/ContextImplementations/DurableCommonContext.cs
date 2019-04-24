@@ -185,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EntityId? lockToUse = null;
             string operationId = string.Empty;
             string operationName = string.Empty;
-            bool isActor = this is DurableActorContext;
+            bool isEntity = this is DurableEntityContext;
 
             switch (functionType)
             {
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(instanceId == null, "The instanceId parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
-                    System.Diagnostics.Debug.Assert(!isActor, "Actors cannot call activities");
+                    System.Diagnostics.Debug.Assert(!isEntity, "Entities cannot call activities");
                     if (retryOptions == null)
                     {
                         callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 case FunctionType.Orchestrator:
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
-                    System.Diagnostics.Debug.Assert(oneWay || !isActor, "Actors cannot call orchestrations");
+                    System.Diagnostics.Debug.Assert(oneWay || !isEntity, "Entities cannot call orchestrations");
                     if (instanceId != null && instanceId.StartsWith("@"))
                     {
                         throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
@@ -251,14 +251,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 case FunctionType.Entity:
                     System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(operation), "The operation parameter is required.");
-<<<<<<< HEAD
-                    System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for actor calls.");
-                    System.Diagnostics.Debug.Assert(instanceId != null, "Actor calls need to specify the target actor.");
-                    System.Diagnostics.Debug.Assert(oneWay || !isActor, "Actors cannot call actors");
-=======
+                    System.Diagnostics.Debug.Assert(oneWay || !isEntity, "Entities cannot call entities");
                     System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for entity calls.");
                     System.Diagnostics.Debug.Assert(instanceId != null, "Entity calls need to specify the target entity.");
->>>>>>> v2
 
                     if (this.ContextLocks != null)
                     {
@@ -295,7 +290,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.SetInput(input);
                     }
 
-                    this.SendActorMessage(target, "op", request);
+                    this.SendEntityMessage(target, "op", request);
 
                     if (!oneWay)
                     {
@@ -394,7 +389,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return output;
         }
 
-        internal abstract void SendActorMessage(OrchestrationInstance target, string eventName, object eventContent);
+        internal abstract void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent);
 
         internal Task<T> WaitForExternalEvent<T>(string name, string reason)
         {
@@ -456,12 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal async Task<TResult> WaitForEntityResponse<TResult>(Guid guid, EntityId? lockToUse)
         {
-<<<<<<< HEAD
-            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "ActorResponse");
-=======
-            string reason = $"WaitForEntityResponse:{guid.ToString()}";
             var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "EntityResponse");
->>>>>>> v2
 
             if (lockToUse.HasValue)
             {

@@ -423,9 +423,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-<<<<<<< HEAD
         [System.Diagnostics.Conditional("DEBUG")]
-        public void DeliveringActorMessage(
+        public void DeliveringEntityMessage(
             string instanceId,
             string executionId,
             int eventId,
@@ -438,7 +437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public void SendingActorMessage(
+        public void SendingEntityMessage(
             string instanceId,
             string executionId,
             string targetInstanceId,
@@ -450,10 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                               instanceId, eventName, eventContent, targetInstanceId, executionId, this.sequenceNumber++);
         }
 
-        public void ActorOperationQueued(
-=======
         public void EntityOperationQueued(
->>>>>>> v2
             string hubName,
             string functionName,
             string instanceId,
@@ -493,13 +489,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string result,
             bool isReplay)
         {
-<<<<<<< HEAD
-            EtwEventSource.Instance.ActorResponseReceived(
-=======
-            FunctionType functionType = FunctionType.Entity;
-
             EtwEventSource.Instance.EntityResponseReceived(
->>>>>>> v2
                 hubName,
                 LocalAppName,
                 LocalSlotName,

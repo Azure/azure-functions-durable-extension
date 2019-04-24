@@ -21,15 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskEntityShim : TaskCommonShim
     {
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
-        private readonly DurableActorContext context;
-=======
-        // each entity starts a limited number of operations before calling ContinueAsNew,
-        // to prevent the history from growing too large.
-        private const int OperationLimit = 20;
-
         private readonly DurableEntityContext context;
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
 
         private readonly TaskCompletionSource<object> doneProcessingMessages
             = new TaskCompletionSource<object>();
@@ -40,13 +32,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private int numberOperationsStarted = 0;
 
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
         private int numberMessagesToReceive;
 
-        public TaskActorShim(DurableTaskExtension config, string schedulerId)
-=======
         public TaskEntityShim(DurableTaskExtension config, string schedulerId)
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
             : base(config)
         {
             this.SchedulerId = schedulerId;
@@ -104,7 +92,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 lock (this.lockable)
                 {
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
                     // the operation gets processed if either
                     // - it was sent by the lock holder (the latter issues only one at a time, so no need to for queueing)
                     // - there is no lock holder, no current operation being processed, and we have not reached the limit
@@ -118,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     else
                     {
-                        this.Config.TraceHelper.ActorOperationQueued(
+                        this.Config.TraceHelper.EntityOperationQueued(
                             this.Context.HubName,
                             this.Context.Name,
                             this.Context.InstanceId,
@@ -128,22 +115,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         this.context.State.Enqueue(operationMessage);
                     }
-=======
-                    this.numberOperationsStarted++;
-                    this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
-                }
-                else
-                {
-                    this.Config.TraceHelper.EntityOperationQueued(
-                        this.Context.HubName,
-                        this.Context.Name,
-                        this.Context.InstanceId,
-                        operationMessage.Id.ToString(),
-                        operationMessage.Operation ?? "LockRequest",
-                        this.Context.IsReplaying);
-
-                    this.context.State.Enqueue(operationMessage);
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
                 }
             }
             else if (eventName == "release")
@@ -152,25 +123,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (this.context.State.LockedBy == message.ParentInstanceId)
                 {
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
                     lock (this.lockable)
-=======
-                    this.Config.TraceHelper.EntityLockReleased(
-                        this.Context.HubName,
-                        this.Context.Name,
-                        this.Context.InstanceId,
-                        message.ParentInstanceId,
-                        message.LockRequestId,
-                        this.Context.IsReplaying);
-
-                    this.context.State.LockedBy = null;
-
-                    if (this.lastStartedOperation.IsCompleted
-                     && this.numberOperationsStarted < OperationLimit
-                     && this.context.State.TryDequeue(out var operationMessage))
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
                     {
-                        this.Config.TraceHelper.ActorLockReleased(
+                        this.Config.TraceHelper.EntityLockReleased(
                             this.Context.HubName,
                             this.Context.Name,
                             this.Context.InstanceId,
@@ -249,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
             }
 
-            if (!this.context.State.ActorExists)
+            if (!this.context.State.EntityExists)
             {
                 this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
@@ -266,42 +221,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.numberOperationsStarted++;
                     this.lastStartedOperation = this.ProcessRequestAsync(request);
                 }
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
-=======
-
-                // wait for the continue as new signal, which restarts the history with a state snapshot
-                await this.continueAsNewSignal.Task;
-
-                this.context.Writeback();
-                var jstate = JToken.FromObject(this.context.State);
-                this.context.InnerContext.ContinueAsNew(jstate);
-                this.context.PreserveUnprocessedEvents = true;
-
-                // currently not calling this as it may be too heavy for entities
-                // if (!this.context.IsReplaying)
-                // {
-                //    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                //        this.context.HubName,
-                //        this.context.Name,
-                //        this.context.InstanceId,
-                //        true,
-                //        this.context.IsReplaying));
-                // }
-
-                return "continueAsNew";
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
             }
         }
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            // Wait until all the actor events have been processed.
+            // Wait until all the entity events have been processed.
 
             if (this.numberOperationsStarted == 0)
             {
                 // we are idle after a ContinueAsNew - no messages yet to process.
                 // Wait for more messages to get here (via extended sessions)
-                await doneProcessingMessages.Task;
+                await this.doneProcessingMessages.Task;
             }
 
             // Send all buffered outgoing messages (signals, responses, and fire-and-forget orchestrations)
@@ -312,9 +243,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await this.doneProcessingMessages.Task;
             }
 
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
             // write back the state
-            this.context.CurrentStateView?.WriteBack();
+            this.context.Writeback();
             var jstate = JToken.FromObject(this.context.State);
 
             // continue as new
@@ -322,16 +252,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The return value is not used.
             return string.Empty;
-=======
-                var entitySchedulerException = new OrchestrationFailureException(
-                    $"Entity scheduler {this.EntityId} failed: {e.Message}",
-                    Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
-
-                this.context.OrchestrationException = ExceptionDispatchInfo.Capture(entitySchedulerException);
-
-                throw entitySchedulerException;
-            }
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
         }
 
         private async Task ProcessRequestAsync(RequestMessage request)
@@ -364,15 +284,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (request.Position < request.LockSet.Length)
             {
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
-                // send lock request to next actor in the lock set
-                var target = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(request.LockSet[request.Position]) };
-                this.Context.SendActorMessage(target, "op", request);
-=======
                 // send lock request to next entity in the lock set
                 var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(request.LockSet[request.Position]) };
-                this.context.InnerContext.SendEvent(target, "op", request);
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
+                this.Context.SendEntityMessage(target, "op", request);
             }
             else
             {
@@ -382,7 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                 };
-                this.Context.SendActorMessage(target, request.Id.ToString(), message);
+                this.Context.SendEntityMessage(target, request.Id.ToString(), message);
             }
         }
 
@@ -391,14 +305,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set context for operation
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
-            this.context.IsNewlyConstructed = !this.context.State.ActorExists;
-            this.context.State.ActorExists = true;
-=======
-            this.context.CurrentOperationStartTime = ((IDeterministicExecutionContext)this.context).CurrentUtcDateTime;
             this.context.IsNewlyConstructed = !this.context.State.EntityExists;
             this.context.State.EntityExists = true;
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
             this.context.DestructOnExit = false;
             this.context.IsCompleted = false;
 
@@ -463,7 +371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
                 var guid = request.Id.ToString();
                 var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
-                this.Context.SendActorMessage(target, guid, jresponse);
+                this.Context.SendEntityMessage(target, guid, jresponse);
             }
 
             // destruct the entity if the application code requested it
@@ -480,7 +388,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             lock (this.lockable)
             {
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Listener/TaskActorShim.cs
                 if (this.context.State.LockedBy == null
                     && this.context.State.TryDequeue(out var operationMessage))
                 {
@@ -492,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.Operation,
                         this.Config.GetIntputOutputTrace(response.Result),
                         continuedAsNew: false,
-                        functionType: FunctionType.Actor,
+                        functionType: FunctionType.Entity,
                         isReplay: this.context.IsReplaying);
 
                     this.numberOperationsStarted++;
@@ -508,39 +415,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.Operation,
                         this.Config.GetIntputOutputTrace(response.Result),
                         continuedAsNew: true,
-                        functionType: FunctionType.Actor,
+                        functionType: FunctionType.Entity,
                         isReplay: this.context.IsReplaying);
                 }
-=======
-                this.Config.TraceHelper.FunctionCompleted(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    request.Id.ToString(),
-                    request.Operation,
-                    this.Config.GetIntputOutputTrace(response.Result),
-                    continuedAsNew: false,
-                    functionType: FunctionType.Entity,
-                    isReplay: this.context.IsReplaying);
-
-                this.numberOperationsStarted++;
-                this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
-            }
-            else
-            {
-                this.SignalContinueAsNew();
-
-                this.Config.TraceHelper.FunctionCompleted(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    request.Id.ToString(),
-                    request.Operation,
-                    this.Config.GetIntputOutputTrace(response.Result),
-                    continuedAsNew: true,
-                    functionType: FunctionType.Entity,
-                    isReplay: this.context.IsReplaying);
->>>>>>> v2:src/WebJobs.Extensions.DurableTask/Listener/TaskEntityShim.cs
             }
         }
 

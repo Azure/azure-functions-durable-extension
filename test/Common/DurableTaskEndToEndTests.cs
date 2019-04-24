@@ -2442,14 +2442,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
         {
-<<<<<<< HEAD
-=======
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.EntityToAndFromBlob),
-            };
-
->>>>>>> v2
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableEntity_EntityToAndFromBlob),
@@ -2462,14 +2454,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityId = new EntityId("BlobBackedTextStore", Guid.NewGuid().ToString());
 
                 // first, start the orchestration
-<<<<<<< HEAD
                 var client = await host.StartOrchestratorAsync(
-                    nameof(TestOrchestrations.ActorToAndFromBlob),
-                    actorId,
+                    nameof(TestOrchestrations.EntityToAndFromBlob),
+                    entityId,
                     this.output);
-=======
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
->>>>>>> v2
 
                 DurableOrchestrationStatus status;
                 var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 240);
@@ -2678,29 +2666,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Test which validates that actors can safely make async I/O calls.
         /// </summary>
         [Fact]
-        public async Task DurableActor_AsyncIO()
+        public async Task DurableEntity_AsyncIO()
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_AsyncIO),
+                nameof(this.DurableEntity_AsyncIO),
                 enableExtendedSessions: false))
             {
                 await host.StartAsync();
 
-                var actorId = new ActorId("HttpActor", Guid.NewGuid().ToString("N"));
-                TestActorClient client = await host.GetActorClientAsync(actorId, this.output);
+                var entityId = new EntityId("HttpEntity", Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
-                await client.SignalActor(this.output, "get", "https://www.microsoft.com");
-                await client.SignalActor(this.output, "get", "https://bing.com");
+                await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
+                await client.SignalEntity(this.output, "get", "https://bing.com");
 
                 await Task.Delay(TimeSpan.FromSeconds(10));
 
-                var state = await client.WaitForActorState<IDictionary<string, string>>(this.output);
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
                 Assert.NotNull(state);
 
                 if (state.TryGetValue("error", out string error))
                 {
-                    throw new XunitException("Actor encountered an error: " + error);
+                    throw new XunitException("Entity encountered an error: " + error);
                 }
 
                 Assert.True(state.ContainsKey("https://www.microsoft.com"));

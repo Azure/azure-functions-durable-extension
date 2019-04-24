@@ -328,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.LockRequestId = lockRequestId.ToString();
 
-            this.SendActorMessage(target, "op", request);
+            this.SendEntityMessage(target, "op", request);
 
             // wait for the response from the last entity in the lock set
             await this.WaitForExternalEvent<ResponseMessage>(this.LockRequestId, "LockAcquisitionCompleted");
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         ParentInstanceId = this.InstanceId,
                         LockRequestId = this.LockRequestId,
                     };
-                    this.SendActorMessage(instance, "release", message);
+                    this.SendEntityMessage(instance, "release", message);
                 }
 
                 this.ContextLocks = null;
@@ -362,11 +362,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal override void SendActorMessage(OrchestrationInstance target, string eventName, object eventContent)
+        internal override void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
         {
             if (!this.IsReplaying)
             {
-                this.Config.TraceHelper.SendingActorMessage(
+                this.Config.TraceHelper.SendingEntityMessage(
                     this.InstanceId,
                     this.ExecutionId,
                     target.InstanceId,

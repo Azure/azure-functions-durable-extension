@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             CallEntity = 7,
         }
 
-        public override DurableCommonContext Context => context;
+        public override DurableCommonContext Context => this.context;
 
         public override RegisteredFunctionInfo GetFunctionInfo()
         {

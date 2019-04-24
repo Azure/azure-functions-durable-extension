@@ -10,30 +10,30 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestActorClient
+    internal class TestEntityClient
     {
-        private readonly ActorId actorId;
+        private readonly EntityId entityId;
 
-        public TestActorClient(
+        public TestEntityClient(
             IDurableOrchestrationClient innerClient,
-            ActorId actorId)
+            EntityId entityId)
         {
             this.InnerClient = innerClient ?? throw new ArgumentNullException(nameof(innerClient));
-            this.actorId = actorId;
+            this.entityId = entityId;
         }
 
         public IDurableOrchestrationClient InnerClient { get; }
 
-        public async Task SignalActor(
+        public async Task SignalEntity(
             ITestOutputHelper output,
             string operationName,
             object operationContent = null)
         {
-            output.WriteLine($"Signaling actor {this.actorId} with operation named {operationName}.");
-            await this.InnerClient.SignalActor(this.actorId, operationName, operationContent);
+            output.WriteLine($"Signaling entity {this.entityId} with operation named {operationName}.");
+            await this.InnerClient.SignalEntityAsync(this.entityId, operationName, operationContent);
         }
 
-        public async Task<T> WaitForActorState<T>(
+        public async Task<T> WaitForEntityState<T>(
             ITestOutputHelper output,
             TimeSpan? timeout = null)
         {
@@ -44,24 +44,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            ActorStateResponse<T> response;
+            EntityStateResponse<T> response;
             do
             {
-                output.WriteLine($"Waiting for {this.actorId} to have state.");
+                output.WriteLine($"Waiting for {this.entityId} to have state.");
 
-                response = await this.InnerClient.ReadActorState<T>(this.actorId);
-                if (response.ActorExists)
+                response = await this.InnerClient.ReadEntityStateAsync<T>(this.entityId);
+                if (response.EntityExists)
                 {
-                    string serializedState = JsonConvert.SerializeObject(response.ActorState);
+                    string serializedState = JsonConvert.SerializeObject(response.EntityState);
                     output.WriteLine($"Found state: {serializedState}");
-                    return response.ActorState;
+                    return response.EntityState;
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
             while (sw.Elapsed < timeout);
 
-            throw new TimeoutException($"Durable actor '{this.actorId}' still doesn't have any state!");
+            throw new TimeoutException($"Durable entity '{this.entityId}' still doesn't have any state!");
         }
     }
 }

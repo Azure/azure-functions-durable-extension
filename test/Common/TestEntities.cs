@@ -14,13 +14,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestEntities
     {
-<<<<<<< HEAD
         private static readonly HttpClient SharedHttpClient = new HttpClient();
 
-        //-------------- a very simple actor that stores a string -----------------
-=======
         //-------------- a very simple entity that stores a string -----------------
->>>>>>> v2
         // it offers two operations:
         // "set" (takes a string, assigns it to the current state, does not return anything)
         // "get" (returns a string containing the current state)
@@ -216,50 +212,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // "get" returns the current value
         // "deactivate" destructs the entity (after saving its current state in the backing storage)
 
-<<<<<<< HEAD
-        public static async Task BlobBackedTextStoreActor(
-            [ActorTrigger(ActorClassName = "BlobBackedTextStore")] IDurableActorContext context)
-=======
-        public static async Task BlobBackedTextStoreEntity([EntityTrigger(EntityName = "BlobBackedTextStore")] IDurableEntityContext context)
->>>>>>> v2
+        public static async Task BlobBackedTextStoreEntity(
+            [EntityTrigger(EntityName = "BlobBackedTextStore")] IDurableEntityContext context)
         {
             if (context.IsNewlyConstructed)
             {
                 // try to load state from existing blob
                 var currentFileContent = await TestHelpers.LoadStringFromTextBlobAsync(
                          context.Key);
-<<<<<<< HEAD
-
-                state.Value = new StringBuilder(currentFileContent ?? "");
-=======
                 context.SetState(new StringBuilder(currentFileContent ?? ""));
->>>>>>> v2
             }
+
+            var state = context.GetState<StringBuilder>();
 
             switch (context.OperationName)
             {
                 case "clear":
-                    context.GetState<StringBuilder>().Clear();
+                    state.Clear();
                     break;
 
                 case "append":
-                    context.GetState<StringBuilder>().Append(context.GetInput<string>());
+                    state.Append(context.GetInput<string>());
                     break;
 
                 case "get":
-                    context.Return(context.GetState<StringBuilder>().ToString());
+                    context.Return(state.ToString());
                     break;
 
                 case "deactivate":
                     // first, store the current value in a blob
-<<<<<<< HEAD
                     await TestHelpers.WriteStringToTextBlob(
-                        context.Key, state.Value.ToString());
-=======
-                    await context.CallActivityAsync(
-                        nameof(TestActivities.WriteStringToTextBlob),
-                        (context.Key, context.GetState<StringBuilder>().ToString()));
->>>>>>> v2
+                        context.Key, state.ToString());
 
                     // then, destruct this entity (and all of its state)
                     context.DestructOnExit();
@@ -270,23 +253,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-<<<<<<< HEAD
-        public static async Task HttpActor(
-            [ActorTrigger(ActorClassName = "HttpActor")] IDurableActorContext context,
+        public static async Task HttpEntity(
+            [EntityTrigger(EntityName = "HttpEntity")] IDurableEntityContext context,
             ILogger log)
         {
-            IStateView<Dictionary<string, int>> callHistory = context.GetState<Dictionary<string, int>>();
             if (context.IsNewlyConstructed)
             {
-                callHistory.Value = new Dictionary<string, int>();
+                context.SetState(new Dictionary<string, int>());
             }
 
-            string requestUri = context.GetOperationContent<string>();
+            Dictionary<string, int> callHistory = context.GetState<Dictionary<string, int>>();
+
+            string requestUri = context.GetInput<string>();
 
             log.LogInformation($"Calling {requestUri}");
 
             int statusCode = await CallHttpAsync(requestUri);
-            callHistory.Value.Add(requestUri, statusCode);
+            callHistory.Add(requestUri, statusCode);
         }
 
         private static async Task<int> CallHttpAsync(string requestUri)
@@ -297,12 +280,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        //-------------- an actor representing a chat room -----------------
-        // this example shows how to use reflection to define actors using a C# class.
-=======
         //-------------- an entity representing a chat room -----------------
         // this example shows how to use reflection to define entities using a C# class.
->>>>>>> v2
 
         public static void ChatRoomEntity([EntityTrigger(EntityName = "ChatRoom")] IDurableEntityContext context)
         {
