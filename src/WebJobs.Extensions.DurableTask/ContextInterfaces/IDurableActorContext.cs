@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Provides functionality for application code implementing an actor operation.
     /// </summary>
-    public interface IDurableActorContext : IDeterministicExecutionContext
+    public interface IDurableActorContext
     {
         /// <summary>
         /// Gets the class of the currently executing actor.
@@ -86,5 +86,13 @@ namespace Microsoft.Azure.WebJobs
         /// Deletes this actor after this operation completes.
         /// </summary>
         void DestructOnExit();
+
+        /// <summary>
+        /// Signals an actor to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+        /// </summary>
+        /// <param name="actor">The target actor.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationContent">The content for the operation.</param>
+        void SignalActor(ActorId actor, string operationName, object operationContent = null);
     }
 }

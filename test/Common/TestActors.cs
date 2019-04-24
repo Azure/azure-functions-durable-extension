@@ -314,7 +314,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // an operation that adds a message to the chat
             public DateTime Post(IDurableActorContext ctx, string content)
             {
-                var timestamp = ctx.CurrentUtcDateTime;
+                var timestamp = DateTime.UtcNow;
                 this.ChatEntries.Add(timestamp, content);
                 return timestamp;
             }

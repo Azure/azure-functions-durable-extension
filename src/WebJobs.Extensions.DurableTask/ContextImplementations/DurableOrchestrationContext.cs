@@ -28,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string serializedOutput;
         private string serializedCustomStatus;
 
+        private int newGuidCounter = 0;
+
         private LockReleaser lockReleaser = null;
 
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
@@ -326,8 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.LockRequestId = lockRequestId.ToString();
 
-            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
-            this.InnerContext.SendEvent(target, "op", jrequest);
+            this.SendActorMessage(target, "op", request);
 
             // wait for the response from the last actor in the lock set
             await this.WaitForExternalEvent<ResponseMessage>(this.LockRequestId, "LockAcquisitionCompleted");
@@ -352,13 +353,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         ParentInstanceId = this.InstanceId,
                         LockRequestId = this.LockRequestId,
                     };
-                    this.InnerContext.SendEvent(instance, "release", message);
+                    this.SendActorMessage(instance, "release", message);
                 }
 
                 this.ContextLocks = null;
                 this.lockReleaser = null;
                 this.LockRequestId = null;
             }
+        }
+
+        internal override void SendActorMessage(OrchestrationInstance target, string eventName, object eventContent)
+        {
+            if (!this.IsReplaying)
+            {
+                this.Config.TraceHelper.SendingActorMessage(
+                    this.InstanceId,
+                    this.ExecutionId,
+                    target.InstanceId,
+                    eventName,
+                    eventContent);
+            }
+
+            this.InnerContext.SendEvent(target, eventName, eventContent);
+        }
+
+        internal override Guid NewGuid()
+        {
+            // The name is a combination of the instance ID, the current orchestrator date/time, and a counter.
+            string guidNameValue = string.Concat(
+                this.InstanceId,
+                "_",
+                this.InnerContext.CurrentUtcDateTime.ToString("o"),
+                "_",
+                this.newGuidCounter.ToString());
+
+            this.newGuidCounter++;
+
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
         private class LockReleaser : IDisposable
