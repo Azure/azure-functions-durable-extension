@@ -28,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string serializedOutput;
         private string serializedCustomStatus;
 
+        private int newGuidCounter = 0;
+
         private LockReleaser lockReleaser = null;
 
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
@@ -266,21 +268,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<TResult> IInterleavingContext.CallActorAsync<TResult>(ActorId actorId, string operationName, object operationContent)
+        Task<TResult> IInterleavingContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<TResult>(actorId.ActorClass, FunctionType.Actor, false, ActorId.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
         }
 
         /// <inheritdoc/>
-        Task IInterleavingContext.CallActorAsync(ActorId actorId, string operationName, object operationContent)
+        Task IInterleavingContext.CallEntityAsync(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<object>(actorId.ActorClass, FunctionType.Actor, false, ActorId.GetSchedulerIdFromActorId(actorId), operationName, null, operationContent);
+            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
         }
 
         /// <inheritdoc/>
-        async Task<IDisposable> IInterleavingContext.LockAsync(params ActorId[] actors)
+        async Task<IDisposable> IInterleavingContext.LockAsync(params EntityId[] entities)
         {
             this.ThrowIfInvalidAccess();
             if (this.ContextLocks != null)
@@ -288,20 +290,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new LockingRulesViolationException("Cannot acquire more locks when already holding some locks.");
             }
 
-            if (actors == null || actors.Length == 0)
+            if (entities == null || entities.Length == 0)
             {
-                throw new ArgumentException("The list of actors to lock must not be null or empty.", nameof(actors));
+                throw new ArgumentException("The list of entities to lock must not be null or empty.", nameof(entities));
             }
 
             // acquire the locks in a globally fixed order to avoid deadlocks
-            Array.Sort(actors);
+            Array.Sort(entities);
 
             // remove duplicates if necessary. Probably quite rare, so no need to optimize more.
-            for (int i = 0; i < actors.Length - 1; i++)
+            for (int i = 0; i < entities.Length - 1; i++)
             {
-                if (actors[i].Equals(actors[i + 1]))
+                if (entities[i].Equals(entities[i + 1]))
                 {
-                    actors = actors.Distinct().ToArray();
+                    entities = entities.Distinct().ToArray();
                     break;
                 }
             }
@@ -309,30 +311,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // use a deterministically replayable unique ID for this lock request, and to receive the response
             var lockRequestId = this.NewGuid();
 
-            // All the actors in actor[] need to be locked, but to avoid deadlock, the locks have to be acquired
-            // sequentially, in order. So, we send the lock request to the first actor; when the first lock
-            // is granted by the first actor, the first actor will forward the lock request to the second actor,
-            // and so on; after the last actor grants the last lock, a response is sent back here.
+            // All the entities in entity[] need to be locked, but to avoid deadlock, the locks have to be acquired
+            // sequentially, in order. So, we send the lock request to the first entity; when the first lock
+            // is granted by the first entity, the first entity will forward the lock request to the second entity,
+            // and so on; after the last entity grants the last lock, a response is sent back here.
 
-            // send lock request to first actor in the lock set
-            var target = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(actors[0]) };
+            // send lock request to first entity in the lock set
+            var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(entities[0]) };
             var request = new RequestMessage()
             {
                 Id = lockRequestId,
                 ParentInstanceId = this.InstanceId,
-                LockSet = actors,
+                LockSet = entities,
                 Position = 0,
             };
 
             this.LockRequestId = lockRequestId.ToString();
 
-            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
-            this.InnerContext.SendEvent(target, "op", jrequest);
+            this.SendEntityMessage(target, "op", request);
 
-            // wait for the response from the last actor in the lock set
+            // wait for the response from the last entity in the lock set
             await this.WaitForExternalEvent<ResponseMessage>(this.LockRequestId, "LockAcquisitionCompleted");
 
-            this.ContextLocks = new List<ActorId>(actors);
+            this.ContextLocks = new List<EntityId>(entities);
 
             // return an IDisposable that releases the lock
             this.lockReleaser = new LockReleaser(this);
@@ -344,21 +345,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.ContextLocks != null)
             {
-                foreach (var actorId in this.ContextLocks)
+                foreach (var entityId in this.ContextLocks)
                 {
-                    var instance = new OrchestrationInstance() { InstanceId = ActorId.GetSchedulerIdFromActorId(actorId) };
+                    var instance = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(entityId) };
                     var message = new ReleaseMessage()
                     {
                         ParentInstanceId = this.InstanceId,
                         LockRequestId = this.LockRequestId,
                     };
-                    this.InnerContext.SendEvent(instance, "release", message);
+                    this.SendEntityMessage(instance, "release", message);
                 }
 
                 this.ContextLocks = null;
                 this.lockReleaser = null;
                 this.LockRequestId = null;
             }
+        }
+
+        internal override void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
+        {
+            if (!this.IsReplaying)
+            {
+                this.Config.TraceHelper.SendingEntityMessage(
+                    this.InstanceId,
+                    this.ExecutionId,
+                    target.InstanceId,
+                    eventName,
+                    eventContent);
+            }
+
+            this.InnerContext.SendEvent(target, eventName, eventContent);
+        }
+
+        internal override Guid NewGuid()
+        {
+            // The name is a combination of the instance ID, the current orchestrator date/time, and a counter.
+            string guidNameValue = string.Concat(
+                this.InstanceId,
+                "_",
+                this.InnerContext.CurrentUtcDateTime.ToString("o"),
+                "_",
+                this.newGuidCounter.ToString());
+
+            this.newGuidCounter++;
+
+            return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
         private class LockReleaser : IDisposable

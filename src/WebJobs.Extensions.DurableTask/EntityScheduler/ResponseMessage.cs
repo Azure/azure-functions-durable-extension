@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ExceptionType { get; set; }
 
         [JsonIgnore]
-        public bool IsException => ExceptionType != null;
+        public bool IsException => this.ExceptionType != null;
 
         public void SetResult(object result)
         {
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, ActorId actor)
+        public void SetExceptionResult(Exception exception, string operation, EntityId entity)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Could not deserialize. Let's just wrap it legibly,
                     // to help developers figure out what happened
-                    e = new FunctionFailedException($"Actor operation threw {this.ExceptionType}, content = {this.Result}");
+                    e = new FunctionFailedException($"Entity operation threw {this.ExceptionType}, content = {this.Result}");
                 }
 
                 throw e;
@@ -74,6 +74,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 return MessagePayloadDataConverter.Default.Deserialize<T>(this.Result);
+            }
+        }
+
+        public override string ToString()
+        {
+            if (this.IsException)
+            {
+                return $"[ExceptionResponse {this.Result}]";
+            }
+            else
+            {
+                return $"[Response {this.Result}]";
             }
         }
     }

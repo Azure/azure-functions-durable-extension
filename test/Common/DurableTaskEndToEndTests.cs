@@ -2285,13 +2285,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario involving a signal and two calls.
+        /// End-to-end test which validates a simple entity scenario involving a signal and two calls.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_SignalAndCallStringStore(bool extendedSessions)
+        public async Task DurableEntity_SignalAndCallStringStore(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2300,12 +2300,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_SignalAndCallStringStore),
+                nameof(this.DurableEntity_SignalAndCallStringStore),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var guid = Guid.NewGuid(); // used as the key for the actor
+                var guid = Guid.NewGuid(); // used as the key for the entity
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], guid, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
@@ -2313,23 +2313,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", (string)status?.Output);
 
-                // try to read the state of the actor directly from the client
-                var response = await client.InnerClient.ReadActorState<string>(new ActorId("StringStore2", guid.ToString()));
-                Assert.True(response.ActorExists);
-                Assert.Equal("333", response.ActorState);
+                // try to read the state of the entity directly from the client
+                var response = await client.InnerClient.ReadEntityStateAsync<string>(new EntityId("StringStore2", guid.ToString()));
+                Assert.True(response.EntityExists);
+                Assert.Equal("333", response.EntityState);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario involving creation and deletion.
+        /// End-to-end test which validates a simple entity scenario involving creation and deletion.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_StringStoreWithCreateDelete(bool extendedSessions)
+        public async Task DurableEntity_StringStoreWithCreateDelete(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2338,7 +2338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_StringStoreWithCreateDelete),
+                nameof(this.DurableEntity_StringStoreWithCreateDelete),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -2355,32 +2355,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario which sends a signal, and then polls
+        /// End-to-end test which validates a simple entity scenario which sends a signal, and then polls
         /// until the signal is delivered.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_SignalThenPoll(bool extendedSessions)
+        public async Task DurableEntity_SignalThenPoll(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.PollCounterActor),
+                nameof(TestOrchestrations.PollCounterEntity),
             };
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_SignalThenPoll),
+                nameof(this.DurableEntity_SignalThenPoll),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var actorId = new ActorId("Counter", Guid.NewGuid().ToString());
+                var entityId = new EntityId("Counter", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
-                await client.InnerClient.SignalActor(actorId, "increment");
+                await client.InnerClient.SignalEntityAsync(entityId, "increment");
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
@@ -2392,76 +2392,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario where an actor's state is
+        /// End-to-end test which validates a simple entity scenario where an entity's state is
         /// larger than what fits into Azure table rows.
         /// </summary>
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Theory(Skip = "needs fix (#719)")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_LargeActor(bool extendedSessions)
+        public async Task DurableEntity_LargeEntity(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.LargeActor),
+                nameof(TestOrchestrations.LargeEntity),
             };
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_LargeActor),
+                nameof(this.DurableEntity_LargeEntity),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var actorId = new ActorId("StringStore2", Guid.NewGuid().ToString());
+                var entityId = new EntityId("StringStore2", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", status?.Output);
 
-                var response = await client.InnerClient.ReadActorState<string>(actorId);
-                Assert.True(response.ActorExists);
-                Assert.Equal(100000, response.ActorState.Length);
+                var response = await client.InnerClient.ReadEntityStateAsync<string>(entityId);
+                Assert.True(response.EntityExists);
+                Assert.Equal(100000, response.EntityState.Length);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario involving a blob-backed actor that stores text and,
+        /// End-to-end test which validates an entity scenario involving a blob-backed entity that stores text and,
         /// when deactivated, saves its state to storage. The test concurrently runs an orchestration that
-        /// creates a load of "append" operations, and sends periodic "deactivate" operations to the actor.
+        /// creates a load of "append" operations, and sends periodic "deactivate" operations to the entity.
         /// At the end, it validates that all of the appends are reflected in the final state.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_ActorToAndFromBlob(bool extendedSessions)
+        public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.ActorToAndFromBlob),
-            };
-
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_ActorToAndFromBlob),
+                nameof(this.DurableEntity_EntityToAndFromBlob),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 await EnsureBlobContainerExists("test");
 
-                var actorId = new ActorId("BlobBackedTextStore", Guid.NewGuid().ToString());
+                var entityId = new EntityId("BlobBackedTextStore", Guid.NewGuid().ToString());
 
                 // first, start the orchestration
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.EntityToAndFromBlob),
+                    entityId,
+                    this.output);
 
-                DurableOrchestrationStatus status = null;
+                DurableOrchestrationStatus status;
                 var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 240);
 
                 while (true)
@@ -2469,9 +2467,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await Task.Delay(5000);
 
                     // while the orchestration is running, just for fun,
-                    // send some deactivation signals which unload the actor from memory.
-                    // this should not change the final outcome as the actors are storage-backed.
-                    await client.InnerClient.SignalActor(actorId, "deactivate");
+                    // send some deactivation signals which unload the entity from memory.
+                    // this should not change the final outcome as the entities are storage-backed.
+                    await client.InnerClient.SignalEntityAsync(entityId, "deactivate");
 
                     status = await client.GetStatusAsync();
 
@@ -2491,15 +2489,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario where three "LockedIncrement" orchestrations
+        /// End-to-end test which validates an entity scenario where three "LockedIncrement" orchestrations
         /// concurrently increment a counter saved in blob storage, using a read-modify-write pattern, while holding
-        /// a lock on the same actor. This tests that the lock prevents the interleaving of these orchestrations.
+        /// a lock on the same entity. This tests that the lock prevents the interleaving of these orchestrations.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_LockedIncrements(bool extendedSessions)
+        public async Task DurableEntity_LockedIncrements(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2507,21 +2505,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_LockedIncrements),
+                nameof(this.DurableEntity_LockedIncrements),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 await EnsureBlobContainerExists("test");
 
-                var actorPlayingALock = new ActorId("Counter", Guid.NewGuid().ToString()); // does not matter what actor we use
+                var entityPlayingALock = new EntityId("Counter", Guid.NewGuid().ToString()); // does not matter what entity we use
 
                 // start three concurrent increment operations
                 // the lock should prevent incorrect interleavings
 
-                var client1 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
-                var client2 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
-                var client3 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
+                var client1 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+                var client2 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+                var client3 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
 
                 var status1 = await client1.WaitForCompletionAsync(this.output);
                 var status2 = await client2.WaitForCompletionAsync(this.output);
@@ -2544,58 +2542,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario where a "LockedTransfer" orchestration locks
-        /// two "Counter" actors, and then in parallel increments/decrements them, respectively, using
+        /// End-to-end test which validates an entity scenario where a "LockedTransfer" orchestration locks
+        /// two "Counter" entities, and then in parallel increments/decrements them, respectively, using
         /// a read-modify-write pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_SingleLockedTransfer(bool extendedSessions)
+        public async Task DurableEntity_SingleLockedTransfer(bool extendedSessions)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.LockedTransfer),
-            };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_SingleLockedTransfer),
+                nameof(this.DurableEntity_SingleLockedTransfer),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var counter1 = new ActorId("Counter", Guid.NewGuid().ToString());
-                var counter2 = new ActorId("Counter", Guid.NewGuid().ToString());
+                var counter1 = new EntityId("Counter", Guid.NewGuid().ToString());
+                var counter2 = new EntityId("Counter", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (counter1, counter2), this.output);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.LockedTransfer),
+                    (counter1, counter2),
+                    this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 // validate the state of the counters
-                var response1 = await client.InnerClient.ReadActorState<int>(counter1);
-                var response2 = await client.InnerClient.ReadActorState<int>(counter2);
-                Assert.True(response1.ActorExists);
-                Assert.True(response2.ActorExists);
-                Assert.Equal(-1, response1.ActorState);
-                Assert.Equal(1, response2.ActorState);
+                var response1 = await client.InnerClient.ReadEntityStateAsync<int>(counter1);
+                var response2 = await client.InnerClient.ReadEntityStateAsync<int>(counter2);
+                Assert.True(response1.EntityExists);
+                Assert.True(response2.EntityExists);
+                Assert.Equal(-1, response1.EntityState);
+                Assert.Equal(1, response2.EntityState);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario where a a number of "LockedTransfer" orchestrations
-        /// concurrently operate on a number of actors, in a classical dining-philosophers configuration.
+        /// End-to-end test which validates an entity scenario where a a number of "LockedTransfer" orchestrations
+        /// concurrently operate on a number of entities, in a classical dining-philosophers configuration.
         /// This showcases the deadlock prevention mechanism achieved by the sequential, ordered lock acquisition.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, 5)]
         [InlineData(false, 5)]
-        public async Task DurableActor_MultipleLockedTransfers(bool extendedSessions, int numberActors)
+        public async Task DurableEntity_MultipleLockedTransfers(bool extendedSessions, int numberEntities)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2603,35 +2600,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_MultipleLockedTransfers),
+                nameof(this.DurableEntity_MultipleLockedTransfers),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                // create specified number of actors
-                var counters = new ActorId[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                // create specified number of entities
+                var counters = new EntityId[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    counters[i] = new ActorId("Counter", Guid.NewGuid().ToString());
+                    counters[i] = new EntityId("Counter", Guid.NewGuid().ToString());
                 }
 
                 // in parallel, start one transfer per counter, each decrementing a counter and incrementing
                 // its successor (where the last one wraps around to the first)
                 // This is a pattern that would deadlock if we didn't order the lock acquisition.
-                var clients = new Task<TestOrchestratorClient>[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                var clients = new Task<TestOrchestratorClient>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
                     clients[i] = host.StartOrchestratorAsync(
                         orchestratorFunctionNames[0],
-                        (counters[i], counters[(i + 1) % numberActors]),
+                        (counters[i], counters[(i + 1) % numberEntities]),
                         this.output);
                 }
 
                 await Task.WhenAll(clients);
 
                 // in parallel, wait for all transfers to complete
-                var stati = new Task<DurableOrchestrationStatus>[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                var stati = new Task<DurableOrchestrationStatus>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
                     stati[i] = clients[i].Result.WaitForCompletionAsync(this.output);
                 }
@@ -2639,27 +2636,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await Task.WhenAll(stati);
 
                 // check that they all completed
-                for (int i = 0; i < numberActors; i++)
+                for (int i = 0; i < numberEntities; i++)
                 {
                     Assert.Equal(OrchestrationRuntimeStatus.Completed, stati[i].Result?.RuntimeStatus);
                 }
 
-                // in parallel, read all the actor states
-                var actorStates = new Task<ActorStateResponse<int>>[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                // in parallel, read all the entity states
+                var entityStates = new Task<EntityStateResponse<int>>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    actorStates[i] = clients[i].Result.InnerClient.ReadActorState<int>(counters[i]);
+                    entityStates[i] = clients[i].Result.InnerClient.ReadEntityStateAsync<int>(counters[i]);
                 }
 
-                await Task.WhenAll(actorStates);
+                await Task.WhenAll(entityStates);
 
                 // check that the counter states are all back to 0
                 // (since each participated in 2 transfers, one incrementing and one decrementing)
-                for (int i = 0; i < numberActors; i++)
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    Assert.True(actorStates[i].Result.ActorExists);
-                    Assert.Equal(0, actorStates[i].Result.ActorState);
+                    Assert.True(entityStates[i].Result.EntityExists);
+                    Assert.Equal(0, entityStates[i].Result.EntityState);
                 }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that actors can safely make async I/O calls.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableEntity_AsyncIO()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_AsyncIO),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId("HttpEntity", Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
+                await client.SignalEntity(this.output, "get", "https://bing.com");
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
+                Assert.NotNull(state);
+
+                if (state.TryGetValue("error", out string error))
+                {
+                    throw new XunitException("Entity encountered an error: " + error);
+                }
+
+                Assert.True(state.ContainsKey("https://www.microsoft.com"));
+                Assert.Equal("200", state["https://www.microsoft.com"]);
+
+                Assert.True(state.ContainsKey("https://bing.com"));
+                Assert.Equal("200", state["https://bing.com"]);
+
+                Assert.Equal(2, state.Count);
 
                 await host.StopAsync();
             }

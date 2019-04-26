@@ -4,184 +4,6 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
-        <member name="T:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus">
-            <summary>
-            Information about the current status of an operation executing on an actor.
-            Excludes potentially large data (such as the operation input content) so it can be read with low latency.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.Operation">
-            <summary>
-            The name of the operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.Id">
-            <summary>
-            The unique identifier for this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.ParentInstanceId">
-            <summary>
-            The parent instance that called this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus.StartTime">
-            <summary>
-            The UTC time at which the actor started processing this operation.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.ActorId">
-            <summary>
-            A unique identifier for an actor, consisting of actor class and actor key.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorId.#ctor(System.String,System.String)">
-            <summary>
-            Create an actor id for an actor.
-            </summary>
-            <param name="actorClass">The name of the actor class.</param>
-            <param name="actorKey">The actor key.</param>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorId.ActorClass">
-            <summary>
-            The name of the actor class.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorId.ActorKey">
-            <summary>
-            The actor key. Uniquely identifies an actor among all instances of the same class.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorId.ToString">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorId.Equals(System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorId.Equals(Microsoft.Azure.WebJobs.ActorId)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorId.GetHashCode">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.ActorId.CompareTo(System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.ActorStateResponse`1">
-            <summary>
-            The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadActorState``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.String,Newtonsoft.Json.JsonSerializerSettings)"/>.
-            </summary>
-            <typeparam name="T">The JSON-serializable type of the actor.</typeparam>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorStateResponse`1.ActorExists">
-            <summary>
-            Whether this actor exists or not.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorStateResponse`1.ActorState">
-            <summary>
-            The current state of the actor, if it exists, or default(<typeparamref name="T"/>) otherwise.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.ActorStatus">
-            <summary>
-            Information about the current status of an actor. Excludes potentially large data
-            (such as the actor state, or the contents of the queue) so it can always be read with low latency.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.ActorExists">
-            <summary>
-            Whether this actor exists or not.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.QueueSize">
-            <summary>
-            The size of the queue, i.e. the number of operations that are waiting for the current operation to complete.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.LockedBy">
-            <summary>
-            The instance id of the orchestration that currently holds the lock of this actor.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.ActorStatus.CurrentOperation">
-            <summary>
-            The operation that is currently executing on this actor.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage">
-            <summary>
-            A message that represents an operation request or a lock request.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Operation">
-            <summary>
-            The name of the operation being called (if this is an operation message) or <c>null</c>
-            (if this is a lock request).
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.IsSignal">
-            <summary>
-            Whether or not this is a one-way message.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Content">
-            <summary>
-            The content the operation was called with.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Id">
-            <summary>
-            A unique identifier for this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentInstanceId">
-            <summary>
-            The parent instance that called this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.LockSet">
-            <summary>
-            For lock requests, the set of locks being acquired. Is sorted,
-            contains at least one element, and has no repetitions.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Position">
-            <summary>
-            For lock requests involving multiple locks, the message number.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState">
-            <summary>
-            The persisted state of an actor scheduler, as handed forward between ContinueAsNew instances.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.ActorExists">
-            <summary>
-            Whether this actor exists or not.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.ActorState">
-            <summary>
-            The serialized actor state. This can be stale while CurrentStateView != null.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Queue">
-            <summary>
-            The queue of waiting operations, or null if none.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
-            <summary>
-            The instance id of the orchestration that currently holds the lock of this actor.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
-            <summary>
-            ephemeral, typed view of the state of the actor, for use by applications in deserialized form.
-            </summary>
-            <typeparam name="T">the type of the state.</typeparam>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
             <summary>
             The default parameter type for activity functions.
@@ -220,15 +42,10 @@
             The JSON-serializeable value to use as the activity function output.
             </param>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActorContext">
-            <summary>
-            Context object passed to application code executing actor operations.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
             <summary>
             Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>
-            and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActorContext"/>.
+            and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityContext"/>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#CurrentUtcDateTime">
@@ -243,17 +60,22 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#CallActivityWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.RetryOptions,System.Object)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#IsLocked(System.Collections.Generic.IReadOnlyList{Microsoft.Azure.WebJobs.ActorId}@)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#IsLocked(System.Collections.Generic.IReadOnlyList{Microsoft.Azure.WebJobs.EntityId}@)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#NewGuid">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#SignalEntity(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext.Microsoft#Azure#WebJobs#IDeterministicExecutionContext#StartNewOrchestration(System.String,System.Object,System.String)">
             <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityContext">
+            <summary>
+            Context object passed to application code executing entity operations.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient">
             <summary>
@@ -281,7 +103,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object,System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#SignalEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object,System.String,System.String)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
@@ -371,13 +193,13 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#ContinueAsNew(System.Object,System.Boolean)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallEntityAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#CallEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.ActorId[])">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.EntityId[])">
             <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension">
@@ -471,6 +293,73 @@
             <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
             <param name="configure">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions"/>.</param>
             <returns>Returns the modified <paramref name="builder"/> object.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage">
+            <summary>
+            A message that represents an operation request or a lock request.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Operation">
+            <summary>
+            The name of the operation being called (if this is an operation message) or <c>null</c>
+            (if this is a lock request).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.IsSignal">
+            <summary>
+            Whether or not this is a one-way message.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Input">
+            <summary>
+            The operation input.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Id">
+            <summary>
+            A unique identifier for this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentInstanceId">
+            <summary>
+            The parent instance that called this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.LockSet">
+            <summary>
+            For lock requests, the set of locks being acquired. Is sorted,
+            contains at least one element, and has no repetitions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Position">
+            <summary>
+            For lock requests involving multiple locks, the message number.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState">
+            <summary>
+            The persisted state of an entity scheduler, as handed forward between ContinueAsNew instances.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.EntityExists">
+            <summary>
+            Whether this entity exists or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.EntityState">
+            <summary>
+            The serialized entity state. This can be stale while CurrentStateView != null.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Queue">
+            <summary>
+            The queue of waiting operations, or null if none.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
+            <summary>
+            The instance id of the orchestration that currently holds the lock of this entity.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
@@ -643,17 +532,17 @@
             Task activity implementation which delegates the implementation to a function.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActorShim">
-            <summary>
-            Implements the actor scheduler as a looping orchestration.
-            There is one such orchestration per actor.
-            The orchestration terminates if the actor is deleted and idle.
-            The orchestration calls ContinueAsNew when it is idle, but not deleted.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskCommonShim">
             <summary>
-            Common functionality of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActorShim"/> and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim"/>.
+            Common functionality of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim"/> and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim">
+            <summary>
+            Implements the entity scheduler as a looping orchestration.
+            There is one such orchestration per entity.
+            The orchestration terminates if the entity is deleted and idle.
+            The orchestration calls ContinueAsNew when it is idle, but not deleted.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">
@@ -1081,9 +970,30 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.EntityStatus">
             <summary>
-            The exception that is thrown when application code violates the locking rules.
+            Information about the current status of an entity. Excludes potentially large data
+            (such as the entity state, or the contents of the queue) so it can always be read with low latency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.EntityStatus.EntityExists">
+            <summary>
+            Whether this entity exists or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.EntityStatus.QueueSize">
+            <summary>
+            The size of the queue, i.e. the number of operations that are waiting for the current operation to complete.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.EntityStatus.LockedBy">
+            <summary>
+            The instance id of the orchestration that currently holds the lock of this entity.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.EntityStatus.CurrentOperation">
+            <summary>
+            The operation that is currently executing on this entity.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableContextExtensions">
@@ -1297,24 +1207,24 @@
             The external event was not received before the timeout expired.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallEntityAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.EntityId,System.String)">
             <summary>
-            Calls an operation on an actor and returns the result asynchronously.
+            Calls an operation on an entity and returns the result asynchronously.
             </summary>
             <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
             <param name="context">The context object.</param>
-            <param name="actorId">The target actor.</param>
+            <param name="entityId">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
             <returns>A task representing the result of the operation.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallActorAsync(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CallEntityAsync(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.EntityId,System.String)">
             <summary>
-            Calls an operation on an actor and waits for it to complete.
+            Calls an operation on an entity and waits for it to complete.
             </summary>
             <param name="context">The context object.</param>
-            <param name="actorId">The target actor.</param>
+            <param name="entityId">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
-            <returns>A task representing the completion of the operation on the actor.</returns>
+            <returns>A task representing the completion of the operation on the entity.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.Net.Http.HttpRequestMessage,System.String)">
             <summary>
@@ -1399,18 +1309,18 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.IDeterministicExecutionContext">
             <summary>
-            Functionality available in all deterministic execution contexts, such as orchestrations or actor operations.
+            Functionality available in all deterministic execution contexts, such as orchestrations or entity operations.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.CurrentUtcDateTime">
             <summary>
-            Gets the current date/time in a way that is safe for use in orchestrations and actor operations.
+            Gets the current date/time in a way that is safe for use in orchestrations and entity operations.
             </summary>
             <remarks>
-            This date/time value is derived from the orchestration or actor history. It always returns the same value
+            This date/time value is derived from the orchestration or entity history. It always returns the same value
             at specific points in the orchestrator function code, making it deterministic and safe for replay.
             </remarks>
-            <value>The orchestration or actor's current date/time in UTC.</value>
+            <value>The orchestration or entity's current date/time in UTC.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.IsReplaying">
             <summary>
@@ -1425,7 +1335,7 @@
             <c>true</c> if the orchestration or operation is currently being replayed; otherwise <c>false</c>.
             </value>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.IsLocked(System.Collections.Generic.IReadOnlyList{Microsoft.Azure.WebJobs.ActorId}@)">
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.IsLocked(System.Collections.Generic.IReadOnlyList{Microsoft.Azure.WebJobs.EntityId}@)">
             <summary>
             Determines whether the current context is locked, and if so, what locks are currently owned.
             </summary>
@@ -1487,13 +1397,13 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.SignalEntity(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
             <summary>
-            Signals an actor to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+            Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
             </summary>
-            <param name="actor">The target actor.</param>
+            <param name="entity">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content for the operation.</param>
+            <param name="operationInput">The input for the operation.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDeterministicExecutionContext.StartNewOrchestration(System.String,System.Object,System.String)">
             <summary>
@@ -1532,82 +1442,94 @@
             <typeparam name="T">Any data contract type that matches the JSON input.</typeparam>
             <returns>The deserialized input value.</returns>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.IDurableActorContext">
+        <member name="T:Microsoft.Azure.WebJobs.IDurableEntityContext">
             <summary>
-            Provides functionality for application code implementing an actor operation.
+            Provides functionality for application code implementing an entity operation.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.ActorClass">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.EntityName">
             <summary>
-            Gets the class of the currently executing actor.
+            Gets the name of the currently executing entity.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.Key">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.Key">
             <summary>
-            Gets the key of the currently executing actor.
+            Gets the key of the currently executing entity.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.Self">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.Self">
             <summary>
-            Gets an actor reference for the currently executing actor.
+            Gets an entity id for the currently executing entity.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.OperationName">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.OperationName">
             <summary>
             Gets the name of the operation that was called.
             </summary>
             <remarks>
-            An operation invocation on an actor includes an operation name, which states what
-            operation to perform, and optionally an operation content, which
-            provides an input argument to the operation.
+            An operation invocation on an entity includes an operation name, which states what
+            operation to perform, and optionally an operation input.
             </remarks>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableActorContext.IsNewlyConstructed">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.IsNewlyConstructed">
             <summary>
-            Whether this actor is freshly constructed, i.e. did not exist prior to this operation being called.
+            Whether this entity is freshly constructed, i.e. did not exist prior to this operation being called.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetState``1(Newtonsoft.Json.Formatting,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.GetState``1">
             <summary>
-            Gets a typed view of the state, by deserializing the JSON.
+            Gets the current state of this entity, for reading and/or updating.
             </summary>
-            <typeparam name="TState">The JSON-serializable type of the actor state.</typeparam>
-            <returns>A typed view that allows reading and updating.</returns>
+            <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
+            <returns>The current state of this entity.</returns>
+            <exception cref="T:System.InvalidCastException">If the current state has an incompatible type.</exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent``1">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.SetState(System.Object)">
             <summary>
-            Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
+            Sets the current state of this entity.
             </summary>
-            <typeparam name="T">The JSON-serializable type used for the operation content.</typeparam>
-            <returns>The operation content, or default(<typeparamref name="T"/>) if none.</returns>
+            <param name="state">The JSON-serializable state of the entity.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.GetInput``1">
+            <summary>
+            Gets the input for this operation, as a deserialized value.
+            </summary>
+            <typeparam name="T">The JSON-serializable type used for the operation input.</typeparam>
+            <returns>The operation input, or default(<typeparamref name="T"/>) if none.</returns>
             <remarks>
-            An operation invocation on an actor includes an operation name, which states what
-            operation to perform, and optionally an operation content, which
-            provides an input argument to the operation.
+            An operation invocation on an entity includes an operation name, which states what
+            operation to perform, and optionally an operation input.
             </remarks>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.GetOperationContent(System.Type)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.GetInput(System.Type)">
             <summary>
-            Gets the content (operation input) that was passed passed along when this operation was called, as a deserialized value.
+            Gets the input for this operation, as a deserialized value.
             </summary>
-            <param name="contentType">The JSON-serializable type used for the operation content.</param>
-            <returns>The operation content, or default(<paramref name="contentType"/>) if none.</returns>
+            <param name="inputType">The JSON-serializable type used for the operation input.</param>
+            <returns>The operation input, or default(<paramref name="inputType"/>) if none.</returns>
             <remarks>
-            An operation invocation on an actor includes an operation name, which states what
-            operation to perform, and optionally an operation content, which
-            provides an input argument to the operation.
+            An operation invocation on an entity includes an operation name, which states what
+            operation to perform, and optionally an operation input.
             </remarks>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.Return(System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.Return(System.Object)">
             <summary>
             Returns the given result to the caller of this operation.
             </summary>
             <param name="result">the result to return.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableActorContext.DestructOnExit">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.DestructOnExit">
             <summary>
-            Deletes this actor after this operation completes.
+            Deletes this entity after this operation completes.
             </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.IDurableEntityContext.SignalEntity(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
+            <summary>
+            Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+            </summary>
+            <param name="entity">The target entity.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationInput">The operation input.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.IDurableOrchestrationClient">
             <summary>
@@ -1716,28 +1638,27 @@
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the event notification message has been enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.SignalActor(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object,System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.SignalEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object,System.String,System.String)">
             <summary>
-            Signals an actor to perform an operation.
+            Signals an entity to perform an operation.
             </summary>
-            <param name="actorId">The target actor.</param>
+            <param name="entityId">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content for the operation.</param>
-            <param name="taskHubName">The TaskHubName of the target actor.</param>
+            <param name="operationInput">The input for the operation.</param>
+            <param name="taskHubName">The TaskHubName of the target entity.</param>
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadActorState``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.String,Newtonsoft.Json.JsonSerializerSettings)">
+        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)">
             <summary>
-            Tries to read the current state of an actor. Returns default(<typeparamref name="T"/>) if the actor does not
-            exist, or if the JSON-serialized state of the actor is larger than 16KB.
+            Tries to read the current state of an entity. Returns default(<typeparamref name="T"/>) if the entity does not
+            exist, or if the JSON-serialized state of the entity is larger than 16KB.
             </summary>
-            <typeparam name="T">The JSON-serializable type of the actor.</typeparam>
-            <param name="actorId">The target actor.</param>
-            <param name="taskHubName">The TaskHubName of the target actor.</param>
+            <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
+            <param name="entityId">The target entity.</param>
+            <param name="taskHubName">The TaskHubName of the target entity.</param>
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
-            <param name="settings">The settings to use for deserializing the JSON state.</param>
-            <returns>a response containing the current state of the actor.</returns>
+            <returns>a response containing the current state of the entity.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.TerminateAsync(System.String,System.String)">
             <summary>
@@ -1879,36 +1800,31 @@
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.IInterleavingActorContext">
-            <summary>
-            Provides functionality available to actor operations running in interleaving mode.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.IInterleavingContext">
             <summary>
-            Provides functionality available to orchestration code and reentrant actor code.
+            Provides functionality available to orchestration code and reentrant entity code.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync``1(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallEntityAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
             <summary>
-            Calls an operation on an actor, passing an argument, and returns the result asynchronously.
+            Calls an operation on an entity, passing an argument, and returns the result asynchronously.
             </summary>
             <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
-            <param name="actorId">The target actor.</param>
+            <param name="entityId">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content (input argument) of the operation.</param>
+            <param name="operationInput">The input for the operation.</param>
             <returns>A task representing the result of the operation.</returns>
-            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="entityId"/>.</exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallActorAsync(Microsoft.Azure.WebJobs.ActorId,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object)">
             <summary>
-            Calls an operation on an actor, passing an argument, and waits for it to complete.
+            Calls an operation on an entity, passing an argument, and waits for it to complete.
             </summary>
-            <param name="actorId">The target actor.</param>
+            <param name="entityId">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
-            <param name="operationContent">The content for the operation.</param>
-            <returns>A task representing the completion of the operation on the actor.</returns>
-            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+            <param name="operationInput">The input for the operation.</param>
+            <returns>A task representing the completion of the operation on the entity.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="entityId"/>.</exception>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.CallSubOrchestratorAsync``1(System.String,System.String,System.Object)">
             <summary>
@@ -2010,37 +1926,16 @@
             <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
             if the timeout expires.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.LockAsync(Microsoft.Azure.WebJobs.ActorId[])">
+        <member name="M:Microsoft.Azure.WebJobs.IInterleavingContext.LockAsync(Microsoft.Azure.WebJobs.EntityId[])">
             <summary>
-            Acquires one or more locks, for the specified actors.
+            Acquires one or more locks, for the specified entities.
             </summary>
             <remarks>
             Locks can only be acquired if the current context does not hold any locks already.
             </remarks>
-            <param name="actors">The actors whose locks should be acquired.</param>
+            <param name="entities">The entities whose locks should be acquired.</param>
             <returns>An IDisposable that releases the lock when disposed.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks.</exception>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.IStateView`1">
-            <summary>
-            A typed view of the current state of the actor.
-            </summary>
-            <typeparam name="TState">The JSON-serializable type used for this actor.</typeparam>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.IStateView`1.Value">
-            <summary>
-            The current state of the actor.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.IStateView">
-            <summary>
-            A view of the current state of the actor.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.IStateView.WriteBack">
-            <summary>
-            Serializes the current state to JSON.
-            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
@@ -2138,6 +2033,90 @@
             <value>
             The output as a <c>JArray</c> object or <c>null</c>.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus">
+            <summary>
+            Information about the current status of an operation executing on an entity.
+            Excludes potentially large data (such as the operation input) so it can be read with low latency.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus.Operation">
+            <summary>
+            The name of the operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus.Id">
+            <summary>
+            The unique identifier for this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus.ParentInstanceId">
+            <summary>
+            The parent instance that called this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus.StartTime">
+            <summary>
+            The UTC time at which the entity started processing this operation.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.EntityId">
+            <summary>
+            A unique identifier for an entity, consisting of entity name and entity key.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntityId.#ctor(System.String,System.String)">
+            <summary>
+            Create an entity id for an entity.
+            </summary>
+            <param name="entityName">The name of this class of entities.</param>
+            <param name="entityKey">The entity key.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityId.EntityName">
+            <summary>
+            The name for this class of entities.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityId.EntityKey">
+            <summary>
+            The entity key. Uniquely identifies an entity among all entities of the same name.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntityId.ToString">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntityId.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntityId.Equals(Microsoft.Azure.WebJobs.EntityId)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntityId.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntityId.CompareTo(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.EntityStateResponse`1">
+            <summary>
+            The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)"/>.
+            </summary>
+            <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityStateResponse`1.EntityExists">
+            <summary>
+            Whether this entity exists or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityStateResponse`1.EntityState">
+            <summary>
+            The current state of the entity, if it exists, or default(<typeparamref name="T"/>) otherwise.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">
+            <summary>
+            The exception that is thrown when application code violates the locking rules.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.FunctionFailedException">
             <summary>
@@ -2437,20 +2416,20 @@
             The name of the activity function or <c>null</c> to use the function name.
             </value>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.ActorTriggerAttribute">
+        <member name="T:Microsoft.Azure.WebJobs.EntityTriggerAttribute">
             <summary>
-            Trigger attribute used for durable actor functions.
+            Trigger attribute used for durable entity functions.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.ActorTriggerAttribute.ActorClassName">
+        <member name="P:Microsoft.Azure.WebJobs.EntityTriggerAttribute.EntityName">
             <summary>
-            Gets or sets the name of the actor class.
+            Gets or sets the name of the entity.
             </summary>
             <remarks>
-            If not specified, the function name is used as the name of the actor class.
+            If not specified, the function name is used as the name of the entity.
             </remarks>
             <value>
-            The name of the actor class or <c>null</c> to use the function name.
+            The name of the entity or <c>null</c> to use the function name.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute">

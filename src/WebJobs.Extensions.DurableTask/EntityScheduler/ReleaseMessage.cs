@@ -15,5 +15,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         [JsonProperty(PropertyName = "id")]
         public string LockRequestId { get; set; }
+
+        public override string ToString()
+        {
+            return $"[Release lock {this.LockRequestId} by {this.ParentInstanceId}]";
+        }
     }
 }

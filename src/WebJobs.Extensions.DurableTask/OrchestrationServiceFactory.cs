@@ -12,21 +12,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class OrchestrationServiceFactory : IOrchestrationServiceFactory
     {
-        private IOrchestrationServiceFactory innerFactory;
+        private Lazy<IOrchestrationServiceFactory> innerFactory;
 
         public OrchestrationServiceFactory(
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver)
         {
-            var configuredProvider = options.Value.StorageProvider.GetConfiguredProvider();
+            this.innerFactory = new Lazy<IOrchestrationServiceFactory>(() => GetInnerFactory(options.Value, connectionStringResolver));
+        }
+
+        private static IOrchestrationServiceFactory GetInnerFactory(DurableTaskOptions options, IConnectionStringResolver connectionStringResolver)
+        {
+            var configuredProvider = options.StorageProvider.GetConfiguredProvider();
             switch (configuredProvider)
             {
                 case AzureStorageOptions azureStorageOptions:
-                    this.innerFactory = new AzureStorageOrchestrationServiceFactory(options.Value, connectionStringResolver);
-                    break;
+                    return new AzureStorageOrchestrationServiceFactory(options, connectionStringResolver);
                 case EmulatorStorageOptions emulatorStorageOptions:
-                    this.innerFactory = new EmulaterOrchestrationServiceFactory(options.Value);
-                    break;
+                    return new EmulaterOrchestrationServiceFactory(options);
                 default:
                     throw new InvalidOperationException($"{configuredProvider.GetType()} is not a supported storage provider.");
             }
@@ -34,12 +37,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public IOrchestrationService GetOrchestrationService()
         {
-            return this.innerFactory.GetOrchestrationService();
+            return this.innerFactory.Value.GetOrchestrationService();
         }
 
         public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
         {
-            return this.innerFactory.GetOrchestrationClient(attribute);
+            return this.innerFactory.Value.GetOrchestrationClient(attribute);
         }
 
         private static StorageAccountDetails GetStorageAccountDetailsOrNull(IConnectionStringResolver connectionStringResolver, string connectionName)

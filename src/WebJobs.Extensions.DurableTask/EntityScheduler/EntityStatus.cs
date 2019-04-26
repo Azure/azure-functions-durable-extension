@@ -9,16 +9,16 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions
 {
     /// <summary>
-    /// Information about the current status of an actor. Excludes potentially large data
-    /// (such as the actor state, or the contents of the queue) so it can always be read with low latency.
+    /// Information about the current status of an entity. Excludes potentially large data
+    /// (such as the entity state, or the contents of the queue) so it can always be read with low latency.
     /// </summary>
-    public class ActorStatus
+    public class EntityStatus
     {
         /// <summary>
-        /// Whether this actor exists or not.
+        /// Whether this entity exists or not.
         /// </summary>
-        [JsonProperty(PropertyName = "actorExists", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool ActorExists { get; set; }
+        [JsonProperty(PropertyName = "entityExists", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool EntityExists { get; set; }
 
         /// <summary>
         /// The size of the queue, i.e. the number of operations that are waiting for the current operation to complete.
@@ -27,15 +27,15 @@ namespace Microsoft.Azure.WebJobs.Extensions
         public int QueueSize { get; set; }
 
         /// <summary>
-        /// The instance id of the orchestration that currently holds the lock of this actor.
+        /// The instance id of the orchestration that currently holds the lock of this entity.
         /// </summary>
         [JsonProperty(PropertyName = "lockedBy", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string LockedBy { get; set; }
 
         /// <summary>
-        /// The operation that is currently executing on this actor.
+        /// The operation that is currently executing on this entity.
         /// </summary>
         [JsonProperty(PropertyName = "currentOperation", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public ActorCurrentOperationStatus CurrentOperation { get; set; }
+        public EntityCurrentOperationStatus CurrentOperation { get; set; }
     }
 }

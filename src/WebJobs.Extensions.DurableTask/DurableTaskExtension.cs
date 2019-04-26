@@ -3,15 +3,18 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
+using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host;
@@ -44,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownOrchestrators =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
-        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActors =
+        private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownEntities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
@@ -139,12 +142,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
-            context.AddBindingRule<ActorTriggerAttribute>()
-                .BindToTrigger(new ActorTriggerAttributeBindingProvider(this, context, this.TraceHelper));
+            context.AddBindingRule<EntityTriggerAttribute>()
+                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
             this.orchestrationService = this.orchestrationServiceFactory.GetOrchestrationService();
 
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
+            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
 
@@ -209,7 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (name.StartsWith("@"))
             {
-                return new TaskActorShim(this, name);
+                return new TaskEntityShim(this, name);
             }
             else
             {
@@ -253,7 +257,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            TaskCommonShim shim = (TaskCommonShim)dispatchContext.GetProperty<TaskOrchestration>();
+            TaskOrchestrationShim shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
+            if (shim == null)
+            {
+                // This is not an orchestration - skip.
+                await next();
+                return;
+            }
+
             DurableCommonContext context = shim.Context;
 
             OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
@@ -264,6 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance.InstanceId;
+            context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance.ExecutionId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.RawInput = orchestrationRuntimeState.Input;
@@ -321,15 +333,107 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await context.RunDeferredTasks();
         }
 
+        private async Task EntityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            var entityShim = dispatchContext.GetProperty<TaskOrchestration>() as TaskEntityShim;
+            if (entityShim == null)
+            {
+                // This is not an entity - skip.
+                await next();
+                return;
+            }
+
+            OrchestrationRuntimeState runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
+            DurableEntityContext entityContext = (DurableEntityContext)entityShim.Context;
+            entityContext.InstanceId = runtimeState.OrchestrationInstance.InstanceId;
+            entityContext.ExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
+            entityContext.History = runtimeState.Events;
+            entityContext.RawInput = runtimeState.Input;
+
+            // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+            FunctionResult result = await entityShim.GetFunctionInfo().Executor.TryExecuteAsync(
+                new TriggeredFunctionData
+                {
+                    TriggerValue = entityShim.Context,
+
+#pragma warning disable CS0618 // Approved for use by this extension
+                    InvokeHandler = async userCodeInvoker =>
+                    {
+                        entityShim.SetFunctionInvocationCallback(userCodeInvoker);
+
+                        try
+                        {
+                            // 2. Load all the external events into the entity shim
+                            foreach (HistoryEvent e in runtimeState.Events)
+                            {
+                                switch (e.EventType)
+                                {
+                                    case EventType.OrchestratorStarted:
+                                        entityContext.CurrentOperationStartTime = e.Timestamp;
+                                        break;
+                                    case EventType.ExecutionStarted:
+                                        entityShim.Rehydrate(runtimeState.Input);
+                                        break;
+                                    case EventType.EventRaised:
+                                        EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
+                                        this.TraceHelper.DeliveringEntityMessage(
+                                            entityContext.InstanceId,
+                                            entityContext.ExecutionId,
+                                            e.EventId,
+                                            eventRaisedEvent.Name,
+                                            eventRaisedEvent.Input);
+                                        entityShim.ProcessMessage(eventRaisedEvent.Name, eventRaisedEvent.Input);
+                                        break;
+                                }
+                            }
+
+                            // 3. Wait for all the queued entity operations to complete
+                            await entityShim.WaitForLastOperation();
+
+                            // 4. Run the scheduler orchestration so that state can be persisted.
+                            await next();
+                        }
+                        catch (Exception e)
+                        {
+                            // something went wrong in our code (application exceptions don't make it here)
+
+                            string exceptionDetails = e.ToString();
+
+                            if (!entityContext.IsReplaying)
+                            {
+                                entityContext.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                                    entityContext.HubName,
+                                    entityContext.Name,
+                                    entityContext.InstanceId,
+                                    exceptionDetails,
+                                    entityContext.IsReplaying));
+                            }
+
+                            var entitySchedulerExceptions = new OrchestrationFailureException(
+                                $"Entity scheduler {entityShim.EntityId} failed: {e.Message}",
+                                Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+
+                            entityContext.OrchestrationException = ExceptionDispatchInfo.Capture(entitySchedulerExceptions);
+
+                            throw entitySchedulerExceptions;
+                        }
+                    },
+#pragma warning restore CS0618
+                },
+                CancellationToken.None);
+
+            await entityContext.RunDeferredTasks();
+        }
+
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
         {
             this.knownOrchestrators.TryGetValue(orchestratorFunction, out var info);
             return info;
         }
 
-        internal RegisteredFunctionInfo GetActorInfo(FunctionName actorFunction)
+        internal RegisteredFunctionInfo GetEntityInfo(FunctionName entityFunction)
         {
-            this.knownActors.TryGetValue(actorFunction, out var info);
+            this.knownEntities.TryGetValue(entityFunction, out var info);
             return info;
         }
 
@@ -449,40 +553,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void RegisterActor(FunctionName actorFunction, RegisteredFunctionInfo actorInfo)
+        internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
-            if (actorInfo != null)
+            if (entityInfo != null)
             {
-                actorInfo.IsDeregistered = false;
+                entityInfo.IsDeregistered = false;
             }
 
-            if (this.knownActors.TryAdd(actorFunction, actorInfo))
+            if (this.knownEntities.TryAdd(entityFunction, entityInfo))
             {
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
-                    functionName: actorFunction.Name,
-                    message: $"Registered actor function named {actorFunction}.",
+                    functionName: entityFunction.Name,
+                    message: $"Registered entity function named {entityFunction}.",
                     writeToUserLogs: false);
             }
             else
             {
-                this.knownActors[actorFunction] = actorInfo;
+                this.knownEntities[entityFunction] = entityInfo;
             }
         }
 
-        internal void DeregisterActor(FunctionName actorFunction)
+        internal void DeregisterEntity(FunctionName entityFunction)
         {
             RegisteredFunctionInfo existing;
-            if (this.knownOrchestrators.TryGetValue(actorFunction, out existing) && !existing.IsDeregistered)
+            if (this.knownOrchestrators.TryGetValue(entityFunction, out existing) && !existing.IsDeregistered)
             {
                 existing.IsDeregistered = true;
 
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
-                    functionName: actorFunction.Name,
-                    message: $"Deregistered actor function named {actorFunction}.",
+                    functionName: entityFunction.Name,
+                    message: $"Deregistered entity function named {entityFunction}.",
                     writeToUserLogs: false);
             }
         }

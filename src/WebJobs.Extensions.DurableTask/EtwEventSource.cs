@@ -278,7 +278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [Event(217, Level = EventLevel.Informational)]
-        public void ActorOperationQueued(
+        public void EntityOperationQueued(
             string TaskHub,
             string AppName,
             string SlotName,
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [Event(218, Level = EventLevel.Informational)]
-        public void ActorResponseReceived(
+        public void EntityResponseReceived(
             string TaskHub,
             string AppName,
             string SlotName,
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [Event(219, Level = EventLevel.Informational)]
-        public void ActorLockAcquired(
+        public void EntityLockAcquired(
             string TaskHub,
             string AppName,
             string SlotName,
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [Event(220, Level = EventLevel.Informational)]
-        public void ActorLockReleased(
+        public void EntityLockReleased(
             string TaskHub,
             string AppName,
             string SlotName,

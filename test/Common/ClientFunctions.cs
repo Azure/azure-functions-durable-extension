@@ -44,5 +44,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceId,
                 instanceCreationTime);
         }
+
+        [NoAutomaticTrigger]
+        public static void GetEntityClient(
+            [OrchestrationClient] IDurableOrchestrationClient client,
+            EntityId entityId,
+            TestEntityClient[] clientRef)
+        {
+            // Give a client object created via the binding back to the caller
+            clientRef[0] = new TestEntityClient(client, entityId);
+        }
     }
 }
