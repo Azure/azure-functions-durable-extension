@@ -2288,7 +2288,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple entity scenario involving a signal and two calls.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_SignalAndCallStringStore(bool extendedSessions)
@@ -2326,7 +2326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple entity scenario involving creation and deletion.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_StringStoreWithCreateDelete(bool extendedSessions)
@@ -2359,7 +2359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// until the signal is delivered.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_SignalThenPoll(bool extendedSessions)
@@ -2395,8 +2395,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple entity scenario where an entity's state is
         /// larger than what fits into Azure table rows.
         /// </summary>
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Theory(Skip = "needs fix (#719)")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_LargeEntity(bool extendedSessions)
@@ -2437,7 +2437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// At the end, it validates that all of the appends are reflected in the final state.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
@@ -2494,7 +2494,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// a lock on the same entity. This tests that the lock prevents the interleaving of these orchestrations.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_LockedIncrements(bool extendedSessions)
@@ -2547,7 +2547,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// a read-modify-write pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_SingleLockedTransfer(bool extendedSessions)
@@ -2589,7 +2589,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// This showcases the deadlock prevention mechanism achieved by the sequential, ordered lock acquisition.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, 5)]
         [InlineData(false, 5)]
         public async Task DurableEntity_MultipleLockedTransfers(bool extendedSessions, int numberEntities)
@@ -2666,6 +2666,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Test which validates that actors can safely make async I/O calls.
         /// </summary>
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task DurableEntity_AsyncIO()
         {
             using (var host = TestHelpers.GetJobHost(
