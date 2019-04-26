@@ -34,5 +34,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             output.WriteLine($"Started {functionName}, Instance ID = {client.InstanceId}");
             return client;
         }
+
+        public static async Task<TestEntityClient> GetEntityClientAsync(
+            this JobHost host,
+            EntityId entityId,
+            ITestOutputHelper output)
+        {
+            var startFunction = typeof(ClientFunctions)
+                .GetMethod(nameof(ClientFunctions.GetEntityClient));
+
+            var clientRef = new TestEntityClient[1];
+            var args = new Dictionary<string, object>
+            {
+                { "entityId", entityId },
+                { "clientRef", clientRef },
+            };
+
+            await host.CallAsync(startFunction, args);
+            TestEntityClient client = clientRef[0];
+            return client;
+        }
     }
 }

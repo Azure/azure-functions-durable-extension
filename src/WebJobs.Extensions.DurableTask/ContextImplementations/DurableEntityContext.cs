@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+using DurableTask.Core;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -18,8 +15,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly EntityId self;
 
+        private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
+
         public DurableEntityContext(DurableTaskExtension config, EntityId entity)
-         : base(config, entity.EntityName)
+            : base(config, entity.EntityName)
         {
             this.self = entity;
         }
@@ -122,6 +121,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        void IDurableEntityContext.SignalEntity(EntityId entity, string operationName, object operationInput)
+        {
+            this.ThrowIfInvalidAccess();
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signalling entities is synchronous");
+            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+        }
+
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
@@ -134,8 +141,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException("No operation is being processed.");
             }
+        }
 
-            base.ThrowIfInvalidAccess();
+        internal override void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
+        {
+            lock (this.outbox)
+            {
+                this.outbox.Add(new OutgoingMessage()
+                {
+                    Target = target,
+                    EventName = eventName,
+                    EventContent = eventContent,
+                });
+            }
+        }
+
+        internal void SendOutbox(OrchestrationContext innerContext)
+        {
+            lock (this.outbox)
+            {
+                foreach (var message in this.outbox)
+                {
+                    this.Config.TraceHelper.SendingEntityMessage(
+                        this.InstanceId,
+                        this.ExecutionId,
+                        message.Target.InstanceId,
+                        message.EventName,
+                        message.EventContent);
+
+                    innerContext.SendEvent(message.Target, message.EventName, message.EventContent);
+                }
+
+                this.outbox.Clear();
+            }
+        }
+
+        internal override Guid NewGuid()
+        {
+            return Guid.NewGuid();
+        }
+
+        private struct OutgoingMessage
+        {
+            public OrchestrationInstance Target;
+            public string EventName;
+            public object EventContent;
         }
     }
 }

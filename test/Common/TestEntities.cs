@@ -3,16 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestEntities
     {
+        private static readonly HttpClient SharedHttpClient = new HttpClient();
+
         //-------------- a very simple entity that stores a string -----------------
         // it offers two operations:
         // "set" (takes a string, assigns it to the current state, does not return anything)
@@ -209,36 +212,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // "get" returns the current value
         // "deactivate" destructs the entity (after saving its current state in the backing storage)
 
-        public static async Task BlobBackedTextStoreEntity([EntityTrigger(EntityName = "BlobBackedTextStore")] IDurableEntityContext context)
+        public static async Task BlobBackedTextStoreEntity(
+            [EntityTrigger(EntityName = "BlobBackedTextStore")] IDurableEntityContext context)
         {
             if (context.IsNewlyConstructed)
             {
                 // try to load state from existing blob
-                var currentFileContent = await context.CallActivityAsync<string>(
-                         nameof(TestActivities.LoadStringFromTextBlob),
+                var currentFileContent = await TestHelpers.LoadStringFromTextBlobAsync(
                          context.Key);
                 context.SetState(new StringBuilder(currentFileContent ?? ""));
             }
 
+            var state = context.GetState<StringBuilder>();
+
             switch (context.OperationName)
             {
                 case "clear":
-                    context.GetState<StringBuilder>().Clear();
+                    state.Clear();
                     break;
 
                 case "append":
-                    context.GetState<StringBuilder>().Append(context.GetInput<string>());
+                    state.Append(context.GetInput<string>());
                     break;
 
                 case "get":
-                    context.Return(context.GetState<StringBuilder>().ToString());
+                    context.Return(state.ToString());
                     break;
 
                 case "deactivate":
                     // first, store the current value in a blob
-                    await context.CallActivityAsync(
-                        nameof(TestActivities.WriteStringToTextBlob),
-                        (context.Key, context.GetState<StringBuilder>().ToString()));
+                    await TestHelpers.WriteStringToTextBlob(
+                        context.Key, state.ToString());
 
                     // then, destruct this entity (and all of its state)
                     context.DestructOnExit();
@@ -246,6 +250,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 default:
                     throw new NotImplementedException("no such operation");
+            }
+        }
+
+        public static async Task HttpEntity(
+            [EntityTrigger(EntityName = "HttpEntity")] IDurableEntityContext context,
+            ILogger log)
+        {
+            if (context.IsNewlyConstructed)
+            {
+                context.SetState(new Dictionary<string, int>());
+            }
+
+            Dictionary<string, int> callHistory = context.GetState<Dictionary<string, int>>();
+
+            string requestUri = context.GetInput<string>();
+
+            log.LogInformation($"Calling {requestUri}");
+
+            int statusCode = await CallHttpAsync(requestUri);
+            callHistory.Add(requestUri, statusCode);
+        }
+
+        private static async Task<int> CallHttpAsync(string requestUri)
+        {
+            using (HttpResponseMessage response = await SharedHttpClient.GetAsync(requestUri))
+            {
+                return (int)response.StatusCode;
             }
         }
 
@@ -284,7 +315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // an operation that adds a message to the chat
             public DateTime Post(IDurableEntityContext ctx, string content)
             {
-                var timestamp = ctx.CurrentUtcDateTime;
+                var timestamp = DateTime.UtcNow;
                 this.ChatEntries.Add(timestamp, content);
                 return timestamp;
             }

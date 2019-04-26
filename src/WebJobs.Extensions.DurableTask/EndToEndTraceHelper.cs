@@ -157,8 +157,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     this.logger.LogInformation(
-                        "{instanceId}: Function '{functionName} ({functionType})' started. IsReplay: {isReplay}. OperationName: {operationName}. OperationId: {operationId}. Input: {input}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                        instanceId, functionName, functionType, isReplay, operationName, operationId, input, FunctionState.Started, hubName,
+                        "{instanceId}: Function '{functionName} ({functionType})' started '{operationName}' operation {operationId}. IsReplay: {isReplay}. Input: {input}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        instanceId, functionName, functionType, operationName, operationId, isReplay, input, FunctionState.Started, hubName,
                         LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
                 }
             }
@@ -197,8 +197,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     this.logger.LogInformation(
-                        "{instanceId}: Function '{functionName} ({functionType})' awaited. IsReplay: {isReplay}. OperationName: {operationName}. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                        instanceId, functionName, functionType, isReplay, operationName, operationId, FunctionState.Awaited, hubName, LocalAppName,
+                        "{instanceId}: Function '{functionName} ({functionType})' awaited '{operationName}' operation {operationId}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        instanceId, functionName, functionType, operationName, operationId, isReplay, FunctionState.Awaited, hubName, LocalAppName,
                         LocalSlotName, ExtensionVersion, this.sequenceNumber++);
                 }
             }
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     this.logger.LogInformation(
-                        "{instanceId}: Function '{functionName} ({functionType})' completed. OperationName: {operationName}. OperationId: {operationId}. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        "{instanceId}: Function '{functionName} ({functionType})' completed '{operationName}' operation {operationId}. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                         instanceId, functionName, functionType, operationName, operationId, continuedAsNew, isReplay, output, FunctionState.Completed,
                         hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
                 }
@@ -357,8 +357,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     this.logger.LogError(
-                        "{instanceId}: Function '{functionName} ({functionType})' failed with an error. Reason: {reason}. OperationName: {operationName}. OperationId: {operationId}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                        instanceId, functionName, functionType, reason, operationName, operationId, isReplay, FunctionState.Failed, hubName,
+                        "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        instanceId, functionName, functionType, operationName, operationId, reason, isReplay, FunctionState.Failed, hubName,
                         LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
                 }
             }
@@ -423,6 +423,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void DeliveringEntityMessage(
+            string instanceId,
+            string executionId,
+            int eventId,
+            string eventName,
+            object eventContent)
+        {
+            this.logger.LogInformation(
+                              "{instanceId}: delivering message: {eventName} {eventContent} EventId: {eventId} ExecutionId: {executionId} SequenceNumber: {sequenceNumber}.",
+                              instanceId, eventName, eventContent, eventId, executionId, this.sequenceNumber++);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void SendingEntityMessage(
+            string instanceId,
+            string executionId,
+            string targetInstanceId,
+            string eventName,
+            object eventContent)
+        {
+            this.logger.LogInformation(
+                              "{instanceId}: sending message: {eventName} {eventContent}  TargetInstanceId: {targetInstanceId} ExecutionId: {executionId} SequenceNumber: {sequenceNumber}.",
+                              instanceId, eventName, eventContent, targetInstanceId, executionId, this.sequenceNumber++);
+        }
+
         public void EntityOperationQueued(
             string hubName,
             string functionName,
@@ -448,7 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' queued '{operationName}' operation. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    "{instanceId}: Function '{functionName} ({functionType})' queued '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                     instanceId, functionName, functionType, operationName, operationId, FunctionState.ExternalEventRaised, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
@@ -457,13 +483,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void EntityResponseReceived(
             string hubName,
             string functionName,
+            FunctionType functionType,
             string instanceId,
             string operationId,
             string result,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Entity;
-
             EtwEventSource.Instance.EntityResponseReceived(
                 hubName,
                 LocalAppName,

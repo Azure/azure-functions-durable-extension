@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Provides functionality for application code implementing an entity operation.
     /// </summary>
-    public interface IDurableEntityContext : IDeterministicExecutionContext
+    public interface IDurableEntityContext
     {
         /// <summary>
         /// Gets the name of the currently executing entity.
@@ -90,5 +90,13 @@ namespace Microsoft.Azure.WebJobs
         /// Deletes this entity after this operation completes.
         /// </summary>
         void DestructOnExit();
+
+        /// <summary>
+        /// Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+        /// </summary>
+        /// <param name="entity">The target entity.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The operation input.</param>
+        void SignalEntity(EntityId entity, string operationName, object operationInput = null);
     }
 }

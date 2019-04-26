@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int Position { get; set; }
 
         [JsonIgnore]
-        public bool IsLockMessage => LockSet != null;
+        public bool IsLockMessage => this.LockSet != null;
 
         public void SetInput(object obj)
         {
@@ -84,6 +84,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public object GetInput(Type inputType)
         {
             return JsonConvert.DeserializeObject(this.Input, inputType);
+        }
+
+        public override string ToString()
+        {
+            if (this.IsLockMessage)
+            {
+                return $"[Request lock {this.Id} by {this.ParentInstanceId}, position {this.Position}]";
+            }
+            else
+            {
+                return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId}]";
+            }
         }
     }
 }

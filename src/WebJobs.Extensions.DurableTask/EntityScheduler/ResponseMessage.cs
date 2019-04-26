@@ -76,5 +76,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return MessagePayloadDataConverter.Default.Deserialize<T>(this.Result);
             }
         }
+
+        public override string ToString()
+        {
+            if (this.IsException)
+            {
+                return $"[ExceptionResponse {this.Result}]";
+            }
+            else
+            {
+                return $"[Response {this.Result}]";
+            }
+        }
     }
 }
