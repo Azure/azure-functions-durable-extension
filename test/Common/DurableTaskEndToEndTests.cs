@@ -2395,7 +2395,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates a simple entity scenario where an entity's state is
         /// larger than what fits into Azure table rows.
         /// </summary>
-        [Theory(Skip = "needs fix (#719)")]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
