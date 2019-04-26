@@ -2437,7 +2437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// At the end, it validates that all of the appends are reflected in the final state.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
