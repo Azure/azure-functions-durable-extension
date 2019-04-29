@@ -180,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task SignalEntityAsync(TaskHubClient client, string hubName, EntityId entityId, string operationName, object operationInput)
         {
-            if (string.IsNullOrEmpty(operationName))
+            if (operationName == null)
             {
                 throw new ArgumentNullException(nameof(operationName));
             }
