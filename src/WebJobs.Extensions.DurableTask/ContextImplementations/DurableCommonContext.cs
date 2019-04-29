@@ -136,6 +136,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDeterministicExecutionContext.SignalEntity(EntityId entity, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
+            if (operationName == null)
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
             alreadyCompletedTask.Wait(); // just so we see exceptions during testing
@@ -250,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     break;
 
                 case FunctionType.Entity:
-                    System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(operation), "The operation parameter is required.");
+                    System.Diagnostics.Debug.Assert(operation != null, "The operation parameter is required.");
                     System.Diagnostics.Debug.Assert(oneWay || !isEntity, "Entities cannot call entities");
                     System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for entity calls.");
                     System.Diagnostics.Debug.Assert(instanceId != null, "Entity calls need to specify the target entity.");

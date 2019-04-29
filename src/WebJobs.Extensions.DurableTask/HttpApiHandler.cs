@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string InstancesControllerSegment = "/instances/";
         private const string OrchestratorsControllerSegment = "/orchestrators/";
+        private const string EntitiesControllerSegment = "/entities/";
         private const string TaskHubParameter = "taskHub";
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
@@ -131,6 +132,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string path = request.RequestUri.AbsolutePath.TrimEnd('/');
                 int i = path.IndexOf(OrchestratorsControllerSegment, StringComparison.OrdinalIgnoreCase);
                 int nextSlash = -1;
+                if (i >= 0 && request.Method == HttpMethod.Post)
+                {
+                    string functionName;
+                    string instanceId = string.Empty;
+
+                    i += OrchestratorsControllerSegment.Length;
+                    nextSlash = path.IndexOf('/', i);
+
+                    if (nextSlash < 0)
+                    {
+                        functionName = path.Substring(i);
+                    }
+                    else
+                    {
+                        functionName = path.Substring(i, nextSlash - i);
+                        i = nextSlash + 1;
+                        instanceId = path.Substring(i);
+                    }
+
+                    return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
+                }
+
+                i = path.IndexOf(EntitiesControllerSegment, StringComparison.OrdinalIgnoreCase);
+                if (i >= 0 && (request.Method == HttpMethod.Get || request.Method == HttpMethod.Post))
+                {
+                    EntityId entityId;
+
+                    i += EntitiesControllerSegment.Length;
+                    nextSlash = path.IndexOf('/', i);
+
+                    try
+                    {
+                        if (nextSlash < 0)
+                        {
+                            entityId = new EntityId(path.Substring(i), string.Empty);
+                        }
+                        else
+                        {
+                            entityId = new EntityId(path.Substring(i, nextSlash - i), path.Substring(nextSlash + 1));
+                        }
+                    }
+                    catch (ArgumentException e)
+                    {
+                        return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message);
+                    }
+
+                    if (request.Method == HttpMethod.Get)
+                    {
+                        return await this.HandleGetEntityRequestAsync(request, entityId);
+                    }
+                    else
+                    {
+                        return await this.HandlePostEntityOperationRequestAsync(request, entityId);
+                    }
+                }
+
                 if (i >= 0 && request.Method == HttpMethod.Post)
                 {
                     string functionName;
@@ -592,6 +649,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             await client.RaiseEventAsync(instanceId, eventName, eventData);
             return request.CreateResponse(HttpStatusCode.Accepted);
+        }
+
+        private async Task<HttpResponseMessage> HandleGetEntityRequestAsync(
+            HttpRequestMessage request,
+            EntityId entityId)
+        {
+            IDurableOrchestrationClient client = this.GetClient(request);
+
+            var response = await client.ReadEntityStateAsync<JToken>(entityId);
+
+            if (!response.EntityExists)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+            else
+            {
+                return request.CreateResponse(HttpStatusCode.OK, response.EntityState);
+            }
+        }
+
+        private async Task<HttpResponseMessage> HandlePostEntityOperationRequestAsync(
+            HttpRequestMessage request,
+            EntityId entityId)
+        {
+            IDurableOrchestrationClient client = this.GetClient(request);
+
+            string operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+
+            if (request.Content == null)
+            {
+                await client.SignalEntityAsync(entityId, operationName);
+                return request.CreateResponse(HttpStatusCode.Accepted);
+            }
+            else
+            {
+                var requestContent = await request.Content.ReadAsStringAsync();
+                string mediaType = request.Content.Headers.ContentType?.MediaType;
+                object operationInput;
+                if (string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        operationInput = JToken.Parse(requestContent);
+                    }
+                    catch (JsonException e)
+                    {
+                        return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Could not parse JSON content: " + e.Message);
+                    }
+                }
+                else
+                {
+                    operationInput = requestContent;
+                }
+
+                await client.SignalEntityAsync(entityId, operationName, operationInput);
+                return request.CreateResponse(HttpStatusCode.Accepted);
+            }
         }
 
         private IDurableOrchestrationClient GetClient(HttpRequestMessage request)

@@ -124,6 +124,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.SignalEntity(EntityId entity, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
+            if (operationName == null)
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signalling entities is synchronous");
             alreadyCompletedTask.Wait(); // just so we see exceptions during testing
