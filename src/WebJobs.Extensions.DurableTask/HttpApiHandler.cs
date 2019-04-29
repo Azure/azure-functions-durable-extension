@@ -188,28 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
-                if (i >= 0 && request.Method == HttpMethod.Post)
-                {
-                    string functionName;
-                    string instanceId = string.Empty;
-
-                    i += OrchestratorsControllerSegment.Length;
-                    nextSlash = path.IndexOf('/', i);
-
-                    if (nextSlash < 0)
-                    {
-                        functionName = path.Substring(i);
-                    }
-                    else
-                    {
-                        functionName = path.Substring(i, nextSlash - i);
-                        i = nextSlash + 1;
-                        instanceId = path.Substring(i);
-                    }
-
-                    return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
-                }
-
                 i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
                 if (i < 0)
                 {
