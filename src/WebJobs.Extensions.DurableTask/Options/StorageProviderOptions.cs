@@ -25,11 +25,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// </summary>
         public EmulatorStorageOptions Emulator { get; set; }
 
+        /// <summary>
+        /// The section for configuration related to the Redis provider.
+        /// </summary>
+        public RedisStorageOptions Redis { get; set; }
+
         internal CommonStorageProviderOptions GetConfiguredProvider()
         {
             if (this.configuredProvider == null)
             {
-                var storageProviderOptions = new CommonStorageProviderOptions[] { this.AzureStorage, this.Emulator };
+                var storageProviderOptions = new CommonStorageProviderOptions[] { this.AzureStorage, this.Emulator, this.Redis };
                 var activeProviders = storageProviderOptions.Where(provider => provider != null);
                 if (!activeProviders.Any())
                 {
@@ -57,18 +62,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
 
         internal void AddToDebugString(StringBuilder builder)
         {
-            if (this.AzureStorage != null)
-            {
-                builder.Append(nameof(this.AzureStorage)).Append(": { ");
-                this.AzureStorage.AddToDebugString(builder);
-                builder.Append(" }, ");
-            }
-            else if (this.AzureStorage != null)
-            {
-                builder.Append(nameof(this.Emulator)).Append(": { ");
-                this.Emulator.AddToDebugString(builder);
-                builder.Append(" }, ");
-            }
+            CommonStorageProviderOptions configuredProvider = this.GetConfiguredProvider();
+            string providerName = configuredProvider.GetType().ToString();
+            builder.Append(nameof(this.AzureStorage)).Append(": { ");
+            this.configuredProvider.AddToDebugString(builder);
+            builder.Append(" }, ");
         }
     }
 }

@@ -8,25 +8,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class TestDataGenerator
     {
         private static readonly object[] BoolOptions = new object[] { true, false };
-        private static readonly object[] StorageProviderOptions = new object[] { TestHelpers.AzureStorageProviderType };
+        private static readonly object[] FullFeaturedStorageProviders = new object[] { TestHelpers.AzureStorageProviderType };
+        private static readonly object[] AllStorageProviders = new object[] { TestHelpers.AzureStorageProviderType, TestHelpers.RedisProviderType };
 
-        public static IEnumerable<object[]> GetStorageProviderOptions()
+        public static IEnumerable<object[]> GetFullFeaturedStorageProviderOptions()
         {
-            foreach (object storageProviderOption in StorageProviderOptions)
+            foreach (object storageProviderOption in FullFeaturedStorageProviders)
             {
                 yield return new object[] { storageProviderOption };
             }
         }
 
-        public static IEnumerable<object[]> GetExtendedSessionAndStorageProviderOptions()
+        public static IEnumerable<object[]> GetExtendedSessionAndFullFeaturedStorageProviderOptions()
         {
             foreach (object boolOption in BoolOptions)
             {
-                foreach (object storageProviderOption in StorageProviderOptions)
+                foreach (object storageProviderOption in FullFeaturedStorageProviders)
                 {
                     yield return new object[] { boolOption, storageProviderOption };
                 }
             }
         }
+
+        public static IEnumerable<object[]> GetAllStorageProviderOptions()
+        {
+            foreach (object storageProviderOption in AllStorageProviders)
+            {
+                yield return new object[] { storageProviderOption };
+            }
+        }
+
+        public static IEnumerable<object[]> GetAllSupportedExtendedSessionWithStorageProviderOptions()
+        {
+            yield return new object[] { true, TestHelpers.AzureStorageProviderType };
+            yield return new object[] { false, TestHelpers.AzureStorageProviderType };
+
+            // Currently no support for extended sessions in Redis provider type.
+            yield return new object[] { false, TestHelpers.RedisProviderType };
+        }
+
     }
 }
