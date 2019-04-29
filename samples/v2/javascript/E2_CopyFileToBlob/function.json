@@ -1,0 +1,16 @@
+{
+  "bindings": [
+    {
+      "name": "filePath",
+      "type": "activityTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "out",
+      "type": "blob",
+      "path": "",
+      "connection": "AzureWebJobsStorage",
+      "direction": "out"
+    }
+  ]
+}
