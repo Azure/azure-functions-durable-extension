@@ -83,14 +83,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CurrentOperation.GetInput(argumentType);
         }
 
-        T IDurableEntityContext.GetState<T>()
+        T IDurableEntityContext.GetState<T>(Func<T> initializer)
         {
             this.ThrowIfInvalidAccess();
 
             if (!this.StateWasAccessed)
             {
                 var result = (this.State.EntityState == null)
-                    ? default(T)
+                    ? (initializer != null ? initializer() : default(T))
                     : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.EntityState);
                 this.CurrentState = result;
                 this.StateWasAccessed = true;
