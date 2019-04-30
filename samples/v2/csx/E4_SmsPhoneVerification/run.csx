@@ -2,7 +2,7 @@
 
 using System.Threading;
 
-public static async Task<bool> Run(DurableOrchestrationContext context)
+public static async Task<bool> Run(IDurableOrchestrationContext context)
 {
     string phoneNumber = context.GetInput<string>();
     if (string.IsNullOrEmpty(phoneNumber))

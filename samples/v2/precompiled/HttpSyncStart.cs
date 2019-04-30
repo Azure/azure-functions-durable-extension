@@ -24,9 +24,8 @@ namespace VSSample
             ILogger log)
         {
             // Function input comes from the request content.
-            dynamic eventData = await req.Content.ReadAsAsync<object>();
-            string instanceId = Guid.NewGuid().ToString();
-            await starter.StartNewAsync(functionName, instanceId, eventData);
+            object eventData = await req.Content.ReadAsAsync<object>();
+            string instanceId = await starter.StartNewAsync(functionName, eventData);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
