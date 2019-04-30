@@ -13,7 +13,7 @@ namespace VSSample.Tests
         [Fact]
         public async Task Run_returns_multiple_greetings()
         {
-            var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
+            var durableOrchestrationContextMock = new Mock<IDurableOrchestrationContext>();
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo!");
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Seattle")).ReturnsAsync("Hello Seattle!");
             durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello_DirectInput", "London")).ReturnsAsync("Hello London!");

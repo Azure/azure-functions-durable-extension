@@ -14,7 +14,7 @@ namespace VSSample
     {
         [FunctionName("E2_BackupSiteContent")]
         public static async Task<long> Run(
-            [OrchestrationTrigger] DurableOrchestrationContext backupContext)
+            [OrchestrationTrigger] IDurableOrchestrationContext backupContext)
         {
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))

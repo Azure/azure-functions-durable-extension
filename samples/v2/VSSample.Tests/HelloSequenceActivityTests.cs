@@ -12,7 +12,7 @@ namespace VSSample.Tests
         [Fact]
         public void SayHello_returns_greeting()
         {
-            var durableActivityContextMock = new Mock<DurableActivityContextBase>();
+            var durableActivityContextMock = new Mock<IDurableActivityContext>();
             durableActivityContextMock.Setup(x => x.GetInput<string>()).Returns("John");
             var result = HelloSequence.SayHello(durableActivityContextMock.Object);
             Assert.Equal("Hello John!", result);

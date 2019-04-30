@@ -42,7 +42,7 @@ namespace VSSample
     public static class Monitor
     {
         [FunctionName("E3_Monitor")]
-        public static async Task Run([OrchestrationTrigger] DurableOrchestrationContext monitorContext, ILogger log)
+        public static async Task Run([OrchestrationTrigger] IDurableOrchestrationContext monitorContext, ILogger log)
         {
             MonitorRequest input = monitorContext.GetInput<MonitorRequest>();
             if (!monitorContext.IsReplaying) { log.LogInformation($"Received monitor request. Location: {input?.Location}. Phone: {input?.Phone}."); }

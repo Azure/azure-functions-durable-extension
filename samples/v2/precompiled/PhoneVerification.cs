@@ -19,7 +19,7 @@ namespace VSSample
     {
         [FunctionName("E4_SmsPhoneVerification")]
         public static async Task<bool> Run(
-            [OrchestrationTrigger] DurableOrchestrationContext context)
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             string phoneNumber = context.GetInput<string>();
             if (string.IsNullOrEmpty(phoneNumber))

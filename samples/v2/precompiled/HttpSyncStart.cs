@@ -19,13 +19,14 @@ namespace VSSample
         public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
             HttpRequestMessage req,
-            [OrchestrationClient] DurableOrchestrationClientBase starter,
+            [OrchestrationClient] IDurableOrchestrationClient starter,
             string functionName,
             ILogger log)
         {
             // Function input comes from the request content.
             dynamic eventData = await req.Content.ReadAsAsync<object>();
-            string instanceId = await starter.StartNewAsync(functionName, eventData);
+            string instanceId = Guid.NewGuid().ToString();
+            await starter.StartNewAsync(functionName, instanceId, eventData);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 

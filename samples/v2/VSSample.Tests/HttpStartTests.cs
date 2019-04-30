@@ -27,7 +27,7 @@ namespace VSSample.Tests
             var loggerMock = new Mock<ILogger>();
 
             // Mock DurableOrchestrationClientBase
-            var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase>();
+            var durableOrchestrationClientBaseMock = new Mock<IDurableOrchestrationClient>();
 
             // Mock StartNewAsync method
             durableOrchestrationClientBaseMock.
