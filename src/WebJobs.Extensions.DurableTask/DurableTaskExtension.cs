@@ -104,8 +104,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
-            ConfigureLoaderHooks();
-
             if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
             {
                 // use the resolved task hub name
@@ -435,30 +433,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.knownEntities.TryGetValue(entityFunction, out var info);
             return info;
-        }
-
-        // This is temporary until script loading
-        private static void ConfigureLoaderHooks()
-        {
-            AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
-        }
-
-        private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
-        {
-            if (args.Name.StartsWith("DurableTask.Core"))
-            {
-                return typeof(TaskOrchestration).Assembly;
-            }
-            else if (args.Name.StartsWith("DurableTask.AzureStorage"))
-            {
-                return typeof(AzureStorageOrchestrationService).Assembly;
-            }
-            else if (args.Name.StartsWith("Microsoft.Azure.WebJobs.DurableTask"))
-            {
-                return typeof(DurableTaskExtension).Assembly;
-            }
-
-            return null;
         }
 
         /// <summary>
