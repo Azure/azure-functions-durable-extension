@@ -9,12 +9,8 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-#if NETSTANDARD2_0
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
-#else
-using Twilio;
-#endif
 
 /* This sample demonstrates the Monitor workflow. In this pattern, the orchestrator function is
  * used to periodically check something's status and take action as appropriate. While a
@@ -92,17 +88,9 @@ namespace VSSample
             [ActivityTrigger] string phoneNumber,
             ILogger log,
             [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")]
-#if NETSTANDARD2_0
                 out CreateMessageOptions message)
-#else
-                out SMSMessage message)
-#endif
         {
-#if NETSTANDARD2_0
             message = new CreateMessageOptions(new PhoneNumber(phoneNumber));
-#else
-            message = new SMSMessage { To = phoneNumber };
-#endif
             message.Body = $"The weather's clear outside! Go take a walk!";
         }
 

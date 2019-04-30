@@ -6,12 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-#if NETSTANDARD2_0
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
-#else
-using Twilio;
-#endif
 
 namespace VSSample
 {
@@ -77,11 +73,7 @@ namespace VSSample
             [ActivityTrigger] string phoneNumber,
             ILogger log,
             [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")]
-#if NETSTANDARD2_0
                 out CreateMessageOptions message)
-#else
-                out SMSMessage message)
-#endif
         {
             // Get a random number generator with a random seed (not time-based)
             var rand = new Random(Guid.NewGuid().GetHashCode());
@@ -89,11 +81,7 @@ namespace VSSample
 
             log.LogInformation($"Sending verification code {challengeCode} to {phoneNumber}.");
 
-#if NETSTANDARD2_0
             message = new CreateMessageOptions(new PhoneNumber(phoneNumber));
-#else
-            message = new SMSMessage { To = phoneNumber };
-#endif
             message.Body = $"Your verification code is {challengeCode:0000}";
 
             return challengeCode;
