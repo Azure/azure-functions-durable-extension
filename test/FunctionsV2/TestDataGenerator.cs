@@ -44,8 +44,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             yield return new object[] { false, TestHelpers.AzureStorageProviderType };
 
             // Currently no support for extended sessions in Redis provider type.
-            yield return new object[] { false, TestHelpers.RedisProviderType };
-        }
+            // yield return new object[] { true, TestHelpers.RedisProviderType };
 
+            // Currently no support for Redis provider type in CI. Can uncomment out configuration below if have Redis setup locally.
+            // yield return new object[] { false, TestHelpers.RedisProviderType };
+        }
     }
 }
