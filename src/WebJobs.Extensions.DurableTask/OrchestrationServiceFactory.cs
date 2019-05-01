@@ -5,6 +5,7 @@ using System;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Emulator;
+using DurableTask.Redis;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 
@@ -30,6 +31,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new AzureStorageOrchestrationServiceFactory(options, connectionStringResolver);
                 case EmulatorStorageOptions emulatorStorageOptions:
                     return new EmulaterOrchestrationServiceFactory(options);
+                case RedisStorageOptions redisStorageOptions:
+                    return new RedisOrchestrationServiceFactory(options, connectionStringResolver);
                 default:
                     throw new InvalidOperationException($"{configuredProvider.GetType()} is not a supported storage provider.");
             }
@@ -179,12 +182,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
             {
-                return this.service;
+                return (IOrchestrationServiceClient)this.service;
             }
 
             public IOrchestrationService GetOrchestrationService()
             {
-                return this.service;
+                return (IOrchestrationService)this.service;
+            }
+        }
+
+        private class RedisOrchestrationServiceFactory : IOrchestrationServiceFactory
+        {
+            private readonly RedisOrchestrationService defaultTaskHubService;
+            private readonly string redisConnectionString;
+            private readonly string defaultHubName;
+
+            public RedisOrchestrationServiceFactory(DurableTaskOptions options, IConnectionStringResolver connectionStringResolver)
+            {
+                this.redisConnectionString = connectionStringResolver.Resolve(options.StorageProvider.Redis.ConnectionStringName);
+                this.defaultHubName = options.HubName;
+                this.defaultTaskHubService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
+                {
+                    TaskHubName = this.defaultHubName,
+                    RedisConnectionString = this.redisConnectionString,
+                });
+            }
+
+            public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
+            {
+                if (string.IsNullOrEmpty(attribute.TaskHub) || string.Equals(attribute.TaskHub, this.defaultHubName))
+                {
+                    return this.defaultTaskHubService;
+                }
+                return new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
+                {
+                    TaskHubName = attribute.TaskHub,
+                    RedisConnectionString = this.redisConnectionString,
+                });
+            }
+
+            public IOrchestrationService GetOrchestrationService()
+            {
+                return this.defaultTaskHubService;
             }
         }
     }

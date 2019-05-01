@@ -670,6 +670,11 @@
             At this time, there is no configuration available for the Emulator storage provider.
             </remarks>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.RedisStorageOptions">
+            <summary>
+            Configuration options for the Redis storage provider.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions">
             <summary>
             Configuration options for the various storage providers supported
@@ -684,6 +689,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.Emulator">
             <summary>
             The section for configuration related to the Emulator provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.Redis">
+            <summary>
+            The section for configuration related to the Redis provider.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">

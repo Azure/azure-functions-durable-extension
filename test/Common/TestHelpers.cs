@@ -19,8 +19,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestHelpers
     {
+        // Friendly strings for provider types so easier to read in enumerated test output
         public const string AzureStorageProviderType = "azure_storage";
         public const string EmulatorProviderType = "emulator";
+        public const string RedisProviderType = "redis";
+
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
 
@@ -68,6 +71,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             else if (string.Equals(storageProviderType, EmulatorProviderType))
             {
                 durableTaskOptions.StorageProvider.Emulator = new EmulatorStorageOptions();
+            }
+            else if (string.Equals(storageProviderType, RedisProviderType))
+            {
+                durableTaskOptions.StorageProvider.Redis = new RedisStorageOptions()
+                {
+                    ConnectionStringName = "RedisConnectionString"
+                };
             }
 
             if (eventGridRetryCount.HasValue)
