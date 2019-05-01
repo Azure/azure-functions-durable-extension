@@ -86,8 +86,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false, TestHelpers.AzureStorageProviderType)]
         [InlineData(true, TestHelpers.EmulatorProviderType)]
         [InlineData(false, TestHelpers.EmulatorProviderType)]
-        [InlineData(true, TestHelpers.RedisProviderType)]
-        [InlineData(false, TestHelpers.RedisProviderType)]
         public async Task HelloWorldOrchestration_Inline(bool extendedSessions, string storageProviderType)
         {
             string[] orchestratorFunctionNames =

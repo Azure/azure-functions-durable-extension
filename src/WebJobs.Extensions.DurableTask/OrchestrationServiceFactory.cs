@@ -195,20 +195,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             private readonly RedisOrchestrationService defaultTaskHubService;
             private readonly string redisConnectionString;
+            private readonly string defaultHubName;
 
             public RedisOrchestrationServiceFactory(DurableTaskOptions options, IConnectionStringResolver connectionStringResolver)
             {
                 this.redisConnectionString = connectionStringResolver.Resolve(options.StorageProvider.Redis.ConnectionStringName);
+                this.defaultHubName = options.HubName;
                 this.defaultTaskHubService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
                 {
-                    TaskHubName = options.HubName,
+                    TaskHubName = this.defaultHubName,
                     RedisConnectionString = this.redisConnectionString,
                 });
             }
 
             public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
             {
-                if (string.IsNullOrEmpty(attribute.TaskHub))
+                if (string.IsNullOrEmpty(attribute.TaskHub) || string.Equals(attribute.TaskHub, this.defaultHubName))
                 {
                     return this.defaultTaskHubService;
                 }
