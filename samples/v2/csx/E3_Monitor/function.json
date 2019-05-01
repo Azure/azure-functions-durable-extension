@@ -1,0 +1,9 @@
+{
+    "bindings": [
+      {
+        "name": "monitorContext",
+        "type": "orchestrationTrigger",
+        "direction": "in"
+      }
+    ]
+  }
