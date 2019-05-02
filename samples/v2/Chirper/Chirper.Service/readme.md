@@ -20,7 +20,7 @@ which was itself inspired by the Chirper virtual actor sample included with the
 
 The function application contains a total of 10 Azure Functions.
 
-2 of the functions are *durable entities*, implementing the stateful components.
+Two of the functions are *durable entities*, implementing the stateful components.
 
   - The **UserChirps** entity stores a list of chirps, representing the chirps by a particular user. 
     There is one UserChirps entity per user: The entity key is the userId. The operations are *Add* (adds a chirp), 
@@ -30,14 +30,14 @@ The function application contains a total of 10 Azure Functions.
     There is one UserFollows entity per user: The entity key is the userId. The operations are *Add* (follows a user), 
     *Remove* (unfollows a user) and *Get* (returns the list of followed users).
 
-1 of the functions is a *durable orchestration*, implementing the timeline query.
+One of the functions is a *durable orchestration*, implementing the timeline query.
 
   - The **GetTimeline** orchestration collects the chirps for the timeline of a particular user. 
     It first calls the `UserFollows` entity to get a list of the followed users. Then it calls the UserChirps
     entities of all the followed users, *in parallel*. Once it receives all the lists
     it combines them and sorts them.
 
-7 of the functions are Http triggers that implement the REST interface (see next section for a list). Each of them specifies a path, and uses
+Seven of the functions are Http triggers that implement the REST interface (see next section for a list). Each of them specifies a path, and uses
 the IDurableOrchestrationClient to access the durable entities and durable orchestration. 
 
   - The POST methods signal the respective entities, and returns 202.
@@ -48,11 +48,13 @@ the IDurableOrchestrationClient to access the durable entities and durable orche
 
 ## Running The Sample Locally with VS
 
-Open Chirper.sln in Visual Studio, compile, and run. This automatically 
-starts the local development storage and the Azure functions runtime. A console pops up 
-that shows how the functions runtime loads.
+Open Chirper.sln in Visual Studio, compile, and run. 
 
-If everything starts smoothly, the console prints a list of the HTTP bindings:
+On Windows, this automatically starts the local development storage. 
+On macOS, you can edit the `local.settings.json` and replace `UseDevelopmentStorage=true` with a connection string to an Azure storage account.
+
+Once the function runtime starts successfully, the console shows the progress. 
+After some time it prints a list of the HTTP bindings:
 
         UserChirpsDelete: [DELETE] http://localhost:7071/user/{userId}/chirps/{timestamp}
         UserChirpsGet: [GET] http://localhost:7071/user/{userId}/chirps
@@ -63,7 +65,8 @@ If everything starts smoothly, the console prints a list of the HTTP bindings:
         UserTimelineGet: [GET] http://localhost:7071/user/{userId}/timeline
 
 
-You can now use curl (or similar tools, e.g. Postman) to test the chirper service via these endpoints. 
+You can now use [curl](https://github.com/curl/curl) (or any other tool that lets you compose HTTP requests) 
+to test the chirper service via these endpoints. 
 
 ### Sample interaction
 
