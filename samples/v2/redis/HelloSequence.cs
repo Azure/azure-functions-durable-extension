@@ -9,29 +9,22 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName("E1_HelloSequence")]
+        [FunctionName("HelloSequence")]
         public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var outputs = new List<string>();
 
-            outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Tokyo"));
-            outputs.Add(await context.CallActivityAsync<string>("E1_SayHello", "Seattle"));
-            outputs.Add(await context.CallActivityAsync<string>("E1_SayHello_DirectInput", "London"));
+            outputs.Add(await context.CallActivityAsync<string>("SayHello", "Tokyo"));
+            outputs.Add(await context.CallActivityAsync<string>("SayHello", "Seattle"));
+            outputs.Add(await context.CallActivityAsync<string>("SayHello", "London"));
 
             // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
             return outputs;
         }
 
-        [FunctionName("E1_SayHello")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
-        {
-            string name = context.GetInput<string>();
-            return $"Hello {name}!";
-        }
-
-        [FunctionName("E1_SayHello_DirectInput")]
-        public static string SayHelloDirectInput([ActivityTrigger] string name)
+        [FunctionName("SayHello")]
+        public static string SayHello([ActivityTrigger] string name)
         {
             return $"Hello {name}!";
         }

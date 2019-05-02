@@ -15,14 +15,13 @@ namespace VSSample
     {
         [FunctionName("HttpStart")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/HelloOrchestration")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient starter,
-            string functionName,
             ILogger log)
         {
             // Function input comes from the request content.
             object eventData = await req.Content.ReadAsAsync<object>();
-            string instanceId = await starter.StartNewAsync(functionName, eventData);
+            string instanceId = await starter.StartNewAsync(nameof(HelloSequence), eventData);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 
