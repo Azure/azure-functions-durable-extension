@@ -38,7 +38,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
 
         internal void AddToDebugString(StringBuilder builder)
         {
-            builder.Append(nameof(this.TraceReplayEvents)).Append(": ").Append(this.TraceReplayEvents);
+            builder.Append(nameof(this.TraceReplayEvents)).Append(": ").Append(this.TraceReplayEvents).Append(", ");
+            builder.Append(nameof(this.TraceInputsAndOutputs)).Append(": ").Append(this.TraceInputsAndOutputs);
         }
     }
 }

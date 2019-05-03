@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The section of configuration related to notifications.
         /// </summary>
-        public NotificationOptions Notifications { get; set; }
+        public NotificationOptions Notifications { get; set; } = new NotificationOptions();
 
         /// <summary>
         /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
@@ -116,15 +116,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
             }
 
-            if (this.Notifications != null)
-            {
-                this.Notifications.AddToDebugString(sb);
-            }
+            sb.Append(nameof(this.Notifications)).Append(": { ");
+            this.Notifications.AddToDebugString(sb);
+            sb.Append(" }, ");
 
-            if (this.Tracing != null)
-            {
-                this.Tracing.AddToDebugString(sb);
-            }
+            sb.Append(nameof(this.Tracing)).Append(": { ");
+            this.Tracing.AddToDebugString(sb);
+            sb.Append(" }");
 
             return sb.ToString();
         }
@@ -150,10 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Each storage provider may have its own limitations for task hub names due to provider naming restrictions
             this.StorageProvider.GetConfiguredProvider().ValidateHubName(this.HubName);
 
-            if (this.Notifications != null)
-            {
-                this.Notifications.Validate();
-            }
+            this.Notifications.Validate();
 
             if (this.MaxConcurrentActivityFunctions <= 0)
             {

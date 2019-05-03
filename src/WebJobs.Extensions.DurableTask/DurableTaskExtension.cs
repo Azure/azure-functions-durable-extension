@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options.Validate();
 
             // For 202 support
-            if (this.Options.Notifications != null && this.Options.Notifications.ApiUrl == null)
+            if (this.Options.Notifications.ApiUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
                 this.Options.Notifications.ApiUrl = context.GetWebhookHandler();
@@ -160,8 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
         {
             // First: EventGrid
-            if (this.Options.Notifications != null 
-                && this.Options.Notifications.EventGrid != null
+            if (this.Options.Notifications.EventGrid != null
                 && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
             {
                 return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
