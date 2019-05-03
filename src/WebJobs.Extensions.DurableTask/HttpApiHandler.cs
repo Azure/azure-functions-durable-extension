@@ -808,7 +808,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void ThrowIfWebhooksNotConfigured()
         {
-            if (this.config.Options.Notifications == null || this.config.Options.Notifications.ApiUrl == null)
+            if (this.config.Options.Notifications.ApiUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }
