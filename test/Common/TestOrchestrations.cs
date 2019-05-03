@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (!done)
             {
-                ctx.ContinueAsNew(currentValue);
+                ctx.ContinueAsNew(currentValue, preserveUnprocessedEvents: true);
             }
 
             return currentValue;
@@ -353,6 +353,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return catchCount;
         }
 
+        public static async Task SubOrchestrationThrow([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            string message = ctx.GetInput<string>();
+
+            try
+            {
+                await ctx.CallSubOrchestratorAsync(nameof(TestOrchestrations.ThrowOrchestrator), message);
+            }
+            catch (FunctionFailedException e)
+            {
+                if (e.InnerException == null ||
+                    e.GetBaseException().GetType() != typeof(InvalidOperationException) ||
+                    !e.InnerException.Message.Contains(message))
+                {
+                    throw new Exception("InnerException was not the expected value.");
+                }
+
+                // rethrow the original exception
+                throw;
+            }
+        }
+
         // TODO: It's not currently possible to detect this failure except by examining logs.
         public static async Task IllegalAwait([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
@@ -498,25 +520,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<string> SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            // construct actor reference from actor name and a supplied GUID
-            var actor = new ActorId("StringStore2", ctx.GetInput<Guid>().ToString());
+            // construct entity id from entity name and a supplied GUID
+            var entity = new EntityId("StringStore2", ctx.GetInput<Guid>().ToString());
 
             // signal and call (both of these will be delivered close together)
-            ctx.SignalActor(actor, "set", "333");
+            ctx.SignalEntity(entity, "set", "333");
 
-            var result = await ctx.CallActorAsync<string>(actor, "get");
+            var result = await ctx.CallEntityAsync<string>(entity, "get");
 
             if (result != "333")
             {
-                return $"fail: wrong actor state: expected 333, got {result}";
+                return $"fail: wrong entity state: expected 333, got {result}";
             }
 
             // make another call to see if the state survives replay
-            result = await ctx.CallActorAsync<string>(actor, "get");
+            result = await ctx.CallEntityAsync<string>(entity, "get");
 
             if (result != "333")
             {
-                return $"fail: wrong actor state: expected 333, got {result}";
+                return $"fail: wrong entity state: expected 333, got {result}";
             }
 
             return "ok";
@@ -524,14 +546,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<string> StringStoreWithCreateDelete([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            // construct actor reference from actor name and a (deterministic) new guid key
-            var actor = new ActorId("StringStore2", ctx.NewGuid().ToString());
+            // construct entity id from entity name and a (deterministic) new guid key
+            var entity = new EntityId("StringStore2", ctx.NewGuid().ToString());
             string result;
 
             // does not exist, so get should throw
             try
             {
-                result = await ctx.CallActorAsync<string>(actor, "get");
+                result = await ctx.CallEntityAsync<string>(entity, "get");
                 return "fail: expected exception";
             }
             catch (InvalidOperationException)
@@ -541,58 +563,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // still does not exist, so get should still throw
             try
             {
-                await ctx.CallActorAsync<string>(actor, "get");
+                await ctx.CallEntityAsync<string>(entity, "get");
                 return "fail: expected exception";
             }
             catch (InvalidOperationException)
             {
             }
 
-            await ctx.CallActorAsync<string>(actor, "set", "aha");
+            await ctx.CallEntityAsync<string>(entity, "set", "aha");
 
-            result = await ctx.CallActorAsync<string>(actor, "get");
+            result = await ctx.CallEntityAsync<string>(entity, "get");
 
             if (result != "aha")
             {
-                return $"fail: wrong actor state: expected aha, got {result}";
+                return $"fail: wrong entity state: expected aha, got {result}";
             }
 
-            await ctx.CallActorAsync<string>(actor, "delete");
+            await ctx.CallEntityAsync<string>(entity, "delete");
 
             // no longer exists, so get should again throw
             try
             {
-                await ctx.CallActorAsync<string>(actor, "get");
+                await ctx.CallEntityAsync<string>(entity, "get");
                 return "fail: expected exception";
             }
             catch (InvalidOperationException)
             {
             }
 
-            // re-create the actor
-            await ctx.CallActorAsync<string>(actor, "set", "aha-aha");
+            // re-create the entity
+            await ctx.CallEntityAsync<string>(entity, "set", "aha-aha");
 
-            result = await ctx.CallActorAsync<string>(actor, "get");
+            result = await ctx.CallEntityAsync<string>(entity, "get");
 
             if (result != "aha-aha")
             {
-                return $"fail: wrong actor state: expected aha-aha, got {result}";
+                return $"fail: wrong entity state: expected aha-aha, got {result}";
             }
 
             // finally delete it
-            await ctx.CallActorAsync<string>(actor, "delete");
+            await ctx.CallEntityAsync<string>(entity, "delete");
 
             return "ok";
         }
 
-        public static async Task<string> PollCounterActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        public static async Task<string> PollCounterEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            // get the id of the two actors used by this test
-            var actorId = ctx.GetInput<ActorId>();
+            // get the id of the two entities used by this test
+            var entityId = ctx.GetInput<EntityId>();
 
             while (true)
             {
-                var result = await ctx.CallActorAsync<int>(actorId, "get");
+                var result = await ctx.CallEntityAsync<int>(entityId, "get");
 
                 if (result != 0)
                 {
@@ -602,7 +624,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        return $"fail: wrong actor state: expected 1, got {result}";
+                        return $"fail: wrong entity state: expected 1, got {result}";
                     }
                 }
 
@@ -610,29 +632,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public static async Task<string> LargeActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        public static async Task<string> LargeEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var actorId = ctx.GetInput<ActorId>();
+            var entityId = ctx.GetInput<EntityId>();
 
             string content = new string('.', 100000);
-            await ctx.CallActorAsync<int>(actorId, "set", content);
+            await ctx.CallEntityAsync<int>(entityId, "set", content);
 
-            var result = await ctx.CallActorAsync<string>(actorId, "get");
+            var result = await ctx.CallEntityAsync<string>(entityId, "get");
             if (result != content)
             {
-                return $"fail: wrong actor state";
+                return $"fail: wrong entity state";
             }
 
             return "ok";
         }
 
-        public static async Task<string> ActorToAndFromBlob([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        public static async Task<string> EntityToAndFromBlob([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            // get the ids of the two actors used by this test
-            var actorId = ctx.GetInput<ActorId>();
+            // get the ids of the two entities used by this test
+            var entityId = ctx.GetInput<EntityId>();
 
             // activation loads from blob, but the latter does not exist so it will be empty
-            string result = await ctx.CallActorAsync<string>(actorId, "get");
+            string result = await ctx.CallEntityAsync<string>(entityId, "get");
             if (result != "")
             {
                 return $"fail: expected empty content, but got {result}";
@@ -641,17 +663,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const int sizeOfEachAppend = 10;
             const int numberOfAppends = 50;
 
-            // let's send many signals to this actor to append characters
+            // let's send many signals to this entity to append characters
             for (int i = 0; i < numberOfAppends; i++)
             {
-                ctx.SignalActor(actorId, "append", new string('.', sizeOfEachAppend));
+                ctx.SignalEntity(entityId, "append", new string('.', sizeOfEachAppend));
             }
 
             // then send a signal to deactivate
-            ctx.SignalActor(actorId, "deactivate");
+            ctx.SignalEntity(entityId, "deactivate");
 
-            // now try again to read the actor state - it should come back from storage intact
-            result = await ctx.CallActorAsync<string>(actorId, "get");
+            // now try again to read the entity state - it should come back from storage intact
+            result = await ctx.CallEntityAsync<string>(entityId, "get");
             var numberDotsExpected = numberOfAppends * sizeOfEachAppend;
             if (result != new string('.', numberDotsExpected))
             {
@@ -663,7 +685,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<int> LockedBlobIncrement([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var actorPlayingTheRoleOfASimpleLock = ctx.GetInput<ActorId>();
+            var entityPlayingTheRoleOfASimpleLock = ctx.GetInput<EntityId>();
             int result;
 
             if (ctx.IsLocked(out _))
@@ -671,11 +693,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 throw new Exception("test failed: lock context is incorrect");
             }
 
-            using (await ctx.LockAsync(actorPlayingTheRoleOfASimpleLock))
+            using (await ctx.LockAsync(entityPlayingTheRoleOfASimpleLock))
             {
                 if (!ctx.IsLocked(out var ownedLocks)
                     || ownedLocks.Count != 1
-                    || !ownedLocks.First().Equals(actorPlayingTheRoleOfASimpleLock))
+                    || !ownedLocks.First().Equals(entityPlayingTheRoleOfASimpleLock))
                 {
                     throw new Exception("test failed: lock context is incorrect");
                 }
@@ -683,7 +705,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // read current value from blob
                 var currentValue = await ctx.CallActivityAsync<string>(
                             nameof(TestActivities.LoadStringFromTextBlob),
-                            actorPlayingTheRoleOfASimpleLock.ActorKey);
+                            entityPlayingTheRoleOfASimpleLock.EntityKey);
 
                 // increment
                 result = int.Parse(currentValue ?? "0") + 1;
@@ -691,7 +713,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // write result to blob
                 await ctx.CallActivityAsync(
                           nameof(TestActivities.WriteStringToTextBlob),
-                          (actorPlayingTheRoleOfASimpleLock.ActorKey, result.ToString()));
+                          (entityPlayingTheRoleOfASimpleLock.EntityKey, result.ToString()));
             }
 
             if (ctx.IsLocked(out _))
@@ -704,7 +726,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<(int, int)> LockedTransfer([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var (from, to) = ctx.GetInput<(ActorId, ActorId)>();
+            var (from, to) = ctx.GetInput<(EntityId, EntityId)>();
 
             if (from.Equals(to))
             {
@@ -730,8 +752,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 // read balances in parallel
-                var t1 = ctx.CallActorAsync<int>(from, "get");
-                var t2 = ctx.CallActorAsync<int>(to, "get");
+                var t1 = ctx.CallEntityAsync<int>(from, "get");
+                var t2 = ctx.CallEntityAsync<int>(to, "get");
                 fromBalance = await t1;
                 toBalance = await t2;
 
@@ -740,8 +762,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 toBalance++;
 
                 // write balances in parallel
-                var t3 = ctx.CallActorAsync(from, "set", fromBalance);
-                var t4 = ctx.CallActorAsync(to, "set", toBalance);
+                var t3 = ctx.CallEntityAsync(from, "set", fromBalance);
+                var t4 = ctx.CallEntityAsync(to, "set", toBalance);
                 await t3;
                 await t4;
             }
@@ -756,24 +778,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task UpdateTwoCounters([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var actor1 = new ActorId("CounterActor", "1"); // construct actor reference from actor class and actor key
-            var actor2 = new ActorId("CounterActor", "2"); // construct actor reference from actor class and actor key
+            var entity1 = new EntityId("CounterEntity", "1");
+            var entity2 = new EntityId("CounterEntity", "2");
 
-            using (await ctx.LockAsync(actor1, actor2))
+            using (await ctx.LockAsync(entity1, entity2))
             {
                 await Task.WhenAll(
-                    ctx.CallActorAsync(actor1, "add", 42),
-                    ctx.CallActorAsync(actor2, "add", -42));
+                    ctx.CallEntityAsync(entity1, "add", 42),
+                    ctx.CallEntityAsync(entity2, "add", -42));
             }
         }
 
         public static async Task SignalAndCallChatRoom([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            var actor = new ActorId("ChatRoom", "myChat"); // construct actor reference from actor class and actor key
+            var entity = new EntityId("ChatRoom", "myChat");
 
-            ctx.SignalActor(actor, "Post", "Hello World");
+            ctx.SignalEntity(entity, "Post", "Hello World");
 
-            var result = await ctx.CallActorAsync<List<KeyValuePair<DateTime, string>>>(actor, "Get");
+            var result = await ctx.CallEntityAsync<List<KeyValuePair<DateTime, string>>>(entity, "Get");
         }
     }
 }

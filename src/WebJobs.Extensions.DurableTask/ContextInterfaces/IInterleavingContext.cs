@@ -10,30 +10,30 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Provides functionality available to orchestration code and reentrant actor code.
+    /// Provides functionality available to orchestration code and reentrant entity code.
     /// </summary>
     public interface IInterleavingContext : IDeterministicExecutionContext
     {
         /// <summary>
-        /// Calls an operation on an actor, passing an argument, and returns the result asynchronously.
+        /// Calls an operation on an entity, passing an argument, and returns the result asynchronously.
         /// </summary>
         /// <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
-        /// <param name="actorId">The target actor.</param>
+        /// <param name="entityId">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <param name="operationContent">The content (input argument) of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
         /// <returns>A task representing the result of the operation.</returns>
-        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
-        Task<TResult> CallActorAsync<TResult>(ActorId actorId, string operationName, object operationContent);
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="entityId"/>.</exception>
+        Task<TResult> CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput);
 
         /// <summary>
-        /// Calls an operation on an actor, passing an argument, and waits for it to complete.
+        /// Calls an operation on an entity, passing an argument, and waits for it to complete.
         /// </summary>
-        /// <param name="actorId">The target actor.</param>
+        /// <param name="entityId">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
-        /// <param name="operationContent">The content for the operation.</param>
-        /// <returns>A task representing the completion of the operation on the actor.</returns>
-        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
-        Task CallActorAsync(ActorId actorId, string operationName, object operationContent);
+        /// <param name="operationInput">The input for the operation.</param>
+        /// <returns>A task representing the completion of the operation on the entity.</returns>
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="entityId"/>.</exception>
+        Task CallEntityAsync(EntityId entityId, string operationName, object operationInput);
 
         /// <summary>
         /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
@@ -136,14 +136,14 @@ namespace Microsoft.Azure.WebJobs
         Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue);
 
         /// <summary>
-        /// Acquires one or more locks, for the specified actors.
+        /// Acquires one or more locks, for the specified entities.
         /// </summary>
         /// <remarks>
         /// Locks can only be acquired if the current context does not hold any locks already.
         /// </remarks>
-        /// <param name="actors">The actors whose locks should be acquired.</param>
+        /// <param name="entities">The entities whose locks should be acquired.</param>
         /// <returns>An IDisposable that releases the lock when disposed.</returns>
         /// <exception cref="LockingRulesViolationException">if the context already holds some locks.</exception>
-        Task<IDisposable> LockAsync(params ActorId[] actors);
+        Task<IDisposable> LockAsync(params EntityId[] entities);
     }
 }

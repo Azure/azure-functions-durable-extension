@@ -11,6 +11,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,9 +19,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestHelpers
     {
+        // Friendly strings for provider types so easier to read in enumerated test output
         public const string AzureStorageProviderType = "azure_storage";
         public const string EmulatorProviderType = "emulator";
+        public const string RedisProviderType = "redis";
+
         public const string LogCategory = "Host.Triggers.DurableTask";
+        public const string EmptyStorageProviderType = "empty";
 
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
@@ -41,7 +46,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var durableTaskOptions = new DurableTaskOptions
             {
-                StorageProvider = new StorageProviderOptions(),
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
@@ -55,6 +59,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
             };
 
+            if (storageProviderType != null)
+            {
+                durableTaskOptions.StorageProvider = new StorageProviderOptions();
+            }
+
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
                 durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
@@ -63,9 +72,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 durableTaskOptions.StorageProvider.Emulator = new EmulatorStorageOptions();
             }
-            else
+            else if (string.Equals(storageProviderType, RedisProviderType))
             {
-                throw new ArgumentException("Invalid storage provider type.", nameof(storageProviderType));
+                durableTaskOptions.StorageProvider.Redis = new RedisStorageOptions()
+                {
+                    ConnectionStringName = "RedisConnectionString"
+                };
             }
 
             if (eventGridRetryCount.HasValue)
@@ -104,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 typeof(TestOrchestrations),
                 typeof(TestActivities),
-                typeof(TestActors),
+                typeof(TestEntities),
                 typeof(ClientFunctions),
             };
 
@@ -425,7 +437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ThrowOrchestrator. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ThrowOrchestrator. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
@@ -443,7 +455,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
@@ -451,7 +463,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
@@ -459,7 +471,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.Exception: Kah-BOOOOM!!!",
+                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
@@ -638,6 +650,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         internal static INameResolver GetTestNameResolver()
         {
             return new TestNameResolver(null);
+        }
+
+        public static async Task<string> LoadStringFromTextBlobAsync(string blobName)
+        {
+            string connectionString = GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            try
+            {
+                return await blob.DownloadTextAsync();
+            }
+            catch (StorageException e)
+                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
+            {
+                // if the blob does not exist, just return null.
+                return null;
+            }
+        }
+
+        public static async Task WriteStringToTextBlob(string blobName, string content)
+        {
+            string connectionString = GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            await blob.UploadTextAsync(content);
         }
 
         private class ExplicitTypeLocator : ITypeLocator

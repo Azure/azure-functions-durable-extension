@@ -325,11 +325,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                 },
@@ -354,8 +356,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
 
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
@@ -368,12 +372,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
@@ -405,8 +411,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Running", actual[1].RuntimeStatus);
         }
@@ -419,12 +427,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
@@ -475,8 +485,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("YYYY-YYYYYYYY-YYYYYYYYYYYY", responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Running", actual[1].RuntimeStatus);
         }
@@ -489,12 +501,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
@@ -529,8 +543,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
@@ -543,12 +559,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThis",
                     InstanceId = "01",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 10, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Running,
                 },
                 new DurableOrchestrationStatus
                 {
+                    Name = "DoThat",
                     InstanceId = "02",
                     CreatedTime = new DateTime(2018, 3, 10, 10, 6, 10),
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
@@ -576,8 +594,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.GetStatusAsync(createdTimeFrom, default(DateTime), new List<OrchestrationRuntimeStatus>(), It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].Name);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
@@ -814,6 +834,140 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var error = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal("One or more of the arguments submitted is incorrect", error["Message"].ToString());
             Assert.Equal(exceptionMessage, error["ExceptionMessage"].ToString());
+        }
+
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetEntity_Returns_State_Or_HTTP_404(bool hasKey, bool exists)
+        {
+            string entity = "SomeEntity";
+            string key = hasKey ? Guid.NewGuid().ToString("N") : "";
+            var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+
+            uriBuilder.Path += $"/entities/{entity}";
+
+            if (!string.IsNullOrEmpty(key))
+            {
+                uriBuilder.Path += $"/{key}";
+            }
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = uriBuilder.Uri,
+            };
+
+            var entityId = new EntityId(entity, key);
+            var result = new EntityStateResponse<JToken>() { EntityExists = exists, EntityState = exists ? new JObject() : null };
+            var clientMock = new Mock<IDurableOrchestrationClient>(MockBehavior.Strict);
+
+            clientMock
+                    .Setup(x => x.ReadEntityStateAsync<JToken>(entityId, null, null))
+                    .Returns(Task.FromResult(result));
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+
+            if (exists)
+            {
+                Assert.Equal(HttpStatusCode.OK, actualResponse.StatusCode);
+
+                var content = await actualResponse.Content.ReadAsStringAsync();
+                Assert.Equal("{}", content);
+            }
+            else
+            {
+                Assert.Equal(HttpStatusCode.NotFound, actualResponse.StatusCode);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true, true)]
+        [InlineData(false, false, true, false)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true, true)]
+        [InlineData(false, true, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true, true)]
+        [InlineData(true, false, true, false)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true, true)]
+        [InlineData(true, true, true, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntity_Is_Success(bool hasKey, bool hasOp, bool hasContent, bool hasJsonContent = false)
+        {
+            string entity = "SomeEntity";
+            string key = hasKey ? Guid.NewGuid().ToString("N") : "";
+            string operation = hasOp ? (hasJsonContent ? "jsonOp" : "stringOp") : "";
+            string content = hasContent ? (hasJsonContent ? "{ \"someProperty\" : \"someValue\" }" : "text content") : "";
+
+            var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+
+            uriBuilder.Path += $"/entities/{entity}";
+
+            if (!string.IsNullOrEmpty(key))
+            {
+                uriBuilder.Path += $"/{key}";
+            }
+
+            if (!string.IsNullOrEmpty(operation))
+            {
+                uriBuilder.Query = $"op={operation}";
+            }
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = uriBuilder.Uri,
+            };
+
+            if (hasContent)
+            {
+                if (hasJsonContent)
+                {
+                    testRequest.Content = new StringContent(content, Encoding.UTF8, "application/json");
+                }
+                else
+                {
+                    testRequest.Content = new StringContent(content);
+                }
+            }
+
+            var entityId = new EntityId(entity, key);
+
+            var clientMock = new Mock<IDurableOrchestrationClient>(MockBehavior.Strict);
+
+            if (hasContent)
+            {
+                if (hasJsonContent)
+                {
+                    clientMock
+                       .Setup(x => x.SignalEntityAsync(entityId, operation, It.IsAny<JToken>(), null, null))
+                       .Returns(Task.CompletedTask);
+                }
+                else
+                {
+                    clientMock
+                        .Setup(x => x.SignalEntityAsync(entityId, operation, content, null, null))
+                        .Returns(Task.CompletedTask);
+                }
+            }
+            else
+            {
+                clientMock
+                    .Setup(x => x.SignalEntityAsync(entityId, operation, null, null, null))
+                    .Returns(Task.CompletedTask);
+            }
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+
+            Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
         }
 
         private static DurableTaskExtension GetTestExtension()

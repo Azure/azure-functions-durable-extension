@@ -56,38 +56,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static void ThrowActivity([ActivityTrigger] IDurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
-            throw new Exception(message);
+            throw new InvalidOperationException(message);
         }
 
-        public static async Task<string> LoadStringFromTextBlob(
+        public static Task<string> LoadStringFromTextBlob(
             [ActivityTrigger] string blobName)
         {
-            string connectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            var blobClient = account.CreateCloudBlobClient();
-            var testcontainer = blobClient.GetContainerReference("test");
-            var blob = testcontainer.GetBlockBlobReference(blobName);
-            try
-            {
-                return await blob.DownloadTextAsync();
-            }
-            catch (StorageException e)
-                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
-            {
-                // if the blob does not exist, just return null.
-                return null;
-            }
+            return TestHelpers.LoadStringFromTextBlobAsync(blobName);
         }
 
-        public static async Task WriteStringToTextBlob(
+        public static Task WriteStringToTextBlob(
            [ActivityTrigger](string blobName, string content) input)
         {
-            string connectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            var blobClient = account.CreateCloudBlobClient();
-            var testcontainer = blobClient.GetContainerReference("test");
-            var blob = testcontainer.GetBlockBlobReference(input.blobName);
-            await blob.UploadTextAsync(input.content);
+            return TestHelpers.WriteStringToTextBlob(input.blobName, input.content);
         }
 
         public static void DeleteTextFile([ActivityTrigger] IDurableActivityContext ctx)

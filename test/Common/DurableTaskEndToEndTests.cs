@@ -65,16 +65,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
                 };
 
-                // Filter out some of the partition management informational events
-                var filteredEvents = new Dictionary<string, IEnumerable<int>>
-                {
-                    { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
-                };
-
                 this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
 
                 string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-                this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+                this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
             }
         }
 
@@ -108,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -135,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorld_OrchestrationClientTaskHub(string storageProviderType)
         {
             string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
@@ -156,7 +150,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (var orchestrationHost = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.HelloWorld_OrchestrationClientTaskHub),
-                enableExtendedSessions: false))
+                enableExtendedSessions: false,
+                storageProviderType: storageProviderType))
             {
                 await clientHost.StartAsync();
                 await orchestrationHost.StartAsync();
@@ -167,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     useTaskHubFromAppSettings: false);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -179,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     useTaskHubFromAppSettings: true);
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -195,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ParentInstanceId_Not_Assigned_In_Orchestrator(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -212,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("", status.Output.ToString());
@@ -226,7 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity(bool extendedSessions, string storageProvider)
         {
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider);
@@ -237,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents, string storageProvider)
         {
             await this.HelloWorldOrchestration_Activity_Main_Logic(false, storageProvider, logReplayEvents: logReplayEvents);
@@ -248,7 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity_History(bool extendedSessions, string storageProvider)
         {
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider, showHistory: true);
@@ -259,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity_HistoryInputOutput(bool extendedSessions, string storageProvider)
         {
             await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider, showHistory: true, showHistoryOutput: true);
@@ -270,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldActivityWithNewGUID(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -288,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 DurableOrchestrationStatus status =
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                    await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -303,7 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task VerifyUniqueGuids(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -321,7 +316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 DurableOrchestrationStatus status =
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                    await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -335,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task VerifySameGuidsOnReplay(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -353,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 DurableOrchestrationStatus status =
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                    await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -381,7 +376,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output, showHistory, showHistoryOutput);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output, showHistory, showHistoryOutput);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -443,7 +438,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity_CustomStatus(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -462,7 +457,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -497,7 +492,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SequentialOrchestration(bool extendedSessions, string storageProvider)
         {
             string instanceId;
@@ -512,7 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Factorial), 10, this.output);
                 instanceId = client.InstanceId;
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(10, status?.Input);
@@ -540,7 +535,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ParallelOrchestration(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -552,7 +547,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.DiskUsage), Environment.CurrentDirectory, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(90), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(Environment.CurrentDirectory, status?.Input);
@@ -567,7 +562,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActorOrchestration(bool extendedSessions, string storageProvider)
         {
             string instanceId;
@@ -584,8 +579,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceId = client.InstanceId;
 
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(this.output);
+
                 TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
-                await client.WaitForStartupAsync(waitTimeout, this.output);
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
@@ -608,7 +604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The end message will cause the actor to complete itself.
                 await client.RaiseEventAsync("operation", "end", this.output);
 
-                status = await client.WaitForCompletionAsync(waitTimeout, this.output);
+                status = await client.WaitForCompletionAsync(this.output, timeout: waitTimeout);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int?)status?.Output);
@@ -637,12 +633,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActorOrchestration_NoWaiting(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ActorOrchestration),
+                nameof(this.ActorOrchestration_NoWaiting),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
@@ -657,7 +653,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.RaiseEventAsync("operation", "end", this.output);
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int?)status?.Output);
@@ -674,7 +670,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BatchedActorOrchestration(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -694,13 +690,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item4", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
-                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForStartupAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
                 await client.RaiseEventAsync("newItem", "item5", this.output);
 
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -713,7 +709,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BatchedActorOrchestrationDeleteLastItemAlways(bool extendedSessions, string storageProvider)
         {
             using (var host = TestHelpers.GetJobHost(
@@ -733,13 +729,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item2
 
                 // Make sure it's still running and didn't complete early (or fail).
-                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForStartupAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last event will cause the actor to complete itself.
                 await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item1
 
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -752,7 +748,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ParallelBatchedActorOrchestration(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -770,13 +766,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item3", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await client.WaitForStartupAsync(this.output);
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 var status = await client.GetStatusAsync();
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
                 await client.RaiseEventAsync("newItem", "item4", this.output);
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await host.StopAsync();
             }
@@ -784,7 +781,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ExternalEvents_MultipleNamesLooping(bool extendedSessions, string storageProvider)
         {
             const string testName = nameof(this.ExternalEvents_MultipleNamesLooping);
@@ -803,9 +800,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("done", null, this.output);
 
                 // Make sure it actually completed
-                var status = await client.WaitForCompletionAsync(
-                    TimeSpan.FromSeconds(1000),
-                    this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(2, status.Output);
 
@@ -818,7 +813,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task TerminateOrchestration(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -840,11 +835,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Need to wait for the instance to start before we can terminate it.
                 // TODO: This requirement may not be ideal and should be revisited.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 await client.TerminateAsync("sayōnara");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Terminated, status?.RuntimeStatus);
                 Assert.Equal("sayōnara", status?.Output);
@@ -870,7 +865,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task RewindOrchestration(string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -890,9 +885,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "Catherine", this.output);
 
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
-                var statusFail = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var statusFail = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, statusFail?.RuntimeStatus);
 
@@ -900,7 +895,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await client.RewindAsync("rewind!");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Hello, Catherine!", status?.Output);
@@ -926,7 +921,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task TimerCancellation(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -944,14 +939,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var timeout = TimeSpan.FromSeconds(10);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
                 await client.RaiseEventAsync("approval", eventData: true, output: this.output);
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Approved", status?.Output);
 
@@ -975,7 +966,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task TimerExpiration(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -993,15 +984,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var timeout = TimeSpan.FromSeconds(10);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 // Don't send any notification - let the internal timeout expire
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Expired", status?.Output);
 
@@ -1035,18 +1022,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var extendedSessions = false;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.TimerExpiration),
+                nameof(this.WaitForExternalEventWithTimeout),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 var timeout = TimeSpan.FromSeconds(10);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, defaultValue), this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 // Don't send any notification - let the internal timeout expire
                 if (sendEvent)
@@ -1054,7 +1037,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await client.RaiseEventAsync("Approval", "ApprovalValue", this.output);
                 }
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(expectedResponse, status?.Output);
 
@@ -1067,7 +1050,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task OrchestrationConcurrency(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1082,7 +1065,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     var timeout = TimeSpan.FromSeconds(10);
                     var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+                    await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(60));
 
                     // Don't send any notification - let the internal timeout expire
                 };
@@ -1110,7 +1093,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HandledActivityException(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1123,10 +1106,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Empty string input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(5, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates the orchestrator's exception handling behavior.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HandledSubOrchestratorException()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HandledActivityException),
+                enableExtendedSessions: true))
+            {
+                await host.StartAsync();
+
+                string message = $"Failure ID: {Guid.NewGuid()}";
+
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SubOrchestrationThrow),
+                    message,
+                    this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Contains(message, (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -1137,7 +1149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task UnhandledOrchestrationException(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1155,7 +1167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1183,7 +1195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Orchestration_Activity(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1203,7 +1215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -1231,7 +1243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_ComplexType(string storageProvider)
         {
             await this.SubOrchestration_ComplexType_Main_Logic(storageProvider);
@@ -1242,7 +1254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_ComplexType_History(string storageProvider)
         {
             await this.SubOrchestration_ComplexType_Main_Logic(storageProvider, showHistory: true);
@@ -1253,7 +1265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_ComplexType_HistoryInputOutput(string storageProvider)
         {
             await this.SubOrchestration_ComplexType_Main_Logic(storageProvider, showHistory: true, showHistoryOutput: true);
@@ -1264,7 +1276,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_Has_Valid_ParentInstanceId_Assigned(bool extendedSessions, string storageProvider)
         {
             const string TaskHub = nameof(this.SubOrchestration_ComplexType);
@@ -1280,9 +1292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
-                var status = await client.WaitForCompletionAsync(
-                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
-                    this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -1328,7 +1338,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
                 var status = await client.WaitForCompletionAsync(
-                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
                     this.output,
                     showHistory,
                     showHistoryOutput);
@@ -1402,7 +1411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task UnhandledOrchestrationExceptionWithRetry(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1420,7 +1429,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(50));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1451,7 +1460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task OrchestrationWithRetry_NullRetryOptions(string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1469,7 +1478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(50));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1489,7 +1498,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task UnhandledActivityException(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1508,10 +1517,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string message = "Kah-BOOOOM!!!";
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1543,7 +1551,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task UnhandledSubOrchestratorActivityException(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1561,12 +1569,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Input = exceptionMessage,
                 };
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
                 var client = await host.StartOrchestratorAsync(
                     nameof(TestOrchestrations.CallOrchestrator),
                     args,
                     this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1590,7 +1597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task UnhandledActivityExceptionWithRetry(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1610,7 +1617,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string message = "Kah-BOOOOM!!!";
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1641,7 +1648,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityWithRetry_NullRetryOptions(string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1655,7 +1662,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string message = "Kah-BOOOOM!!!";
                 string orchestratorFunctionName = nameof(TestOrchestrations.ActivityWithRetry_NullRetryOptions);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionName, message, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1675,7 +1682,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task WaitForEventAndCallActivity_DroppedEventsTest(string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1694,7 +1701,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await client.RaiseEventAsync("add", i, this.output);
                 }
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(60));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -1711,7 +1718,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task StartOrchestration_OnUnregisteredOrchestrator(bool extendedSessions, string storageProvider)
         {
             const string activityFunctionName = "UnregisteredOrchestrator";
@@ -1739,7 +1746,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Orchestration_OnUnregisteredActivity(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -1765,7 +1772,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.StartsWith(errorMessage, (string)status?.Output);
@@ -1790,7 +1797,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Orchestration_OnValidOrchestrator(bool extendedSessions, string storageProvider)
         {
             const string greetingName = "ValidOrchestrator";
@@ -1823,7 +1830,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output, parentInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
 
                 Assert.NotNull(status);
@@ -1851,7 +1858,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ThrowExceptionOnLongTimer(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -1866,7 +1873,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // https://github.com/Azure/azure-functions-durable-extension/issues/14
                 DateTime fireAt = DateTime.UtcNow.AddDays(7);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
@@ -1881,7 +1888,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Orchestration_OnUnregisteredOrchestrator(bool extendedSessions, string storageProvider)
         {
             const string unregisteredOrchestrator = "UnregisteredOrchestrator";
@@ -1908,7 +1915,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.True(status?.Output.ToString().Contains(errorMessage));
@@ -1930,7 +1937,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BigReturnValue_Orchestrator(bool extendedSessions, string storageProvider)
         {
             string taskHub = nameof(this.BigReturnValue_Orchestrator);
@@ -1939,14 +1946,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var orchestrator = nameof(TestOrchestrations.BigReturnValue);
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 // The expected maximum payload size is 60 KB.
                 // Strings in Azure Storage are encoded in UTF-16, which is 2 bytes per character.
                 int stringLength = (61 * 1024) / 2;
 
                 var client = await host.StartOrchestratorAsync(orchestrator, stringLength, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
@@ -1958,7 +1964,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BigReturnValue_Activity(bool extendedSessions, string storageProvider)
         {
             string taskHub = nameof(this.BigReturnValue_Activity);
@@ -1967,7 +1973,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var orchestrator = nameof(TestOrchestrations.CallActivity);
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 // The expected maximum payload size is 60 KB.
                 // Strings in Azure Storage are encoded in UTF-16, which is 2 bytes per character.
@@ -1979,7 +1984,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestrator, input, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
@@ -1990,7 +1995,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task RaiseEventToSubOrchestration(bool extendedSessions, string storageProvider)
         {
             string taskHub = nameof(this.RaiseEventToSubOrchestration);
@@ -1999,7 +2004,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var orchestrator = nameof(TestOrchestrations.CallOrchestrator);
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 var input = new StartOrchestrationArgs
                 {
@@ -2009,15 +2013,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestrator, input, this.output);
-                var status = await client.WaitForStartupAsync(timeout, this.output);
+                var status = await client.WaitForStartupAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Wait long enough for the sub-orchestration to be started and waiting for input.
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 await client.InnerClient.RaiseEventAsync(input.InstanceId, "approval", true);
 
-                status = await client.WaitForCompletionAsync(timeout, this.output);
+                status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal("Approved", status?.Output);
 
                 await host.StopAsync();
@@ -2027,7 +2031,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SetStatusOrchestration(bool extendedSessions, string storageProvider)
         {
             const string testName = nameof(this.SetStatusOrchestration);
@@ -2040,7 +2044,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SetStatus), null, this.output);
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync();
                 Assert.Equal(JTokenType.Null, orchestrationStatus.CustomStatus?.Type);
@@ -2057,7 +2061,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Test setting the custom status to a complex object.
                 var newCustomStatus = new { Foo = "Bar", Count = 2, };
                 await client.RaiseEventAsync("UpdateStatus", newCustomStatus, this.output);
-                orchestrationStatus = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                orchestrationStatus = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(newCustomStatus.Foo, (string)orchestrationStatus.CustomStatus["Foo"]);
                 Assert.Equal(newCustomStatus.Count, (int)orchestrationStatus.CustomStatus["Count"]);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, orchestrationStatus?.RuntimeStatus);
@@ -2068,7 +2072,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task GetStatus_InstanceNotFound(string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.GetStatus_InstanceNotFound), false, storageProviderType: storageProvider))
@@ -2077,7 +2081,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Start a dummy orchestration just to help us get a client object
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 string bogusInstanceId = "BOGUS_" + Guid.NewGuid().ToString("N");
                 this.output.WriteLine($"Fetching status for fake instance: {bogusInstanceId}");
@@ -2088,7 +2092,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task GetStatus_ShowInputFalse(string storageProvider)
         {
             const string testName = nameof(this.GetStatus_ShowInputFalse);
@@ -2105,7 +2109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task GetStatus_ShowInputDefault(string storageProvider)
         {
             const string testName = nameof(this.GetStatus_ShowInputDefault);
@@ -2120,11 +2124,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Deserialize_DurableOrchestrationStatus(string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.Deserialize_DurableOrchestrationStatus), false, storageProviderType: storageProvider))
@@ -2137,7 +2139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     nameof(TestOrchestrations.GetDurableOrchestrationStatus),
                     input,
                     this.output);
-                DurableOrchestrationStatus desereliazedStatus = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                DurableOrchestrationStatus desereliazedStatus = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(desereliazedStatus);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, desereliazedStatus.RuntimeStatus);
@@ -2152,7 +2154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Activity_Gets_HttpManagementPayload(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -2171,7 +2173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
@@ -2186,7 +2188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task OrchestrationClient_Gets_HttpManagementPayload(bool extendedSessions, string storageProvider)
         {
             string[] orchestratorFunctionNames =
@@ -2204,7 +2206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
                 ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
@@ -2230,7 +2232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActorOrchestration_WithTaskHubName(bool extendedSessions, string storageProvider)
         {
             var taskHubName1 = "ActorOrchestration1";
@@ -2270,7 +2272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The end message will cause the actor to complete itself.
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "end", this.output);
 
-                status = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client1.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int)status?.Output);
@@ -2284,13 +2286,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario involving a signal and two calls.
+        /// End-to-end test which validates a simple entity scenario involving a signal and two calls.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_SignalAndCallStringStore(bool extendedSessions)
+        public async Task DurableEntity_SignalAndCallStringStore(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2299,36 +2301,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_SignalAndCallStringStore),
+                nameof(this.DurableEntity_SignalAndCallStringStore),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var guid = Guid.NewGuid(); // used as the key for the actor
+                var guid = Guid.NewGuid(); // used as the key for the entity
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], guid, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", (string)status?.Output);
 
-                // try to read the state of the actor directly from the client
-                var response = await client.InnerClient.ReadActorState<string>(new ActorId("StringStore2", guid.ToString()));
-                Assert.True(response.ActorExists);
-                Assert.Equal("333", response.ActorState);
+                // try to read the state of the entity directly from the client
+                var response = await client.InnerClient.ReadEntityStateAsync<string>(new EntityId("StringStore2", guid.ToString()));
+                Assert.True(response.EntityExists);
+                Assert.Equal("333", response.EntityState);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario involving creation and deletion.
+        /// End-to-end test which validates a simple entity scenario involving creation and deletion.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_StringStoreWithCreateDelete(bool extendedSessions)
+        public async Task DurableEntity_StringStoreWithCreateDelete(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2337,13 +2339,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_StringStoreWithCreateDelete),
+                nameof(this.DurableEntity_StringStoreWithCreateDelete),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "start", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("start", status?.Input);
@@ -2354,34 +2356,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario which sends a signal, and then polls
+        /// End-to-end test which validates a simple entity scenario which sends a signal, and then polls
         /// until the signal is delivered.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_SignalThenPoll(bool extendedSessions)
+        public async Task DurableEntity_SignalThenPoll(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.PollCounterActor),
+                nameof(TestOrchestrations.PollCounterEntity),
             };
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_SignalThenPoll),
+                nameof(this.DurableEntity_SignalThenPoll),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var actorId = new ActorId("Counter", Guid.NewGuid().ToString());
+                var entityId = new EntityId("Counter", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
-                await client.InnerClient.SignalActor(actorId, "increment");
+                await client.InnerClient.SignalEntityAsync(entityId, "increment");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", status?.Output);
@@ -2391,76 +2393,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple actor scenario where an actor's state is
+        /// End-to-end test which validates a simple entity scenario where an entity's state is
         /// larger than what fits into Azure table rows.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_LargeActor(bool extendedSessions)
+        public async Task DurableEntity_LargeEntity(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.LargeActor),
+                nameof(TestOrchestrations.LargeEntity),
             };
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_LargeActor),
+                nameof(this.DurableEntity_LargeEntity),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var actorId = new ActorId("StringStore2", Guid.NewGuid().ToString());
+                var entityId = new EntityId("StringStore2", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", status?.Output);
 
-                var response = await client.InnerClient.ReadActorState<string>(actorId);
-                Assert.True(response.ActorExists);
-                Assert.Equal(100000, response.ActorState.Length);
+                var response = await client.InnerClient.ReadEntityStateAsync<string>(entityId);
+                Assert.True(response.EntityExists);
+                Assert.Equal(100000, response.EntityState.Length);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario involving a blob-backed actor that stores text and,
+        /// End-to-end test which validates an entity scenario involving a blob-backed entity that stores text and,
         /// when deactivated, saves its state to storage. The test concurrently runs an orchestration that
-        /// creates a load of "append" operations, and sends periodic "deactivate" operations to the actor.
+        /// creates a load of "append" operations, and sends periodic "deactivate" operations to the entity.
         /// At the end, it validates that all of the appends are reflected in the final state.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_ActorToAndFromBlob(bool extendedSessions)
+        public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.ActorToAndFromBlob),
-            };
-
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_ActorToAndFromBlob),
+                nameof(this.DurableEntity_EntityToAndFromBlob),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 await EnsureBlobContainerExists("test");
 
-                var actorId = new ActorId("BlobBackedTextStore", Guid.NewGuid().ToString());
+                var entityId = new EntityId("BlobBackedTextStore", Guid.NewGuid().ToString());
 
                 // first, start the orchestration
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorId, this.output);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.EntityToAndFromBlob),
+                    entityId,
+                    this.output);
 
-                DurableOrchestrationStatus status = null;
+                DurableOrchestrationStatus status;
                 var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 240);
 
                 while (true)
@@ -2468,9 +2468,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await Task.Delay(5000);
 
                     // while the orchestration is running, just for fun,
-                    // send some deactivation signals which unload the actor from memory.
-                    // this should not change the final outcome as the actors are storage-backed.
-                    await client.InnerClient.SignalActor(actorId, "deactivate");
+                    // send some deactivation signals which unload the entity from memory.
+                    // this should not change the final outcome as the entities are storage-backed.
+                    await client.InnerClient.SignalEntityAsync(entityId, "deactivate");
 
                     status = await client.GetStatusAsync();
 
@@ -2490,15 +2490,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario where three "LockedIncrement" orchestrations
+        /// End-to-end test which validates an entity scenario where three "LockedIncrement" orchestrations
         /// concurrently increment a counter saved in blob storage, using a read-modify-write pattern, while holding
-        /// a lock on the same actor. This tests that the lock prevents the interleaving of these orchestrations.
+        /// a lock on the same entity. This tests that the lock prevents the interleaving of these orchestrations.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_LockedIncrements(bool extendedSessions)
+        public async Task DurableEntity_LockedIncrements(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2506,25 +2506,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_LockedIncrements),
+                nameof(this.DurableEntity_LockedIncrements),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 await EnsureBlobContainerExists("test");
 
-                var actorPlayingALock = new ActorId("Counter", Guid.NewGuid().ToString()); // does not matter what actor we use
+                var entityPlayingALock = new EntityId("Counter", Guid.NewGuid().ToString()); // does not matter what entity we use
 
                 // start three concurrent increment operations
                 // the lock should prevent incorrect interleavings
 
-                var client1 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
-                var client2 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
-                var client3 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], actorPlayingALock, this.output);
+                var client1 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+                var client2 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+                var client3 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
 
-                var status1 = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 15), this.output);
-                var status2 = await client2.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 15), this.output);
-                var status3 = await client3.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 15), this.output);
+                var status1 = await client1.WaitForCompletionAsync(this.output);
+                var status2 = await client2.WaitForCompletionAsync(this.output);
+                var status3 = await client3.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status1?.RuntimeStatus);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status2?.RuntimeStatus);
@@ -2543,58 +2543,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario where a "LockedTransfer" orchestration locks
-        /// two "Counter" actors, and then in parallel increments/decrements them, respectively, using
+        /// End-to-end test which validates an entity scenario where a "LockedTransfer" orchestration locks
+        /// two "Counter" entities, and then in parallel increments/decrements them, respectively, using
         /// a read-modify-write pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableActor_SingleLockedTransfer(bool extendedSessions)
+        public async Task DurableEntity_SingleLockedTransfer(bool extendedSessions)
         {
-            string[] orchestratorFunctionNames =
-            {
-                nameof(TestOrchestrations.LockedTransfer),
-            };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_SingleLockedTransfer),
+                nameof(this.DurableEntity_SingleLockedTransfer),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var counter1 = new ActorId("Counter", Guid.NewGuid().ToString());
-                var counter2 = new ActorId("Counter", Guid.NewGuid().ToString());
+                var counter1 = new EntityId("Counter", Guid.NewGuid().ToString());
+                var counter2 = new EntityId("Counter", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (counter1, counter2), this.output);
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.LockedTransfer),
+                    (counter1, counter2),
+                    this.output);
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 15), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 // validate the state of the counters
-                var response1 = await client.InnerClient.ReadActorState<int>(counter1);
-                var response2 = await client.InnerClient.ReadActorState<int>(counter2);
-                Assert.True(response1.ActorExists);
-                Assert.True(response2.ActorExists);
-                Assert.Equal(-1, response1.ActorState);
-                Assert.Equal(1, response2.ActorState);
+                var response1 = await client.InnerClient.ReadEntityStateAsync<int>(counter1);
+                var response2 = await client.InnerClient.ReadEntityStateAsync<int>(counter2);
+                Assert.True(response1.EntityExists);
+                Assert.True(response2.EntityExists);
+                Assert.Equal(-1, response1.EntityState);
+                Assert.Equal(1, response2.EntityState);
 
                 await host.StopAsync();
             }
         }
 
         /// <summary>
-        /// End-to-end test which validates an actor scenario where a a number of "LockedTransfer" orchestrations
-        /// concurrently operate on a number of actors, in a classical dining-philosophers configuration.
+        /// End-to-end test which validates an entity scenario where a a number of "LockedTransfer" orchestrations
+        /// concurrently operate on a number of entities, in a classical dining-philosophers configuration.
         /// This showcases the deadlock prevention mechanism achieved by the sequential, ordered lock acquisition.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, 5)]
         [InlineData(false, 5)]
-        public async Task DurableActor_MultipleLockedTransfers(bool extendedSessions, int numberActors)
+        public async Task DurableEntity_MultipleLockedTransfers(bool extendedSessions, int numberEntities)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2602,63 +2601,105 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableActor_MultipleLockedTransfers),
+                nameof(this.DurableEntity_MultipleLockedTransfers),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                // create specified number of actors
-                var counters = new ActorId[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                // create specified number of entities
+                var counters = new EntityId[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    counters[i] = new ActorId("Counter", Guid.NewGuid().ToString());
+                    counters[i] = new EntityId("Counter", Guid.NewGuid().ToString());
                 }
 
                 // in parallel, start one transfer per counter, each decrementing a counter and incrementing
                 // its successor (where the last one wraps around to the first)
                 // This is a pattern that would deadlock if we didn't order the lock acquisition.
-                var clients = new Task<TestOrchestratorClient>[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                var clients = new Task<TestOrchestratorClient>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
                     clients[i] = host.StartOrchestratorAsync(
                         orchestratorFunctionNames[0],
-                        (counters[i], counters[(i + 1) % numberActors]),
+                        (counters[i], counters[(i + 1) % numberEntities]),
                         this.output);
                 }
 
                 await Task.WhenAll(clients);
 
                 // in parallel, wait for all transfers to complete
-                var stati = new Task<DurableOrchestrationStatus>[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                var stati = new Task<DurableOrchestrationStatus>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    stati[i] = clients[i].Result.WaitForCompletionAsync(TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 30), this.output);
+                    stati[i] = clients[i].Result.WaitForCompletionAsync(this.output);
                 }
 
                 await Task.WhenAll(stati);
 
                 // check that they all completed
-                for (int i = 0; i < numberActors; i++)
+                for (int i = 0; i < numberEntities; i++)
                 {
                     Assert.Equal(OrchestrationRuntimeStatus.Completed, stati[i].Result?.RuntimeStatus);
                 }
 
-                // in parallel, read all the actor states
-                var actorStates = new Task<ActorStateResponse<int>>[numberActors];
-                for (int i = 0; i < numberActors; i++)
+                // in parallel, read all the entity states
+                var entityStates = new Task<EntityStateResponse<int>>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    actorStates[i] = clients[i].Result.InnerClient.ReadActorState<int>(counters[i]);
+                    entityStates[i] = clients[i].Result.InnerClient.ReadEntityStateAsync<int>(counters[i]);
                 }
 
-                await Task.WhenAll(actorStates);
+                await Task.WhenAll(entityStates);
 
                 // check that the counter states are all back to 0
                 // (since each participated in 2 transfers, one incrementing and one decrementing)
-                for (int i = 0; i < numberActors; i++)
+                for (int i = 0; i < numberEntities; i++)
                 {
-                    Assert.True(actorStates[i].Result.ActorExists);
-                    Assert.Equal(0, actorStates[i].Result.ActorState);
+                    Assert.True(entityStates[i].Result.EntityExists);
+                    Assert.Equal(0, entityStates[i].Result.EntityState);
                 }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that actors can safely make async I/O calls.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableEntity_AsyncIO()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_AsyncIO),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId("HttpEntity", Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
+                await client.SignalEntity(this.output, "get", "https://bing.com");
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
+                Assert.NotNull(state);
+
+                if (state.TryGetValue("error", out string error))
+                {
+                    throw new XunitException("Entity encountered an error: " + error);
+                }
+
+                Assert.True(state.ContainsKey("https://www.microsoft.com"));
+                Assert.Equal("200", state["https://www.microsoft.com"]);
+
+                Assert.True(state.ContainsKey("https://bing.com"));
+                Assert.Equal("200", state["https://bing.com"]);
+
+                Assert.Equal(2, state.Count);
 
                 await host.StopAsync();
             }
@@ -2666,7 +2707,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ExternalEvents_WithTaskHubName_MultipleNamesLooping(bool extendedSessions, string storageProvider)
         {
             var taskHubName1 = "MultipleNamesLooping1";
@@ -2688,7 +2729,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null, this.output);
 
                 // Make sure it actually completed
-                var status = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client1.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(2, (int)status.Output);
 
@@ -2699,7 +2740,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Purge_Single_Instance_History(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -2713,7 +2754,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string instanceId = Guid.NewGuid().ToString();
                 string message = GenerateMediumRandomStringPayload().ToString();
                 TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync(true);
@@ -2738,7 +2779,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Purge_All_History_By_TimePeriod(bool extendedSessions, string storageProvider)
         {
             string testName = nameof(this.Purge_Partially_History_By_TimePeriod);
@@ -2754,7 +2795,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2763,7 +2804,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string secondInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2772,7 +2813,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string thirdInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2782,7 +2823,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string fourthInstanceId = Guid.NewGuid().ToString();
                 string message = GenerateMediumRandomStringPayload().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, fourthInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+                await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
 
                 status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2823,7 +2864,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Purge_Partially_History_By_TimePeriod(bool extendedSessions, string storageProvider)
         {
             using (JobHost host = TestHelpers.GetJobHost(
@@ -2838,7 +2879,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2850,7 +2891,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string secondInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2859,7 +2900,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string thirdInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2893,9 +2934,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Theory]
+        [Theory(Skip = "Azure Storage fails due to container deletion")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
         {
             var taskHubName1 = "GetStatus1";
@@ -2936,9 +2977,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 // Make sure it actually completed
-                await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
-                await client2.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
-                await client3.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                await client1.WaitForCompletionAsync(this.output);
+                await client2.WaitForCompletionAsync(this.output);
+                await client3.WaitForCompletionAsync(this.output);
 
                 // Perform some operations
                 var result1 = await client1.GetStatusAsync(condition1, CancellationToken.None);

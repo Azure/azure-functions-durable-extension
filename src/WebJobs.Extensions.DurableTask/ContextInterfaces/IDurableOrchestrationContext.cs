@@ -56,7 +56,12 @@ namespace Microsoft.Azure.WebJobs
         /// instance restarts itself using this method.</para>
         /// </remarks>
         /// <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
-        void ContinueAsNew(object input);
+        /// <param name="preserveUnprocessedEvents">
+        /// If set to <c>true</c>, re-adds any unprocessed external events into the new execution
+        /// history when the orchestration instance restarts. If <c>false</c>, any unprocessed
+        /// external events will be discarded when the orchestration instance restarts.
+        /// </param>
+        void ContinueAsNew(object input, bool preserveUnprocessedEvents = false);
 
         /// <summary>
         /// Sets the JSON-serializeable status of the current orchestrator function.
