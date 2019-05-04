@@ -2356,8 +2356,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates a simple entity scenario which sends a signal, and then polls
-        /// until the signal is delivered.
+        /// End-to-end test which validates a simple entity scenario which sends a signal
+        /// to a relay which forwards it to counter, and polls until the signal is delivered.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -2377,11 +2377,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var entityId = new EntityId("Counter", Guid.NewGuid().ToString());
+                var relayEntityId = new EntityId("Relay", "");
+                var counterEntityId = new EntityId("Counter", Guid.NewGuid().ToString());
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counterEntityId, this.output);
 
-                await client.InnerClient.SignalEntityAsync(entityId, "increment");
+                await client.InnerClient.SignalEntityAsync(relayEntityId, "", (counterEntityId, "increment"));
 
                 var status = await client.WaitForCompletionAsync(this.output);
 

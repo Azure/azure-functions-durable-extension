@@ -101,6 +101,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        //-------------- An entity that forwards a signal -----------------
+
+        public static void RelayEntity([EntityTrigger(EntityName = "Relay")] IDurableEntityContext context)
+        {
+            var (destination, operation) = context.GetInput<(EntityId, string)>();
+
+            context.SignalEntity(destination, operation);
+        }
+
         //-------------- An entity representing a phone book, using an untyped json object -----------------
 
         public static void PhoneBookEntity([EntityTrigger(EntityName = "PhoneBook")] IDurableEntityContext context)
