@@ -53,16 +53,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
             };
 
-            // Filter out some of the partition management informational events
-            var filteredEvents = new Dictionary<string, IEnumerable<int>>
-            {
-                { "DurableTask-AzureStorage", new int[] { 120, 126, 127 } },
-            };
-
             this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
 
             string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-            this.eventSourceListener.CaptureLogs(sessionName, traceConfig, filteredEvents);
+            this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
         }
 
         private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
@@ -92,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -149,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     useTaskHubFromAppSettings: false);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -161,7 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     useTaskHubFromAppSettings: true);
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -194,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("", status.Output.ToString());
@@ -274,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 DurableOrchestrationStatus status =
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                    await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -307,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 DurableOrchestrationStatus status =
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                    await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -339,7 +333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 DurableOrchestrationStatus status =
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                    await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -366,7 +360,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output, showHistory, showHistoryOutput);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output, showHistory, showHistoryOutput);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -447,7 +441,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -497,7 +491,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Factorial), 10, this.output);
                 instanceId = client.InstanceId;
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(10, status?.Input);
@@ -537,7 +531,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.DiskUsage), Environment.CurrentDirectory, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(90), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(Environment.CurrentDirectory, status?.Input);
@@ -569,8 +563,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceId = client.InstanceId;
 
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(this.output);
+
                 TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
-                await client.WaitForStartupAsync(waitTimeout, this.output);
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
@@ -593,7 +588,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The end message will cause the actor to complete itself.
                 await client.RaiseEventAsync("operation", "end", this.output);
 
-                status = await client.WaitForCompletionAsync(waitTimeout, this.output);
+                status = await client.WaitForCompletionAsync(this.output, timeout: waitTimeout);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int?)status?.Output);
@@ -628,7 +623,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ActorOrchestration),
+                nameof(this.ActorOrchestration_NoWaiting),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -642,7 +637,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.RaiseEventAsync("operation", "end", this.output);
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int?)status?.Output);
@@ -679,13 +674,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item4", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
-                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForStartupAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
                 await client.RaiseEventAsync("newItem", "item5", this.output);
 
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -718,13 +713,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item2
 
                 // Make sure it's still running and didn't complete early (or fail).
-                var status = await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForStartupAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last event will cause the actor to complete itself.
                 await client.RaiseEventAsync("deleteItem", this.output); // deletes last item in the list: item1
 
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -755,13 +750,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("newItem", "item3", this.output);
 
                 // Make sure it's still running and didn't complete early (or fail).
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await client.WaitForStartupAsync(this.output);
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 var status = await client.GetStatusAsync();
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Sending this last item will cause the actor to complete itself.
                 await client.RaiseEventAsync("newItem", "item4", this.output);
-                status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await host.StopAsync();
             }
@@ -788,9 +784,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("done", null, this.output);
 
                 // Make sure it actually completed
-                var status = await client.WaitForCompletionAsync(
-                    TimeSpan.FromSeconds(1000),
-                    this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(2, status.Output);
 
@@ -825,11 +819,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Need to wait for the instance to start before we can terminate it.
                 // TODO: This requirement may not be ideal and should be revisited.
                 // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 await client.TerminateAsync("sayōnara");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Terminated, status?.RuntimeStatus);
                 Assert.Equal("sayōnara", status?.Output);
@@ -873,9 +867,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "Catherine", this.output);
 
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
-                var statusFail = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var statusFail = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, statusFail?.RuntimeStatus);
 
@@ -883,7 +877,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await client.RewindAsync("rewind!");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Hello, Catherine!", status?.Output);
@@ -927,14 +921,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var timeout = TimeSpan.FromSeconds(10);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
                 await client.RaiseEventAsync("approval", eventData: true, output: this.output);
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Approved", status?.Output);
 
@@ -976,15 +966,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var timeout = TimeSpan.FromSeconds(10);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 // Don't send any notification - let the internal timeout expire
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("Expired", status?.Output);
 
@@ -1018,18 +1004,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var extendedSessions = false;
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.TimerExpiration),
+                nameof(this.WaitForExternalEventWithTimeout),
                 extendedSessions))
             {
                 await host.StartAsync();
 
                 var timeout = TimeSpan.FromSeconds(10);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, defaultValue), this.output);
-
-                // Need to wait for the instance to start before sending events to it.
-                // TODO: This requirement may not be ideal and should be revisited.
-                // BUG: https://github.com/Azure/azure-functions-durable-extension/issues/101
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 // Don't send any notification - let the internal timeout expire
                 if (sendEvent)
@@ -1037,7 +1019,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await client.RaiseEventAsync("Approval", "ApprovalValue", this.output);
                 }
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(expectedResponse, status?.Output);
 
@@ -1065,7 +1047,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     var timeout = TimeSpan.FromSeconds(10);
                     var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Approval), timeout, this.output);
-                    await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+                    await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(60));
 
                     // Don't send any notification - let the internal timeout expire
                 };
@@ -1106,7 +1088,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Empty string input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(5, status?.Output);
@@ -1135,7 +1117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     nameof(TestOrchestrations.SubOrchestrationThrow),
                     message,
                     this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.Contains(message, (string)status.Output);
@@ -1167,7 +1149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1215,7 +1197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(20), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -1290,9 +1272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
-                var status = await client.WaitForCompletionAsync(
-                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
-                    this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
@@ -1338,7 +1318,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output);
                 var status = await client.WaitForCompletionAsync(
-                    Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
                     this.output,
                     showHistory,
                     showHistoryOutput);
@@ -1430,7 +1409,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(50));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1476,7 +1455,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Null input should result in ArgumentNullException in the orchestration code.
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(50), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(50));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1515,10 +1494,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string message = "Kah-BOOOOM!!!";
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1568,12 +1546,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Input = exceptionMessage,
                 };
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
                 var client = await host.StartOrchestratorAsync(
                     nameof(TestOrchestrations.CallOrchestrator),
                     args,
                     this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1617,7 +1594,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string message = "Kah-BOOOOM!!!";
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1660,7 +1637,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string message = "Kah-BOOOOM!!!";
                 string orchestratorFunctionName = nameof(TestOrchestrations.ActivityWithRetry_NullRetryOptions);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionName, message, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(40), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1697,7 +1674,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await client.RaiseEventAsync("add", i, this.output);
                 }
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(60), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(60));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
@@ -1768,7 +1745,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.StartsWith(errorMessage, (string)status?.Output);
@@ -1826,7 +1803,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Function type call chain: 'CallActivity' (orchestrator) -> 'SayHelloWithActivity' (orchestrator) -> 'Hello' (activity)
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output, parentInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
                 var statusInput = JsonConvert.DeserializeObject<Dictionary<string, object>>(status?.Input.ToString());
 
                 Assert.NotNull(status);
@@ -1869,7 +1846,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // https://github.com/Azure/azure-functions-durable-extension/issues/14
                 DateTime fireAt = DateTime.UtcNow.AddDays(7);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
@@ -1911,7 +1888,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.True(status?.Output.ToString().Contains(errorMessage));
@@ -1943,14 +1920,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var orchestrator = nameof(TestOrchestrations.BigReturnValue);
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 // The expected maximum payload size is 60 KB.
                 // Strings in Azure Storage are encoded in UTF-16, which is 2 bytes per character.
                 int stringLength = (61 * 1024) / 2;
 
                 var client = await host.StartOrchestratorAsync(orchestrator, stringLength, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
@@ -1972,7 +1948,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var orchestrator = nameof(TestOrchestrations.CallActivity);
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 // The expected maximum payload size is 60 KB.
                 // Strings in Azure Storage are encoded in UTF-16, which is 2 bytes per character.
@@ -1984,7 +1959,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestrator, input, this.output);
-                var status = await client.WaitForCompletionAsync(timeout, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
@@ -2005,7 +1980,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var orchestrator = nameof(TestOrchestrations.CallOrchestrator);
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
 
                 var input = new StartOrchestrationArgs
                 {
@@ -2015,15 +1989,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestrator, input, this.output);
-                var status = await client.WaitForStartupAsync(timeout, this.output);
+                var status = await client.WaitForStartupAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
 
                 // Wait long enough for the sub-orchestration to be started and waiting for input.
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 await client.InnerClient.RaiseEventAsync(input.InstanceId, "approval", true);
 
-                status = await client.WaitForCompletionAsync(timeout, this.output);
+                status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal("Approved", status?.Output);
 
                 await host.StopAsync();
@@ -2046,7 +2020,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SetStatus), null, this.output);
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(10), this.output);
+                await client.WaitForStartupAsync(this.output);
 
                 DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync();
                 Assert.Equal(JTokenType.Null, orchestrationStatus.CustomStatus?.Type);
@@ -2063,7 +2037,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Test setting the custom status to a complex object.
                 var newCustomStatus = new { Foo = "Bar", Count = 2, };
                 await client.RaiseEventAsync("UpdateStatus", newCustomStatus, this.output);
-                orchestrationStatus = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                orchestrationStatus = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(newCustomStatus.Foo, (string)orchestrationStatus.CustomStatus["Foo"]);
                 Assert.Equal(newCustomStatus.Count, (int)orchestrationStatus.CustomStatus["Count"]);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, orchestrationStatus?.RuntimeStatus);
@@ -2082,7 +2056,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Start a dummy orchestration just to help us get a client object
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 string bogusInstanceId = "BOGUS_" + Guid.NewGuid().ToString("N");
                 this.output.WriteLine($"Fetching status for fake instance: {bogusInstanceId}");
@@ -2137,7 +2111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     nameof(TestOrchestrations.GetDurableOrchestrationStatus),
                     input,
                     this.output);
-                DurableOrchestrationStatus desereliazedStatus = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                DurableOrchestrationStatus desereliazedStatus = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(desereliazedStatus);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, desereliazedStatus.RuntimeStatus);
@@ -2171,7 +2145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
@@ -2203,7 +2177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
                 ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
@@ -2270,7 +2244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // The end message will cause the actor to complete itself.
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "operation", "end", this.output);
 
-                status = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                status = await client1.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(3, (int)status?.Output);
@@ -2308,7 +2282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null, this.output);
 
                 // Make sure it actually completed
-                var status = await client1.WaitForCompletionAsync(TimeSpan.FromSeconds(10), this.output);
+                var status = await client1.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(2, (int)status.Output);
 
@@ -2333,7 +2307,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string instanceId = Guid.NewGuid().ToString();
                 string message = GenerateMediumRandomStringPayload().ToString();
                 TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync(true);
@@ -2374,7 +2348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2383,7 +2357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string secondInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2392,7 +2366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string thirdInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2402,7 +2376,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string fourthInstanceId = Guid.NewGuid().ToString();
                 string message = GenerateMediumRandomStringPayload().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, fourthInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromMinutes(2), this.output);
+                await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
 
                 status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2458,7 +2432,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string firstInstanceId = Guid.NewGuid().ToString();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2470,7 +2444,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string secondInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
@@ -2479,7 +2453,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string thirdInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
-                await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);

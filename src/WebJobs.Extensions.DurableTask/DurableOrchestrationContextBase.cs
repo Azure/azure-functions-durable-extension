@@ -455,6 +455,22 @@ namespace Microsoft.Azure.WebJobs
         public abstract void ContinueAsNew(object input);
 
         /// <summary>
+        /// Restarts the orchestration by clearing its history.
+        /// </summary>
+        /// <remarks>
+        /// <para>Large orchestration histories can consume a lot of memory and cause delays in
+        /// instance load times. This method can be used to periodically truncate the stored
+        /// history of an orchestration instance.</para>
+        /// </remarks>
+        /// <param name="input">The JSON-serializeable data to re-initialize the instance with.</param>
+        /// <param name="preserveUnprocessedEvents">
+        /// If set to <c>true</c>, re-adds any unprocessed external events into the new execution
+        /// history when the orchestration instance restarts. If <c>false</c>, any unprocessed
+        /// external events will be discarded when the orchestration instance restarts.
+        /// </param>
+        public virtual void ContinueAsNew(object input, bool preserveUnprocessedEvents) => throw new NotImplementedException();
+
+        /// <summary>
         /// Sets the JSON-serializeable status of the current orchestrator function.
         /// </summary>
         /// <remarks>

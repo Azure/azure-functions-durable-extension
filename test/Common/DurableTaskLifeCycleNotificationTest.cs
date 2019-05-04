@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationStartAndCompleted(bool extendedSessionsEnabled)
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     createdInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     null,
                     this.output,
                     createdInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
                 Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
@@ -271,10 +271,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output,
                     createdInstanceId);
 
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForStartupAsync(this.output);
                 await client.TerminateAsync("sayōnara");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Terminated, status?.RuntimeStatus);
                 Assert.Equal("sayōnara", status?.Output);
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     createdInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 eventGridRequestValidators.ForEach(v => v.Invoke());
 
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     createdInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 eventGridRequestValidators.ForEach(v => v.Invoke());
 
@@ -461,7 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     null,
                     this.output,
                     createdInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 eventGridRequestValidators.ForEach(v => v.Invoke());
 
@@ -522,10 +522,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output,
                     createdInstanceId);
 
-                await client.WaitForStartupAsync(TimeSpan.FromSeconds(30), this.output);
+                await client.WaitForStartupAsync(this.output);
                 await client.TerminateAsync("sayōnara");
 
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 eventGridRequestValidators.ForEach(v => v.Invoke());
 
@@ -600,7 +600,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     "World",
                     this.output,
                     createdInstanceId);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -869,7 +869,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -948,7 +948,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -1018,7 +1018,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(300), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -1088,7 +1088,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(300), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -1182,7 +1182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
-                var status = await client.WaitForCompletionAsync(TimeSpan.FromSeconds(30), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);

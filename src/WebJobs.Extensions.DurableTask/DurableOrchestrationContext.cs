@@ -29,8 +29,8 @@ namespace Microsoft.Azure.WebJobs
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
-        private readonly Dictionary<string, Queue> bufferedExternalEvents =
-            new Dictionary<string, Queue>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
+            new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly DurableTaskExtension config;
         private readonly string orchestrationName;
@@ -56,6 +56,8 @@ namespace Microsoft.Azure.WebJobs
         public override bool IsReplaying => this.innerContext?.IsReplaying ?? base.IsReplaying;
 
         internal bool ContinuedAsNew { get; private set; }
+
+        internal bool PreserveUnprocessedEvents { get; private set; }
 
         internal bool IsOutputSet => this.serializedOutput != null;
 
@@ -301,9 +303,9 @@ namespace Microsoft.Azure.WebJobs
                 }
 
                 // Check the queue to see if any events came in before the orchestrator was listening
-                if (this.bufferedExternalEvents.TryGetValue(name, out Queue queue))
+                if (this.bufferedExternalEvents.TryGetValue(name, out Queue<string> queue))
                 {
-                    object input = queue.Dequeue();
+                    string rawInput = queue.Dequeue();
 
                     if (queue.Count == 0)
                     {
@@ -311,7 +313,7 @@ namespace Microsoft.Azure.WebJobs
                     }
 
                     // We can call raise event right away, since we already have an event's input
-                    this.RaiseEvent(name, input.ToString());
+                    this.RaiseEvent(name, rawInput);
                 }
                 else
                 {
@@ -382,12 +384,16 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc />
-        public override void ContinueAsNew(object input)
+        public override void ContinueAsNew(object input) => this.ContinueAsNew(input, false);
+
+        /// <inheritdoc />
+        public override void ContinueAsNew(object input, bool preserveUnprocessedEvents)
         {
             this.ThrowIfInvalidAccess();
 
             this.innerContext.ContinueAsNew(input);
             this.ContinuedAsNew = true;
+            this.PreserveUnprocessedEvents = preserveUnprocessedEvents;
         }
 
         private async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
@@ -547,9 +553,9 @@ namespace Microsoft.Azure.WebJobs
                 else
                 {
                     // Add the event to an (in-memory) queue, so we don't drop or lose it
-                    if (!this.bufferedExternalEvents.TryGetValue(name, out Queue bufferedEvents))
+                    if (!this.bufferedExternalEvents.TryGetValue(name, out Queue<string> bufferedEvents))
                     {
-                        bufferedEvents = new Queue();
+                        bufferedEvents = new Queue<string>();
                         this.bufferedExternalEvents[name] = bufferedEvents;
                     }
 
@@ -561,6 +567,25 @@ namespace Microsoft.Azure.WebJobs
                         this.InstanceId,
                         name,
                         this.IsReplaying);
+                }
+            }
+        }
+
+        internal void RescheduleBufferedExternalEvents()
+        {
+            var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
+
+            foreach (var pair in this.bufferedExternalEvents)
+            {
+                string eventName = pair.Key;
+                Queue<string> events = pair.Value;
+
+                while (events.Count > 0)
+                {
+                    // Need to round-trip serialization since SendEvent always tries to serialize.
+                    string rawInput = events.Dequeue();
+                    JToken jsonData = JToken.Parse(rawInput);
+                    this.innerContext.SendEvent(instance, eventName, jsonData);
                 }
             }
         }

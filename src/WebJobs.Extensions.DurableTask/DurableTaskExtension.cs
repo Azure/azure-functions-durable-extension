@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -197,8 +198,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.nameResolver = context.Config.NameResolver;
+            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
 #endif
         }
 
@@ -362,6 +363,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.Name,
                     context.InstanceId,
                     context.IsReplaying);
+            }
+
+            if (context.IsCompleted &&
+                context.ContinuedAsNew &&
+                context.PreserveUnprocessedEvents)
+            {
+                // Reschedule any unprocessed external events so that they can be picked up
+                // in the next iteration.
+                context.RescheduleBufferedExternalEvents();
             }
 
             await context.RunDeferredTasks();
