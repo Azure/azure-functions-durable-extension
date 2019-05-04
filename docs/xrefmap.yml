@@ -558,6 +558,12 @@ references:
   commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)
   nameWithType: DurableOrchestrationContext.ContinueAsNew(Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object,System.Boolean)
+  name: ContinueAsNew(Object, Boolean)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_System_Object_System_Boolean_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object,System.Boolean)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object, System.Boolean)
+  nameWithType: DurableOrchestrationContext.ContinueAsNew(Object, Boolean)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew*
   name: ContinueAsNew
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContext.html#Microsoft_Azure_WebJobs_DurableOrchestrationContext_ContinueAsNew_
@@ -813,6 +819,12 @@ references:
   commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)
   fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object)
   nameWithType: DurableOrchestrationContextBase.ContinueAsNew(Object)
+- uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object,System.Boolean)
+  name: ContinueAsNew(Object, Boolean)
+  href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_System_Boolean_
+  commentId: M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object,System.Boolean)
+  fullName: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object, System.Boolean)
+  nameWithType: DurableOrchestrationContextBase.ContinueAsNew(Object, Boolean)
 - uid: Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew*
   name: ContinueAsNew
   href: api/Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.html#Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_
@@ -1950,6 +1962,12 @@ references:
   commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Terminated
   fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Terminated
   nameWithType: OrchestrationRuntimeStatus.Terminated
+- uid: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Unknown
+  name: Unknown
+  href: api/Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.html#Microsoft_Azure_WebJobs_OrchestrationRuntimeStatus_Unknown
+  commentId: F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Unknown
+  fullName: Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Unknown
+  nameWithType: OrchestrationRuntimeStatus.Unknown
 - uid: Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute
   name: OrchestrationTriggerAttribute
   href: api/Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.html

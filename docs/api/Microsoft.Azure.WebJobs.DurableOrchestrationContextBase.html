@@ -1476,6 +1476,53 @@ instance restarts itself using this method.</p>
 </div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_System_Boolean_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object%2CSystem.Boolean)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L471">View Source</a>
+  </span>
+  <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew*"></a>
+  <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_System_Boolean_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.ContinueAsNew(System.Object,System.Boolean)">ContinueAsNew(Object, Boolean)</h4>
+  <div class="markdown level1 summary"><p>Restarts the orchestration by clearing its history.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public virtual void ContinueAsNew(object input, bool preserveUnprocessedEvents)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Object</span></td>
+        <td><span class="parametername">input</span></td>
+        <td><p>The JSON-serializeable data to re-initialize the instance with.</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Boolean</span></td>
+        <td><span class="parametername">preserveUnprocessedEvents</span></td>
+        <td><p>If set to <code>true</code>, re-adds any unprocessed external events into the new execution
+history when the orchestration instance restarts. If <code>false</code>, any unprocessed
+external events will be discarded when the orchestration instance restarts.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_ContinueAsNew_System_Object_System_Boolean__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Large orchestration histories can consume a lot of memory and cause delays in
+instance load times. This method can be used to periodically truncate the stored
+history of an orchestration instance.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_CreateTimer_System_DateTime_System_Threading_CancellationToken_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.CreateTimer(System.DateTime%2CSystem.Threading.CancellationToken)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
@@ -1708,7 +1755,7 @@ instance ID and an internally managed sequence number.</p>
     <a href="https://github.com/Azure/azure-functions-durable-extension/new/master/apiSpec/new?filename=Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_System_Object_.md&amp;value=---%0Auid%3A%20Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)%0Asummary%3A%20'*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax'%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Improve this Doc</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L466">View Source</a>
+    <a href="https://github.com/Azure/azure-functions-durable-extension/blob/master/src/WebJobs.Extensions.DurableTask/DurableOrchestrationContextBase.cs/#L482">View Source</a>
   </span>
   <a id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus*"></a>
   <h4 id="Microsoft_Azure_WebJobs_DurableOrchestrationContextBase_SetCustomStatus_System_Object_" data-uid="Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.SetCustomStatus(System.Object)">SetCustomStatus(Object)</h4>
