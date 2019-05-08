@@ -447,7 +447,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 attr =>
                 {
                     IOrchestrationServiceClient innerClient = this.orchestrationServiceFactory.GetOrchestrationClient(attribute);
-                    return new DurableOrchestrationClient(innerClient, this, attr);
+                    return new DurableOrchestrationClient(innerClient, this, this.HttpApiHandler, attr);
                 });
 
             return client;
@@ -679,41 +679,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Azure Storage uses UTF-32 encoding for string payloads
                 return "(" + Encoding.UTF32.GetByteCount(rawInputOutputData) + " bytes)";
             }
-        }
-
-        // Get a response that will point to our webhook handler.
-        internal HttpResponseMessage CreateCheckStatusResponse(
-            HttpRequestMessage request,
-            string instanceId,
-            OrchestrationClientAttribute attribute)
-        {
-            return this.HttpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
-        }
-
-        // Get a data structure containing status, terminate and send external event HTTP.
-        internal HttpManagementPayload CreateHttpManagementPayload(
-            string instanceId,
-            string taskHubName,
-            string connectionName)
-        {
-            return this.HttpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
-        }
-
-        // Get a response that will wait for response from the durable function for predefined period of time before
-        // pointing to our webhook handler.
-        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
-            string instanceId,
-            OrchestrationClientAttribute attribute,
-            TimeSpan timeout,
-            TimeSpan retryInterval)
-        {
-            return await this.HttpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
-                request,
-                instanceId,
-                attribute,
-                timeout,
-                retryInterval);
         }
 
         /// <inheritdoc/>
