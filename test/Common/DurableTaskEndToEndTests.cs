@@ -1028,6 +1028,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates correct exceptions for invalid timeout values.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForExternalEventWithTooLargeTimeout()
+        {
+            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithTimeout) };
+            var extendedSessions = false;
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForExternalEventWithTimeout),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromDays(7);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, "throw"), this.output);
+                await client.WaitForStartupAsync(this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ArgumentException", status?.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
         /// </summary>
         [Theory]

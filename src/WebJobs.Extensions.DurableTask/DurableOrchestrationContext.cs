@@ -376,7 +376,15 @@ namespace Microsoft.Azure.WebJobs
                 {
                     using (cts)
                     {
-                        timeoutAction(tcs);
+                        if (t.Exception == null)
+                        {
+                            timeoutAction(tcs);
+                        }
+                        else
+                        {
+                            // t.Exception is an aggregate exception, so grab internal exception
+                            tcs.TrySetException(t.Exception.InnerException);
+                        }
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
 

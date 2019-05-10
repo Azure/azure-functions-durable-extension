@@ -241,6 +241,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     return "TimeoutException";
                 }
+                catch (ArgumentException)
+                {
+                    return "ArgumentException";
+                }
             }
             else
             {
