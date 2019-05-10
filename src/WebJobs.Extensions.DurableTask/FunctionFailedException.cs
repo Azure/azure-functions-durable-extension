@@ -21,12 +21,21 @@ namespace Microsoft.Azure.WebJobs
         {
         }
 
-        internal FunctionFailedException(string message)
+        /// <summary>
+        /// Initializes a new instance of a <see cref="FunctionFailedException"/>.
+        /// </summary>
+        /// <param name="message">A message describing where to look for more details.</param>
+        public FunctionFailedException(string message)
             : base(message)
         {
         }
 
-        internal FunctionFailedException(string message, Exception innerException)
+        /// <summary>
+        /// Initializes a new instance of a <see cref="FunctionFailedException"/>.
+        /// </summary>
+        /// <param name="message">A message describing where to look for more details.</param>
+        /// <param name="innerException">The exception that caused the function to fail.</param>
+        public FunctionFailedException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
