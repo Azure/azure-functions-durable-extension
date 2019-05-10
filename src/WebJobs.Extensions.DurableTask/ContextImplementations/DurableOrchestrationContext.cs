@@ -254,7 +254,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     using (cts)
                     {
-                        timeoutAction(tcs);
+                        using (cts)
+                        {
+                            if (t.Exception == null)
+                            {
+                                timeoutAction(tcs);
+                            }
+                            else
+                            {
+                                // t.Exception is an aggregate exception, so grab internal exception
+                                tcs.TrySetException(t.Exception.InnerException);
+                            }
+                        }
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
 
