@@ -214,6 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     return this.defaultTaskHubService;
                 }
+
                 return new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
                 {
                     TaskHubName = attribute.TaskHub,
