@@ -316,7 +316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InstanceId,
                 reason: sourceFunctionId,
                 functionType: functionType,
-                isReplay: this.InnerContext.IsReplaying);
+                isReplay: this.IsReplaying);
 
             TResult output;
             Exception exception = null;
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             finally
             {
-                if (exception != null && this.InnerContext.IsReplaying)
+                if (exception != null && this.IsReplaying)
                 {
                     // If this were not a replay, then the orchestrator/activity/entity function trigger would have already
                     // emitted a FunctionFailed trace with the full exception details.
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            if (this.InnerContext.IsReplaying)
+            if (this.IsReplaying)
             {
                 // If this were not a replay, then the orchestrator/activity/entity function trigger would have already
                 // emitted a FunctionCompleted trace with the actual output details.
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.FunctionName,
                         this.InstanceId,
                         reason: $"WaitFor{reason}:{name}",
-                        isReplay: this.InnerContext.IsReplaying);
+                        isReplay: this.IsReplaying);
                 }
 
                 return tcs.Task;

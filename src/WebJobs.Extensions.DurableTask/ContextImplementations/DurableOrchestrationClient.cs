@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AzureStorage = DurableTask.AzureStorage;
@@ -28,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskHubClient client;
         private readonly string hubName;
+        private readonly HttpApiHandler httpApiHandler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
         private readonly OrchestrationClientAttribute attribute; // for rehydrating a Client after a webhook
@@ -35,12 +39,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableOrchestrationClient(
             IOrchestrationServiceClient serviceClient,
             DurableTaskExtension config,
+            HttpApiHandler httpHandler,
             OrchestrationClientAttribute attribute)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
             this.client = new TaskHubClient(serviceClient);
             this.traceHelper = config.TraceHelper;
+            this.httpApiHandler = httpHandler;
             this.hubName = attribute.TaskHub ?? config.Options.HubName;
             this.attribute = attribute;
         }
@@ -53,28 +59,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
         {
-            return this.config.CreateCheckStatusResponse(request, instanceId, this.attribute);
+            return this.CreateCheckStatusResponse(request, instanceId, this.attribute);
+        }
+
+        /// <inheritdoc />
+        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId)
+        {
+            HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
+            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId);
+            return ConvertHttpResponseMessage(responseMessage);
         }
 
         /// <inheritdoc />
         HttpManagementPayload IDurableOrchestrationClient.CreateHttpManagementPayload(string instanceId)
         {
-            return this.config.CreateHttpManagementPayload(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
+            return this.CreateHttpManagementPayload(instanceId, this.attribute.TaskHub, this.attribute.ConnectionName);
         }
 
         /// <inheritdoc />
-        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(
-            HttpRequestMessage request,
-            string instanceId,
-            TimeSpan timeout,
-            TimeSpan retryInterval)
+        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan timeout, TimeSpan retryInterval)
         {
-            return await this.config.WaitForCompletionOrCreateCheckStatusResponseAsync(
+            return await this.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 request,
                 instanceId,
                 this.attribute,
                 timeout,
                 retryInterval);
+        }
+
+        /// <inheritdoc />
+        async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan timeout, TimeSpan retryInterval)
+        {
+            HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
+            HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval);
+            return ConvertHttpResponseMessage(responseMessage);
         }
 
         /// <inheritdoc />
@@ -638,6 +656,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        // Get a response that will point to our webhook handler.
+        internal HttpResponseMessage CreateCheckStatusResponse(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute)
+        {
+            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+        }
+
+        // Get a data structure containing status, terminate and send external event HTTP.
+        internal HttpManagementPayload CreateHttpManagementPayload(
+            string instanceId,
+            string taskHubName,
+            string connectionName)
+        {
+            return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
+        }
+
+        // Get a response that will wait for response from the durable function for predefined period of time before
+        // pointing to our webhook handler.
+        internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequestMessage request,
+            string instanceId,
+            OrchestrationClientAttribute attribute,
+            TimeSpan timeout,
+            TimeSpan retryInterval)
+        {
+            return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                attribute,
+                timeout,
+                retryInterval);
+        }
+
         private static bool IsOrchestrationRunning(OrchestrationState status)
         {
             return status.OrchestrationStatus == OrchestrationStatus.Running ||
@@ -659,6 +712,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,
             };
+        }
+
+        private static HttpRequestMessage ConvertHttpRequestMessage(HttpRequest request)
+        {
+            return new HttpRequestMessageFeature(request.HttpContext).HttpRequestMessage;
+        }
+
+        private static IActionResult ConvertHttpResponseMessage(HttpResponseMessage response)
+        {
+            var result = new ObjectResult(response);
+            result.Formatters.Add(new HttpResponseMessageOutputFormatter());
+            return result;
         }
 
         private OrchestrationStatusQueryResult ConvertFrom(DurableStatusQueryResult statusContext)

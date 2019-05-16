@@ -7,6 +7,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Newtonsoft.Json;
 
@@ -39,6 +41,19 @@ namespace Microsoft.Azure.WebJobs
         HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
 
         /// <summary>
+        /// Creates an HTTP response that is useful for checking the status of the specified instance.
+        /// </summary>
+        /// <remarks>
+        /// The payload of the returned <see cref="IActionResult"/> contains HTTP API URLs that can
+        /// be used to query the status of the orchestration, raise events to the orchestration, or
+        /// terminate the orchestration.
+        /// </remarks>
+        /// <param name="request">The HTTP request that triggered the current orchestration instance.</param>
+        /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+        /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
+        IActionResult CreateCheckStatusResponse(HttpRequest request, string instanceId);
+
+        /// <summary>
         /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
@@ -53,7 +68,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="CreateCheckStatusResponse"/> API.
+        /// <see cref="CreateCheckStatusResponse(HttpRequestMessage, string)"/> API.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
@@ -62,6 +77,27 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
+            string instanceId,
+            TimeSpan timeout,
+            TimeSpan retryInterval);
+
+        /// <summary>
+        /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+        /// or contains the payload containing the output of the completed orchestration.
+        /// </summary>
+        /// <remarks>
+        /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+        /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+        /// complete within the specified timeout, then the HTTP response will be identical to that of the
+        /// <see cref="CreateCheckStatusResponse(HttpRequest, string)"/> API.
+        /// </remarks>
+        /// <param name="request">The HTTP request that triggered the current function.</param>
+        /// <param name="instanceId">The unique ID of the instance to check.</param>
+        /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+        /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        Task<IActionResult> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            HttpRequest request,
             string instanceId,
             TimeSpan timeout,
             TimeSpan retryInterval);

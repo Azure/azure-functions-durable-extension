@@ -2,11 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within this timeout, then the HTTP response will be identical to that of the
-        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse"/> API.
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, string)"/> API.
         /// </remarks>
         /// <param name="client">The client object.</param>
         /// <param name="request">The HTTP request that triggered the current function.</param>
@@ -309,10 +309,35 @@ namespace Microsoft.Azure.WebJobs
         /// or contains the payload containing the output of the completed orchestration.
         /// </summary>
         /// <remarks>
+        /// If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
+        /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+        /// complete within this timeout, then the HTTP response will be identical to that of the
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest, string)"/> API.
+        /// </remarks>
+        /// <param name="client">The client object.</param>
+        /// <param name="request">The HTTP request that triggered the current function.</param>
+        /// <param name="instanceId">The unique ID of the instance to check.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        public static Task<IActionResult> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            this IDurableOrchestrationClient client,
+            HttpRequest request,
+            string instanceId)
+        {
+            return client.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                timeout: TimeSpan.FromSeconds(10));
+        }
+
+        /// <summary>
+        /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+        /// or contains the payload containing the output of the completed orchestration.
+        /// </summary>
+        /// <remarks>
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse"/> API.
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, string)"/> API.
         /// </remarks>
         /// <param name="client">The client object.</param>
         /// <param name="request">The HTTP request that triggered the current function.</param>
@@ -322,6 +347,34 @@ namespace Microsoft.Azure.WebJobs
         public static Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             this IDurableOrchestrationClient client,
             HttpRequestMessage request,
+            string instanceId,
+            TimeSpan timeout)
+        {
+            return client.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                request,
+                instanceId,
+                timeout,
+                retryInterval: TimeSpan.FromSeconds(1));
+        }
+
+        /// <summary>
+        /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
+        /// or contains the payload containing the output of the completed orchestration.
+        /// </summary>
+        /// <remarks>
+        /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
+        /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
+        /// complete within the specified timeout, then the HTTP response will be identical to that of the
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest, string)"/> API.
+        /// </remarks>
+        /// <param name="client">The client object.</param>
+        /// <param name="request">The HTTP request that triggered the current function.</param>
+        /// <param name="instanceId">The unique ID of the instance to check.</param>
+        /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+        /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
+        public static Task<IActionResult> WaitForCompletionOrCreateCheckStatusResponseAsync(
+            this IDurableOrchestrationClient client,
+            HttpRequest request,
             string instanceId,
             TimeSpan timeout)
         {

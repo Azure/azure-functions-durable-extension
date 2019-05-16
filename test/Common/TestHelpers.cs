@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 durableTaskOptions.StorageProvider.Redis = new RedisStorageOptions()
                 {
-                    ConnectionStringName = "RedisConnectionString"
+                    ConnectionStringName = "RedisConnectionString",
                 };
             }
 

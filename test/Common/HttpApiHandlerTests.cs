@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -989,19 +991,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         // Same as regular HTTP Api handler except you can specify a custom client object.
-        private class ExtendedHttpApiHandler : HttpApiHandler
+        internal class ExtendedHttpApiHandler : HttpApiHandler
         {
-            private readonly IDurableOrchestrationClient innerClient;
-
             public ExtendedHttpApiHandler(IDurableOrchestrationClient client)
                 : base(GetTestExtension(), null /* traceWriter */)
             {
-                this.innerClient = client;
+                this.InnerClient = client;
             }
+
+            internal IDurableOrchestrationClient InnerClient { get; set; }
 
             protected override IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
             {
-                return this.innerClient;
+                return this.InnerClient;
             }
         }
 
