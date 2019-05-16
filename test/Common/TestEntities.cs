@@ -288,59 +288,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 return (int)response.StatusCode;
             }
         }
-
-        //-------------- an entity representing a chat room -----------------
-        // this example shows how to use reflection to define entities using a C# class.
-
-        public static void ChatRoomEntity([EntityTrigger(EntityName = "ChatRoom")] IDurableEntityContext context)
-        {
-            // if the entity is fresh call the constructor for the state
-            if (context.IsNewlyConstructed)
-            {
-                context.SetState(new ChatRoom(context));
-            }
-
-            // find the method corresponding to the operation
-            var method = typeof(ChatRoom).GetMethod(context.OperationName);
-
-            // determine the type of the operation content (= second method argument) and deserialize
-            var contentType = method.GetParameters()[1].ParameterType;
-            var content = context.GetInput(contentType);
-
-            // invoke the method and return the result;
-            var result = method.Invoke(context.GetState<ChatRoom>(), new object[2] { context, content });
-            context.Return(result);
-        }
-
-        public class ChatRoom
-        {
-            public ChatRoom(IDurableEntityContext ctx)
-            {
-                this.ChatEntries = new SortedDictionary<DateTime, string>();
-            }
-
-            public SortedDictionary<DateTime, string> ChatEntries { get; set; }
-
-            // an operation that adds a message to the chat
-            public DateTime Post(IDurableEntityContext ctx, string content)
-            {
-                var timestamp = DateTime.UtcNow;
-                this.ChatEntries.Add(timestamp, content);
-                return timestamp;
-            }
-
-            // an operation that reads all messages in the chat, within range
-            public List<KeyValuePair<DateTime, string>> Read(IDurableEntityContext ctx, DateTime? fromRange)
-            {
-                if (fromRange.HasValue)
-                {
-                    return this.ChatEntries.Where(kvp => kvp.Key >= fromRange.Value).ToList();
-                }
-                else
-                {
-                    return this.ChatEntries.ToList();
-                }
-            }
-        }
     }
 }

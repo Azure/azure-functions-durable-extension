@@ -797,5 +797,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var result = await ctx.CallEntityAsync<List<KeyValuePair<DateTime, string>>>(entity, "Get");
         }
+
+        public static async Task<string> BasicObjects([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var chatroom = ctx.GetInput<EntityId>();
+
+            // signals
+            ctx.SignalEntity(chatroom, "post", "a");
+            ctx.SignalEntity(chatroom, "post", "b");
+
+            // call returning a task, but no result
+            await ctx.CallEntityAsync(chatroom, "post", "c");
+
+            // calls returning a result
+            var result = await ctx.CallEntityAsync<List<KeyValuePair<DateTime, string>>>(chatroom, "get");
+
+            if (string.Join(',', result.Select(kvp => kvp.Value)) != "a,b,c")
+            {
+                return "incorrect result1";
+            }
+
+            return "ok";
+        }
     }
 }

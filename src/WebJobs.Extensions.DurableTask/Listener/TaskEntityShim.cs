@@ -310,6 +310,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.DestructOnExit = false;
             this.context.IsCompleted = false;
 
+            Entity.SetContext(this.context);
+
             this.Config.TraceHelper.FunctionStarting(
                 this.context.HubName,
                 this.context.Name,
@@ -356,6 +358,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionType: FunctionType.Entity,
                     isReplay: this.context.IsReplaying);
             }
+
+            Entity.SetContext(null);
 
             // read and clear context
             var response = this.context.CurrentOperationResponse;
