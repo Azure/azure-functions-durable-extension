@@ -117,6 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestOrchestrations),
                 typeof(TestActivities),
                 typeof(TestEntities),
+                typeof(TestEntityClasses),
                 typeof(ClientFunctions),
             };
 

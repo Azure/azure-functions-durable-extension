@@ -310,6 +310,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.DestructOnExit = false;
             this.context.IsCompleted = false;
 
+            // set the async-local static context that is visible to the application code
+            Entity.SetContext(this.context);
+
             this.Config.TraceHelper.FunctionStarting(
                 this.context.HubName,
                 this.context.Name,
@@ -356,6 +359,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionType: FunctionType.Entity,
                     isReplay: this.context.IsReplaying);
             }
+
+            // clear the async-local static context that is visible to the application code
+            Entity.SetContext(null);
 
             // read and clear context
             var response = this.context.CurrentOperationResponse;
