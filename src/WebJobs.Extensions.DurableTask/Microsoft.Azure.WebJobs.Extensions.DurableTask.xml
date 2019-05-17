@@ -986,6 +986,24 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableOrchestrationContextBase">
+            <summary>
+            Formerly, the abstract base class for DurableOrchestrationContext.
+            Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.IDurableOrchestrationContext"/> instead.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableActivityContextBase">
+            <summary>
+            Formerly, the abstract base class for DurableActivityContext.
+            Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.IDurableActivityContext"/> instead.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableOrchestrationClientBase">
+            <summary>
+            Formerly, the abstract base class for DurableOrchestrationClient.
+            Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.IDurableOrchestrationClient"/> instead.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.EntityStatus">
             <summary>
             Information about the current status of an entity. Excludes potentially large data

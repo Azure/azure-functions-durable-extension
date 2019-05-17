@@ -21,7 +21,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Parameter data for orchestration bindings that can be used to schedule function-based activities.
     /// </summary>
-    internal class DurableOrchestrationContext : DurableCommonContext, IDurableOrchestrationContext
+    internal class DurableOrchestrationContext : DurableCommonContext, IDurableOrchestrationContext,
+#pragma warning disable 618
+        DurableOrchestrationContextBase // for v1 legacy compatibility.
+#pragma warning restore 618
     {
         private const int MaxTimerDurationInDays = 6;
 

@@ -10,7 +10,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// The default parameter type for activity functions.
     /// </summary>
-    internal class DurableActivityContext : IDurableActivityContext
+    internal class DurableActivityContext : IDurableActivityContext,
+#pragma warning disable 618
+        DurableActivityContextBase // for v1 legacy compatibility.
+#pragma warning restore 618
     {
         private readonly string serializedInput;
 
