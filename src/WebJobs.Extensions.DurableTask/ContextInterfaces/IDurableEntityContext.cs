@@ -23,12 +23,12 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the key of the currently executing entity.
         /// </summary>
-        string Key { get; }
+        string EntityKey { get; }
 
         /// <summary>
-        /// Gets an entity id for the currently executing entity.
+        /// Gets the id of the currently executing entity.
         /// </summary>
-        EntityId Self { get; }
+        EntityId EntityId { get; }
 
         /// <summary>
         /// Gets the name of the operation that was called.

@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 // try to load state from existing blob
                 var currentFileContent = await TestHelpers.LoadStringFromTextBlobAsync(
-                         context.Key);
+                         context.EntityKey);
                 context.SetState(new StringBuilder(currentFileContent ?? ""));
             }
 
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "deactivate":
                     // first, store the current value in a blob
                     await TestHelpers.WriteStringToTextBlob(
-                        context.Key, state.ToString());
+                        context.EntityKey, state.ToString());
 
                     // then, destruct this entity (and all of its state)
                     context.DestructOnExit();

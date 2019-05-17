@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // TODO figure out what exactly is needed here
                 var contextObject = new JObject(
                     new JProperty("history", history),
-                    new JProperty("entity", ((IDurableEntityContext)arg).Self),
+                    new JProperty("entity", ((IDurableEntityContext)arg).EntityId),
                     new JProperty("isReplaying", arg.IsReplaying));
 
                 return contextObject.ToString();

@@ -41,9 +41,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         string IDurableEntityContext.EntityName => this.self.EntityName;
 
-        string IDurableEntityContext.Key => this.self.EntityKey;
+        string IDurableEntityContext.EntityKey => this.self.EntityKey;
 
-        EntityId IDurableEntityContext.Self => this.self;
+        EntityId IDurableEntityContext.EntityId => this.self;
 
         internal override FunctionType FunctionType => FunctionType.Entity;
 

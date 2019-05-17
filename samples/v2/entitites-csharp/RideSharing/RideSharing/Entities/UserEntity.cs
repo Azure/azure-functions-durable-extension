@@ -18,7 +18,7 @@ namespace RideSharing
         {
             var state = context.GetState(() => new UserStatus()
             {
-                UserId = context.Key,
+                UserId = context.EntityKey,
             });
 
             switch (context.OperationName)
@@ -54,7 +54,7 @@ namespace RideSharing
                         if (state.CurrentRide != null
                             && state.CurrentRide.RideId == rideId)
                         {
-                            if (context.Key == state.CurrentRide.DriverId)
+                            if (context.EntityKey == state.CurrentRide.DriverId)
                             {
                                 // forward signal to rider
                                 context.SignalEntity(
