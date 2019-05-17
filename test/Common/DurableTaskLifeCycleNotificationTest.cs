@@ -1213,12 +1213,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var options = new DurableTaskOptions
             {
                 HubName = "DurableTaskHub",
-                EventGridKeySettingName = eventGridKeySettingName,
-                EventGridTopicEndpoint = eventGridEndpoint,
-                EventGridPublishRetryCount = retryCount,
-                EventGridPublishRetryInterval = retryInterval,
-                EventGridPublishRetryHttpStatus = retryStatus,
+                Notifications = new NotificationOptions(),
             };
+
+            options.Notifications.EventGrid = new EventGridNotificationOptions()
+            {
+                KeySettingName = eventGridKeySettingName,
+                TopicEndpoint = eventGridEndpoint,
+                PublishRetryCount = retryCount,
+                PublishRetryInterval = retryInterval,
+                PublishRetryHttpStatus = retryStatus,
+            };
+
             options.StorageProvider = new StorageProviderOptions
             {
                 AzureStorage = new AzureStorageOptions(),
@@ -1308,8 +1314,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var options = new DurableTaskOptions
             {
                 HubName = "DurableTaskHub",
-                EventGridKeySettingName = null,
-                EventGridTopicEndpoint = null,
+                Notifications = new NotificationOptions()
+                {
+                    EventGrid = new EventGridNotificationOptions()
+                    {
+                        KeySettingName = null,
+                        TopicEndpoint = null,
+                    },
+                },
                 CustomLifeCycleNotificationHelperType = null,
             };
             options.StorageProvider = new StorageProviderOptions

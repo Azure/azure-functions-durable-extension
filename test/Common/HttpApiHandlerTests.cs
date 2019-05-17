@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Notifications = new NotificationOptions(),
             };
-            options.Notifications.ApiUrl = null;
+            options.NotificationUrl = null;
             options.HubName = "DurableTaskHub";
             options.StorageProvider = new StorageProviderOptions()
             {
@@ -978,10 +978,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
-            options.Notifications = new NotificationOptions()
-            {
-                ApiUrl = new Uri(TestConstants.NotificationUrl),
-            };
+            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
             options.StorageProvider = new StorageProviderOptions
             {
                 AzureStorage = new AzureStorageOptions(),

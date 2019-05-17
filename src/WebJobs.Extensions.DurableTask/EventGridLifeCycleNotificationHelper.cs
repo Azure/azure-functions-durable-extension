@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             return @enum;
                         }
 
-                        eventGridPublishEventTypes = eventGridNotificationsConfig.PublishEventTypes.Select(x => parseAndvalidateEvents(x)).ToArray();
+                        this.eventGridPublishEventTypes = eventGridNotificationsConfig.PublishEventTypes.Select(x => ParseAndvalidateEvents(x)).ToArray();
                     }
 
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.

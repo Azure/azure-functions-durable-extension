@@ -54,7 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 Notifications = new NotificationOptions()
                 {
-                    ApiUrl = notificationUrl,
                     EventGrid = new EventGridNotificationOptions()
                     {
                         KeySettingName = eventGridKeySettingName,
@@ -62,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         PublishEventTypes = eventGridPublishEventTypes,
                     },
                 },
+                NotificationUrl = notificationUrl,
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,

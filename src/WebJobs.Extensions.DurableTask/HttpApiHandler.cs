@@ -727,7 +727,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.Notifications.ApiUrl;
+            Uri notificationUri = this.config.Options.NotificationUrl;
 
             string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
@@ -754,7 +754,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.Notifications.ApiUrl;
+            Uri notificationUri = this.config.Options.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
@@ -808,7 +808,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void ThrowIfWebhooksNotConfigured()
         {
-            if (this.config.Options.Notifications.ApiUrl == null)
+            if (this.config.Options.NotificationUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }

@@ -60,6 +60,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
 
         /// <summary>
+        /// Gets or sets the base URL for the HTTP APIs managed by this extension.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended for use only by runtime hosts.
+        /// </remarks>
+        /// <value>
+        /// A URL pointing to the hosted function app that responds to status polling requests.
+        /// </value>
+        public Uri NotificationUrl { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>
@@ -114,6 +125,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ExtendedSessionsEnabled)
             {
                 sb.Append(nameof(this.ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
+            }
+
+            if (this.NotificationUrl != null)
+            {
+                // Don't trace the query string, since that contains secrets
+                string url = this.NotificationUrl.GetLeftPart(UriPartial.Path);
+                sb.Append(nameof(this.NotificationUrl)).Append(": ").Append(url).Append(", ");
             }
 
             sb.Append(nameof(this.Notifications)).Append(": { ");
