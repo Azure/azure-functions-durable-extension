@@ -20,21 +20,25 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// The context of the currently executing entity.
         /// </summary>
-        public static IDurableEntityContext Context => EntityContext.Value;
-
-        /// <summary>
-        /// The key of the currently executing entity.
-        /// </summary>
-        public static string Key => EntityContext.Value.Key;
-
-        /// <summary>
-        /// The entity reference for the currently executing entity.
-        /// </summary>
-        public static EntityId Self => EntityContext.Value.Self;
+        public static IDurableEntityContext Current => EntityContext.Value;
 
         internal static void SetContext(IDurableEntityContext context)
         {
             EntityContext.Value = context;
+        }
+
+        /// <summary>
+        /// Sets the current context to a mocked context for unit testing.
+        /// </summary>
+        /// <param name="mockContext">The mocked context.</param>
+        public static void SetMockContext(IDurableEntityContext mockContext)
+        {
+            if (mockContext is DurableEntityContext)
+            {
+                throw new InvalidOperationException("Only mocked entity contexts are supported, not real ones.");
+            }
+
+            EntityContext.Value = mockContext;
         }
     }
 }

@@ -2119,19 +2119,9 @@
             Statically accessible context for entity operations.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Entity.Context">
+        <member name="P:Microsoft.Azure.WebJobs.Entity.Current">
             <summary>
             The context of the currently executing entity.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Entity.Key">
-            <summary>
-            The key of the currently executing entity.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Entity.Self">
-            <summary>
-            The entity reference for the currently executing entity.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus">
@@ -2231,7 +2221,7 @@
             <returns>A task that completes when the dispatched operation has finished.</returns>
             <exception cref="T:System.Reflection.AmbiguousMatchException">If there is more than one method with the given operation name.</exception>
             <exception cref="T:System.MissingMethodException">If there is no method with the given operation name.</exception>
-            <exception cref="T:System.InvalidCastException">If the method has more than one argument.</exception>
+            <exception cref="T:System.InvalidOperationException">If the method has more than one argument.</exception>
             <remarks>
             If the entity's state is null, an object of type <typeparamref name="T"/> is created first. Then, reflection
             is used to try to find a matching method. This match is based on the method name

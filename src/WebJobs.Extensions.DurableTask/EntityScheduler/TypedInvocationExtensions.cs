@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A task that completes when the dispatched operation has finished.</returns>
         /// <exception cref="AmbiguousMatchException">If there is more than one method with the given operation name.</exception>
         /// <exception cref="MissingMethodException">If there is no method with the given operation name.</exception>
-        /// <exception cref="InvalidCastException">If the method has more than one argument.</exception>
+        /// <exception cref="InvalidOperationException">If the method has more than one argument.</exception>
         /// <remarks>
         /// If the entity's state is null, an object of type <typeparamref name="T"/> is created first. Then, reflection
         /// is used to try to find a matching method. This match is based on the method name
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs
             var parameters = method.GetParameters();
             if (parameters.Length > 1)
             {
-                throw new InvalidCastException("only a single argument can be used for operation input");
+                throw new InvalidOperationException("Only a single argument can be used for operation input.");
             }
 
             object[] args;
