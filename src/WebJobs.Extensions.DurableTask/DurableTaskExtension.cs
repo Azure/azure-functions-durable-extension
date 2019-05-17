@@ -114,10 +114,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options.Validate();
 
             // For 202 support
-            if (this.Options.NotificationUrl == null)
+            if (this.Options.Notifications.ApiUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
+                this.Options.Notifications.ApiUrl = context.GetWebhookHandler();
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
