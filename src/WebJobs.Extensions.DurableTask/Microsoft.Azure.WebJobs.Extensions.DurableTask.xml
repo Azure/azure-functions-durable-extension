@@ -1501,14 +1501,14 @@
             Gets the name of the currently executing entity.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.Key">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.EntityKey">
             <summary>
             Gets the key of the currently executing entity.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.Self">
+        <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.EntityId">
             <summary>
-            Gets an entity id for the currently executing entity.
+            Gets the id of the currently executing entity.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.IDurableEntityContext.OperationName">
