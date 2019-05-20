@@ -518,6 +518,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return sum;
         }
 
+#pragma warning disable 618
+        public static Task<string> LegacyOrchestration([OrchestrationTrigger] DurableOrchestrationContextBase ctx)
+        {
+            return ctx.CallActivityAsync<string>(nameof(TestActivities.LegacyActivity), null);
+        }
+#pragma warning restore 618
+
         public static async Task<string> SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // construct entity id from entity name and a supplied GUID

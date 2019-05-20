@@ -136,6 +136,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return Guid.NewGuid();
         }
 
+#pragma warning disable 618
+        public static Task<string> LegacyActivity([ActivityTrigger] DurableActivityContextBase ctx)
+        {
+            return Task.FromResult("ok");
+        }
+#pragma warning restore 618
+
         public class PlainOldClrObject
         {
             public string Foo { get; set; }

@@ -22,7 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Client for starting, querying, terminating, and raising events to orchestration instances.
     /// </summary>
-    internal class DurableOrchestrationClient : IDurableOrchestrationClient
+    internal class DurableOrchestrationClient : IDurableOrchestrationClient,
+#pragma warning disable 618
+        DurableOrchestrationClientBase // for v1 legacy compatibility.
+#pragma warning restore 618
     {
         private const string DefaultVersion = "";
         private const int MaxInstanceIdLength = 256;
