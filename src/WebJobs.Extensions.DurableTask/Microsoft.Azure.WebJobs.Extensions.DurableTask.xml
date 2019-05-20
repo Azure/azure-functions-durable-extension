@@ -724,10 +724,10 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventGridNotificationOptions.PublishEventTypes">
             <summary>
-            gets or sets the event types that will be published to Event Grid. 
+            Gets or sets the event types that will be published to Event Grid. 
             </summary>
             <value>
-            An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+            A list of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.NotificationOptions">

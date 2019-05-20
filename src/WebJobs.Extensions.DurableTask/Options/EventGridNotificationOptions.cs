@@ -51,10 +51,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public int[] PublishRetryHttpStatus { get; set; }
 
         /// <summary>
-        /// gets or sets the event types that will be published to Event Grid. 
+        /// Gets or sets the event types that will be published to Event Grid. 
         /// </summary>
         /// <value>
-        /// An array of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
+        /// A list of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
         /// </value>
         public string[] PublishEventTypes { get; set; }
 
