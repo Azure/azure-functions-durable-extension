@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int? eventGridRetryCount = null,
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
-            bool logReplayEvents = true,
+            bool traceReplayEvents = true,
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
@@ -47,16 +47,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var durableTaskOptions = new DurableTaskOptions
             {
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
-                TraceInputsAndOutputs = true,
-                EventGridKeySettingName = eventGridKeySettingName,
-                EventGridTopicEndpoint = eventGridTopicEndpoint,
+                Tracing = new TraceOptions()
+                {
+                    TraceInputsAndOutputs = true,
+                    TraceReplayEvents = traceReplayEvents,
+                },
+                Notifications = new NotificationOptions()
+                {
+                    EventGrid = new EventGridNotificationOptions()
+                    {
+                        KeySettingName = eventGridKeySettingName,
+                        TopicEndpoint = eventGridTopicEndpoint,
+                        PublishEventTypes = eventGridPublishEventTypes,
+                    },
+                },
+                NotificationUrl = notificationUrl,
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
-                LogReplayEvents = logReplayEvents,
-                NotificationUrl = notificationUrl,
                 NotificationHandler = eventGridNotificationHandler,
-                EventGridPublishEventTypes = eventGridPublishEventTypes,
             };
 
             if (storageProviderType != null)
@@ -82,17 +91,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (eventGridRetryCount.HasValue)
             {
-                durableTaskOptions.EventGridPublishRetryCount = eventGridRetryCount.Value;
+                durableTaskOptions.Notifications.EventGrid.PublishRetryCount = eventGridRetryCount.Value;
             }
 
             if (eventGridRetryInterval.HasValue)
             {
-                durableTaskOptions.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
+                durableTaskOptions.Notifications.EventGrid.PublishRetryInterval = eventGridRetryInterval.Value;
             }
 
             if (eventGridRetryHttpStatus != null)
             {
-                durableTaskOptions.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
+                durableTaskOptions.Notifications.EventGrid.PublishRetryHttpStatus = eventGridRetryHttpStatus;
             }
 
             if (maxQueuePollingInterval != null)

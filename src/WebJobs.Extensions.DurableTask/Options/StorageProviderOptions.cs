@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         {
             CommonStorageProviderOptions configuredProvider = this.GetConfiguredProvider();
             string providerName = configuredProvider.GetType().ToString();
-            builder.Append(nameof(this.AzureStorage)).Append(": { ");
+            builder.Append(providerName).Append(": { ");
             this.configuredProvider.AddToDebugString(builder);
             builder.Append(" }, ");
         }

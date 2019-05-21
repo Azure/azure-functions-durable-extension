@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.orchestrationServiceFactory = orchestrationServiceFactory;
@@ -163,7 +163,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
         {
             // First: EventGrid
-            if (!string.IsNullOrEmpty(this.Options.EventGridTopicEndpoint) || !string.IsNullOrEmpty(this.Options.EventGridKeySettingName))
+            if (this.Options.Notifications.EventGrid != null
+                && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
             {
                 return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
             }
@@ -666,7 +667,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetIntputOutputTrace(string rawInputOutputData)
         {
-            if (this.Options.TraceInputsAndOutputs)
+            if (this.Options.Tracing.TraceInputsAndOutputs)
             {
                 return rawInputOutputData;
             }

@@ -10,6 +10,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 
@@ -39,36 +40,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(nameResolver));
             }
 
-            this.eventGridKeyValue = nameResolver.Resolve(config.EventGridKeySettingName);
-            this.eventGridTopicEndpoint = config.EventGridTopicEndpoint;
+            if (config.Notifications == null)
+            {
+                throw new ArgumentNullException(nameof(config.Notifications));
+            }
 
-            if (nameResolver.TryResolveWholeString(config.EventGridTopicEndpoint, out var endpoint))
+            var eventGridNotificationsConfig = config.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(config.Notifications.EventGrid));
+
+            this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
+            this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
+
+            if (nameResolver.TryResolveWholeString(eventGridNotificationsConfig.TopicEndpoint, out var endpoint))
             {
                 this.eventGridTopicEndpoint = endpoint;
             }
 
             if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
             {
-                if (!string.IsNullOrEmpty(config.EventGridKeySettingName))
+                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
                 {
                     this.useTrace = true;
 
-                    var retryStatusCode = config.EventGridPublishRetryHttpStatus?
+                    var retryStatusCode = eventGridNotificationsConfig.PublishRetryHttpStatus?
                                               .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
                                               .Select(x => (HttpStatusCode)x)
                                               .ToArray()
                                           ?? Array.Empty<HttpStatusCode>();
 
-                    if (config.EventGridPublishEventTypes == null || config.EventGridPublishEventTypes.Length == 0)
+                    if (eventGridNotificationsConfig.PublishEventTypes == null || eventGridNotificationsConfig.PublishEventTypes.Length == 0)
                     {
                         this.eventGridPublishEventTypes = (OrchestrationRuntimeStatus[])Enum.GetValues(typeof(OrchestrationRuntimeStatus));
                     }
                     else
                     {
-                        var startedIndex = Array.FindIndex(config.EventGridPublishEventTypes, x => x == "Started");
+                        var startedIndex = Array.FindIndex(eventGridNotificationsConfig.PublishEventTypes, x => x == "Started");
                         if (startedIndex > -1)
                         {
-                            config.EventGridPublishEventTypes[startedIndex] = OrchestrationRuntimeStatus.Running.ToString();
+                            eventGridNotificationsConfig.PublishEventTypes[startedIndex] = OrchestrationRuntimeStatus.Running.ToString();
                         }
 
                         OrchestrationRuntimeStatus ParseAndvalidateEvents(string @event)
@@ -96,8 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             return @enum;
                         }
 
-                        this.eventGridPublishEventTypes = config.EventGridPublishEventTypes.Select(
-                            x => ParseAndvalidateEvents(x)).ToArray();
+                        this.eventGridPublishEventTypes = eventGridNotificationsConfig.PublishEventTypes.Select(x => ParseAndvalidateEvents(x)).ToArray();
                     }
 
                     // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
@@ -106,18 +113,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
                     this.HttpMessageHandler = config.NotificationHandler ?? new HttpRetryMessageHandler(
                         new HttpClientHandler(),
-                        config.EventGridPublishRetryCount,
-                        config.EventGridPublishRetryInterval,
+                        eventGridNotificationsConfig.PublishRetryCount,
+                        eventGridNotificationsConfig.PublishRetryInterval,
                         retryStatusCode);
 
                     if (string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
-                        throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridKeySettingName} on AppSettings.");
+                        throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
                     }
                 }
                 else
                 {
-                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {config.EventGridTopicEndpoint} and {config.EventGridKeySettingName}.");
+                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
                 }
             }
         }

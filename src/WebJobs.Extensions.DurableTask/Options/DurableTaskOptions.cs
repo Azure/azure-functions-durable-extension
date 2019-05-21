@@ -30,6 +30,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public StorageProviderOptions StorageProvider { get; set; }
 
         /// <summary>
+        /// The section of configuration related to tracing.
+        /// </summary>
+        public TraceOptions Tracing { get; set; } = new TraceOptions();
+
+        /// <summary>
+        /// The section of configuration related to notifications.
+        /// </summary>
+        public NotificationOptions Notifications { get; set; } = new NotificationOptions();
+
+        /// <summary>
         /// Gets or sets the maximum number of activity functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <remarks>
@@ -59,69 +69,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// A URL pointing to the hosted function app that responds to status polling requests.
         /// </value>
         public Uri NotificationUrl { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to trace the inputs and outputs of function calls.
-        /// </summary>
-        /// <remarks>
-        /// The default behavior when tracing function execution events is to include the number of bytes in the serialized
-        /// inputs and outputs for function calls. This provides minimal information about what the inputs and outputs look
-        /// like without bloating the logs or inadvertently exposing sensitive information to the logs. Setting
-        /// <see cref="TraceInputsAndOutputs"/> to <c>true</c> will instead cause the default function logging to log
-        /// the entire contents of function inputs and outputs.
-        /// </remarks>
-        /// <value>
-        /// <c>true</c> to trace the raw values of inputs and outputs; otherwise <c>false</c>.
-        /// </value>
-        public bool TraceInputsAndOutputs { get; set; }
-
-        /// <summary>
-        /// Gets or sets the URL of an Azure Event Grid custom topic endpoint.
-        /// When set, orchestration life cycle notification events will be automatically
-        /// published to this endpoint.
-        /// </summary>
-        /// <remarks>
-        /// Azure Event Grid topic URLs are generally expected to be in the form
-        /// https://{topic_name}.{region}.eventgrid.azure.net/api/events.
-        /// </remarks>
-        /// <value>
-        /// The Azure Event Grid custom topic URL.
-        /// </value>
-        public string EventGridTopicEndpoint { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the app setting containing the key used for authenticating with the Azure Event Grid custom topic at <see cref="EventGridTopicEndpoint"/>.
-        /// </summary>
-        /// <value>
-        /// The name of the app setting that stores the Azure Event Grid key.
-        /// </value>
-        public string EventGridKeySettingName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Event Grid publish request retry count.
-        /// </summary>
-        /// <value>The number of retry attempts.</value>
-        public int EventGridPublishRetryCount { get; set; }
-
-        /// <summary>
-        /// Gets orsets the Event Grid publish request retry interval.
-        /// </summary>
-        /// <value>A <see cref="TimeSpan"/> representing the retry interval. The default value is 5 minutes.</value>
-        public TimeSpan EventGridPublishRetryInterval { get; set; } = TimeSpan.FromMinutes(5);
-
-        /// <summary>
-        /// Gets or sets the Event Grid publish request http status.
-        /// </summary>
-        /// <value>A list of HTTP status codes, e.g. 400, 403.</value>
-        public int[] EventGridPublishRetryHttpStatus { get; set; }
-
-        /// <summary>
-        /// Gets or sets the event types that will be published to Event Grid.
-        /// </summary>
-        /// <value>
-        /// An list of strings. Possible values include 'Started', 'Completed', 'Failed', 'Terminated'.
-        /// </value>
-        public string[] EventGridPublishEventTypes { get; set; }
 
         /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
@@ -154,17 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
 
         /// <summary>
-        /// Gets or sets if logs for replay events need to be recorded.
-        /// </summary>
-        /// <remarks>
-        /// The default value is false, which disables the logging of replay events.
-        /// </remarks>
-        /// <value>
-        /// Boolean value specifying if the replay events should be logged.
-        /// </value>
-        public bool LogReplayEvents { get; set; }
-
-        /// <summary>
         /// Gets or sets the type name of a custom to use for handling lifecycle notification events.
         /// </summary>
         /// <value>Assembly qualified class name that implements <see cref="ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
@@ -191,15 +127,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
             }
 
-            sb.Append(nameof(this.EventGridTopicEndpoint)).Append(": ").Append(this.EventGridTopicEndpoint).Append(", ");
-            if (!string.IsNullOrEmpty(this.EventGridTopicEndpoint))
-            {
-                sb.Append(nameof(this.EventGridKeySettingName)).Append(": ").Append(this.EventGridKeySettingName).Append(", ");
-                sb.Append(nameof(this.EventGridPublishRetryCount)).Append(": ").Append(this.EventGridPublishRetryCount).Append(", ");
-                sb.Append(nameof(this.EventGridPublishRetryInterval)).Append(": ").Append(this.EventGridPublishRetryInterval).Append(", ");
-                sb.Append(nameof(this.EventGridPublishRetryHttpStatus)).Append(": ").Append(string.Join(", ", this.EventGridPublishRetryHttpStatus ?? new int[0])).Append(", ");
-            }
-
             if (this.NotificationUrl != null)
             {
                 // Don't trace the query string, since that contains secrets
@@ -207,7 +134,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.NotificationUrl)).Append(": ").Append(url).Append(", ");
             }
 
-            sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
+            sb.Append(nameof(this.Notifications)).Append(": { ");
+            this.Notifications.AddToDebugString(sb);
+            sb.Append(" }, ");
+
+            sb.Append(nameof(this.Tracing)).Append(": { ");
+            this.Tracing.AddToDebugString(sb);
+            sb.Append(" }");
+
             return sb.ToString();
         }
 
@@ -237,11 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Each storage provider may have its own limitations for task hub names due to provider naming restrictions
             this.StorageProvider.GetConfiguredProvider().ValidateHubName(this.HubName);
 
-            if (this.EventGridPublishRetryInterval <= TimeSpan.Zero ||
-                this.EventGridPublishRetryInterval > TimeSpan.FromMinutes(60))
-            {
-                throw new InvalidOperationException($"{nameof(this.EventGridPublishRetryInterval)} must be non-negative and no more than 60 minutes.");
-            }
+            this.Notifications.Validate();
 
             if (this.MaxConcurrentActivityFunctions <= 0)
             {
