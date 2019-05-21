@@ -20,7 +20,7 @@ namespace Chirper.Service
     public static class HttpSurface
     {
         [FunctionName("UserTimelineGet")]
-        public static async Task<HttpResponseMessage> Run1(
+        public static async Task<HttpResponseMessage> UserTimelineGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/timeline")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log,
@@ -32,7 +32,7 @@ namespace Chirper.Service
         }
 
         [FunctionName("UserChirpsGet")]
-        public static async Task<HttpResponseMessage> Run2(
+        public static async Task<HttpResponseMessage> UserChirpsGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/chirps")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log,
@@ -40,14 +40,14 @@ namespace Chirper.Service
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserChirps), userId);
-            var chirps = await client.ReadEntityStateAsync<List<Chirp>>(target);
+            var chirps = await client.ReadEntityStateAsync<UserChirps>(target);
             return chirps.EntityExists
-                    ? req.CreateResponse(HttpStatusCode.OK, (Chirp[]) chirps.EntityState.ToArray())
+                    ? req.CreateResponse(HttpStatusCode.OK, chirps.EntityState.Chirps)
                     : req.CreateResponse(HttpStatusCode.NotFound);
         }
 
         [FunctionName("UserChirpsPost")]
-        public static async Task<HttpResponseMessage> Run3(
+        public static async Task<HttpResponseMessage> UserChirpsPost(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/chirps")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log, 
@@ -61,12 +61,12 @@ namespace Chirper.Service
                 Timestamp = DateTime.UtcNow,
                 Content = await req.Content.ReadAsStringAsync(),
             };
-            await client.SignalEntityAsync(target, nameof(UserChirps.Ops.Add), chirp);
+            await client.SignalEntityAsync(target, nameof(UserChirps.Add), chirp);
             return req.CreateResponse(HttpStatusCode.Accepted, chirp);
         }
 
         [FunctionName("UserChirpsDelete")]
-        public static async Task<HttpResponseMessage> Run4(
+        public static async Task<HttpResponseMessage> UserChirpsDelete(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/chirps/{timestamp}")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log,
@@ -75,12 +75,12 @@ namespace Chirper.Service
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserChirps), userId);
-            await client.SignalEntityAsync(target, nameof(UserChirps.Ops.Remove), timestamp);
+            await client.SignalEntityAsync(target, nameof(UserChirps.Remove), timestamp);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
         [FunctionName("UserFollowsGet")]
-        public static async Task<HttpResponseMessage> Run5(
+        public static async Task<HttpResponseMessage> UserFollowsGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/follows")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log,
@@ -88,15 +88,15 @@ namespace Chirper.Service
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserFollows), userId);
-            await client.SignalEntityAsync(target, nameof(UserFollows.Ops.Get));
-            var follows = await client.ReadEntityStateAsync<HashSet<string>>(target);
+            await client.SignalEntityAsync(target, nameof(UserFollows.Get));
+            var follows = await client.ReadEntityStateAsync<UserFollows>(target);
             return follows.EntityExists
-                    ? req.CreateResponse(HttpStatusCode.OK, (string[]) follows.EntityState.ToArray())
+                    ? req.CreateResponse(HttpStatusCode.OK, follows.EntityState.FollowedUsers)
                     : req.CreateResponse(HttpStatusCode.NotFound);
         }
 
         [FunctionName("UserFollowsPost")]
-        public static async Task<HttpResponseMessage> Run6(
+        public static async Task<HttpResponseMessage> UserFollowsPost(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/follows/{userId2}")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log,
@@ -105,12 +105,12 @@ namespace Chirper.Service
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserFollows), userId);
-            await client.SignalEntityAsync(target, nameof(UserFollows.Ops.Add), userId2);
+            await client.SignalEntityAsync(target, nameof(UserFollows.Add), userId2);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
         [FunctionName("UserFollowsDelete")]
-        public static async Task<HttpResponseMessage> Run7(
+        public static async Task<HttpResponseMessage> UserFollowsDelete(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/follows/{userId2}")] HttpRequestMessage req,
             [OrchestrationClient] IDurableOrchestrationClient client,
             ILogger log,
@@ -120,7 +120,7 @@ namespace Chirper.Service
             Authenticate(req, userId);
             var content = await req.Content.ReadAsAsync<string>();
             var target = new EntityId(nameof(UserFollows), userId);
-            await client.SignalEntityAsync(target, nameof(UserFollows.Ops.Remove), userId2);
+            await client.SignalEntityAsync(target, nameof(UserFollows.Remove), userId2);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 

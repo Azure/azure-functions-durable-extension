@@ -87,7 +87,7 @@ which returns a JSON representation of all the chirps by Alice, including timest
 Let's add some more messages by other users:
 
     curl -d "Bob's first message" http://localhost:7071/user/bob/chirps -H Content-Type:application/text
-    curl -d "Charlie's second message" http://localhost:7071/user/charlie/chirps -H Content-Type:application/text
+    curl -d "Charlie's first message" http://localhost:7071/user/charlie/chirps -H Content-Type:application/text
     curl -d "Bob's second message" http://localhost:7071/user/bob/chirps -H Content-Type:application/text
 
 Then, let's say Doris wants to follow Alice, Bob, and Charlie

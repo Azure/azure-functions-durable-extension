@@ -25,13 +25,13 @@ namespace Chirper.Service
             // call the UserFollows entity to figure out whose chirps should be included
             var followedUsers = await context.CallEntityAsync<List<string>>(
                 new EntityId(nameof(UserFollows), userId), 
-                nameof(UserFollows.Ops.Get));
+                nameof(UserFollows.Get));
 
             // in parallel, collect all the chirps
             var tasks = followedUsers
                     .Select(id => context.CallEntityAsync<List<Chirp>>(
                         new EntityId(nameof(UserChirps), id),
-                        nameof(UserChirps.Ops.Get)))
+                        nameof(UserChirps.Get)))
                     .ToList();
 
             await Task.WhenAll(tasks);

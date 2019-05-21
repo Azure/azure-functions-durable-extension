@@ -24,7 +24,7 @@ namespace RideSharing
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserEntity), userId);
-            var response = await client.ReadEntityStateAsync<UserStatus>(target);
+            var response = await client.ReadEntityStateAsync<UserEntity>(target);
             return response.EntityExists
                     ? req.CreateResponse(HttpStatusCode.OK, response.EntityState)
                     : req.CreateResponse(HttpStatusCode.NotFound);
@@ -56,7 +56,7 @@ namespace RideSharing
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserEntity), userId);
-            await client.SignalEntityAsync(target, "set-location", (int?) null);
+            await client.SignalEntityAsync(target, nameof(UserEntity.SetLocation), (int?) null);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
@@ -78,7 +78,7 @@ namespace RideSharing
                 return req.CreateResponse(HttpStatusCode.BadRequest, "query must include a rideId Guid");
             }
             var driverEntity = new EntityId(nameof(UserEntity), driverId);
-            await client.SignalEntityAsync(driverEntity, "clear-ride", rideId);
+            await client.SignalEntityAsync(driverEntity, nameof(UserEntity.ClearRide), rideId);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
@@ -90,9 +90,9 @@ namespace RideSharing
             int location)
         {
             var regionEntity = new EntityId(nameof(RegionEntity), location.ToString());
-            var response = await client.ReadEntityStateAsync<HashSet<string>>(regionEntity);
+            var response = await client.ReadEntityStateAsync<RegionEntity>(regionEntity);
             return response.EntityExists
-                    ? req.CreateResponse(HttpStatusCode.OK, response.EntityState.ToArray())
+                    ? req.CreateResponse(HttpStatusCode.OK, response.EntityState.Users)
                     : req.CreateResponse(HttpStatusCode.NotFound);
         }
 
