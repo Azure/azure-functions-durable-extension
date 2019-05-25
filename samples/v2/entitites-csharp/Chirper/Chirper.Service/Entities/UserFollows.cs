@@ -9,53 +9,39 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Chirper.Service
 {
     // The UserFollows entity stores all the follows of ONE user.
     // The entity key is the userId.
-    public static class UserFollows
+
+    [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
+    public class UserFollows
     {
-        public enum Ops
+        [JsonProperty]
+        public List<string> FollowedUsers { get; set; }  = new List<string>();
+
+        public void Add(string user)
         {
-            Add,
-            Remove,
-            Get,
+            FollowedUsers.Add(user);
         }
 
+        public void Remove(string user)
+        {
+            FollowedUsers.Remove(user);
+        }
+
+        public List<string> Get()
+        {
+            return FollowedUsers;
+        }
+
+        // Boilerplate (entry point for the functions runtime)
         [FunctionName(nameof(UserFollows))]
-        public static Task HandleOperation(
-            [EntityTrigger] IDurableEntityContext context)
-        {   
-            var follows = context.GetState(() => new List<string>());
-
-            switch (Enum.Parse<Ops>(context.OperationName))
-            {
-                case Ops.Add:
-                    {
-                        var userId = context.GetInput<string>();
-
-                        follows.Add(userId);
-                    }
-                    break;
-
-                case Ops.Remove:
-                    {
-                        var userId = context.GetInput<string>();
-
-                        follows.Remove(userId);
-                    }
-                    break;
-
-                case Ops.Get:
-                    {
-                        context.Return(follows);
-                    }
-                    break;
-
-            }
-
-            return Task.CompletedTask;
+        public static Task HandleEntityOperation([EntityTrigger] IDurableEntityContext context)
+        {
+            return context.DispatchAsync<UserFollows>();    
         }
     }
 }

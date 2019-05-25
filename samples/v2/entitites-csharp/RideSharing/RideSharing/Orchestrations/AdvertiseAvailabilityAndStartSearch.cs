@@ -20,7 +20,7 @@ namespace RideSharing
 
             // first, update the user information to advertise the location.
 
-            await context.CallEntityAsync(userEntity, "set-location", location);
+            await context.CallEntityAsync(userEntity, nameof(UserEntity.SetLocation), location);
             
             // next, try to match this user with 
             // someone who has already advertised their location in a nearby region
@@ -31,7 +31,7 @@ namespace RideSharing
             {
                 var candidates = await context.CallEntityAsync<string[]>(
                     new EntityId(nameof(RegionEntity), region.ToString()),
-                    userId.StartsWith("R") ? "get-available-drivers" : "get-available-riders");
+                    userId.StartsWith("R") ? nameof(RegionEntity.GetAvailableDrivers) : nameof(RegionEntity.GetAvailableRiders));
 
                 foreach (var candidate in candidates)
                 {
@@ -46,36 +46,36 @@ namespace RideSharing
             // we will just wait until someone else finds us.
         }
 
-        public static async Task<bool> TryFinalizeMatch(string user1, string user2, IDurableOrchestrationContext context)
+        public static async Task<bool> TryFinalizeMatch(string initiator, string candidate, IDurableOrchestrationContext context)
         {
-            var user1Entity = new EntityId(nameof(UserEntity), user1);
-            var user2Entity = new EntityId(nameof(UserEntity), user2);
+            var initiatorEntity = new EntityId(nameof(UserEntity), initiator);
+            var candidateEntity = new EntityId(nameof(UserEntity), candidate);
 
             // Check if both users are still available and close enough.
             // To prevent race conditions, we do this in a critical section
             // that locks both users.
 
-            using (await context.LockAsync(user1Entity, user2Entity))
+            using (await context.LockAsync(initiatorEntity, candidateEntity))
             {
-                var info1 = await context.CallEntityAsync<UserStatus>(user1Entity, "get");
-                var info2 = await context.CallEntityAsync<UserStatus>(user2Entity, "get");
+                var initiatorInfo = await context.CallEntityAsync<UserEntity>(initiatorEntity, nameof(UserEntity.Get));
+                var candidateInfo = await context.CallEntityAsync<UserEntity>(candidateEntity, nameof(UserEntity.Get));
 
-                if (info1.Location == null)
+                if (initiatorInfo.Location == null)
                 {
-                    // the user1 is no longer trying to find a match! No need to keep trying.
+                    // initiator is no longer trying to find a match! No need to keep trying.
                     return true;
                 }
-                if (info2.Location == null
-                    || !ZipCodes.GetProximityList(info1.Location.Value).Contains(info2.Location.Value))
+                if (candidateInfo.Location == null
+                    || !ZipCodes.GetProximityList(initiatorInfo.Location.Value).Contains(candidateInfo.Location.Value))
                 {
-                    // user2 is no longer eligible
+                    // candidate is no longer eligible
                     return false;
                 }
 
                 // match was successful. Create a new ride.
 
-                var driver = user1.StartsWith("D") ? info1 : info2;
-                var rider = user1.StartsWith("R") ? info1 : info2;
+                var driver = initiator.StartsWith("D") ? initiatorInfo : candidateInfo;
+                var rider = initiator.StartsWith("R") ? initiatorInfo : candidateInfo;
 
                 var rideInfo = new RideInfo()
                     {
@@ -89,8 +89,8 @@ namespace RideSharing
                 // assign both users to the new ride. 
                 // (this is happening within the critical section)
                 await Task.WhenAll(
-                        context.CallEntityAsync(user1Entity, "set-ride", rideInfo),
-                        context.CallEntityAsync(user2Entity, "set-ride", rideInfo)
+                        context.CallEntityAsync(initiatorEntity, nameof(UserEntity.SetRide), rideInfo),
+                        context.CallEntityAsync(candidateEntity, nameof(UserEntity.SetRide), rideInfo)
                 );
 
                 return true;

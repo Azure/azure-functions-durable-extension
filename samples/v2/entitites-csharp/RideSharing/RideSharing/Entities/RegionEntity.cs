@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Newtonsoft.Json;
 
 namespace RideSharing
 {
@@ -12,50 +13,43 @@ namespace RideSharing
     // looking for a match in a particular region. 
     // There is one RegionEntity per region. 
     // The entity key is the zipcode of the region.
-
+    //
     // The presence/absence of users in a particular region 
-    // may lag behind the actual, latest location of a user, but is eventually consistent:
-    // user entities send add-user / remove-user signals whenever they change
+    // may lag behind the actual, latest location of those users, but is eventually consistent:
+    // the user entities send add-user / remove-user signals whenever they change
     // their region.
-
-    public static class RegionEntity
+    [JsonObject(MemberSerialization.OptIn)]
+    public class RegionEntity
     {
+        [JsonProperty]
+        public HashSet<string> Users { get; set; } = new HashSet<string>();
+
+        // Boilerplate (entry point for the functions runtime)
         [FunctionName(nameof(RegionEntity))]
-        public static Task HandleOperation(
-        [EntityTrigger] IDurableEntityContext context)
+        public static Task HandleEntityOperation([EntityTrigger] IDurableEntityContext context)
         {
-            var state = context.GetState(() => new HashSet<string>());
-
-            switch (context.OperationName)
-            {
-                case "add-user":
-                    {
-                        var userId = context.GetInput<string>();
-                        state.Add(userId);
-                    }
-                    break;
-
-                case "remove-user":
-                    {
-                        var driverId = context.GetInput<string>();
-                        state.Remove(driverId);
-                    }
-                    break;
-
-                case "get-available-drivers":
-                    {
-                        context.Return(state.Where(id => id.StartsWith("D")).ToArray());
-                    }
-                    break;
-
-                case "get-available-riders":
-                    {
-                        context.Return(state.Where(id => id.StartsWith("R")).ToArray());
-                    }
-                    break;
-            }
-
-            return Task.CompletedTask;
+            return context.DispatchAsync<RegionEntity>();
         }
+
+        public void AddUser(string user)
+        {
+            Users.Add(user);
+        }
+
+        public void RemoveUser(string user)
+        {
+            Users.Remove(user);
+        }
+
+        public string[] GetAvailableDrivers()
+        {
+            return Users.Where(id => id.StartsWith("D")).ToArray();
+        }
+
+        public string[] GetAvailableRiders()
+        {
+            return Users.Where(id => id.StartsWith("R")).ToArray();
+        }
+
     }
 }

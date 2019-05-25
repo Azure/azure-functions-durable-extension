@@ -21,16 +21,16 @@ The function application contains a total of eight Azure Functions.
 Two of the functions are *durable entities*, implementing the stateful components.
 
 - The **UserEntity** stores the status of a user, including their currently advertised location (if any) and assigned ride (if any). There is one such entity per user, and the entity key is the user id. The UserEntity has the following three operations:
-  - *set-location* sets or clears the location where he user is currently looking for a match. It also sends *add-user* or *remove-user* signals to the region entities as needed to keep them up to date.
-  - *set-ride* assigns the user to a particular ride, and clears the location.
-  - *clear-ride* removes the currently assigned ride.
-  - *get* returns the current location and assigned ride.
+  - *SetLocation* sets or clears the location where he user is currently looking for a match. It also sends *add-user* or *remove-user* signals to the region entities as needed to keep them up to date.
+  - *SetRide* assigns the user to a particular ride, and clears the location.
+  - *ClearRide* removes the currently assigned ride.
+  - *Get* returns the current location and assigned ride.
 
 - The **RegionEntity** tracks the set of users that currently advertising their presence in a particular region. There is one RegionEntity per region, and the entity key is the zip code of the region. The RegionEntity has the following four operations:
-  - *add-user* adds a user to the list of users in this region.
-  - *remove-user* removes a user from the list of users in this region.
-  - *get-available-drivers* returns all drivers in the list.
-  - *get-available-riders* returns all riders in the list.
+  - *AddUser* adds a user to the list of users in this region.
+  - *RemoveUser* removes a user from the list of users in this region.
+  - *GetAvailableDrivers* returns all drivers in the list.
+  - *GetAvailableRiders* returns all riders in the list.
 
 One of the functions is a *durable orchestration*, and is called when a user advertises that they are looking for a match
 in a particular region.
@@ -94,16 +94,16 @@ Now let's say driver D-1233 becomes available at location 98154 (which is adjace
 
     > curl http://localhost:7071/user/D-1233/available?location=98154 -d ""
 
-Now, if we check the status of R-77 and D-1233, we see they have been assigned to the ride with id `1a816b50-12e3-5359-acf7-c15b4d82cc71`:
+Now, if we check the status of R-77 and D-1233, we see (possibly with some delay) that they have been assigned to the ride with id `1a816b50-12e3-5359-acf7-c15b4d82cc71`:
 
     > curl http://localhost:7071/user/R-77/status
     {"userId":"R-77","location":null,"currentRide":{"rideId":"1a816b50-12e3-5359-acf7-c15b4d82cc71","driverId":"D-1233","riderId":"R-77", "driverLocation": 98154,"riderLocation":98166}}
     > curl http://localhost:7071/user/D-1233/status
     {"userId":"D-1233","location":null,"currentRide":{"rideId":"1a816b50-12e3-5359-acf7-c15b4d82cc71","driverId":"D-1233","riderId":"R-77", "driverLocation":98154,"riderLocation":98166}}
 
-Finally, D-1233 can mark the ride as completed
+Finally, D-1233 can mark the ride as completed (where XXX is the rideId guid returned in the previous step)
 
-    > curl http://localhost:7071/user/D-1233/completed?rideId=1a816b50-12e3-5359-acf7-c15b4d82cc71 -d ""
+    > curl http://localhost:7071/user/D-1233/completed?rideId=XXX -d ""
 
 Which then means the status of both participants are back to neutral:
 
