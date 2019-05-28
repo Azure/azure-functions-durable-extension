@@ -20,14 +20,17 @@
     <DebugType>embedded</DebugType>
     <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
-  
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
-  </ItemGroup>
-  
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.1-*" PrivateAssets="All" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
