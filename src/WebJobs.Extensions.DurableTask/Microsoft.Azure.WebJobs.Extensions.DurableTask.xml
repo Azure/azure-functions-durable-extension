@@ -724,7 +724,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventGridNotificationOptions.PublishEventTypes">
             <summary>
-            Gets or sets the event types that will be published to Event Grid. 
+            Gets or sets the event types that will be published to Event Grid.
             </summary>
             <value>
             A list of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
@@ -2174,6 +2174,12 @@
             <summary>
             The context of the currently executing entity.
             </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Entity.SetMockContext(Microsoft.Azure.WebJobs.IDurableEntityContext)">
+            <summary>
+            Sets the current context to a mocked context for unit testing.
+            </summary>
+            <param name="mockContext">The mocked context.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.EntityCurrentOperationStatus">
             <summary>

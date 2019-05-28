@@ -3,12 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -22,6 +19,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DateTime Post(string content);
 
             List<KeyValuePair<DateTime, string>> Get();
+        }
+
+        [FunctionName(nameof(ChatRoom))]
+        public static Task ChatRoomFunction([EntityTrigger] IDurableEntityContext context)
+        {
+            return context.DispatchAsync<ChatRoom>();
         }
 
         [JsonObject(MemberSerialization.OptIn)]
@@ -48,12 +51,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 return this.ChatEntries.ToList();
             }
-        }
-
-        [FunctionName(nameof(ChatRoom))]
-        public static Task ChatRoomFunction([EntityTrigger] IDurableEntityContext context)
-        {
-            return context.DispatchAsync<ChatRoom>();
         }
     }
 }
