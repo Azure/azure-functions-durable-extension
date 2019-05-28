@@ -221,17 +221,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (InstancesRoute.TryMatch(path, routeValues))
                 {
-                    string instanceId = null;
-                    string operation = null;
-                    if (routeValues.ContainsKey(InstanceIdRouteParameter))
-                    {
-                        instanceId = (string)routeValues[InstanceIdRouteParameter];
-                    }
-
-                    if (routeValues.ContainsKey(OperationRouteParameter))
-                    {
-                        operation = (string)routeValues[OperationRouteParameter];
-                    }
+                    routeValues.TryGetValue(InstanceIdRouteParameter, out object instanceIdValue);
+                    routeValues.TryGetValue(OperationRouteParameter, out object operationValue);
+                    var instanceId = instanceIdValue as string;
+                    var operation = operationValue as string;
 
                     if (instanceId == null)
                     {
