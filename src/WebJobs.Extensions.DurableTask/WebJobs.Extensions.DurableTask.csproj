@@ -22,7 +22,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
   </ItemGroup>
   
@@ -37,6 +36,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.6.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.1.1" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.0-alpha" />

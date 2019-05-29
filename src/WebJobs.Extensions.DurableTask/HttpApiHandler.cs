@@ -10,9 +10,12 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,9 +24,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class HttpApiHandler
     {
+        // Route segments
         private const string InstancesControllerSegment = "/instances/";
         private const string OrchestratorsControllerSegment = "/orchestrators/";
         private const string EntitiesControllerSegment = "/entities/";
+
+        // Route parameters
+        private const string FunctionNameRouteParameter = "functionName";
+        private const string InstanceIdRouteParameter = "instanceId";
+        private const string EntityNameRouteParameter = "entityName";
+        private const string EntityKeyRouteParameter = "entityKey";
+        private const string OperationRouteParameter = "operation";
+        private const string EventNameRouteParameter = "eventName";
+
+        // Query string parameters
         private const string TaskHubParameter = "taskHub";
         private const string ConnectionParameter = "connection";
         private const string RaiseEventOperation = "raiseEvent";
@@ -36,6 +50,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
         private const string PageSizeParameter = "top";
+
+        // API Routes
+        private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
+        private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
+        private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
+        private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
@@ -60,6 +80,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpManagementPayload.TerminatePostUri,
                 httpManagementPayload.RewindPostUri,
                 httpManagementPayload.PurgeHistoryDeleteUri);
+        }
+
+        // /orchestrators/{functionName}/{instanceId?}
+        private static TemplateMatcher GetStartOrchestrationRoute()
+        {
+            var defaultRouteValues = RouteValueDictionary.FromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(InstanceIdRouteParameter, string.Empty) });
+            return new TemplateMatcher(TemplateParser.Parse($"{OrchestratorsControllerSegment}{{{FunctionNameRouteParameter}}}/{{{InstanceIdRouteParameter}?}}"), defaultRouteValues);
+        }
+
+        // /entity/{entityId}/{entityKey?}
+        private static TemplateMatcher GetEntityRoute()
+        {
+            var defaultRouteValues = RouteValueDictionary.FromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(EntityKeyRouteParameter, string.Empty) });
+            return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
+        }
+
+        // /instances/{instanceId}/{operation}
+        private static TemplateMatcher GetInstancesRoute()
+        {
+            return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{{{OperationRouteParameter}?}}"), new RouteValueDictionary());
+        }
+
+        // /instances/{instanceId}/raiseEvent/{eventName}
+        private static TemplateMatcher GetInstanceRaiseEventRoute()
+        {
+            return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{RaiseEventOperation}/{{{EventNameRouteParameter}}}"), new RouteValueDictionary());
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -130,107 +176,89 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             try
             {
                 string path = request.RequestUri.AbsolutePath.TrimEnd('/');
-                int i = path.IndexOf(OrchestratorsControllerSegment, StringComparison.OrdinalIgnoreCase);
-                int nextSlash = -1;
-                if (i >= 0 && request.Method == HttpMethod.Post)
+                string basePath = this.config.Options.NotificationUrl.AbsolutePath.TrimEnd('/');
+                path = path.Substring(basePath.Length);
+                var routeValues = new RouteValueDictionary();
+                if (StartOrchestrationRoute.TryMatch(path, routeValues))
                 {
-                    string functionName;
-                    string instanceId = string.Empty;
-
-                    i += OrchestratorsControllerSegment.Length;
-                    nextSlash = path.IndexOf('/', i);
-
-                    if (nextSlash < 0)
+                    string functionName = (string)routeValues[FunctionNameRouteParameter];
+                    string instanceId = (string)routeValues[InstanceIdRouteParameter];
+                    if (request.Method == HttpMethod.Post)
                     {
-                        functionName = path.Substring(i);
+                        return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
                     }
                     else
                     {
-                        functionName = path.Substring(i, nextSlash - i);
-                        i = nextSlash + 1;
-                        instanceId = path.Substring(i);
+                        return request.CreateResponse(HttpStatusCode.NotFound);
                     }
-
-                    return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
                 }
 
-                i = path.IndexOf(EntitiesControllerSegment, StringComparison.OrdinalIgnoreCase);
-                if (i >= 0 && (request.Method == HttpMethod.Get || request.Method == HttpMethod.Post))
+                if (EntityRoute.TryMatch(path, routeValues))
                 {
-                    EntityId entityId;
-
-                    i += EntitiesControllerSegment.Length;
-                    nextSlash = path.IndexOf('/', i);
-
                     try
                     {
-                        if (nextSlash < 0)
+                        string entityName = (string)routeValues[EntityNameRouteParameter];
+                        string entityKey = (string)routeValues[EntityKeyRouteParameter];
+                        EntityId entityId = new EntityId(entityName, entityKey);
+                        if (request.Method == HttpMethod.Get)
                         {
-                            entityId = new EntityId(path.Substring(i), string.Empty);
+                            return await this.HandleGetEntityRequestAsync(request, entityId);
+                        }
+                        else if (request.Method == HttpMethod.Post)
+                        {
+                            return await this.HandlePostEntityOperationRequestAsync(request, entityId);
                         }
                         else
                         {
-                            entityId = new EntityId(path.Substring(i, nextSlash - i), path.Substring(nextSlash + 1));
+                            return request.CreateResponse(HttpStatusCode.NotFound);
                         }
                     }
                     catch (ArgumentException e)
                     {
                         return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message);
                     }
+                }
 
-                    if (request.Method == HttpMethod.Get)
+                if (InstancesRoute.TryMatch(path, routeValues))
+                {
+                    routeValues.TryGetValue(InstanceIdRouteParameter, out object instanceIdValue);
+                    routeValues.TryGetValue(OperationRouteParameter, out object operationValue);
+                    var instanceId = instanceIdValue as string;
+                    var operation = operationValue as string;
+
+                    if (instanceId == null)
                     {
-                        return await this.HandleGetEntityRequestAsync(request, entityId);
+                        // Retrieve All Status or conditional query in case of the request URL ends e.g. /instances/
+                        if (request.Method == HttpMethod.Get)
+                        {
+                            return await this.HandleGetStatusRequestAsync(request);
+                        }
+                        else if (request.Method == HttpMethod.Delete)
+                        {
+                            return await this.HandleDeleteHistoryWithFiltersRequestAsync(request);
+                        }
+                        else
+                        {
+                            return request.CreateResponse(HttpStatusCode.NotFound);
+                        }
+                    }
+                    else if (instanceId != null && operation == null)
+                    {
+                        if (request.Method == HttpMethod.Get)
+                        {
+                            return await this.HandleGetStatusRequestAsync(request, instanceId);
+                        }
+                        else if (request.Method == HttpMethod.Delete)
+                        {
+                            return await this.HandleDeleteHistoryByIdRequestAsync(request, instanceId);
+                        }
+                        else
+                        {
+                            return request.CreateResponse(HttpStatusCode.NotFound);
+                        }
                     }
                     else
                     {
-                        return await this.HandlePostEntityOperationRequestAsync(request, entityId);
-                    }
-                }
-
-                i = path.IndexOf(InstancesControllerSegment, StringComparison.OrdinalIgnoreCase);
-                if (i < 0)
-                {
-                    // Retrieve All Status or conditional query in case of the request URL ends e.g. /instances/
-                    if (request.Method == HttpMethod.Get
-                        && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-                    {
-                        return await this.HandleGetStatusRequestAsync(request);
-                    }
-
-                    if (request.Method == HttpMethod.Delete
-                        && path.EndsWith(InstancesControllerSegment.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-                    {
-                        return await this.HandleDeleteHistoryWithFiltersRequestAsync(request);
-                    }
-
-                    return request.CreateResponse(HttpStatusCode.NotFound);
-                }
-
-                i += InstancesControllerSegment.Length;
-                nextSlash = path.IndexOf('/', i);
-
-                if (nextSlash < 0)
-                {
-                    string instanceId = path.Substring(i);
-                    if (request.Method == HttpMethod.Get)
-                    {
-                        return await this.HandleGetStatusRequestAsync(request, instanceId);
-                    }
-
-                    if (request.Method == HttpMethod.Delete)
-                    {
-                        return await this.HandleDeleteHistoryByIdRequestAsync(request, instanceId);
-                    }
-                }
-                else if (request.Method == HttpMethod.Post)
-                {
-                    string instanceId = path.Substring(i, nextSlash - i);
-                    i = nextSlash + 1;
-                    nextSlash = path.IndexOf('/', i);
-                    if (nextSlash < 0)
-                    {
-                        string operation = path.Substring(i);
                         if (string.Equals(operation, TerminateOperation, StringComparison.OrdinalIgnoreCase))
                         {
                             return await this.HandleTerminateInstanceRequestAsync(request, instanceId);
@@ -239,24 +267,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             return await this.HandleRewindInstanceRequestAsync(request, instanceId);
                         }
-                    }
-                    else
-                    {
-                        string operation = path.Substring(i, nextSlash - i);
-                        if (string.Equals(operation, RaiseEventOperation, StringComparison.OrdinalIgnoreCase))
+                        else
                         {
-                            i = nextSlash + 1;
-                            nextSlash = path.IndexOf('/', i);
-                            if (nextSlash < 0)
-                            {
-                                string eventName = path.Substring(i);
-                                return await this.HandleRaiseEventRequestAsync(request, instanceId, eventName);
-                            }
+                            return request.CreateResponse(HttpStatusCode.NotFound);
                         }
                     }
                 }
 
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "No such API");
+                if (InstanceRaiseEventRoute.TryMatch(path, routeValues))
+                {
+                    string instanceId = (string)routeValues[InstanceIdRouteParameter];
+                    string eventName = (string)routeValues[EventNameRouteParameter];
+                    if (request.Method == HttpMethod.Post)
+                    {
+                        return await this.HandleRaiseEventRequestAsync(request, instanceId, eventName);
+                    }
+                    else
+                    {
+                        return request.CreateResponse(HttpStatusCode.NotFound);
+                    }
+                }
+
+                return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
             /* Some handler methods throw ArgumentExceptions in specialized cases which should be returned to the client, such as when:
