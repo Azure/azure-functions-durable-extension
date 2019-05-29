@@ -1313,6 +1313,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// End-to-end test which validates a sub-orchestrator function have assigned corrent value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SubOrchestration_Requires_Different_Id_Than_Parent(bool extendedSessions)
+        {
+            const string TaskHub = nameof(this.SubOrchestration_ComplexType);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, extendedSessions))
+            {
+                await host.StartAsync();
+
+                string parentOrchestrator = nameof(TestOrchestrations.CallOrchestrator);
+                string instanceId = Guid.NewGuid().ToString();
+
+                var input = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.ProvideParentInstanceId),
+                    InstanceId = instanceId,
+                };
+
+                var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output, instanceId: instanceId);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
         private async Task SubOrchestration_ComplexType_Main_Logic(bool showHistory = false, bool showHistoryOutput = false)
         {
             const string TaskHub = nameof(this.SubOrchestration_ComplexType);

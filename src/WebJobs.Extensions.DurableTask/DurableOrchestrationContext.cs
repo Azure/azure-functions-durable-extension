@@ -442,7 +442,7 @@ namespace Microsoft.Azure.WebJobs
                     // check. We cannot easily check the full hierarchy, so we just look at the current orchestration
                     // and the immediate parent.
                     if (string.Equals(instanceId, this.InstanceId, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(instanceId, this.ParentInstanceId, StringComparison.OrdinalIgnoreCase))
+                        (this.ParentInstanceId != null && string.Equals(instanceId, this.ParentInstanceId, StringComparison.OrdinalIgnoreCase)))
                     {
                         throw new ArgumentException("The instance ID of a sub-orchestration must be different than the instance ID of a parent orchestration.");
                     }
