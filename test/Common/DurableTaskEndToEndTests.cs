@@ -1028,6 +1028,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates correct exceptions for invalid timeout values.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForExternalEventWithTooLargeTimeout()
+        {
+            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithTimeout) };
+            var extendedSessions = false;
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForExternalEventWithTimeout),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromDays(7);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, "throw"), this.output);
+                await client.WaitForStartupAsync(this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ArgumentException", status?.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
         /// </summary>
         [Theory]
@@ -1280,6 +1308,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(status.Output);
                 Assert.Equal(status.Output, client.InstanceId);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates a sub-orchestrator function have assigned corrent value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SubOrchestration_Requires_Different_Id_Than_Parent(bool extendedSessions)
+        {
+            const string TaskHub = nameof(this.SubOrchestration_ComplexType);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, extendedSessions))
+            {
+                await host.StartAsync();
+
+                string parentOrchestrator = nameof(TestOrchestrations.CallOrchestrator);
+                string instanceId = Guid.NewGuid().ToString();
+
+                var input = new StartOrchestrationArgs
+                {
+                    FunctionName = nameof(TestOrchestrations.ProvideParentInstanceId),
+                    InstanceId = instanceId,
+                };
+
+                var client = await host.StartOrchestratorAsync(parentOrchestrator, input, this.output, instanceId: instanceId);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 await host.StopAsync();
             }
