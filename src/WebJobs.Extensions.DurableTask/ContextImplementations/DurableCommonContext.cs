@@ -215,6 +215,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     break;
 
                 case FunctionType.Orchestrator:
+                    // Instance IDs should not be reused when creating sub-orchestrations. This is a best-effort
+                    // check. We cannot easily check the full hierarchy, so we just look at the current orchestration
+                    // and the immediate parent.
+                    if (string.Equals(instanceId, this.InstanceId, StringComparison.OrdinalIgnoreCase) ||
+                        (this.ParentInstanceId != null && string.Equals(instanceId, this.ParentInstanceId, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new ArgumentException("The instance ID of a sub-orchestration must be different than the instance ID of a parent orchestration.");
+                    }
+
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(oneWay || !isEntity, "Entities cannot call orchestrations");
                     if (instanceId != null && instanceId.StartsWith("@"))
