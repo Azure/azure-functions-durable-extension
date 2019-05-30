@@ -1,5 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
@@ -51,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public int[] PublishRetryHttpStatus { get; set; }
 
         /// <summary>
-        /// Gets or sets the event types that will be published to Event Grid. 
+        /// Gets or sets the event types that will be published to Event Grid.
         /// </summary>
         /// <value>
         /// A list of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
