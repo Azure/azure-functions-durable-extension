@@ -51,20 +51,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(202, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, Input ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(203, Level = EventLevel.Informational, Version = 3)]
+        [Event(203, Level = EventLevel.Informational, Version = 4)]
         public void FunctionAwaited(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string OperationId,
-            string OperationName,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(203, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(203, TaskHub, AppName, SlotName, FunctionName, InstanceId, FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(204, Level = EventLevel.Informational, Version = 2)]

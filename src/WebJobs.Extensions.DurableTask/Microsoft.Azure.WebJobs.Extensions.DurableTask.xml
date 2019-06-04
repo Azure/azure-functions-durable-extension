@@ -2296,6 +2296,19 @@
             about the failed sub-orchestrator or activity function.
             </remarks>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.FunctionFailedException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of a <see cref="T:Microsoft.Azure.WebJobs.FunctionFailedException"/>.
+            </summary>
+            <param name="message">A message describing where to look for more details.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.FunctionFailedException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of a <see cref="T:Microsoft.Azure.WebJobs.FunctionFailedException"/>.
+            </summary>
+            <param name="message">A message describing where to look for more details.</param>
+            <param name="innerException">The exception that caused the function to fail.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.FunctionName">
             <summary>
             The name of a durable function.

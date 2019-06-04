@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -149,13 +150,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             private static string EntityContextToString(DurableEntityContext arg)
             {
-                var history = JArray.FromObject(arg.History);
+                // assemble the operation batch information
+                var operationBatch = new JArray();
+                foreach (var operation in arg.OperationBatch)
+                {
+                    operationBatch.Add(new JObject(
+                        new JProperty("name", operation.Operation),
+                        new JProperty("input", operation.Input),
+                        new JProperty("isSignal", operation.IsSignal)));
+                }
 
-                // TODO figure out what exactly is needed here
+                // assemble the entity state information
                 var contextObject = new JObject(
-                    new JProperty("history", history),
-                    new JProperty("entity", ((IDurableEntityContext)arg).EntityId),
-                    new JProperty("isReplaying", arg.IsReplaying));
+                    new JProperty("self", new JObject(
+                        new JProperty("name", arg.Self.EntityName),
+                        new JProperty("key", arg.Self.EntityKey))),
+                    new JProperty("exists", arg.State.EntityExists),
+                    new JProperty("state", arg.State.EntityState),
+                    new JProperty("batch", operationBatch));
 
                 return contextObject.ToString();
             }

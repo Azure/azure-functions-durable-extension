@@ -53,18 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.context.GetSerializedCustomStatus();
         }
 
-        public override void TraceAwait()
-        {
-            this.Config.TraceHelper.FunctionAwaited(
-                this.context.HubName,
-                this.context.Name,
-                this.context.FunctionType,
-                this.context.InstanceId,
-                string.Empty,
-                string.Empty,
-                this.context.IsReplaying);
-        }
-
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
         {
             this.Context.RaiseEvent(eventName, serializedEventData);

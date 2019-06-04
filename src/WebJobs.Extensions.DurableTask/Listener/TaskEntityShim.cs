@@ -26,20 +26,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly TaskCompletionSource<object> doneProcessingMessages
             = new TaskCompletionSource<object>();
 
-        private object lockable = new object();
-
-        private Task lastStartedOperation = Task.CompletedTask;
-
-        private int numberOperationsStarted = 0;
-
-        private int numberMessagesToReceive;
+        // a batch always consists of a (possibly empty) sequence of operations
+        // followed by zero or one lock request
+        private readonly List<RequestMessage> operationBatch = new List<RequestMessage>();
+        private RequestMessage lockRequest = null;
 
         public TaskEntityShim(DurableTaskExtension config, string schedulerId)
             : base(config)
         {
             this.SchedulerId = schedulerId;
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
-            this.context = new DurableEntityContext(config, this.EntityId);
+            this.context = new DurableEntityContext(config, this.EntityId, this);
         }
 
         public override DurableCommonContext Context => this.context;
@@ -47,6 +44,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string SchedulerId { get; private set; }
 
         public EntityId EntityId { get; private set; }
+
+        public int NumberEventsToReceive { get; set; }
+    
+        internal List<RequestMessage> OperationBatch => this.operationBatch;
+
+        public void AddOperationToBatch(RequestMessage operationMessage)
+        {
+            this.operationBatch.Add(operationMessage);
+        }
+
+        public void AddLockRequestToBatch(RequestMessage lockRequest)
+        {
+            this.lockRequest = lockRequest;
+        }
 
         public override RegisteredFunctionInfo GetFunctionInfo()
         {
@@ -82,104 +93,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             });
         }
 
-        internal void ProcessMessage(string eventName, string serializedEventData)
-        {
-            this.numberMessagesToReceive++;
-
-            if (eventName == "op")
-            {
-                var operationMessage = JsonConvert.DeserializeObject<RequestMessage>(serializedEventData);
-
-                lock (this.lockable)
-                {
-                    // the operation gets processed if either
-                    // - it was sent by the lock holder (the latter issues only one at a time, so no need to for queueing)
-                    // - there is no lock holder, no current operation being processed, and we have not reached the limit
-                    if ((this.context.State.LockedBy != null
-                         && this.context.State.LockedBy == operationMessage.ParentInstanceId)
-                      || (this.context.State.LockedBy == null
-                          && this.lastStartedOperation.IsCompleted))
-                    {
-                        this.numberOperationsStarted++;
-                        this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
-                    }
-                    else
-                    {
-                        this.Config.TraceHelper.EntityOperationQueued(
-                            this.Context.HubName,
-                            this.Context.Name,
-                            this.Context.InstanceId,
-                            operationMessage.Id.ToString(),
-                            operationMessage.Operation ?? "LockRequest",
-                            this.Context.IsReplaying);
-
-                        this.context.State.Enqueue(operationMessage);
-                    }
-                }
-            }
-            else if (eventName == "release")
-            {
-                var message = JsonConvert.DeserializeObject<ReleaseMessage>(serializedEventData);
-
-                if (this.context.State.LockedBy == message.ParentInstanceId)
-                {
-                    lock (this.lockable)
-                    {
-                        this.Config.TraceHelper.EntityLockReleased(
-                            this.Context.HubName,
-                            this.Context.Name,
-                            this.Context.InstanceId,
-                            message.ParentInstanceId,
-                            message.LockRequestId,
-                            this.Context.IsReplaying);
-
-                        this.context.State.LockedBy = null;
-
-                        if (this.lastStartedOperation.IsCompleted
-                         && this.context.State.TryDequeue(out var operationMessage))
-                        {
-                            this.numberOperationsStarted++;
-                            this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
-                        }
-                    }
-                }
-            }
-            else // it's a response
-            {
-                this.Context.RaiseEvent(eventName, serializedEventData);
-            }
-        }
-
-        internal async Task WaitForLastOperation()
-        {
-            Task waitFor;
-            lock (this.lockable)
-            {
-                waitFor = this.lastStartedOperation;
-            }
-
-            while (true)
-            {
-                await waitFor;
-
-                lock (this.lockable)
-                {
-                    if (waitFor == this.lastStartedOperation)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        waitFor = this.lastStartedOperation;
-                    }
-                }
-            }
-        }
-
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
         {
             // no-op: the events were already processed outside of the DTFx context
-            if (--this.numberMessagesToReceive == 0)
+            if (--this.NumberEventsToReceive == 0)
             {
                 // signal the main orchestration thread that it can now safely terminate.
                 this.doneProcessingMessages.SetResult(null);
@@ -204,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
             }
 
-            if (!this.context.State.EntityExists)
+            if (serializedInput == null)
             {
                 this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
@@ -212,33 +129,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.InstanceId,
                     this.context.IsReplaying));
             }
-
-            // restart the processing if needed
-            lock (this.lockable)
-            {
-                if (this.context.State.LockedBy == null && this.context.State.TryDequeue(out var request))
-                {
-                    this.numberOperationsStarted++;
-                    this.lastStartedOperation = this.ProcessRequestAsync(request);
-                }
-            }
         }
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            // Wait until all the entity events have been processed.
-
-            if (this.numberOperationsStarted == 0)
+            if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
-                // we are idle after a ContinueAsNew - no messages yet to process.
+                // we are idle after a ContinueAsNew - the batch is empty.
                 // Wait for more messages to get here (via extended sessions)
                 await this.doneProcessingMessages.Task;
             }
 
-            // Send all buffered outgoing messages (signals, responses, and fire-and-forget orchestrations)
+            // Send all buffered outgoing messages
             this.context.SendOutbox(innerContext);
 
-            if (this.numberMessagesToReceive > 0)
+            if (this.NumberEventsToReceive > 0)
             {
                 await this.doneProcessingMessages.Task;
             }
@@ -254,19 +159,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return string.Empty;
         }
 
-        private async Task ProcessRequestAsync(RequestMessage request)
+        public async Task ExecuteBatch()
         {
-            if (request.IsLockMessage)
+            if (this.GetFunctionInfo().IsOutOfProc)
             {
-                this.ProcessLockRequest(request);
+                // process all operations in the batch using a single function call
+                await this.ExecuteOutOfProcBatch();
             }
             else
             {
-                await this.ProcessOperationRequestAsync(request);
+                // call the function once per operation in the batch
+                foreach (var request in this.operationBatch)
+                {
+                    await this.ProcessOperationRequestAsync(request);
+                }
+            }
+
+            // process the lock request, if any
+            if (this.lockRequest != null)
+            {
+                this.ProcessLockRequest(this.lockRequest);
             }
         }
 
-        private void ProcessLockRequest(RequestMessage request)
+        public void ProcessLockRequest(RequestMessage request)
         {
             this.Config.TraceHelper.EntityLockAcquired(
                 this.context.HubName,
@@ -276,8 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 request.Id.ToString(),
                 this.context.IsReplaying);
 
-            System.Diagnostics.Debug.Assert(this.context.State.LockedBy == null, "Lock not held already.");
-            this.context.State.LockedBy = request.ParentInstanceId;
+            System.Diagnostics.Debug.Assert(this.context.State.LockedBy == request.ParentInstanceId, "Lock was set.");
 
             System.Diagnostics.Debug.Assert(request.LockSet[request.Position].Equals(this.EntityId), "position is correct");
             request.Position++;
@@ -308,7 +223,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.IsNewlyConstructed = !this.context.State.EntityExists;
             this.context.State.EntityExists = true;
             this.context.DestructOnExit = false;
-            this.context.IsCompleted = false;
 
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
@@ -340,15 +254,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // exception must be sent with response back to caller
                 this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.EntityId);
 
-                // the first exception is also handed over to the functions runtime
-                if (this.context.OrchestrationException == null)
-                {
-                    var operationException = new OrchestrationFailureException(
-                        $"Operation '{request.Operation}' on entity {this.EntityId} failed: {e.Message}",
-                        Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
-                    this.context.OrchestrationException = ExceptionDispatchInfo.Capture(operationException);
-                }
-
                 this.Config.TraceHelper.FunctionFailed(
                     this.context.HubName,
                     this.context.Name,
@@ -368,10 +273,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var destructOnExit = this.context.DestructOnExit;
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
-            this.context.IsCompleted = true;
 
             // send response
-            // TODO think about how to handle exceptions in signals
             if (!request.IsSignal)
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
@@ -389,59 +292,118 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.StateWasAccessed = false;
             }
 
-            // if there are requests waiting in the queue that we can process now, and
-            // we have not yet reached the limit, do that now; else continue as new
+            this.Config.TraceHelper.FunctionCompleted(
+                this.context.HubName,
+                this.context.Name,
+                this.context.InstanceId,
+                request.Id.ToString(),
+                request.Operation,
+                this.Config.GetIntputOutputTrace(response.Result),
+                continuedAsNew: false,
+                functionType: FunctionType.Entity,
+                isReplay: this.context.IsReplaying);
+        }
 
-            lock (this.lockable)
+        private async Task ExecuteOutOfProcBatch()
+        {
+            object outOfProcResults = null;
+
+            Task invokeTask = this.FunctionInvocationCallback();
+            if (invokeTask is Task<object> resultTask)
             {
-                if (this.context.State.LockedBy == null
-                    && this.context.State.TryDequeue(out var operationMessage))
-                {
-                    this.Config.TraceHelper.FunctionCompleted(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        request.Id.ToString(),
-                        request.Operation,
-                        this.Config.GetIntputOutputTrace(response.Result),
-                        continuedAsNew: false,
-                        functionType: FunctionType.Entity,
-                        isReplay: this.context.IsReplaying);
+                outOfProcResults = await resultTask;
+            }
+            else
+            {
+                throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
+            }
 
-                    this.numberOperationsStarted++;
-                    this.lastStartedOperation = this.ProcessRequestAsync(operationMessage);
-                }
-                else
+            var jObj = outOfProcResults as JObject;
+            if (jObj == null)
+            {
+                throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema.");
+            }
+
+            var result = jObj.ToObject<OutOfProcResult>();
+
+            // update the state
+            this.context.State.EntityExists = result.EntityExists;
+            this.context.State.EntityState = result.EntityState;
+
+            // send response messages
+            int position = 0;
+            foreach (var request in this.OperationBatch)
+            {
+                if (!request.IsSignal)
                 {
-                    this.Config.TraceHelper.FunctionCompleted(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        request.Id.ToString(),
-                        request.Operation,
-                        this.Config.GetIntputOutputTrace(response.Result),
-                        continuedAsNew: true,
-                        functionType: FunctionType.Entity,
-                        isReplay: this.context.IsReplaying);
+                    var response = result.Responses[position++];
+
+                    var target = new OrchestrationInstance()
+                    {
+                        InstanceId = request.ParentInstanceId,
+                    };
+                    var responseMessage = new ResponseMessage()
+                    {
+                        Result = response.Result,
+                        ExceptionType = response.IsError ? "Error" : null,
+                    };
+                    var guid = request.Id.ToString();
+                    this.context.SendEntityMessage(target, guid, responseMessage);
                 }
+            }
+
+            // send signal messages
+            foreach (var signal in result.Signals)
+            {
+                var request = new RequestMessage()
+                {
+                    ParentInstanceId = this.context.InstanceId,
+                    Id = Guid.NewGuid(),
+                    IsSignal = true,
+                    Operation = signal.Name,
+                    Input = signal.Input,
+                };
+                var target = new OrchestrationInstance()
+                {
+                    InstanceId = EntityId.GetSchedulerIdFromEntityId(signal.Target),
+                };
+                this.context.SendEntityMessage(target, "op", request);
             }
         }
 
-        public override void TraceAwait()
+        internal class OutOfProcResult
         {
-            // we only trace the awaits that are happening inside an operation,
-            // not the awaits that come from the scheduler loop
+            [JsonProperty("entityExists")]
+            public bool EntityExists { get; set; }
 
-            if (this.context.CurrentOperation != null)
+            [JsonProperty("entityState")]
+            public string EntityState { get; set; }
+
+            [JsonProperty("responses")]
+            public List<Response> Responses { get; set; }
+
+            [JsonProperty("signals")]
+            public List<Signal> Signals { get; set; }
+
+            public struct Response
             {
-                this.Config.TraceHelper.FunctionAwaited(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.FunctionType,
-                    this.context.InstanceId,
-                    this.context.CurrentOperation?.Id.ToString() ?? string.Empty,
-                    this.context.CurrentOperation?.Operation ?? string.Empty,
-                    this.context.IsReplaying);
+                [JsonProperty("result")]
+                public string Result { get; set; }
+
+                [JsonProperty("isError")]
+                public bool IsError { get; set; }
+            }
+
+            public struct Signal
+            {
+                [JsonProperty("target")]
+                public EntityId Target { get; set; }
+
+                [JsonProperty("name")]
+                public string Name { get; set; }
+
+                [JsonProperty("input")]
+                public string Input { get; set; }
             }
         }
     }
