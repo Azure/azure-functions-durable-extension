@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2010
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28922.388
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask", "src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}"
 EndProject
@@ -17,6 +17,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V2", "test\FunctionsV2\WebJobs.Extensions.DurableTask.Tests.V2.csproj", "{F2A5DABB-36D4-4152-AF49-2570149899E1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V1", "test\FunctionsV1\WebJobs.Extensions.DurableTask.Tests.V1.csproj", "{51499757-C642-46ED-89A2-EA3BA6FE5FE9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers", "src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj", "{1A47F892-EB7B-47BA-894C-7D1B2154F402}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test", "test\WebJobs.Extensions.DurableTask.Analyzers.Test\WebJobs.Extensions.DurableTask.Analyzers.Test.csproj", "{C10B715A-367B-4118-9BDE-146BC63DD186}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +40,14 @@ Global
 		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51499757-C642-46ED-89A2-EA3BA6FE5FE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A47F892-EB7B-47BA-894C-7D1B2154F402}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A47F892-EB7B-47BA-894C-7D1B2154F402}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A47F892-EB7B-47BA-894C-7D1B2154F402}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A47F892-EB7B-47BA-894C-7D1B2154F402}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C10B715A-367B-4118-9BDE-146BC63DD186}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C10B715A-367B-4118-9BDE-146BC63DD186}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C10B715A-367B-4118-9BDE-146BC63DD186}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C10B715A-367B-4118-9BDE-146BC63DD186}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,6 +56,8 @@ Global
 		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
 		{F2A5DABB-36D4-4152-AF49-2570149899E1} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 		{51499757-C642-46ED-89A2-EA3BA6FE5FE9} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
+		{1A47F892-EB7B-47BA-894C-7D1B2154F402} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
+		{C10B715A-367B-4118-9BDE-146BC63DD186} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}
