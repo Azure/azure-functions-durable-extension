@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs
         {
             this.context.SignalEntity(entityId, operationName, operationInput);
 
-            return Task.FromResult<TResult>(default);
+            return Task.FromResult(default(TResult));
         }
     }
 }

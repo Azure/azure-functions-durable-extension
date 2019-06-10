@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs
         {
             await this.client.SignalEntityAsync(entityId, operationName, operationInput);
 
-            return default;
+            return default(TResult);
         }
     }
 }
