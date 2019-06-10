@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class TestEntityClasses
     {
-        //-------------- an entity representing a chat room -----------------
         // this example shows how to use the C# class API for entities.
 
         public interface IChatRoom
@@ -21,11 +20,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             List<KeyValuePair<DateTime, string>> Get();
         }
 
+        public interface ICounter
+        {
+            Task Increment();
+
+            Task Add(int value);
+
+            Task<int> Get();
+
+            Task Set(int newValue);
+
+            Task Delete();
+        }
+
         [FunctionName(nameof(ChatRoom))]
         public static Task ChatRoomFunction([EntityTrigger] IDurableEntityContext context)
         {
             return context.DispatchAsync<ChatRoom>();
         }
+
+        [FunctionName(nameof(Counter))]
+        public static Task CounterFunction([EntityTrigger] IDurableEntityContext context)
+        {
+            return context.DispatchAsync<Counter>();
+        }
+
+        //-------------- an entity representing a chat room -----------------
 
         [JsonObject(MemberSerialization.OptIn)]
         public class ChatRoom : IChatRoom
@@ -50,6 +70,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public List<KeyValuePair<DateTime, string>> Get()
             {
                 return this.ChatEntries.ToList();
+            }
+        }
+
+        //-------------- An entity representing a counter object -----------------
+
+        [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
+        public class Counter : ICounter
+        {
+            [JsonProperty("value")]
+            public int Value { get; set; }
+
+            public Task Increment()
+            {
+                this.Value += 1;
+
+                return Task.CompletedTask;
+            }
+
+            public Task Add(int value)
+            {
+                this.Value += value;
+
+                return Task.CompletedTask;
+            }
+
+            public Task<int> Get()
+            {
+                return Task.FromResult(this.Value);
+            }
+
+            public Task Set(int newValue)
+            {
+                this.Value = newValue;
+
+                return Task.CompletedTask;
+            }
+
+            public Task Delete()
+            {
+                Entity.Current.DestructOnExit();
+
+                return Task.CompletedTask;
             }
         }
     }

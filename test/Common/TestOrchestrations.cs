@@ -830,5 +830,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return "ok";
         }
+
+        public static async Task<bool> EntityProxy([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var counter = ctx.GetInput<EntityId>();
+
+            var entityProxy = ctx.CreateEntityProxy<TestEntityClasses.ICounter>(counter);
+
+            // reset
+            await entityProxy.Set(10);
+
+            // increment
+            await entityProxy.Increment();
+
+            // add
+            await entityProxy.Add(5);
+
+            // get current value
+            var result = await entityProxy.Get();
+
+            // destruct
+            await entityProxy.Delete();
+
+            return result == 16;
+        }
     }
 }
