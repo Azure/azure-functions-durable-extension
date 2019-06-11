@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public EntityId EntityId { get; private set; }
 
         public int NumberEventsToReceive { get; set; }
-    
+
         internal List<RequestMessage> OperationBatch => this.operationBatch;
 
         public void AddOperationToBatch(RequestMessage operationMessage)
@@ -140,6 +140,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await this.doneProcessingMessages.Task;
             }
 
+            this.Config.TraceHelper.FunctionStarting(
+                this.context.HubName,
+                this.context.Name,
+                this.context.InstanceId,
+                this.Config.GetIntputOutputTrace(serializedInput),
+                FunctionType.Entity,
+                this.context.IsReplaying);
+
             // Send all buffered outgoing messages
             this.context.SendOutbox(innerContext);
 
@@ -154,6 +162,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // continue as new
             innerContext.ContinueAsNew(jstate);
+
+            this.Config.TraceHelper.FunctionCompleted(
+                this.context.HubName,
+                this.context.Name,
+                this.context.InstanceId,
+                this.Config.GetIntputOutputTrace(this.context.State.EntityState),
+                continuedAsNew: true,
+                functionType: FunctionType.Entity,
+                isReplay: this.context.IsReplaying);
 
             // The return value is not used.
             return string.Empty;
@@ -227,15 +244,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
 
-            this.Config.TraceHelper.FunctionStarting(
-                this.context.HubName,
-                this.context.Name,
-                this.context.InstanceId,
-                request.Id.ToString(),
-                request.Operation,
-                this.Config.GetIntputOutputTrace(request.Input),
-                FunctionType.Entity,
-                this.context.IsReplaying);
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
 
             try
             {
@@ -243,6 +253,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (invokeTask is Task resultTask)
                 {
                     await resultTask;
+
+                    stopwatch.Stop();
                 }
                 else
                 {
@@ -251,18 +263,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
+                stopwatch.Stop();
+
                 // exception must be sent with response back to caller
                 this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.EntityId);
-
-                this.Config.TraceHelper.FunctionFailed(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    request.Id.ToString(),
-                    request.Operation,
-                    reason: e.ToString(),
-                    functionType: FunctionType.Entity,
-                    isReplay: this.context.IsReplaying);
             }
 
             // clear the async-local static context that is visible to the application code
@@ -273,6 +277,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var destructOnExit = this.context.DestructOnExit;
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
+
+            this.Config.TraceHelper.OperationCompleted(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.InstanceId,
+                    request.Id.ToString(),
+                    request.Operation,
+                    this.Config.GetIntputOutputTrace(this.context.RawInput),
+                    this.Config.GetIntputOutputTrace(response.Result),
+                    response.IsException,
+                    stopwatch.Elapsed.TotalMilliseconds,
+                    isReplay: this.context.IsReplaying);
 
             // send response
             if (!request.IsSignal)
@@ -291,17 +307,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.CurrentState = null;
                 this.context.StateWasAccessed = false;
             }
-
-            this.Config.TraceHelper.FunctionCompleted(
-                this.context.HubName,
-                this.context.Name,
-                this.context.InstanceId,
-                request.Id.ToString(),
-                request.Operation,
-                this.Config.GetIntputOutputTrace(response.Result),
-                continuedAsNew: false,
-                functionType: FunctionType.Entity,
-                isReplay: this.context.IsReplaying);
         }
 
         private async Task ExecuteOutOfProcBatch()
@@ -324,28 +329,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema.");
             }
 
-            var result = jObj.ToObject<OutOfProcResult>();
+            var outOfProcResult = jObj.ToObject<OutOfProcResult>();
 
             // update the state
-            this.context.State.EntityExists = result.EntityExists;
-            this.context.State.EntityState = result.EntityState;
+            this.context.State.EntityExists = outOfProcResult.EntityExists;
+            this.context.State.EntityState = outOfProcResult.EntityState;
 
-            // send response messages
-            int position = 0;
-            foreach (var request in this.OperationBatch)
+            // for each operation, emit trace and send response message (if not a signal)
+            for (int i = 0; i < this.OperationBatch.Count; i++)
             {
+                var request = this.OperationBatch[i];
+                var result = outOfProcResult.Results[i];
+
+                this.Config.TraceHelper.OperationCompleted(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.InstanceId,
+                    request.Id.ToString(),
+                    request.Operation,
+                    this.Config.GetIntputOutputTrace(request.Input),
+                    this.Config.GetIntputOutputTrace(result.Result),
+                    result.IsError,
+                    result.Duration,
+                    isReplay: this.context.IsReplaying);
+
                 if (!request.IsSignal)
                 {
-                    var response = result.Responses[position++];
-
                     var target = new OrchestrationInstance()
                     {
                         InstanceId = request.ParentInstanceId,
                     };
                     var responseMessage = new ResponseMessage()
                     {
-                        Result = response.Result,
-                        ExceptionType = response.IsError ? "Error" : null,
+                        Result = result.Result,
+                        ExceptionType = result.IsError ? "Error" : null,
                     };
                     var guid = request.Id.ToString();
                     this.context.SendEntityMessage(target, guid, responseMessage);
@@ -353,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // send signal messages
-            foreach (var signal in result.Signals)
+            foreach (var signal in outOfProcResult.Signals)
             {
                 var request = new RequestMessage()
                 {
@@ -379,19 +396,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [JsonProperty("entityState")]
             public string EntityState { get; set; }
 
-            [JsonProperty("responses")]
-            public List<Response> Responses { get; set; }
+            [JsonProperty("results")]
+            public List<OperationResult> Results { get; set; }
 
             [JsonProperty("signals")]
             public List<Signal> Signals { get; set; }
 
-            public struct Response
+            public struct OperationResult
             {
                 [JsonProperty("result")]
                 public string Result { get; set; }
 
                 [JsonProperty("isError")]
                 public bool IsError { get; set; }
+
+                [JsonProperty("duration")]
+                public double Duration { get; set; }
             }
 
             public struct Signal

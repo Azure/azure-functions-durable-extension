@@ -50,8 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.Options.HubName,
                 this.activityName,
                 instanceId,
-                string.Empty,
-                string.Empty,
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
                 isReplay: false);
@@ -67,8 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.config.Options.HubName,
                     this.activityName,
                     instanceId,
-                    string.Empty,
-                    string.Empty,
                     exceptionToReport?.ToString() ?? string.Empty,
                     functionType: FunctionType.Activity,
                     isReplay: false);
@@ -86,8 +82,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.Options.HubName,
                 this.activityName,
                 instanceId,
-                string.Empty,
-                string.Empty,
                 this.config.GetIntputOutputTrace(serializedOutput),
                 continuedAsNew: false,
                 functionType: FunctionType.Activity,

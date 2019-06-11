@@ -449,7 +449,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             // 4. Run the DTFx orchestration to persist the effects,
                             // send the outbox, and continue as new
                             await next();
-
                         }
                         catch (Exception e)
                         {

@@ -72,8 +72,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                string.Empty,
-                string.Empty,
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
@@ -111,8 +109,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
-                    string.Empty,
-                    string.Empty,
                     exceptionDetails,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
@@ -170,8 +166,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                string.Empty,
-                string.Empty,
                 this.Config.GetIntputOutputTrace(serializedOutput),
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,

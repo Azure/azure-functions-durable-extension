@@ -199,6 +199,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string EventName;
             public object EventContent;
         }
-
     }
 }
