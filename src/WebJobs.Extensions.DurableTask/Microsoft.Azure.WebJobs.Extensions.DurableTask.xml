@@ -551,6 +551,75 @@
             The orchestration calls ContinueAsNew when it is idle, but not deleted.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult">
+            <summary>
+            The results of executing a batch of operations on the entity out of process.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.EntityExists">
+            <summary>
+            Whether the entity exists after executing the batch.
+            This is false if the last operation in the batch deletes the entity,
+            and true otherwise.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.EntityState">
+            <summary>
+            The state of the entity after executing the batch.
+            Should be null if <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.EntityExists"/> is false.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Results">
+            <summary>
+            The results of executing the operations. The length of this list must always match
+            the size of the batch, even if there were exceptions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signals">
+            <summary>
+            The list of signals sent by the entity. Can be empty.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult">
+            <summary>
+            The results of executing an operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.Result">
+            <summary>
+            The returned value or error/exception.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.IsError">
+            <summary>
+            Determines whether <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.Result"/> is a normal result, or an error/exception.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.DurationInMilliseconds">
+            <summary>
+            The measured duration of this operation's execution, in milliseconds.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal">
+            <summary>
+            Describes a signal that was emitted by one of the operations in the batch.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal.Target">
+            <summary>
+            The destination of the signal.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal.Name">
+            <summary>
+            The name of the operation being signaled.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal.Input">
+            <summary>
+            The input of the operation being signaled.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">
             <summary>
             Task orchestration implementation which delegates the orchestration implementation to a function.
@@ -2295,6 +2364,19 @@
             The `InnerException` property of this instance will contain additional information
             about the failed sub-orchestrator or activity function.
             </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.FunctionFailedException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of a <see cref="T:Microsoft.Azure.WebJobs.FunctionFailedException"/>.
+            </summary>
+            <param name="message">A message describing where to look for more details.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.FunctionFailedException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of a <see cref="T:Microsoft.Azure.WebJobs.FunctionFailedException"/>.
+            </summary>
+            <param name="message">A message describing where to look for more details.</param>
+            <param name="innerException">The exception that caused the function to fail.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.FunctionName">
             <summary>

@@ -75,11 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string RawInput { get; set; }
 
-        internal bool IsCompleted { get; set; }
-
         internal OrchestrationContext InnerContext { get; set; }
-
-        internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
         internal string HubName => this.Config.Options.HubName;
 
@@ -372,15 +368,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // If this were not a replay, then the orchestrator/activity/entity function trigger would have already
                     // emitted a FunctionFailed trace with the full exception details.
-                    this.Config.TraceHelper.FunctionFailed(
-                        this.Config.Options.HubName,
-                        functionName,
-                        this.InstanceId,
-                        operationId,
-                        operationName,
-                        reason: $"(replayed {exception.GetType().Name})",
-                        functionType: functionType,
-                        isReplay: true);
+
+                    if (functionType == FunctionType.Entity)
+                    {
+                        this.Config.TraceHelper.OperationFailed(
+                            this.Config.Options.HubName,
+                            functionName,
+                            this.InstanceId,
+                            operationId,
+                            operationName,
+                            input: "(replayed)",
+                            output: "(replayed)",
+                            duration: 0,
+                            isReplay: true);
+                    }
+                    else
+                    {
+                        this.Config.TraceHelper.FunctionFailed(
+                            this.Config.Options.HubName,
+                            functionName,
+                            this.InstanceId,
+                            reason: $"(replayed {exception.GetType().Name})",
+                            functionType: functionType,
+                            isReplay: true);
+                    }
                 }
             }
 
@@ -388,16 +399,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // If this were not a replay, then the orchestrator/activity/entity function trigger would have already
                 // emitted a FunctionCompleted trace with the actual output details.
-                this.Config.TraceHelper.FunctionCompleted(
-                    this.Config.Options.HubName,
-                    functionName,
-                    this.InstanceId,
-                    operationId,
-                    operationName,
-                    output: "(replayed)",
-                    continuedAsNew: false,
-                    functionType: functionType,
-                    isReplay: true);
+
+                if (functionType == FunctionType.Entity)
+                {
+                    this.Config.TraceHelper.OperationCompleted(
+                        this.Config.Options.HubName,
+                        functionName,
+                        this.InstanceId,
+                        operationId,
+                        operationName,
+                        input: "(replayed)",
+                        output: "(replayed)",
+                        duration: 0,
+                        isReplay: true);
+                }
+                else
+                {
+                    this.Config.TraceHelper.FunctionCompleted(
+                        this.Config.Options.HubName,
+                        functionName,
+                        this.InstanceId,
+                        output: "(replayed)",
+                        continuedAsNew: false,
+                        functionType: functionType,
+                        isReplay: true);
+                }
             }
 
             return output;

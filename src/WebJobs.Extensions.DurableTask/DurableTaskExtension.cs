@@ -3,14 +3,13 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
@@ -23,6 +22,7 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            DurableCommonContext context = shim.Context;
+            DurableOrchestrationContext context = (DurableOrchestrationContext)shim.Context;
 
             OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
 
@@ -318,7 +318,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!context.IsCompleted)
             {
-                shim.TraceAwait();
+                this.TraceHelper.FunctionAwaited(
+                    context.HubName,
+                    context.Name,
+                    context.FunctionType,
+                    context.InstanceId,
+                    context.IsReplaying);
             }
 
             if (context.IsCompleted &&
@@ -349,7 +354,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             entityContext.History = runtimeState.Events;
             entityContext.RawInput = runtimeState.Input;
 
-            // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+            // 1. First time through the history
+            // we count events, add any under-lock op to the batch, and process lock releases
+            foreach (HistoryEvent e in runtimeState.Events)
+            {
+                switch (e.EventType)
+                {
+                    case EventType.ExecutionStarted:
+                        entityShim.Rehydrate(runtimeState.Input);
+                        break;
+
+                    case EventType.EventRaised:
+                        EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
+
+                        this.TraceHelper.DeliveringEntityMessage(
+                            entityContext.InstanceId,
+                            entityContext.ExecutionId,
+                            e.EventId,
+                            eventRaisedEvent.Name,
+                            eventRaisedEvent.Input);
+
+                        entityShim.NumberEventsToReceive++;
+
+                        if (eventRaisedEvent.Name == "op")
+                        {
+                            // we are receiving an operation request or a lock request
+                            var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
+
+                            if (entityContext.State.LockedBy == requestMessage.ParentInstanceId)
+                            {
+                                // operation requests from the lock holder are processed immediately
+                                entityShim.AddOperationToBatch(requestMessage);
+                            }
+                            else
+                            {
+                                // others go to the back of the queue
+                                entityContext.State.Enqueue(requestMessage);
+                            }
+                        }
+                        else
+                        {
+                            // we are receiving a lock release
+                            var message = JsonConvert.DeserializeObject<ReleaseMessage>(eventRaisedEvent.Input);
+
+                            if (entityContext.State.LockedBy == message.ParentInstanceId)
+                            {
+                                this.TraceHelper.EntityLockReleased(
+                                    entityContext.HubName,
+                                    entityContext.Name,
+                                    entityContext.InstanceId,
+                                    message.ParentInstanceId,
+                                    message.LockRequestId,
+                                    entityContext.IsReplaying);
+
+                                entityContext.State.LockedBy = null;
+                            }
+                        }
+
+                        break;
+                }
+            }
+
+            // 2. We add as many requests from the queue to the batch as possible (stopping at lock requests)
+            while (entityContext.State.LockedBy == null
+                && entityContext.State.TryDequeue(out var request))
+            {
+                if (request.IsLockRequest)
+                {
+                    entityShim.AddLockRequestToBatch(request);
+                    entityContext.State.LockedBy = request.ParentInstanceId;
+                }
+                else
+                {
+                    entityShim.AddOperationToBatch(request);
+                }
+            }
+
+            // 3. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
             FunctionResult result = await entityShim.GetFunctionInfo().Executor.TryExecuteAsync(
                 new TriggeredFunctionData
                 {
@@ -362,34 +443,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         try
                         {
-                            // 2. Load all the external events into the entity shim
-                            foreach (HistoryEvent e in runtimeState.Events)
-                            {
-                                switch (e.EventType)
-                                {
-                                    case EventType.OrchestratorStarted:
-                                        entityContext.CurrentOperationStartTime = e.Timestamp;
-                                        break;
-                                    case EventType.ExecutionStarted:
-                                        entityShim.Rehydrate(runtimeState.Input);
-                                        break;
-                                    case EventType.EventRaised:
-                                        EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
-                                        this.TraceHelper.DeliveringEntityMessage(
-                                            entityContext.InstanceId,
-                                            entityContext.ExecutionId,
-                                            e.EventId,
-                                            eventRaisedEvent.Name,
-                                            eventRaisedEvent.Input);
-                                        entityShim.ProcessMessage(eventRaisedEvent.Name, eventRaisedEvent.Input);
-                                        break;
-                                }
-                            }
+                            // 3. Run all the operations in the batch
+                            await entityShim.ExecuteBatch();
 
-                            // 3. Wait for all the queued entity operations to complete
-                            await entityShim.WaitForLastOperation();
-
-                            // 4. Run the scheduler orchestration so that state can be persisted.
+                            // 4. Run the DTFx orchestration to persist the effects,
+                            // send the outbox, and continue as new
                             await next();
                         }
                         catch (Exception e)
@@ -411,8 +469,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             var entitySchedulerExceptions = new OrchestrationFailureException(
                                 $"Entity scheduler {entityShim.EntityId} failed: {e.Message}",
                                 Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
-
-                            entityContext.OrchestrationException = ExceptionDispatchInfo.Capture(entitySchedulerExceptions);
 
                             throw entitySchedulerExceptions;
                         }

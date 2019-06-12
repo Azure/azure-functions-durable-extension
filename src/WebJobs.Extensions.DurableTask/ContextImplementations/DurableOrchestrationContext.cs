@@ -42,6 +42,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool ContinuedAsNew { get; private set; }
 
+        internal bool IsCompleted { get; set; }
+
+        internal ExceptionDispatchInfo OrchestrationException { get; set; }
+
         internal bool IsOutputSet => this.serializedOutput != null;
 
         private string OrchestrationName => this.FunctionName;

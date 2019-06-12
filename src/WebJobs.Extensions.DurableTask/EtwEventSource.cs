@@ -34,37 +34,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(201, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(202, Level = EventLevel.Informational, Version = 3)]
+        [Event(202, Level = EventLevel.Informational, Version = 4)]
         public void FunctionStarting(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string OperationId,
-            string OperationName,
             string Input,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(202, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, Input ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(202, TaskHub, AppName, SlotName, FunctionName, InstanceId, Input ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(203, Level = EventLevel.Informational, Version = 3)]
+        [Event(203, Level = EventLevel.Informational, Version = 4)]
         public void FunctionAwaited(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string OperationId,
-            string OperationName,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(203, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(203, TaskHub, AppName, SlotName, FunctionName, InstanceId, FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(204, Level = EventLevel.Informational, Version = 2)]
@@ -98,22 +94,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(205, TaskHub, AppName, SlotName, FunctionName, InstanceId, EventName, Input ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(206, Level = EventLevel.Informational, Version = 3)]
+        [Event(206, Level = EventLevel.Informational, Version = 4)]
         public void FunctionCompleted(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string OperationId,
-            string OperationName,
             string Output,
             bool ContinuedAsNew,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(206, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, Output ?? "(null)", ContinuedAsNew, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(206, TaskHub, AppName, SlotName, FunctionName, InstanceId, Output ?? "(null)", ContinuedAsNew, FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(207, Level = EventLevel.Warning, Version = 2)]
@@ -138,14 +132,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string OperationId,
-            string OperationName,
             string Reason,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(208, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, Reason, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(208, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(209, Level = EventLevel.Informational, Version = 2)]
@@ -339,6 +331,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool IsReplay)
         {
             this.WriteEvent(220, TaskHub, AppName, SlotName, FunctionName, InstanceId, RequestingInstance, RequestId, FunctionType, ExtensionVersion, IsReplay);
+        }
+
+        [Event(221, Level = EventLevel.Informational)]
+        public void OperationCompleted(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string OperationId,
+            string OperationName,
+            string Input,
+            string Output,
+            double Duration,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(221, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, Input ?? "(null)", Output ?? "(null)", Duration, FunctionType, ExtensionVersion, IsReplay);
+        }
+
+        [Event(222, Level = EventLevel.Error)]
+        public void OperationFailed(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string OperationId,
+            string OperationName,
+            string Input,
+            string Exception,
+            double Duration,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(222, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, OperationName, Input ?? "(null)", Exception, Duration, FunctionType, ExtensionVersion, IsReplay);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter

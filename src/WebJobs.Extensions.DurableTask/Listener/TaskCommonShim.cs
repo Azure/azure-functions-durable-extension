@@ -39,7 +39,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         public abstract RegisteredFunctionInfo GetFunctionInfo();
-
-        public abstract void TraceAwait();
     }
 }

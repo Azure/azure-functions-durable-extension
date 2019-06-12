@@ -15,12 +15,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly EntityId self;
 
+        private readonly TaskEntityShim shim;
+
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        public DurableEntityContext(DurableTaskExtension config, EntityId entity)
+        public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
             this.self = entity;
+            this.shim = shim;
         }
 
         internal bool StateWasAccessed { get; set; }
@@ -46,6 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         EntityId IDurableEntityContext.EntityId => this.self;
 
         internal override FunctionType FunctionType => FunctionType.Entity;
+
+        internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
+
+        internal EntityId Self => this.self;
 
         string IDurableEntityContext.OperationName
         {
