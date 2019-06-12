@@ -838,19 +838,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var entityProxy = ctx.CreateEntityProxy<TestEntityClasses.ICounter>(counter);
 
             // reset
-            await entityProxy.Set(10);
+            entityProxy.Set(10);
 
             // increment
-            await entityProxy.Increment();
+            entityProxy.Increment();
 
             // add
-            await entityProxy.Add(5);
+            entityProxy.Add(5);
 
             // get current value
             var result = await entityProxy.Get();
 
             // destruct
-            await entityProxy.Delete();
+            entityProxy.Delete();
 
             return result == 16;
         }

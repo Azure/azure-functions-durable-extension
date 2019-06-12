@@ -11,22 +11,30 @@ namespace Microsoft.Azure.WebJobs
     public interface IEntityProxyContext
     {
         /// <summary>
-        /// Invoke entity function.
+        /// Call entity function.
         /// </summary>
         /// <param name="entityId">Entity id.</param>
         /// <param name="operationName">Entity operation name.</param>
         /// <param name="operationInput">Entity input value.</param>
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-        Task InvokeAsync(EntityId entityId, string operationName, object operationInput);
+        Task CallAsync(EntityId entityId, string operationName, object operationInput);
 
         /// <summary>
-        /// Invoke entity function.
+        /// Call entity function.
         /// </summary>
         /// <typeparam name="TResult">Result type.</typeparam>
         /// <param name="entityId">Entity id.</param>
         /// <param name="operationName">Entity operation name.</param>
         /// <param name="operationInput">Entity input value.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        Task<TResult> InvokeAsync<TResult>(EntityId entityId, string operationName, object operationInput);
+        Task<TResult> CallAsync<TResult>(EntityId entityId, string operationName, object operationInput);
+
+        /// <summary>
+        /// Signal entity function.
+        /// </summary>
+        /// <param name="entityId">Entity id.</param>
+        /// <param name="operationName">Entity operation name.</param>
+        /// <param name="operationInput">Entity input value.</param>
+        void Signal(EntityId entityId, string operationName, object operationInput);
     }
 }

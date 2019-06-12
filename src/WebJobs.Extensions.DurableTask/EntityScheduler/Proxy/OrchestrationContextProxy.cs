@@ -14,14 +14,19 @@ namespace Microsoft.Azure.WebJobs
             this.context = context;
         }
 
-        public Task InvokeAsync(EntityId entityId, string operationName, object operationInput)
+        public Task CallAsync(EntityId entityId, string operationName, object operationInput)
         {
             return this.context.CallEntityAsync(entityId, operationName, operationInput);
         }
 
-        public Task<TResult> InvokeAsync<TResult>(EntityId entityId, string operationName, object operationInput)
+        public Task<TResult> CallAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
             return this.context.CallEntityAsync<TResult>(entityId, operationName, operationInput);
+        }
+
+        public void Signal(EntityId entityId, string operationName, object operationInput)
+        {
+            this.context.SignalEntity(entityId, operationName, operationInput);
         }
     }
 }

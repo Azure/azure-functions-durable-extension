@@ -25,26 +25,36 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Invoke entity function.
+        /// Call entity function.
         /// </summary>
         /// <param name="operationName">Entity operation name.</param>
         /// <param name="operationInput">Entity input value.</param>
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-        protected internal Task InvokeAsync(string operationName, object operationInput)
+        protected internal Task CallAsync(string operationName, object operationInput)
         {
-            return this.context.InvokeAsync(this.entityId, operationName, operationInput);
+            return this.context.CallAsync(this.entityId, operationName, operationInput);
         }
 
         /// <summary>
-        /// Invoke entity function.
+        /// Call entity function.
         /// </summary>
         /// <typeparam name="TResult">return type.</typeparam>
         /// <param name="operationName">Entity operation name.</param>
         /// <param name="operationInput">Entity input value.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        protected internal Task<TResult> InvokeAsync<TResult>(string operationName, object operationInput)
+        protected internal Task<TResult> CallAsync<TResult>(string operationName, object operationInput)
         {
-            return this.context.InvokeAsync<TResult>(this.entityId, operationName, operationInput);
+            return this.context.CallAsync<TResult>(this.entityId, operationName, operationInput);
+        }
+
+        /// <summary>
+        /// Signal entity function.
+        /// </summary>
+        /// <param name="operationName">Entity operation name.</param>
+        /// <param name="operationInput">Entity input value.</param>
+        protected internal void Signal(string operationName, object operationInput)
+        {
+            this.context.Signal(this.entityId, operationName, operationInput);
         }
     }
 }

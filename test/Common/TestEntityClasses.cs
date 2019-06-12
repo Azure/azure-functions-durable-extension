@@ -22,15 +22,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public interface ICounter
         {
-            Task Increment();
+            void Increment();
 
-            Task Add(int value);
+            void Add(int value);
 
             Task<int> Get();
 
-            Task Set(int newValue);
+            void Set(int newValue);
 
-            Task Delete();
+            void Delete();
         }
 
         [FunctionName(nameof(ChatRoom))]
@@ -81,37 +81,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             [JsonProperty("value")]
             public int Value { get; set; }
 
-            public Task Increment()
+            public void Increment()
             {
                 this.Value += 1;
-
-                return Task.CompletedTask;
             }
 
-            public Task Add(int value)
+            public void Add(int value)
             {
                 this.Value += value;
-
-                return Task.CompletedTask;
             }
 
-            public Task<int> Get()
+            public async Task<int> Get()
             {
-                return Task.FromResult(this.Value);
+                return this.Value;
             }
 
-            public Task Set(int newValue)
+            public void Set(int newValue)
             {
                 this.Value = newValue;
-
-                return Task.CompletedTask;
             }
 
-            public Task Delete()
+            public void Delete()
             {
                 Entity.Current.DestructOnExit();
-
-                return Task.CompletedTask;
             }
         }
     }
