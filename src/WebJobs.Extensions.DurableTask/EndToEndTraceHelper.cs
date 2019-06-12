@@ -318,61 +318,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            string operationName,
            string input,
            string output,
-           bool failed,
            double duration,
            bool isReplay)
         {
-            if (!failed)
-            {
-                EtwEventSource.Instance.OperationCompleted(
-                    hubName,
-                    LocalAppName,
-                    LocalSlotName,
-                    functionName,
-                    instanceId,
-                    operationId,
-                    operationName,
-                    input,
-                    output,
-                    duration,
-                    FunctionType.Entity.ToString(),
-                    ExtensionVersion,
-                    isReplay);
-            }
-            else
-            {
-                EtwEventSource.Instance.OperationFailed(
-                    hubName,
-                    LocalAppName,
-                    LocalSlotName,
-                    functionName,
-                    instanceId,
-                    operationId,
-                    operationName,
-                    input,
-                    output,
-                    duration,
-                    FunctionType.Entity.ToString(),
-                    ExtensionVersion,
-                    isReplay);
-            }
+            EtwEventSource.Instance.OperationCompleted(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                operationName,
+                input,
+                output,
+                duration,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                isReplay);
 
             if (this.ShouldLogEvent(isReplay))
             {
-                if (!failed)
-                {
-                    this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' completed '{operationName}' operation {operationId} in {duration}ms. IsReplay: {isReplay}. Input: {input}. Output: {output}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, isReplay, input, output,
-                    hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
-                }
-                else
-                {
-                    this.logger.LogError(
-                        "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                        instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, output, input, isReplay, hubName,
-                        LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
-                }
+                this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})' completed '{operationName}' operation {operationId} in {duration}ms. IsReplay: {isReplay}. Input: {input}. Output: {output}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, isReplay, input, output,
+                hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void OperationFailed(
+           string hubName,
+           string functionName,
+           string instanceId,
+           string operationId,
+           string operationName,
+           string input,
+           string output,
+           double duration,
+           bool isReplay)
+        {
+            EtwEventSource.Instance.OperationFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                operationName,
+                input,
+                output,
+                duration,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                isReplay);
+
+            if (this.ShouldLogEvent(isReplay))
+            {
+                this.logger.LogError(
+                    "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, output, input, isReplay, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
 

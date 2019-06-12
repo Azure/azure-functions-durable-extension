@@ -371,7 +371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     if (functionType == FunctionType.Entity)
                     {
-                        this.Config.TraceHelper.OperationCompleted(
+                        this.Config.TraceHelper.OperationFailed(
                             this.Config.Options.HubName,
                             functionName,
                             this.InstanceId,
@@ -379,7 +379,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             operationName,
                             input: "(replayed)",
                             output: "(replayed)",
-                            failed: true,
                             duration: 0,
                             isReplay: true);
                     }
@@ -411,20 +410,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         operationName,
                         input: "(replayed)",
                         output: "(replayed)",
-                        failed: false,
                         duration: 0,
                         isReplay: true);
                 }
                 else
                 {
                     this.Config.TraceHelper.FunctionCompleted(
-                    this.Config.Options.HubName,
-                    functionName,
-                    this.InstanceId,
-                    output: "(replayed)",
-                    continuedAsNew: false,
-                    functionType: functionType,
-                    isReplay: true);
+                        this.Config.Options.HubName,
+                        functionName,
+                        this.InstanceId,
+                        output: "(replayed)",
+                        continuedAsNew: false,
+                        functionType: functionType,
+                        isReplay: true);
                 }
             }
 

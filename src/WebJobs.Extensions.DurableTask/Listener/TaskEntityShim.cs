@@ -278,17 +278,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
 
-            this.Config.TraceHelper.OperationCompleted(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    request.Id.ToString(),
-                    request.Operation,
-                    this.Config.GetIntputOutputTrace(this.context.RawInput),
-                    this.Config.GetIntputOutputTrace(response.Result),
-                    response.IsException,
-                    stopwatch.Elapsed.TotalMilliseconds,
-                    isReplay: this.context.IsReplaying);
+            if (!response.IsException)
+            {
+                this.Config.TraceHelper.OperationCompleted(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        request.Id.ToString(),
+                        request.Operation,
+                        this.Config.GetIntputOutputTrace(this.context.RawInput),
+                        this.Config.GetIntputOutputTrace(response.Result),
+                        stopwatch.Elapsed.TotalMilliseconds,
+                        isReplay: this.context.IsReplaying);
+            }
+            else
+            {
+                this.Config.TraceHelper.OperationFailed(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        request.Id.ToString(),
+                        request.Operation,
+                        this.Config.GetIntputOutputTrace(this.context.RawInput),
+                        this.Config.GetIntputOutputTrace(response.Result),
+                        stopwatch.Elapsed.TotalMilliseconds,
+                        isReplay: this.context.IsReplaying);
+            }
 
             // send response
             if (!request.IsSignal)
@@ -341,17 +356,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var request = this.OperationBatch[i];
                 var result = outOfProcResult.Results[i];
 
-                this.Config.TraceHelper.OperationCompleted(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    request.Id.ToString(),
-                    request.Operation,
-                    this.Config.GetIntputOutputTrace(request.Input),
-                    this.Config.GetIntputOutputTrace(result.Result),
-                    result.IsError,
-                    result.Duration,
-                    isReplay: this.context.IsReplaying);
+                if (!result.IsError)
+                {
+                    this.Config.TraceHelper.OperationCompleted(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        request.Id.ToString(),
+                        request.Operation,
+                        this.Config.GetIntputOutputTrace(request.Input),
+                        this.Config.GetIntputOutputTrace(result.Result),
+                        result.DurationInMilliseconds,
+                        isReplay: this.context.IsReplaying);
+                }
+                else
+                {
+                    this.Config.TraceHelper.OperationFailed(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        request.Id.ToString(),
+                        request.Operation,
+                        this.Config.GetIntputOutputTrace(request.Input),
+                        this.Config.GetIntputOutputTrace(result.Result),
+                        result.DurationInMilliseconds,
+                        isReplay: this.context.IsReplaying);
+                }
 
                 if (!request.IsSignal)
                 {
@@ -388,40 +418,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        /// <summary>
+        /// The results of executing a batch of operations on the entity out of process.
+        /// </summary>
         internal class OutOfProcResult
         {
+            /// <summary>
+            /// Whether the entity exists after executing the batch.
+            /// This is false if the last operation in the batch deletes the entity,
+            /// and true otherwise.
+            /// </summary>
             [JsonProperty("entityExists")]
             public bool EntityExists { get; set; }
 
+            /// <summary>
+            /// The state of the entity after executing the batch.
+            /// Should be null if <see cref="EntityExists"/> is false.
+            /// </summary>
             [JsonProperty("entityState")]
             public string EntityState { get; set; }
 
+            /// <summary>
+            /// The results of executing the operations. The length of this list must always match
+            /// the size of the batch, even if there were exceptions.
+            /// </summary>
             [JsonProperty("results")]
             public List<OperationResult> Results { get; set; }
 
+            /// <summary>
+            /// The list of signals sent by the entity. Can be empty.
+            /// </summary>
             [JsonProperty("signals")]
             public List<Signal> Signals { get; set; }
 
+            /// <summary>
+            /// The results of executing an operation.
+            /// </summary>
             public struct OperationResult
             {
+                /// <summary>
+                /// The returned value or error/exception.
+                /// </summary>
                 [JsonProperty("result")]
                 public string Result { get; set; }
 
+                /// <summary>
+                /// Determines whether <see cref="Result"/> is a normal result, or an error/exception.
+                /// </summary>
                 [JsonProperty("isError")]
                 public bool IsError { get; set; }
 
+                /// <summary>
+                /// The measured duration of this operation's execution, in milliseconds.
+                /// </summary>
                 [JsonProperty("duration")]
-                public double Duration { get; set; }
+                public double DurationInMilliseconds { get; set; }
             }
 
+            /// <summary>
+            /// Describes a signal that was emitted by one of the operations in the batch.
+            /// </summary>
             public struct Signal
             {
+                /// <summary>
+                /// The destination of the signal.
+                /// </summary>
                 [JsonProperty("target")]
                 public EntityId Target { get; set; }
 
+                /// <summary>
+                /// The name of the operation being signaled.
+                /// </summary>
                 [JsonProperty("name")]
                 public string Name { get; set; }
 
+                /// <summary>
+                /// The input of the operation being signaled.
+                /// </summary>
                 [JsonProperty("input")]
                 public string Input { get; set; }
             }
