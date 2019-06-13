@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Chirper.Service
 {
-    interface IUserChirps
+    public interface IUserChirps
     {
         void Add(Chirp chirp);
 
