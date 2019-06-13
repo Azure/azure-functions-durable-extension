@@ -2270,14 +2270,15 @@
             Extension methods.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,Microsoft.Azure.WebJobs.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,Microsoft.Azure.WebJobs.EntityId,System.Action{``0})">
             <summary>
-            Create Entity Proxy.
+            Signals an entity to perform an operation.
             </summary>
-            <param name="client">orchestration client.</param>
-            <param name="entityId">Entity id.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
-            <returns>Entity proxy.</returns>
+            <param name="client">orchestration client.</param>
+            <param name="entityId">The target entity.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableOrchestrationContext,Microsoft.Azure.WebJobs.EntityId)">
             <summary>
