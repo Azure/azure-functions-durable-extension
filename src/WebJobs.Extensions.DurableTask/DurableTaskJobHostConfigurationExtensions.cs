@@ -2,8 +2,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+#if NETSTANDARD2_0
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+#else
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Host.Config;
+#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -12,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public static class DurableTaskJobHostConfigurationExtensions
     {
+#if NETSTANDARD2_0
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
         /// </summary>
@@ -78,5 +84,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return builder;
         }
+#else
+        /// <summary>
+        /// Enable running durable orchestrations implemented as functions.
+        /// </summary>
+        /// <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
+        /// <param name="listenerConfig">Durable Functions configuration.</param>
+        public static void UseDurableTask(
+            this JobHostConfiguration hostConfig,
+            DurableTaskExtension listenerConfig)
+        {
+            if (hostConfig == null)
+            {
+                throw new ArgumentNullException(nameof(hostConfig));
+            }
+
+            if (listenerConfig == null)
+            {
+                throw new ArgumentNullException(nameof(listenerConfig));
+            }
+
+            IExtensionRegistry extensions = hostConfig.GetService<IExtensionRegistry>();
+            extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
+        }
+#endif
     }
 }

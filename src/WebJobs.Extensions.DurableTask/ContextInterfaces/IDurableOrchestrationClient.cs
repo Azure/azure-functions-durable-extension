@@ -7,10 +7,11 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+#if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
 
+#if NETSTANDARD2_0
         /// <summary>
         /// Creates an HTTP response that is useful for checking the status of the specified instance.
         /// </summary>
@@ -52,6 +54,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         IActionResult CreateCheckStatusResponse(HttpRequest request, string instanceId);
+#endif
 
         /// <summary>
         /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
@@ -81,6 +84,7 @@ namespace Microsoft.Azure.WebJobs
             TimeSpan timeout,
             TimeSpan retryInterval);
 
+#if NETSTANDARD2_0
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
         /// or contains the payload containing the output of the completed orchestration.
@@ -101,6 +105,7 @@ namespace Microsoft.Azure.WebJobs
             string instanceId,
             TimeSpan timeout,
             TimeSpan retryInterval);
+#endif
 
         /// <summary>
         /// Starts a new instance of the specified orchestrator function.

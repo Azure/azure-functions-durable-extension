@@ -8,8 +8,10 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+#if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -106,6 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
+#if NETSTANDARD2_0
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task HttpRequest_HttpRequestMessage_ClientMethods_Identical()
@@ -156,6 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return context.Request;
         }
+#endif
 
         private static async Task AssertHttpResponsesEqual(HttpResponseMessage response1, HttpResponseMessage response2)
         {
