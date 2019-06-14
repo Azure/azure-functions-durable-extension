@@ -2270,6 +2270,16 @@
             Extension methods.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,System.Action{``0})">
+            <summary>
+            Signals an entity to perform an operation.
+            </summary>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+            <param name="client">orchestration client.</param>
+            <param name="entityKey">The target entity key.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,Microsoft.Azure.WebJobs.EntityId,System.Action{``0})">
             <summary>
             Signals an entity to perform an operation.
@@ -2280,12 +2290,30 @@
             <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableOrchestrationContext,System.String)">
+            <summary>
+            Create Entity Proxy.
+            </summary>
+            <param name="context">orchestration context.</param>
+            <param name="entityKey">The target entity key.</param>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+            <returns>Entity proxy.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableOrchestrationContext,Microsoft.Azure.WebJobs.EntityId)">
             <summary>
             Create Entity Proxy.
             </summary>
             <param name="context">orchestration context.</param>
-            <param name="entityId">Entity id.</param>
+            <param name="entityId">The target entity.</param>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+            <returns>Entity proxy.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableEntityContext,System.String)">
+            <summary>
+            Create Entity Proxy.
+            </summary>
+            <param name="context">entity context.</param>
+            <param name="entityKey">The target entity key.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
             <returns>Entity proxy.</returns>
         </member>
@@ -2294,7 +2322,7 @@
             Create Entity Proxy.
             </summary>
             <param name="context">entity context.</param>
-            <param name="entityId">Entity id.</param>
+            <param name="entityId">The target entity.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
             <returns>Entity proxy.</returns>
         </member>

@@ -54,14 +54,13 @@ namespace Chirper.Service
             string userId)
         {
             Authenticate(req, userId);
-            var target = new EntityId(nameof(UserChirps), userId);
             var chirp = new Chirp()
             {
                 UserId = userId,
                 Timestamp = DateTime.UtcNow,
                 Content = await req.Content.ReadAsStringAsync(),
             };
-            await client.SignalEntityAsync<IUserChirps>(target, x => x.Add(chirp));
+            await client.SignalEntityAsync<IUserChirps>(userId, x => x.Add(chirp));
             return req.CreateResponse(HttpStatusCode.Accepted, chirp);
         }
 
@@ -74,8 +73,7 @@ namespace Chirper.Service
             DateTime timestamp)
         {
             Authenticate(req, userId);
-            var target = new EntityId(nameof(UserChirps), userId);
-            await client.SignalEntityAsync<IUserChirps>(target, x => x.Remove(timestamp));
+            await client.SignalEntityAsync<IUserChirps>(userId, x => x.Remove(timestamp));
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
@@ -103,8 +101,7 @@ namespace Chirper.Service
             string userId2)
         {
             Authenticate(req, userId);
-            var target = new EntityId(nameof(UserFollows), userId);
-            await client.SignalEntityAsync<IUserFollows>(target, x => x.Add(userId2));
+            await client.SignalEntityAsync<IUserFollows>(userId, x => x.Add(userId2));
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
@@ -118,8 +115,7 @@ namespace Chirper.Service
         {
             Authenticate(req, userId);
             var content = await req.Content.ReadAsAsync<string>();
-            var target = new EntityId(nameof(UserFollows), userId);
-            await client.SignalEntityAsync<IUserFollows>(target, x => x.Remove(userId2));
+            await client.SignalEntityAsync<IUserFollows>(userId, x => x.Remove(userId2));
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 

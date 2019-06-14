@@ -91,9 +91,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.Value += value;
             }
 
-            public async Task<int> Get()
+            public Task<int> Get()
             {
-                return this.Value;
+                return Task.FromResult(this.Value);
             }
 
             public void Set(int newValue)

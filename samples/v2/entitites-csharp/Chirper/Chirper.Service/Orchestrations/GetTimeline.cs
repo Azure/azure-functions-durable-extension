@@ -23,13 +23,13 @@ namespace Chirper.Service
             var userId = context.GetInput<string>();
 
             // call the UserFollows entity to figure out whose chirps should be included
-            var userFollowsProxy = context.CreateEntityProxy<IUserFollows>(new EntityId(nameof(UserFollows), userId));
+            var userFollowsProxy = context.CreateEntityProxy<IUserFollows>(userId);
             var followedUsers = await userFollowsProxy.Get();
 
             // in parallel, collect all the chirps
             var tasks = followedUsers
                     .Select(id => context
-                        .CreateEntityProxy<IUserChirps>(new EntityId(nameof(UserChirps), id))
+                        .CreateEntityProxy<IUserChirps>(id)
                         .Get())
                     .ToList();
 

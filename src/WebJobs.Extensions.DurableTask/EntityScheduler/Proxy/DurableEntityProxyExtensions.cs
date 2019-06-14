@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs
@@ -11,6 +13,21 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     public static class DurableEntityProxyExtensions
     {
+        private static readonly ConcurrentDictionary<Type, Type> EntityNameMappings = new ConcurrentDictionary<Type, Type>();
+
+        /// <summary>
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="client">orchestration client.</param>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        public static Task SignalEntityAsync<TEntityInterface>(this IDurableOrchestrationClient client, string entityKey, Action<TEntityInterface> operation)
+        {
+            return SignalEntityAsync<TEntityInterface>(client, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey), operation);
+        }
+
         /// <summary>
         /// Signals an entity to perform an operation.
         /// </summary>
@@ -38,7 +55,19 @@ namespace Microsoft.Azure.WebJobs
         /// Create Entity Proxy.
         /// </summary>
         /// <param name="context">orchestration context.</param>
-        /// <param name="entityId">Entity id.</param>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <returns>Entity proxy.</returns>
+        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableOrchestrationContext context, string entityKey)
+        {
+            return CreateEntityProxy<TEntityInterface>(context, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey));
+        }
+
+        /// <summary>
+        /// Create Entity Proxy.
+        /// </summary>
+        /// <param name="context">orchestration context.</param>
+        /// <param name="entityId">The target entity.</param>
         /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
         /// <returns>Entity proxy.</returns>
         public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableOrchestrationContext context, EntityId entityId)
@@ -50,12 +79,51 @@ namespace Microsoft.Azure.WebJobs
         /// Create Entity Proxy.
         /// </summary>
         /// <param name="context">entity context.</param>
-        /// <param name="entityId">Entity id.</param>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <returns>Entity proxy.</returns>
+        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableEntityContext context, string entityKey)
+        {
+            return CreateEntityProxy<TEntityInterface>(context, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey));
+        }
+
+        /// <summary>
+        /// Create Entity Proxy.
+        /// </summary>
+        /// <param name="context">entity context.</param>
+        /// <param name="entityId">The target entity.</param>
         /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
         /// <returns>Entity proxy.</returns>
         public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableEntityContext context, EntityId entityId)
         {
             return EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(context), entityId);
+        }
+
+        private static string ResolveEntityName<TEntityInterface>()
+        {
+            var type = EntityNameMappings.GetOrAdd(typeof(TEntityInterface), CreateTypeMapping);
+
+            return type.Name;
+        }
+
+        private static Type CreateTypeMapping(Type interfaceType)
+        {
+            var implementedTypes = interfaceType.Assembly
+                                                .GetTypes()
+                                                .Where(x => x.IsClass && !x.IsAbstract && interfaceType.IsAssignableFrom(x))
+                                                .ToArray();
+
+            if (!implementedTypes.Any())
+            {
+                throw new InvalidOperationException($"Cannot found {interfaceType.Name} implemented type.");
+            }
+
+            if (implementedTypes.Length > 1)
+            {
+                throw new InvalidOperationException("Entity type is ambiguous.");
+            }
+
+            return implementedTypes[0];
         }
     }
 }

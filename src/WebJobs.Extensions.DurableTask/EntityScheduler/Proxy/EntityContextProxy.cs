@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs
@@ -17,12 +16,16 @@ namespace Microsoft.Azure.WebJobs
 
         public Task CallAsync(EntityId entityId, string operationName, object operationInput)
         {
-            throw new NotSupportedException();
+            this.context.SignalEntity(entityId, operationName, operationInput);
+
+            return Task.CompletedTask;
         }
 
         public Task<TResult> CallAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
-            throw new NotSupportedException();
+            this.context.SignalEntity(entityId, operationName, operationInput);
+
+            return Task.FromResult(default(TResult));
         }
 
         public void Signal(EntityId entityId, string operationName, object operationInput)

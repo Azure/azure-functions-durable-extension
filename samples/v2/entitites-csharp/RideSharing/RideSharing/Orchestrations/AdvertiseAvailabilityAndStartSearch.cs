@@ -29,7 +29,7 @@ namespace RideSharing
 
             foreach (var region in nearbyRegions)
             {
-                var regionProxy = context.CreateEntityProxy<IRegionEntity>(new EntityId(nameof(RegionEntity), region.ToString()));
+                var regionProxy = context.CreateEntityProxy<IRegionEntity>(region.ToString());
 
                 string[] candidates = await (userId.StartsWith("R") ? regionProxy.GetAvailableDrivers() : regionProxy.GetAvailableRiders());
 
