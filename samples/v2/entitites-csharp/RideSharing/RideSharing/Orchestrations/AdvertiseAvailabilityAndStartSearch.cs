@@ -29,9 +29,9 @@ namespace RideSharing
 
             foreach (var region in nearbyRegions)
             {
-                var candidates = await context.CallEntityAsync<string[]>(
-                    new EntityId(nameof(RegionEntity), region.ToString()),
-                    userId.StartsWith("R") ? nameof(RegionEntity.GetAvailableDrivers) : nameof(RegionEntity.GetAvailableRiders));
+                var regionProxy = context.CreateEntityProxy<IRegionEntity>(new EntityId(nameof(RegionEntity), region.ToString()));
+
+                string[] candidates = await (userId.StartsWith("R") ? regionProxy.GetAvailableDrivers() : regionProxy.GetAvailableRiders());
 
                 foreach (var candidate in candidates)
                 {
@@ -57,8 +57,11 @@ namespace RideSharing
 
             using (await context.LockAsync(initiatorEntity, candidateEntity))
             {
-                var initiatorInfo = await context.CallEntityAsync<UserEntity>(initiatorEntity, nameof(UserEntity.Get));
-                var candidateInfo = await context.CallEntityAsync<UserEntity>(candidateEntity, nameof(UserEntity.Get));
+                var initiatorProxy = context.CreateEntityProxy<IUserEntity>(initiatorEntity);
+                var candidateProxy = context.CreateEntityProxy<IUserEntity>(candidateEntity);
+
+                var initiatorInfo = await initiatorProxy.GetState();
+                var candidateInfo = await candidateProxy.GetState();
 
                 if (initiatorInfo.Location == null)
                 {
@@ -88,10 +91,7 @@ namespace RideSharing
 
                 // assign both users to the new ride. 
                 // (this is happening within the critical section)
-                await Task.WhenAll(
-                        context.CallEntityAsync(initiatorEntity, nameof(UserEntity.SetRide), rideInfo),
-                        context.CallEntityAsync(candidateEntity, nameof(UserEntity.SetRide), rideInfo)
-                );
+                await Task.WhenAll(initiatorProxy.SetRide(rideInfo), candidateProxy.SetRide(rideInfo));
 
                 return true;
             }

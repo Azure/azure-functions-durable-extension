@@ -12,7 +12,7 @@ namespace RideSharing
     // There is one UserEntity entity per user. 
     // The entity key is the UserId.
     [JsonObject(MemberSerialization.OptIn)]
-    public class UserEntity
+    public class UserEntity : IUserEntity
     {
         // the unique id for this user
         [JsonProperty]
@@ -45,14 +45,12 @@ namespace RideSharing
             return context.DispatchAsync<UserEntity>();
         }
 
-        // get the current state of this user
-        public UserEntity Get()
+        public Task<UserEntity> GetState()
         {
-            return this;
+            return Task.FromResult(this);
         }
 
-        // update the location / whether this user is looking for a match
-        public void SetLocation(int? newLocation)
+        public Task SetLocation(int? newLocation)
         {
             if (CurrentRide != null)
             {
@@ -60,18 +58,20 @@ namespace RideSharing
             }
 
             this.UpdateLocationAndNotify(newLocation);
+
+            return Task.CompletedTask;
         }
 
-        // update the location / whether this user is looking for a match
-        public void SetRide(RideInfo rideInfo)
+        public Task SetRide(RideInfo rideInfo)
         {
             CurrentRide = rideInfo;
 
             // this user is no longer looking for a match - clear location
             this.UpdateLocationAndNotify(null);
+
+            return Task.CompletedTask;
         }
 
-        // update the location / whether this user is looking for a match
         public void ClearRide(Guid rideId)
         {
             if (CurrentRide != null
@@ -80,10 +80,8 @@ namespace RideSharing
                 if (Entity.Current.EntityKey == CurrentRide.DriverId)
                 {
                     // forward signal to rider
-                    Entity.Current.SignalEntity(
-                        new EntityId(nameof(UserEntity), CurrentRide.RiderId),
-                        nameof(UserEntity.ClearRide),
-                        rideId);
+                    var riderProxy = Entity.Current.CreateEntityProxy<IUserEntity>(new EntityId(nameof(UserEntity), CurrentRide.RiderId));
+                    riderProxy.ClearRide(rideId);
                 }
 
                 CurrentRide = null;
@@ -109,12 +107,17 @@ namespace RideSharing
         {
             if (this.Location != null)
             {
-                Entity.Current.SignalEntity(
-                    new EntityId(nameof(RegionEntity), this.Location.Value.ToString()),
-                    available ? nameof(RegionEntity.AddUser) : nameof(RegionEntity.RemoveUser),
-                    this.UserId);
+                var regionProxy = Entity.Current.CreateEntityProxy<IRegionEntity>(new EntityId(nameof(RegionEntity), this.Location.Value.ToString()));
+
+                if (available)
+                {
+                    regionProxy.AddUser(this.UserId);
+                }
+                else
+                {
+                    regionProxy.RemoveUser(this.UserId);
+                }
             }
         }
-
     }
 }

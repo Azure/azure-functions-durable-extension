@@ -18,7 +18,7 @@ namespace Chirper.Service
     // The entity key is the userId.
 
     [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    public class UserChirps
+    public class UserChirps : IUserChirps
     {
         [JsonProperty]
         public List<Chirp> Chirps { get; set; } = new List<Chirp>();
@@ -33,9 +33,9 @@ namespace Chirper.Service
             Chirps.RemoveAll(chirp => chirp.Timestamp == timestamp);
         }
 
-        public List<Chirp> Get()
+        public Task<List<Chirp>> Get()
         {
-            return Chirps;
+            return Task.FromResult(Chirps);
         }
 
         // Boilerplate (entry point for the functions runtime)

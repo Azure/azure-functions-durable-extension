@@ -56,7 +56,7 @@ namespace RideSharing
         {
             Authenticate(req, userId);
             var target = new EntityId(nameof(UserEntity), userId);
-            await client.SignalEntityAsync(target, nameof(UserEntity.SetLocation), (int?) null);
+            await client.SignalEntityAsync<IUserEntity>(target, proxy => proxy.SetLocation(null));
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
@@ -78,7 +78,7 @@ namespace RideSharing
                 return req.CreateResponse(HttpStatusCode.BadRequest, "query must include a rideId Guid");
             }
             var driverEntity = new EntityId(nameof(UserEntity), driverId);
-            await client.SignalEntityAsync(driverEntity, nameof(UserEntity.ClearRide), rideId);
+            await client.SignalEntityAsync<IUserEntity>(driverEntity, proxy => proxy.ClearRide(rideId));
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
