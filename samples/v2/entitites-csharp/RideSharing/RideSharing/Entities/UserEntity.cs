@@ -80,8 +80,7 @@ namespace RideSharing
                 if (Entity.Current.EntityKey == CurrentRide.DriverId)
                 {
                     // forward signal to rider
-                    var riderProxy = Entity.Current.CreateEntityProxy<IUserEntity>(CurrentRide.RiderId);
-                    riderProxy.ClearRide(rideId);
+                    Entity.Current.SignalEntity<IUserEntity>(CurrentRide.RiderId, x => x.ClearRide(rideId));
                 }
 
                 CurrentRide = null;
@@ -107,15 +106,13 @@ namespace RideSharing
         {
             if (this.Location != null)
             {
-                var regionProxy = Entity.Current.CreateEntityProxy<IRegionEntity>(this.Location.Value.ToString());
-
                 if (available)
                 {
-                    regionProxy.AddUser(this.UserId);
+                    Entity.Current.SignalEntity<IRegionEntity>(this.Location.Value.ToString(), x => x.AddUser(this.UserId));
                 }
                 else
                 {
-                    regionProxy.RemoveUser(this.UserId);
+                    Entity.Current.SignalEntity<IRegionEntity>(this.Location.Value.ToString(), x => x.RemoveUser(this.UserId));
                 }
             }
         }

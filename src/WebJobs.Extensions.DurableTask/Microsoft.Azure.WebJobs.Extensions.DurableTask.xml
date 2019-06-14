@@ -2308,23 +2308,23 @@
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
             <returns>Entity proxy.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableEntityContext,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntity``1(Microsoft.Azure.WebJobs.IDurableEntityContext,System.String,System.Action{``0})">
             <summary>
-            Create Entity Proxy.
+            Signals an entity to perform an operation.
             </summary>
             <param name="context">entity context.</param>
             <param name="entityKey">The target entity key.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
-            <returns>Entity proxy.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.CreateEntityProxy``1(Microsoft.Azure.WebJobs.IDurableEntityContext,Microsoft.Azure.WebJobs.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntity``1(Microsoft.Azure.WebJobs.IDurableEntityContext,Microsoft.Azure.WebJobs.EntityId,System.Action{``0})">
             <summary>
-            Create Entity Proxy.
+            Signals an entity to perform an operation.
             </summary>
             <param name="context">entity context.</param>
             <param name="entityId">The target entity.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
-            <returns>Entity proxy.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.EntityProxy">
             <summary>
