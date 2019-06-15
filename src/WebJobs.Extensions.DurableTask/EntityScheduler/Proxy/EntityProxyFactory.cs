@@ -12,7 +12,16 @@ namespace Microsoft.Azure.WebJobs
 {
     internal static class EntityProxyFactory
     {
+        private static readonly ModuleBuilder DynamicModuleBuilder;
         private static readonly ConcurrentDictionary<Type, Type> TypeMappings = new ConcurrentDictionary<Type, Type>();
+
+        static EntityProxyFactory()
+        {
+            var assemblyName = new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}");
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+
+            DynamicModuleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
+        }
 
         internal static TEntityInterface Create<TEntityInterface>(IEntityProxyContext context, EntityId entityId)
         {
@@ -23,13 +32,9 @@ namespace Microsoft.Azure.WebJobs
 
         private static Type CreateProxyType(Type interfaceType)
         {
-            var assemblyName = new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}");
-            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
             var typeName = $"{interfaceType.Name}_{Guid.NewGuid():N}";
 
-            var typeBuilder = moduleBuilder.DefineType(
+            var typeBuilder = DynamicModuleBuilder.DefineType(
                 typeName,
                 TypeAttributes.Public | TypeAttributes.BeforeFieldInit | TypeAttributes.AnsiClass,
                 typeof(EntityProxy));
@@ -68,32 +73,36 @@ namespace Microsoft.Azure.WebJobs
             var entityProxyMethods = typeof(EntityProxy).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance);
 
             var callAsyncMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.CallAsync) && !x.IsGenericMethod);
-            var callAsyncWithGenericMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.CallAsync) && x.IsGenericMethod);
+            var callAsyncGenericMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.CallAsync) && x.IsGenericMethod);
             var signalMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.Signal));
 
             foreach (var methodInfo in methods)
             {
                 var parameters = methodInfo.GetParameters();
 
+                // check that the number of arguments is zero or one
                 if (parameters.Length > 1)
                 {
                     throw new InvalidOperationException("Only a single argument can be used for operation input.");
                 }
 
-                if (methodInfo.ReturnType != typeof(void) && !(methodInfo.ReturnType == typeof(Task) || methodInfo.ReturnType.BaseType == typeof(Task)))
+                var returnType = methodInfo.ReturnType;
+
+                // check that return type is void / Task / Task<T>.
+                if (returnType != typeof(void) && !(returnType == typeof(Task) || returnType.BaseType == typeof(Task)))
                 {
-                    throw new InvalidOperationException("Only a return type in void, Task, Task<T>.");
+                    throw new InvalidOperationException("Only a return type is void / Task / Task<T>.");
                 }
 
-                var method = typeBuilder.DefineMethod(
+                var proxyMethod = typeBuilder.DefineMethod(
                     methodInfo.Name,
                     MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.SpecialName | MethodAttributes.Virtual,
-                    methodInfo.ReturnType,
+                    returnType,
                     parameters.Length == 0 ? null : new[] { parameters[0].ParameterType });
 
-                typeBuilder.DefineMethodOverride(method, methodInfo);
+                typeBuilder.DefineMethodOverride(proxyMethod, methodInfo);
 
-                var ilGenerator = method.GetILGenerator();
+                var ilGenerator = proxyMethod.GetILGenerator();
 
                 ilGenerator.Emit(OpCodes.Ldarg_0);
                 ilGenerator.Emit(OpCodes.Ldstr, methodInfo.Name);
@@ -106,21 +115,22 @@ namespace Microsoft.Azure.WebJobs
                 {
                     ilGenerator.Emit(OpCodes.Ldarg_1);
 
+                    // ValueType needs boxing.
                     if (parameters[0].ParameterType.IsValueType)
                     {
                         ilGenerator.Emit(OpCodes.Box, parameters[0].ParameterType);
                     }
                 }
 
-                if (methodInfo.ReturnType == typeof(void))
+                if (returnType == typeof(void))
                 {
                     ilGenerator.Emit(OpCodes.Call, signalMethod);
                 }
                 else
                 {
-                    ilGenerator.DeclareLocal(methodInfo.ReturnType);
+                    ilGenerator.DeclareLocal(returnType);
 
-                    ilGenerator.Emit(OpCodes.Call, methodInfo.ReturnType.IsGenericType ? callAsyncWithGenericMethod.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()[0]) : callAsyncMethod);
+                    ilGenerator.Emit(OpCodes.Call, returnType.IsGenericType ? callAsyncGenericMethod.MakeGenericMethod(returnType.GetGenericArguments()[0]) : callAsyncMethod);
 
                     ilGenerator.Emit(OpCodes.Stloc_0);
                     ilGenerator.Emit(OpCodes.Ldloc_0);
