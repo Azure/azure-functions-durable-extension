@@ -24,9 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class HttpApiHandler
     {
         // Route segments
-        private const string InstancesControllerSegment = "/instances/";
-        private const string OrchestratorsControllerSegment = "/orchestrators/";
-        private const string EntitiesControllerSegment = "/entities/";
+        private const string InstancesControllerSegment = "instances/";
+        private const string OrchestratorsControllerSegment = "orchestrators/";
+        private const string EntitiesControllerSegment = "entities/";
 
         // Route parameters
         private const string FunctionNameRouteParameter = "functionName";
@@ -84,15 +84,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // /orchestrators/{functionName}/{instanceId?}
         private static TemplateMatcher GetStartOrchestrationRoute()
         {
-            var defaultRouteValues = RouteValueDictionary.FromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(InstanceIdRouteParameter, string.Empty) });
+            var defaultRouteValues = RouteValueDictionaryFromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(InstanceIdRouteParameter, string.Empty) });
             return new TemplateMatcher(TemplateParser.Parse($"{OrchestratorsControllerSegment}{{{FunctionNameRouteParameter}}}/{{{InstanceIdRouteParameter}?}}"), defaultRouteValues);
         }
 
         // /entity/{entityId}/{entityKey?}
         private static TemplateMatcher GetEntityRoute()
         {
-            var defaultRouteValues = RouteValueDictionary.FromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(EntityKeyRouteParameter, string.Empty) });
+            var defaultRouteValues = RouteValueDictionaryFromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(EntityKeyRouteParameter, string.Empty) });
             return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
+        }
+
+        private static RouteValueDictionary RouteValueDictionaryFromArray(KeyValuePair<string, object>[] values)
+        {
+            var routeValueDictionary = new RouteValueDictionary();
+            foreach (var pair in values)
+            {
+                routeValueDictionary[pair.Key] = pair.Value;
+            }
+
+            return routeValueDictionary;
         }
 
         // /instances/{instanceId}/{operation}
@@ -174,8 +185,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                string path = request.RequestUri.AbsolutePath.TrimEnd('/');
-                string basePath = this.config.Options.NotificationUrl.AbsolutePath.TrimEnd('/');
+                string path = request.RequestUri.AbsolutePath;
+                string basePath = this.config.Options.NotificationUrl.AbsolutePath;
                 path = path.Substring(basePath.Length);
                 var routeValues = new RouteValueDictionary();
                 if (StartOrchestrationRoute.TryMatch(path, routeValues))
@@ -762,7 +773,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            string instancePrefix = baseUrl + OrchestratorsControllerSegment + "{functionName}[/{instanceId}]";
+            string instancePrefix = baseUrl + "/" + OrchestratorsControllerSegment + "{functionName}[/{instanceId}]";
 
             string querySuffix = !string.IsNullOrEmpty(notificationUri.Query)
                 ? notificationUri.Query.TrimStart('?')
@@ -791,7 +802,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            string allInstancesPrefix = baseUrl + InstancesControllerSegment;
+            string allInstancesPrefix = baseUrl + "/" + InstancesControllerSegment;
             string instancePrefix = allInstancesPrefix + WebUtility.UrlEncode(instanceId);
 
             string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.Options.HubName);
