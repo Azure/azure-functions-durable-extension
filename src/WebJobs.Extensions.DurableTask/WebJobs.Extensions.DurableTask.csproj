@@ -28,12 +28,13 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net471'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
-    <!--Below packages are .NET Standard 2.0 that are only needed for Functions V1. Had to be upgrade to be compatable with
-    AspNetCore packages.-->
-    <PackageReference Include="Microsoft.Extensions.Options" Version="1.1.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.2.0" />
+
+    <!--Don't increase below versions without significantly testing on Functions V1. Increasing these versions increments
+    some dependencies that have binding redirects in Functions V1.-->
+    <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.5" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
