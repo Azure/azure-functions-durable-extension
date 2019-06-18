@@ -76,27 +76,27 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Create Entity Proxy.
+        /// Signals an entity to perform an operation.
         /// </summary>
         /// <param name="context">entity context.</param>
         /// <param name="entityKey">The target entity key.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
         /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
-        /// <returns>Entity proxy.</returns>
-        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableEntityContext context, string entityKey)
+        public static void SignalEntity<TEntityInterface>(this IDurableEntityContext context, string entityKey, Action<TEntityInterface> operation)
         {
-            return CreateEntityProxy<TEntityInterface>(context, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey));
+            SignalEntity<TEntityInterface>(context, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey), operation);
         }
 
         /// <summary>
-        /// Create Entity Proxy.
+        /// Signals an entity to perform an operation.
         /// </summary>
         /// <param name="context">entity context.</param>
         /// <param name="entityId">The target entity.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
         /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
-        /// <returns>Entity proxy.</returns>
-        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableEntityContext context, EntityId entityId)
+        public static void SignalEntity<TEntityInterface>(this IDurableEntityContext context, EntityId entityId, Action<TEntityInterface> operation)
         {
-            return EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(context), entityId);
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(context), entityId));
         }
 
         private static string ResolveEntityName<TEntityInterface>()
