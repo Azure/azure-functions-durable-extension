@@ -2625,3 +2625,162 @@
         </member>
     </members>
 </doc>
+            <param name="instancesDeleted">Number of instances deleted.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.PurgeHistoryResult.InstancesDeleted">
+            <summary>
+            Gets the number of deleted instances.
+            </summary>
+            <value>The number of deleted instances.</value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.RetryOptions">
+            <summary>
+            Defines retry policies that can be passed as parameters to various operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.RetryOptions.#ctor(System.TimeSpan,System.Int32)">
+            <summary>
+            Creates a new instance RetryOptions with the supplied first retry and max attempts.
+            </summary>
+            <param name="firstRetryInterval">Timespan to wait for the first retry.</param>
+            <param name="maxNumberOfAttempts">Max number of attempts to retry.</param>
+            <exception cref="T:System.ArgumentException">
+            The <paramref name="firstRetryInterval"/> value must be greater than <see cref="F:System.TimeSpan.Zero"/>.
+            </exception>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.FirstRetryInterval">
+            <summary>
+            Gets or sets the first retry interval.
+            </summary>
+            <value>
+            The TimeSpan to wait for the first retries.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.MaxRetryInterval">
+            <summary>
+            Gets or sets the max retry interval.
+            </summary>
+            <value>
+            The TimeSpan of the max retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.BackoffCoefficient">
+            <summary>
+            Gets or sets the backoff coefficient.
+            </summary>
+            <value>
+            The backoff coefficient used to determine rate of increase of backoff. Defaults to 1.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.RetryTimeout">
+            <summary>
+            Gets or sets the timeout for retries.
+            </summary>
+            <value>
+            The TimeSpan timeout for retries, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.MaxNumberOfAttempts">
+            <summary>
+            Gets or sets the max number of attempts.
+            </summary>
+            <value>
+            The maximum number of retry attempts.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.RetryOptions.Handle">
+            <summary>
+            Gets or sets a delegate to call on exception to determine if retries should proceed.
+            </summary>
+            <value>
+            The delegate to handle exception to determie if retries should proceed.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.StartOrchestrationArgs">
+            <summary>
+            Parameters for starting a new instance of an orchestration.
+            </summary>
+            <remarks>
+            This class is primarily intended for use with <c>IAsyncCollector&lt;T&gt;</c>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.StartOrchestrationArgs.#ctor(System.String,System.Object)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.StartOrchestrationArgs"/> class.
+            </summary>
+            <param name="functionName">The name of the orchestrator function to start.</param>
+            <param name="input">The JSON-serializeable input for the orchestrator function.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.StartOrchestrationArgs.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.StartOrchestrationArgs"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
+            <summary>
+            Gets or sets the name of the orchestrator function to start.
+            </summary>
+            <value>The name of the orchestrator function to start.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId">
+            <summary>
+            Gets or sets the instance ID to assign to the started orchestration.
+            </summary>
+            <remarks>
+            If this property value is null (the default), then a randomly generated instance ID will be assigned automatically.
+            </remarks>
+            <value>The instance ID to assign.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input">
+            <summary>
+            Gets or sets the JSON-serializeable input data for the orchestrator function.
+            </summary>
+            <value>JSON-serializeable input value for the orchestrator function.</value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.ActivityTriggerAttribute">
+            <summary>
+            Trigger attribute used for durable activity functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.ActivityTriggerAttribute.Activity">
+            <summary>
+            Gets or sets the name of the activity function.
+            </summary>
+            <value>
+            The name of the activity function or <c>null</c> to use the function name.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.EntityTriggerAttribute">
+            <summary>
+            Trigger attribute used for durable entity functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.EntityTriggerAttribute.EntityName">
+            <summary>
+            Gets or sets the name of the entity.
+            </summary>
+            <remarks>
+            If not specified, the function name is used as the name of the entity.
+            </remarks>
+            <value>
+            The name of the entity or <c>null</c> to use the function name.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute">
+            <summary>
+            Trigger attribute used for durable orchestrator functions.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.OrchestrationTriggerAttribute.Orchestration">
+            <summary>
+            Gets or sets the name of the orchestrator function.
+            </summary>
+            <remarks>
+            If not specified, the function name is used as the name of the orchestration.
+            </remarks>
+            <value>
+            The name of the orchestrator function or <c>null</c> to use the function name.
+            </value>
+        </member>
+    </members>
+</doc>

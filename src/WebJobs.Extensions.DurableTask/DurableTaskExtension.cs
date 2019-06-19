@@ -158,6 +158,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
+            ConfigureLoaderHooks();
+
             // Functions V1 has it's configuration initialized at startup time (now).
             // For Functions V2 (and for some unit tests) configuration happens earlier in the pipeline.
             if (!this.isOptionsConfigured)
