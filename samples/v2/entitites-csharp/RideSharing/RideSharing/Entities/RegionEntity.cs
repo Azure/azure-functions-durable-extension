@@ -19,7 +19,7 @@ namespace RideSharing
     // the user entities send add-user / remove-user signals whenever they change
     // their region.
     [JsonObject(MemberSerialization.OptIn)]
-    public class RegionEntity
+    public class RegionEntity : IRegionEntity
     {
         [JsonProperty]
         public HashSet<string> Users { get; set; } = new HashSet<string>();
@@ -41,14 +41,14 @@ namespace RideSharing
             Users.Remove(user);
         }
 
-        public string[] GetAvailableDrivers()
+        public Task<string[]> GetAvailableDrivers()
         {
-            return Users.Where(id => id.StartsWith("D")).ToArray();
+            return Task.FromResult(Users.Where(id => id.StartsWith("D")).ToArray());
         }
 
-        public string[] GetAvailableRiders()
+        public Task<string[]> GetAvailableRiders()
         {
-            return Users.Where(id => id.StartsWith("R")).ToArray();
+            return Task.FromResult(Users.Where(id => id.StartsWith("R")).ToArray());
         }
 
     }

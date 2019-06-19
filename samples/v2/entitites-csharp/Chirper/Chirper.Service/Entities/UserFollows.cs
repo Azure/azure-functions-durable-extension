@@ -17,7 +17,7 @@ namespace Chirper.Service
     // The entity key is the userId.
 
     [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    public class UserFollows
+    public class UserFollows : IUserFollows
     {
         [JsonProperty]
         public List<string> FollowedUsers { get; set; }  = new List<string>();
@@ -32,9 +32,9 @@ namespace Chirper.Service
             FollowedUsers.Remove(user);
         }
 
-        public List<string> Get()
+        public Task<List<string>> Get()
         {
-            return FollowedUsers;
+            return Task.FromResult(FollowedUsers);
         }
 
         // Boilerplate (entry point for the functions runtime)
