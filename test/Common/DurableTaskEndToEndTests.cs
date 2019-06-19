@@ -2844,7 +2844,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var counter = new EntityId(nameof(TestEntityClasses.Counter), Guid.NewGuid().ToString());
+                var counter = new EntityId(nameof(TestEntityClasses.CounterWithProxy), Guid.NewGuid().ToString());
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
 

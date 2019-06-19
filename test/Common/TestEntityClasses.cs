@@ -39,10 +39,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return context.DispatchAsync<ChatRoom>();
         }
 
-        [FunctionName(nameof(Counter))]
+        [FunctionName(nameof(CounterWithProxy))]
         public static Task CounterFunction([EntityTrigger] IDurableEntityContext context)
         {
-            return context.DispatchAsync<Counter>();
+            return context.DispatchAsync<CounterWithProxy>();
         }
 
         //-------------- an entity representing a chat room -----------------
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         //-------------- An entity representing a counter object -----------------
 
         [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-        public class Counter : ICounter
+        public class CounterWithProxy : ICounter
         {
             [JsonProperty("value")]
             public int Value { get; set; }
