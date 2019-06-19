@@ -224,8 +224,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
             this.orchestrationServiceFactory = new OrchestrationServiceFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
-            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.nameResolver = context.Config.NameResolver;
+            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
 #endif
         }
 
