@@ -11,7 +11,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace WebJobs.Extensions.DurableTask.Tests.V2
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableOptionsConfigurationTests
     {
@@ -93,11 +93,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             // Ensure blobs touched in the last 30 seconds
             string defaultConnectionString = TestHelpers.GetStorageConnectionString();
-            string blobLeaseContainerName = $"{testName}v2-leases";
+            string blobLeaseContainerName = $"{testName}{PlatformSpecificHelpers.VersionSuffix.ToLower()}-leases";
             CloudStorageAccount account = CloudStorageAccount.Parse(defaultConnectionString);
             CloudBlobClient blobClient = account.CreateCloudBlobClient();
             CloudBlobContainer blobContainer = blobClient.GetContainerReference(blobLeaseContainerName);
-            CloudBlockBlob blob = blobContainer.GetBlockBlobReference($"default/{testName}v2-control-00");
+            CloudBlockBlob blob = blobContainer.GetBlockBlobReference($"default/{testName}{PlatformSpecificHelpers.VersionSuffix.ToLower()}-control-00");
             await blob.FetchAttributesAsync();
             DateTimeOffset lastModified = blob.Properties.LastModified.Value;
             DateTimeOffset expectedLastModifiedTimeThreshold = DateTimeOffset.UtcNow.AddSeconds(-30);

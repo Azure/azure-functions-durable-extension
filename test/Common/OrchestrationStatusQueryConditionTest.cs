@@ -4,14 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DurableTask.Core;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.Tests.V2
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OrchestrationStatusQueryConditionTest
     {

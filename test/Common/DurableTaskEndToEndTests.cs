@@ -2793,9 +2793,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which validates basic use of the object dispatch feature.
+        /// TODO: This test is flakey in Functions V1.
         /// </summary>
         [Theory]
+#if NETCOREAPP2_0
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+#else
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
+#endif
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_BasicObjects(bool extendedSessions)
@@ -2818,7 +2823,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal("a,b,c", status?.Output.ToString());
 
                 await host.StopAsync();
             }
@@ -3205,7 +3210,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(argumentException);
             Assert.Equal(
-                $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                argumentException.Message.Contains($"{taskHubName}V1")
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
                 argumentException.Message);
         }
 

@@ -823,12 +823,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // calls returning a result
             var result = await ctx.CallEntityAsync<List<KeyValuePair<DateTime, string>>>(chatroom, "get");
 
-            if (string.Join(',', result.Select(kvp => kvp.Value)) != "a,b,c")
-            {
-                return "incorrect result1";
-            }
-
-            return "ok";
+            return string.Join(",", result.Select(kvp => kvp.Value));
         }
 
         public static async Task<bool> EntityProxy([OrchestrationTrigger] IDurableOrchestrationContext ctx)

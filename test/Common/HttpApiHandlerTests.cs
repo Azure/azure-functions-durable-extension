@@ -11,8 +11,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+#if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

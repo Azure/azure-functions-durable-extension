@@ -5,8 +5,10 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+#if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+#endif
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -304,6 +306,7 @@ namespace Microsoft.Azure.WebJobs
                 timeout: TimeSpan.FromSeconds(10));
         }
 
+#if NETSTANDARD2_0
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
         /// or contains the payload containing the output of the completed orchestration.
@@ -328,6 +331,7 @@ namespace Microsoft.Azure.WebJobs
                 instanceId,
                 timeout: TimeSpan.FromSeconds(10));
         }
+#endif
 
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
@@ -357,6 +361,7 @@ namespace Microsoft.Azure.WebJobs
                 retryInterval: TimeSpan.FromSeconds(1));
         }
 
+#if NETSTANDARD2_0
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
         /// or contains the payload containing the output of the completed orchestration.
@@ -384,6 +389,7 @@ namespace Microsoft.Azure.WebJobs
                 timeout,
                 retryInterval: TimeSpan.FromSeconds(1));
         }
+#endif
 
         /// <summary>
         /// Starts a new execution of the specified orchestrator function.
