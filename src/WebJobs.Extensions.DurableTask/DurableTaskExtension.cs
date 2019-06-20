@@ -68,11 +68,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
 
-#if !NETSTANDARD
-        private IConnectionStringResolver connectionStringResolver;
-#endif
-
 #if !NETSTANDARD2_0
+        private IConnectionStringResolver connectionStringResolver;
+
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
         /// </summary>

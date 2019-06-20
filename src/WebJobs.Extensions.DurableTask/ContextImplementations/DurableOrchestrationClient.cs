@@ -10,11 +10,9 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
-#if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
-#endif
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AzureStorage = DurableTask.AzureStorage;
@@ -67,7 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CreateCheckStatusResponse(request, instanceId, this.attribute);
         }
 
-#if NETSTANDARD2_0
         /// <inheritdoc />
         IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId)
         {
@@ -75,7 +72,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId);
             return ConvertHttpResponseMessage(responseMessage);
         }
-#endif
 
         /// <inheritdoc />
         HttpManagementPayload IDurableOrchestrationClient.CreateHttpManagementPayload(string instanceId)
@@ -94,7 +90,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 retryInterval);
         }
 
-#if NETSTANDARD2_0
         /// <inheritdoc />
         async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan timeout, TimeSpan retryInterval)
         {
@@ -102,7 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval);
             return ConvertHttpResponseMessage(responseMessage);
         }
-#endif
 
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
@@ -723,7 +717,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-#if NETSTANDARD2_0
         private static HttpRequestMessage ConvertHttpRequestMessage(HttpRequest request)
         {
             return new HttpRequestMessageFeature(request.HttpContext).HttpRequestMessage;
@@ -735,7 +728,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             result.Formatters.Add(new HttpResponseMessageOutputFormatter());
             return result;
         }
-#endif
 
         private OrchestrationStatusQueryResult ConvertFrom(DurableStatusQueryResult statusContext)
         {

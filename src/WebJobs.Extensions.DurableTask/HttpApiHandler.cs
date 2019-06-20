@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class HttpApiHandler
     {
-        // Route segments
+        // Route segments. Note that these segments cannot start with `/` due to limitations with TemplateMatcher.
         private const string InstancesControllerSegment = "instances/";
         private const string OrchestratorsControllerSegment = "orchestrators/";
         private const string EntitiesControllerSegment = "entities/";
@@ -95,6 +95,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
         }
 
+        // Can't use RouteValueDictionary.FromArray() due to it only being available in the version we use in Functions V2.
+        // This custom implementation should be equivalent.
         private static RouteValueDictionary RouteValueDictionaryFromArray(KeyValuePair<string, object>[] values)
         {
             var routeValueDictionary = new RouteValueDictionary();
