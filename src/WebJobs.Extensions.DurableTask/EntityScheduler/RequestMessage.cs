@@ -49,6 +49,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ParentInstanceId { get; set; }
 
         /// <summary>
+        /// A timestamp for this request. 
+        /// Used for duplicate filtering and in-order delivery.
+        /// </summary>
+        public DateTime Timestamp { get; set; }
+
+        /// <summary>
+        /// A timestamp for the predecessor request in the stream, or DateTime.MinValue if none.
+        /// Used for duplicate filtering and in-order delivery.
+        /// </summary>
+        public DateTime Predecessor { get; set; }
+
+        /// <summary>
         /// For lock requests, the set of locks being acquired. Is sorted,
         /// contains at least one element, and has no repetitions.
         /// </summary>

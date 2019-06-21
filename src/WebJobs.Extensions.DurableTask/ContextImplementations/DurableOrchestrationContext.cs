@@ -35,6 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private LockReleaser lockReleaser = null;
 
+        private MessageSorter messageSorter;
+
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
             : base(config, functionName)
         {
@@ -57,6 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.ParentInstanceId => this.ParentInstanceId;
+
+        private MessageSorter MessageSorter => this.messageSorter ?? (this.messageSorter = new MessageSorter());
 
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
@@ -382,6 +386,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal override void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
         {
+            if (eventContent is RequestMessage requestMessage)
+            {
+                this.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, this.InnerContext.CurrentUtcDateTime, this.ReorderWindow);
+            }
+
             if (!this.IsReplaying)
             {
                 this.Config.TraceHelper.SendingEntityMessage(

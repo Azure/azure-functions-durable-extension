@@ -42,6 +42,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty(PropertyName = "lockedBy", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string LockedBy { get; set; }
 
+        /// <summary>
+        /// The metadata used for reordering and deduplication of messages sent to entities.
+        /// </summary>
+        [JsonProperty(PropertyName = "sorter", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public MessageSorter MessageSorter { get; set; } = new MessageSorter();
+
         [JsonIgnore]
         public bool IsEmpty => !this.EntityExists && (this.Queue == null || this.Queue.Count == 0) && this.LockedBy == null;
 

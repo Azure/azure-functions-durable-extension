@@ -300,6 +300,22 @@
             <param name="configure">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions"/>.</param>
             <returns>Returns the modified <paramref name="builder"/> object.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter">
+            <summary>
+            provides message ordering and deduplication of request messages (operations or lock requests)
+            that are sent to entities, from other entities, or from orchestrations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter.LabelOutgoingMessage(Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage,System.String,System.DateTime,System.TimeSpan)">
+            <summary>
+            Called on the sending side, to fill in timestamp and predecessor fields.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter.ReceiveInOrder(Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage,System.TimeSpan)">
+            <summary>
+            Called on the receiving side, to reorder and deduplicate within the window.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage">
             <summary>
             A message that represents an operation request or a lock request.
@@ -329,6 +345,18 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentInstanceId">
             <summary>
             The parent instance that called this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Timestamp">
+            <summary>
+            A timestamp for this request. 
+            Used for duplicate filtering and in-order delivery.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Predecessor">
+            <summary>
+            A timestamp for the predecessor request in the stream, or DateTime.MinValue if none.
+            Used for duplicate filtering and in-order delivery.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.LockSet">
@@ -365,6 +393,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
             <summary>
             The instance id of the orchestration that currently holds the lock of this entity.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.MessageSorter">
+            <summary>
+            The metadata used for reordering and deduplication of messages sent to entities.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">

@@ -81,6 +81,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string Name => this.FunctionName;
 
+        internal TimeSpan ReorderWindow => TimeSpan.FromMinutes(30);
+
         /// <inheritdoc/>
         DateTime IDeterministicExecutionContext.CurrentUtcDateTime => this.InnerContext.CurrentUtcDateTime;
 
