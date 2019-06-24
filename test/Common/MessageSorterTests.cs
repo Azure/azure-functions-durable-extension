@@ -40,6 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(batch).Input.Equals("2");
             batch = receiverSorter.ReceiveInOrder(message3, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("3");
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         [Fact]
@@ -67,6 +69,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(batch).Input.Equals("2");
             batch = receiverSorter.ReceiveInOrder(message3, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("3");
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         [Fact]
@@ -97,6 +101,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 first => first.Input.Equals("1"),
                 second => second.Input.Equals("2"),
                 third => third.Input.Equals("3"));
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         [Fact]
@@ -123,6 +129,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(batch).Input.Equals("2");
             batch = receiverSorter.ReceiveInOrder(message3, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("3");
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         [Fact]
@@ -168,6 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Empty(batch);
             batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
             Assert.Empty(batch);
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         [Fact]
@@ -217,6 +227,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Assert.Equal(i.ToString(), deliveredMessages[i].Input);
             }
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         /// <summary>
@@ -272,6 +284,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // check that all messages were delivered
             Assert.Equal(messageCount + 1, deliveredMessages.Count());
+
+            Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
 
         private static RequestMessage Send(string senderId, string receiverId, string input, MessageSorter sorter, DateTime now, TimeSpan? reorderWindow = null)

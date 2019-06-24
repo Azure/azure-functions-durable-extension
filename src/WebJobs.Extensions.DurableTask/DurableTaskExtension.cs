@@ -386,15 +386,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             foreach (var message in deliverNow)
                             {
-                                if (entityContext.State.LockedBy == requestMessage.ParentInstanceId)
+                                if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {
                                     // operation requests from the lock holder are processed immediately
-                                    entityShim.AddOperationToBatch(requestMessage);
+                                    entityShim.AddOperationToBatch(message);
                                 }
                                 else
                                 {
                                     // others go to the back of the queue
-                                    entityContext.State.Enqueue(requestMessage);
+                                    entityContext.State.Enqueue(message);
                                 }
                             }
                         }
