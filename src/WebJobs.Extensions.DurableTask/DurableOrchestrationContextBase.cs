@@ -411,6 +411,22 @@ namespace Microsoft.Azure.WebJobs
         public virtual Task WaitForExternalEvent(string name, TimeSpan timeout) => this.WaitForExternalEvent<object>(name, timeout);
 
         /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        /// <exception cref="TimeoutException">
+        /// The external event was not received before the timeout expired.
+        /// </exception>
+        public virtual Task WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken) => throw new NotImplementedException();
+
+        /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
         /// </summary>
         /// <remarks>
@@ -434,12 +450,45 @@ namespace Microsoft.Azure.WebJobs
         /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
         /// </remarks>
         /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        /// <exception cref="TimeoutException">
+        /// The external event was not received before the timeout expired.
+        /// </exception>
+        public virtual Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
         /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
         /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
         /// if the timeout expires.</returns>
         public abstract Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="DurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
+        /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+        /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
+        /// if the timeout expires.</returns>
+        public virtual Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken) => throw new NotImplementedException();
 
         /// <summary>
         /// Restarts the orchestration by clearing its history.
