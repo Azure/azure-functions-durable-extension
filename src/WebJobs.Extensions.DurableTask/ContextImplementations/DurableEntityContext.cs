@@ -97,8 +97,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.StateWasAccessed)
             {
                 var result = (this.State.EntityState == null)
-                    ? (initializer != null ? initializer() : default(T))
-                    : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.EntityState);
+                    ? (initializer != null ? initializer() : default(TState))
+                    : MessagePayloadDataConverter.Default.Deserialize<TState>(this.State.EntityState);
                 this.CurrentState = result;
                 this.StateWasAccessed = true;
                 return result;
