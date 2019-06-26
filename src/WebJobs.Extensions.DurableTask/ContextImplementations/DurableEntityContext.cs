@@ -78,10 +78,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DestructOnExit = true;
         }
 
-        T IDurableEntityContext.GetInput<T>()
+        TInput IDurableEntityContext.GetInput<TInput>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput<T>();
+            return this.CurrentOperation.GetInput<TInput>();
         }
 
         object IDurableEntityContext.GetInput(Type argumentType)
@@ -90,22 +90,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CurrentOperation.GetInput(argumentType);
         }
 
-        T IDurableEntityContext.GetState<T>(Func<T> initializer)
+        TState IDurableEntityContext.GetState<TState>(Func<TState> initializer)
         {
             this.ThrowIfInvalidAccess();
 
             if (!this.StateWasAccessed)
             {
                 var result = (this.State.EntityState == null)
-                    ? (initializer != null ? initializer() : default(T))
-                    : MessagePayloadDataConverter.Default.Deserialize<T>(this.State.EntityState);
+                    ? (initializer != null ? initializer() : default(TState))
+                    : MessagePayloadDataConverter.Default.Deserialize<TState>(this.State.EntityState);
                 this.CurrentState = result;
                 this.StateWasAccessed = true;
                 return result;
             }
             else
             {
-                return (T)this.CurrentState;
+                return (TState)this.CurrentState;
             }
         }
 
