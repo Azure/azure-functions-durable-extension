@@ -47,11 +47,11 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the current state of this entity, for reading and/or updating.
         /// </summary>
-        /// <typeparam name="T">The JSON-serializable type of the entity state.</typeparam>
+        /// <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
         /// <param name="initializer">Provides an initial value to use for the state, instead of default(<typeparamref name="T"/>).</param>
         /// <returns>The current state of this entity.</returns>
         /// <exception cref="InvalidCastException">If the current state has an incompatible type.</exception>
-        T GetState<T>(Func<T> initializer = null);
+        TState GetState<TState>(Func<TState> initializer = null);
 
         /// <summary>
         /// Sets the current state of this entity.
@@ -62,13 +62,13 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Gets the input for this operation, as a deserialized value.
         /// </summary>
-        /// <typeparam name="T">The JSON-serializable type used for the operation input.</typeparam>
+        /// <typeparam name="TInput">The JSON-serializable type used for the operation input.</typeparam>
         /// <returns>The operation input, or default(<typeparamref name="T"/>) if none.</returns>
         /// <remarks>
         /// An operation invocation on an entity includes an operation name, which states what
         /// operation to perform, and optionally an operation input.
         /// </remarks>
-        T GetInput<T>();
+        TInput GetInput<TInput>();
 
         /// <summary>
         /// Gets the input for this operation, as a deserialized value.

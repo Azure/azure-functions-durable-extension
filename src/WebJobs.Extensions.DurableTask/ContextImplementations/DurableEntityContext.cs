@@ -78,10 +78,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DestructOnExit = true;
         }
 
-        T IDurableEntityContext.GetInput<T>()
+        TInput IDurableEntityContext.GetInput<TInput>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput<T>();
+            return this.CurrentOperation.GetInput<TInput>();
         }
 
         object IDurableEntityContext.GetInput(Type argumentType)
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CurrentOperation.GetInput(argumentType);
         }
 
-        T IDurableEntityContext.GetState<T>(Func<T> initializer)
+        TState IDurableEntityContext.GetState<TState>(Func<TState> initializer)
         {
             this.ThrowIfInvalidAccess();
 
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return (T)this.CurrentState;
+                return (TState)this.CurrentState;
             }
         }
 
