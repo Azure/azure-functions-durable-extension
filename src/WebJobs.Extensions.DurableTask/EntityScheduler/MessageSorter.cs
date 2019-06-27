@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,10 +20,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TimeSpan MinIntervalBetweenCollections = TimeSpan.FromSeconds(10);
 
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public Dictionary<string, DateTime> Sent { get; set; }
+        public Dictionary<string, DateTime> LastSentToInstance { get; set; }
 
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public Dictionary<string, ReceiveBuffer> Received { get; set; }
+        public Dictionary<string, ReceiveBuffer> ReceivedFromInstance { get; set; }
 
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public DateTime ReceiveHorizon { get; set; }
@@ -28,8 +31,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public DateTime SendHorizon { get; set; }
 
-        public int NumberBufferedRequests =>
-            this.Received?.Select(kvp => kvp.Value.Buffered?.Count ?? 0).Sum() ?? 0;
+        /// <summary>
+        /// Used for testing purposes.
+        /// </summary>
+        internal int NumberBufferedRequests =>
+            this.ReceivedFromInstance?.Select(kvp => kvp.Value.Buffered?.Count ?? 0).Sum() ?? 0;
 
         /// <summary>
         /// Called on the sending side, to fill in timestamp and predecessor fields.
@@ -44,40 +50,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // clean out send clocks that are past the reorder window
 
-                if (this.Sent != null)
+                if (this.LastSentToInstance != null)
                 {
-                    List<string> expired = null;
+                    List<string> expired = new List<string>();
 
-                    foreach (var kvp in this.Sent)
+                    foreach (var kvp in this.LastSentToInstance)
                     {
                         if (kvp.Value < this.SendHorizon)
                         {
-                            (expired ?? (expired = new List<string>())).Add(kvp.Key);
+                            expired.Add(kvp.Key);
                         }
                     }
 
-                    if (expired != null)
+                    foreach (var t in expired)
                     {
-                        foreach (var t in expired)
-                        {
-                            this.Sent.Remove(t);
-                        }
-
-                        expired.Clear();
-                    }
-
-                    if (this.Sent.Count == 0)
-                    {
-                        this.Sent = null;
+                        this.LastSentToInstance.Remove(t);
                     }
                 }
             }
 
-            if (this.Sent == null)
+            if (this.LastSentToInstance == null)
             {
-                this.Sent = new Dictionary<string, DateTime>();
+                this.LastSentToInstance = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
             }
-            else if (this.Sent.TryGetValue(destination, out var last))
+            else if (this.LastSentToInstance.TryGetValue(destination, out var last))
             {
                 message.Predecessor = last;
 
@@ -89,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             message.Timestamp = timestamp;
-            this.Sent[destination] = timestamp;
+            this.LastSentToInstance[destination] = timestamp;
         }
 
         /// <summary>
@@ -113,18 +109,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // deliver any messages that were held in the receive buffers
                 // but are now past the reorder window
 
-                List<string> emptyReceiveBuffers = null;
+                List<string> emptyReceiveBuffers = new List<string>();
 
-                if (this.Received != null)
+                if (this.ReceivedFromInstance != null)
                 {
-                    foreach (var kvp in this.Received)
+                    foreach (var kvp in this.ReceivedFromInstance)
                     {
                         if (kvp.Value.Last < this.ReceiveHorizon)
                         {
                             kvp.Value.Last = DateTime.MinValue;
                         }
 
-                        while (this.DeliverNextMessage(kvp.Value, out var next))
+                        while (this.TryDeliverNextMessage(kvp.Value, out var next))
                         {
                             yield return next;
                         }
@@ -132,21 +128,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         if (kvp.Value.Last == DateTime.MinValue
                             && (kvp.Value.Buffered == null || kvp.Value.Buffered.Count == 0))
                         {
-                            (emptyReceiveBuffers ?? (emptyReceiveBuffers = new List<string>())).Add(kvp.Key);
+                            emptyReceiveBuffers.Add(kvp.Key);
                         }
                     }
 
-                    if (emptyReceiveBuffers != null)
+                    foreach (var t in emptyReceiveBuffers)
                     {
-                        foreach (var t in emptyReceiveBuffers)
-                        {
-                            this.Received.Remove(t);
-                        }
+                        this.ReceivedFromInstance.Remove(t);
                     }
 
-                    if (this.Received.Count == 0)
+                    if (this.ReceivedFromInstance.Count == 0)
                     {
-                        this.Received = null;
+                        this.ReceivedFromInstance = null;
                     }
                 }
             }
@@ -161,16 +154,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ReceiveBuffer receiveBuffer;
 
-            if (this.Received == null)
+            if (this.ReceivedFromInstance == null)
             {
-                this.Received = new Dictionary<string, ReceiveBuffer>()
+                this.ReceivedFromInstance = new Dictionary<string, ReceiveBuffer>(StringComparer.OrdinalIgnoreCase)
                 {
                     { message.ParentInstanceId,  receiveBuffer = new ReceiveBuffer() },
                 };
             }
-            else if (!this.Received.TryGetValue(message.ParentInstanceId, out receiveBuffer))
+            else if (!this.ReceivedFromInstance.TryGetValue(message.ParentInstanceId, out receiveBuffer))
             {
-                this.Received[message.ParentInstanceId] = receiveBuffer = new ReceiveBuffer();
+                this.ReceivedFromInstance[message.ParentInstanceId] = receiveBuffer = new ReceiveBuffer();
             }
 
             if (message.Timestamp <= receiveBuffer.Last)
@@ -196,14 +189,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 receiveBuffer.Last = message.Timestamp >= this.ReceiveHorizon ? message.Timestamp : DateTime.MinValue;
 
-                while (this.DeliverNextMessage(receiveBuffer, out var next))
+                while (this.TryDeliverNextMessage(receiveBuffer, out var next))
                 {
                     yield return next;
                 }
             }
         }
 
-        private bool DeliverNextMessage(ReceiveBuffer buffer, out RequestMessage message)
+        private bool TryDeliverNextMessage(ReceiveBuffer buffer, out RequestMessage message)
         {
             if (buffer.Buffered != null)
             {

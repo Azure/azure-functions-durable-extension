@@ -107,16 +107,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Collection()
+        public void NoFilteringOrSortingPastReorderWindow()
         {
             var senderId = "A";
             var receiverId = "B";
 
             var senderSorter = new MessageSorter();
 
+            // last message is sent after an interval exceeding the reorder window
             var message1 = Send(senderId, receiverId, "1", senderSorter, DateTime.UtcNow);
-            var message2 = Send(senderId, receiverId, "2", senderSorter, DateTime.UtcNow + ReorderWindow + ReorderWindow);
-            var message3 = Send(senderId, receiverId, "3", senderSorter, DateTime.UtcNow + ReorderWindow + ReorderWindow + ReorderWindow + ReorderWindow);
+            var message2 = Send(senderId, receiverId, "2", senderSorter, DateTime.UtcNow);
+            var message3 = Send(senderId, receiverId, "3", senderSorter, DateTime.UtcNow + ReorderWindow);
 
             List<RequestMessage> batch;
             MessageSorter receiverSorter = new MessageSorter();
@@ -129,6 +130,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(batch).Input.Equals("2");
             batch = receiverSorter.ReceiveInOrder(message3, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("3");
+
+            // duplicates are not filtered or sorted, but simply passed through, because we are past the reorder window
+            batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();
+            Assert.Single(batch).Input.Equals("2");
+            batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
+            Assert.Single(batch).Input.Equals("1");
 
             Assert.Equal(0, receiverSorter.NumberBufferedRequests);
         }
@@ -160,10 +167,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 batch,
                 first => first.Input.Equals("1"),
                 second => second.Input.Equals("2"));
-            batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();
-            Assert.Empty(batch);
-            batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
-            Assert.Empty(batch);
             batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();
             Assert.Empty(batch);
             batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
@@ -254,7 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var messages = new List<RequestMessage>();
             for (int i = 0; i < messageCount; i++)
             {
-                messages.Add(Send(senderId, receiverId, i.ToString(), senderSorter, now + TimeSpan.FromSeconds(i), TimeSpan.FromSeconds(10)));
+                messages.Add(Send(senderId, receiverId, i.ToString(), senderSorter, now + TimeSpan.FromSeconds(random.Next(5)), TimeSpan.FromSeconds(10)));
             }
 
             // shuffle the messages

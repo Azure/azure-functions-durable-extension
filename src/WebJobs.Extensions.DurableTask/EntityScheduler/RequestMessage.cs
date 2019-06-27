@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ParentInstanceId { get; set; }
 
         /// <summary>
-        /// A timestamp for this request. 
+        /// A timestamp for this request.
         /// Used for duplicate filtering and in-order delivery.
         /// </summary>
         public DateTime Timestamp { get; set; }

@@ -382,7 +382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
 
                             // run this through the message sorter to help with reordering and duplicate filtering
-                            var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.ReorderWindow);
+                            var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
 
                             foreach (var message in deliverNow)
                             {

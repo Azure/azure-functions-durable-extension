@@ -388,7 +388,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (eventContent is RequestMessage requestMessage)
             {
-                this.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, this.InnerContext.CurrentUtcDateTime, this.ReorderWindow);
+                this.MessageSorter.LabelOutgoingMessage(
+                    requestMessage,
+                    target.InstanceId,
+                    this.InnerContext.CurrentUtcDateTime,
+                    TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
             }
 
             if (!this.IsReplaying)

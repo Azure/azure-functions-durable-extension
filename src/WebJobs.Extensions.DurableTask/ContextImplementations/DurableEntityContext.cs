@@ -161,7 +161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (message is RequestMessage requestMessage)
                 {
-                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.ReorderWindow);
+                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
                 }
 
                 this.outbox.Add(new OutgoingMessage()
