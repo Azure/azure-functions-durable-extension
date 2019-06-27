@@ -32,14 +32,7 @@ steps:
     configuration: '$(buildConfiguration)'
 
 - powershell: |
-    # Using an input-macro:
-    Write-Host "This works: $(durablecitest)"
-
-    # Using the env var directly:
-    Write-Host "This does not work: $env:DURABLECITEST"
-
-    # Using the mapped env var:
-    Write-Host "This works: $env:MY_MAPPED_ENV_VAR"    # Recommended
+    $env:MY_MAPPED_ENV_VAR
   env:
     MY_MAPPED_ENV_VAR: $(durablecitest)
 
