@@ -32,7 +32,7 @@ steps:
     configuration: '$(buildConfiguration)'
 
 - powershell: |
-    $env:AzureWebJobsStorage = MY_MAPPED_ENV_VAR
+    [Environment]::SetEnvironmentVariable("AzureWebJobsStorage", MY_MAPPED_ENV_VAR, "User")
   env:
     MY_MAPPED_ENV_VAR: $(durablecitest)
 
