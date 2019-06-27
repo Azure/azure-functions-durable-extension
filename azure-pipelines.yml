@@ -22,7 +22,7 @@ steps:
     command: 'restore'
     projects: 'test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj'
     feedsToUse: 'config'
-    nugetConfigPath: 'nuget.config'
+    nugetConfigPath: '.nuget/nuget.config'
 
 - task: VSBuild@1
   inputs:
