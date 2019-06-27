@@ -35,3 +35,6 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+env:
+    MY_MAPPED_ENV_VAR: $durablecitest
