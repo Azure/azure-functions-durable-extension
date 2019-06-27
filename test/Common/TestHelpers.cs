@@ -42,7 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
             string[] eventGridPublishEventTypes = null,
-            string storageProviderType = AzureStorageProviderType)
+            string storageProviderType = AzureStorageProviderType,
+            bool autoFetchLargeMessages = true)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -76,6 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
                 durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
+                durableTaskOptions.StorageProvider.AzureStorage.FetchLargeMessagesAutomatically = autoFetchLargeMessages;
             }
             else if (string.Equals(storageProviderType, EmulatorProviderType))
             {

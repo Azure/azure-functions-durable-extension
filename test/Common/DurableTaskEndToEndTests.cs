@@ -1998,11 +1998,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task BigReturnValue_Orchestrator(bool extendedSessions, string storageProvider)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task AzureStorage_BigReturnValue_Orchestrator(bool extendedSessions, bool autoFetch)
         {
-            string taskHub = nameof(this.BigReturnValue_Orchestrator);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions, storageProviderType: storageProvider))
+            string taskHub = nameof(this.AzureStorage_BigReturnValue_Orchestrator);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions, autoFetchLargeMessages: autoFetch))
             {
                 await host.StartAsync();
 
@@ -2016,7 +2019,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                if (!autoFetch)
+                {
+                    await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                }
+                else
+                {
+                    Assert.Equal(stringLength, ((string)status.Output).Length);
+                }
 
                 await host.StopAsync();
             }
@@ -2025,11 +2035,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task BigReturnValue_Activity(bool extendedSessions, string storageProvider)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task AzureStorage_BigReturnValue_Activity(bool extendedSessions, bool autoFetch)
         {
-            string taskHub = nameof(this.BigReturnValue_Activity);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions, storageProviderType: storageProvider))
+            string taskHub = nameof(this.AzureStorage_BigReturnValue_Activity);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions, autoFetchLargeMessages: autoFetch))
             {
                 await host.StartAsync();
 
@@ -2048,7 +2061,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                if (!autoFetch)
+                {
+                    await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                }
+                else
+                {
+                    Assert.Equal(stringLength, ((string)status.Output).Length);
+                }
 
                 await host.StopAsync();
             }
@@ -2977,7 +2997,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 testName,
                 extendedSessions,
-                storageProviderType: storageProvider))
+                storageProviderType: storageProvider,
+                autoFetchLargeMessages: false))
             {
                 await host.StartAsync();
 
