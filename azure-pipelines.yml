@@ -20,7 +20,7 @@ steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
-    projects: 'test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj'
+    projects: '**/**/*.csproj'
     feedsToUse: 'config'
     nugetConfigPath: '.nuget/nuget.config'
 
