@@ -31,6 +31,13 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
+- powershell: ./ setEnvironmentVariables.ps1 
+  arguments: '$env:DURABLECITEST'
+
+- powershell: |
+  env:
+    MY_MAPPED_ENV_VAR: $(durablecitest)
+
 - task: VSTest@2
   inputs:
     platform: '$(buildPlatform)'
