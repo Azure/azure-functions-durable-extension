@@ -12,12 +12,14 @@ variables:
   buildConfiguration: 'Release'
 
 jobs:
-- job: Build
+- job: ParallelTesting
+  dependsOn: Build
 
   pool:
     vmImage: 'windows-latest'
 
-
+  strategy:
+    parallel: 10
   steps:
   - task: NuGetToolInstaller@0
 
@@ -34,16 +36,7 @@ jobs:
       msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
       platform: '$(buildPlatform)'
       configuration: '$(buildConfiguration)'
-
-- job: ParallelTesting
-  dependsOn: Build
-
-  pool:
-    vmImage: 'windows-latest'
-
-  strategy:
-    parallel: 10
-  steps:
+      
   - task: VSTest@2
     inputs:
       testSelector: 'testAssemblies'
