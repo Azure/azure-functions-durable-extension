@@ -31,12 +31,9 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
-- powershell: |
-    [Environment]::SetEnvironmentVariable("AzureWebJobsStorage", MY_MAPPED_ENV_VAR, "User")
-  env:
-    MY_MAPPED_ENV_VAR: $(durablecitest)
-
 - task: VSTest@2
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+  env:
+    AzureWebJobsStorage: $(durablecitest)
