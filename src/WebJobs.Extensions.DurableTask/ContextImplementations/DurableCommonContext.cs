@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.Config = config ?? throw new ArgumentNullException(nameof(config));
             this.FunctionName = functionName;
+            this.EntityMessageReorderWindow = TimeSpan.FromMinutes(config.Options.EntityMessageReorderWindowInMinutes);
         }
 
         internal DurableTaskExtension Config { get; }
@@ -80,6 +81,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string HubName => this.Config.Options.HubName;
 
         internal string Name => this.FunctionName;
+
+        internal TimeSpan EntityMessageReorderWindow { get; private set; }
 
         /// <inheritdoc/>
         DateTime IDeterministicExecutionContext.CurrentUtcDateTime => this.InnerContext.CurrentUtcDateTime;

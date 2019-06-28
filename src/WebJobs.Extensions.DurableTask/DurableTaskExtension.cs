@@ -458,15 +458,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             // we are receiving an operation request or a lock request
                             var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
 
-                            if (entityContext.State.LockedBy == requestMessage.ParentInstanceId)
+                            // run this through the message sorter to help with reordering and duplicate filtering
+                            var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+
+                            foreach (var message in deliverNow)
                             {
-                                // operation requests from the lock holder are processed immediately
-                                entityShim.AddOperationToBatch(requestMessage);
-                            }
-                            else
-                            {
-                                // others go to the back of the queue
-                                entityContext.State.Enqueue(requestMessage);
+                                if (entityContext.State.LockedBy == message.ParentInstanceId)
+                                {
+                                    // operation requests from the lock holder are processed immediately
+                                    entityShim.AddOperationToBatch(message);
+                                }
+                                else
+                                {
+                                    // others go to the back of the queue
+                                    entityContext.State.Enqueue(message);
+                                }
                             }
                         }
                         else
