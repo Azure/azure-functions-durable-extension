@@ -34,7 +34,7 @@ steps:
 - task: VSTest@2
   inputs:
     testSelector: 'testAssemblies'
-    testAssemblyVer2: '**\*tests.v2.dll'
+    testAssemblyVer2: '**/*tests.v2.dll'
     searchFolder: '$(System.DefaultWorkingDirectory)'
   env:
     AzureWebJobsStorage: $(durablecitest)
