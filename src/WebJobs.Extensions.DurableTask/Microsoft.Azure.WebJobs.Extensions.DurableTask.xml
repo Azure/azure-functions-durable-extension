@@ -706,6 +706,13 @@
             </remarks>
             <value>The prefix to use when naming the generated Azure tables.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.FetchLargeMessagesAutomatically">
+            <summary>
+            Gets or sets whether the extension will automatically fetch large messages in orchestration status
+            queries. If set to false, the extension will return large messages as a blob url.
+            </summary>
+            <value>A boolean indicating wheter will automatically fetch large messages .</value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.MaxQueuePollingInterval">
             <summary>
             Gets or sets the maximum queue polling interval.
@@ -1649,8 +1656,8 @@
             <summary>
             Gets the current state of this entity, for reading and/or updating.
             </summary>
-            <typeparam name="T">The JSON-serializable type of the entity state.</typeparam>
-            <param name="initializer">Provides an initial value to use for the state, instead of default(<typeparamref name="T"/>).</param>
+            <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
+            <param name="initializer">Provides an initial value to use for the state, instead of default(<typeparamref name="TState"/>).</param>
             <returns>The current state of this entity.</returns>
             <exception cref="T:System.InvalidCastException">If the current state has an incompatible type.</exception>
         </member>
@@ -1664,8 +1671,8 @@
             <summary>
             Gets the input for this operation, as a deserialized value.
             </summary>
-            <typeparam name="T">The JSON-serializable type used for the operation input.</typeparam>
-            <returns>The operation input, or default(<typeparamref name="T"/>) if none.</returns>
+            <typeparam name="TInput">The JSON-serializable type used for the operation input.</typeparam>
+            <returns>The operation input, or default(<typeparamref name="TInput"/>) if none.</returns>
             <remarks>
             An operation invocation on an entity includes an operation name, which states what
             operation to perform, and optionally an operation input.

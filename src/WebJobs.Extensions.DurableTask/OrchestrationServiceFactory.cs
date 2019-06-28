@@ -160,6 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     TrackingStoreStorageAccountDetails = GetStorageAccountDetailsOrNull(
                         this.connectionStringResolver,
                         azureStorageOptions.TrackingStoreConnectionStringName),
+                    FetchLargeMessageDataEnabled = azureStorageOptions.FetchLargeMessagesAutomatically,
                 };
 
                 if (!string.IsNullOrEmpty(azureStorageOptions.TrackingStoreNamePrefix))

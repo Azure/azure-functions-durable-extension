@@ -78,6 +78,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public string TrackingStoreNamePrefix { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the extension will automatically fetch large messages in orchestration status
+        /// queries. If set to false, the extension will return large messages as a blob url.
+        /// </summary>
+        /// <value>A boolean indicating whether will automatically fetch large messages .</value>
+        public bool FetchLargeMessagesAutomatically { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the maximum queue polling interval.
         /// </summary>
         /// <value>Maximum interval for polling control and work-item queues.</value>
@@ -131,6 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             builder.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
             builder.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
             builder.Append(nameof(this.TrackingStoreConnectionStringName)).Append(": ").Append(this.TrackingStoreConnectionStringName).Append(", ");
+            builder.Append(nameof(this.FetchLargeMessagesAutomatically)).Append(": ").Append(this.FetchLargeMessagesAutomatically).Append(", ");
             if (!string.IsNullOrEmpty(this.TrackingStoreConnectionStringName))
             {
                 builder.Append(nameof(this.TrackingStoreNamePrefix)).Append(": ").Append(this.TrackingStoreNamePrefix).Append(", ");
