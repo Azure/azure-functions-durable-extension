@@ -33,7 +33,8 @@ steps:
 
 - task: VSTest@2
   inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: '**\*tests.v2.dll'
+    searchFolder: '$(System.DefaultWorkingDirectory)'
   env:
     AzureWebJobsStorage: $(durablecitest)
