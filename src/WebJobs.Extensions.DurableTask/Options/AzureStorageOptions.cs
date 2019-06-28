@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// Gets or sets whether the extension will automatically fetch large messages in orchestration status
         /// queries. If set to false, the extension will return large messages as a blob url.
         /// </summary>
-        /// <value>A boolean indicating wheter will automatically fetch large messages .</value>
+        /// <value>A boolean indicating whether will automatically fetch large messages .</value>
         public bool FetchLargeMessagesAutomatically { get; set; } = true;
 
         /// <summary>
