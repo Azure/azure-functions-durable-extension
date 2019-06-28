@@ -36,6 +36,7 @@ steps:
     testSelector: 'testAssemblies'
     testAssemblyVer2: '**/*tests.v2.dll'
     testFiltercriteria: 'TestCategory!=DisabledInCI'
+    runInParallel: True
     distributionBatchType: basedOnExecutionTime
     diagnosticsEnabled: True
     rerunFailedTests: true
