@@ -13,7 +13,6 @@ variables:
 
 jobs:
 - job: ParallelTesting
-  dependsOn: Build
 
   pool:
     vmImage: 'windows-latest'
