@@ -36,7 +36,6 @@ steps:
     testSelector: 'testAssemblies'
     testAssemblyVer2: '**/*tests.v2.dll'
     testFiltercriteria: 'TestCategory!=DisabledInCI'
-    runInParallel: True
     distributionBatchType: basedOnExecutionTime
     diagnosticsEnabled: True
     rerunFailedTests: true
@@ -44,3 +43,7 @@ steps:
     rerunMaxAttempts: 2
   env:
     AzureWebJobsStorage: $(durablecitest)
+    jobs:
+    - job: ParallelTesting
+    strategy:
+      parallel: 10
