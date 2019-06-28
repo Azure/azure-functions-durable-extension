@@ -35,11 +35,8 @@ steps:
   inputs:
     testSelector: 'testAssemblies'
     testAssemblyVer2: '**/*tests.v2.dll'
-    searchFolder: '$(System.DefaultWorkingDirectory)'
     testFiltercriteria: 'TestCategory!=DisabledInCI'
     distributionBatchType: basedOnExecutionTime
-    platform: '$(BuildPlatform)'
-    configuration: '$(BuildConfiguration)'
     diagnosticsEnabled: True
     rerunFailedTests: true
     rerunFailedThreshold: 20
