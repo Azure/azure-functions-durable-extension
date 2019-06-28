@@ -1971,12 +1971,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task BigReturnValue_Orchestrator(bool extendedSessions)
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public async Task BigReturnValue_Orchestrator(bool extendedSessions, bool autoFetch)
         {
             string taskHub = nameof(this.BigReturnValue_Orchestrator);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions, autoFetchLargeMessages: autoFetch))
             {
                 await host.StartAsync();
 
@@ -1990,7 +1992,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                if (!autoFetch)
+                {
+                    await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                }
+                else
+                {
+                    Assert.Equal(stringLength, ((string)status.Output).Length);
+                }
 
                 await host.StopAsync();
             }
@@ -1999,12 +2008,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task BigReturnValue_Activity(bool extendedSessions)
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public async Task BigReturnValue_Activity(bool extendedSessions, bool autoFetch)
         {
             string taskHub = nameof(this.BigReturnValue_Activity);
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions))
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, extendedSessions, autoFetchLargeMessages: autoFetch))
             {
                 await host.StartAsync();
 
@@ -2023,7 +2034,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                if (!autoFetch)
+                {
+                    await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+                }
+                else
+                {
+                    Assert.Equal(stringLength, ((string)status.Output).Length);
+                }
 
                 await host.StopAsync();
             }
@@ -2401,7 +2419,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,
-                extendedSessions))
+                extendedSessions,
+                autoFetchLargeMessages: false))
             {
                 await host.StartAsync();
 

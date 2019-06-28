@@ -474,6 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 MaxQueuePollingInterval = this.Options.MaxQueuePollingInterval,
                 TrackingStoreStorageAccountDetails = this.GetStorageAccountDetailsOrNull(
                     this.Options.TrackingStoreConnectionStringName),
+                FetchLargeMessageDataEnabled = this.Options.FetchLargeMessagesAutomatically,
             };
 
             if (!string.IsNullOrEmpty(this.Options.TrackingStoreNamePrefix))
