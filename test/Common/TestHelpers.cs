@@ -33,7 +33,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
-            string[] eventGridPublishEventTypes = null)
+            string[] eventGridPublishEventTypes = null,
+            bool autoFetchLargeMessages = true)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 NotificationUrl = notificationUrl,
                 NotificationHandler = eventGridNotificationHandler,
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
+                FetchLargeMessagesAutomatically = autoFetchLargeMessages,
             };
 
             if (eventGridRetryCount.HasValue)

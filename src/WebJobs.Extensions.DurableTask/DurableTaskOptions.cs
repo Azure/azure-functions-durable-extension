@@ -124,6 +124,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string TrackingStoreNamePrefix { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the extension will automatically fetch large messages in orchestration status
+        /// queries. If set to false, the extension will return large messages as a blob url.
+        /// </summary>
+        /// <value>A boolean indicating whether will automatically fetch large messages .</value>
+        public bool FetchLargeMessagesAutomatically { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the base URL for the HTTP APIs managed by this extension.
         /// </summary>
         /// <remarks>
@@ -264,6 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(nameof(this.ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
             sb.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
             sb.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
+            sb.Append(nameof(this.FetchLargeMessagesAutomatically)).Append(": ").Append(this.FetchLargeMessagesAutomatically).Append(", ");
 
             sb.Append(nameof(this.ExtendedSessionsEnabled)).Append(": ").Append(this.ExtendedSessionsEnabled).Append(", ");
             if (this.ExtendedSessionsEnabled)
