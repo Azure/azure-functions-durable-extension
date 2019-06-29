@@ -2415,7 +2415,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task Purge_All_History_By_TimePeriod(bool extendedSessions)
         {
-            string testName = nameof(this.Purge_Partially_History_By_TimePeriod);
+            string testName = nameof(this.Purge_All_History_By_TimePeriod);
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,

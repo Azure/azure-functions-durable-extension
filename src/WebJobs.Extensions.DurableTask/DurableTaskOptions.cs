@@ -124,10 +124,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string TrackingStoreNamePrefix { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the extension will automatically fetch large messages in orchestration status
-        /// queries. If set to false, the extension will return large messages as a blob url.
+        /// Gets or sets whether the extension will automatically download large inputs and
+        /// outputs in orchestration status queries. If set to false, the extension will instead
+        /// return a blob storage url pointing to the GZip compressed input or output data.
         /// </summary>
-        /// <value>A boolean indicating whether will automatically fetch large messages .</value>
+        /// <value>
+        /// A boolean indicating whether will automatically download large orchestration
+        /// inputs and outputs when fetching orchestration status.
+        /// </value>
         public bool FetchLargeMessagesAutomatically { get; set; } = true;
 
         /// <summary>
