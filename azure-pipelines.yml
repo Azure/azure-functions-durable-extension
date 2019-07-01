@@ -8,8 +8,8 @@ trigger: none
 pool:
   vmImage: 'windows-latest'
 
-strategy:
-    parallel: 10
+#strategy:
+#    parallel: 10
 
 variables:
   solution: 'WebJobs.Extensions.DurableTask.sln'
@@ -33,18 +33,17 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
-- task: VSTest@2
-  inputs:
-    testSelector: 'testAssemblies'
-    testAssemblyVer2: '**/*tests.v2.dll'
-    testFiltercriteria: 'TestCategory!=DisabledInCI'
-    distributionBatchType: basedOnExecutionTime
-    diagnosticsEnabled: True
-    rerunFailedTests: true
-    rerunFailedThreshold: 20
-    rerunMaxAttempts: 2
-  env:
-    AzureWebJobsStorage: $(durablecitest)
+#- task: VSTest@2
+#  inputs:
+#    testSelector: 'testAssemblies'
+#    testAssemblyVer2: '**/*tests.v2.dll'
+#    testFiltercriteria: 'TestCategory!=DisabledInCI'
+#    diagnosticsEnabled: True
+#    rerunFailedTests: true
+#    rerunFailedThreshold: 20
+#    rerunMaxAttempts: 2
+#  env:
+#    AzureWebJobsStorage: $(durablecitest)
 
-- publish: /src/WebJobs.Extensions.DurableTask/bin/Debug/Microsoft.Azure.WebJobs.Extensions.DurableTask.2.0.0-alpha.nupkg
-  artifact: Microsoft.Azure.WebJobs.Extensions.DurableTask.2.0.0-alpha.nupkg
+- publish: /src/WebJobs.Extensions.DurableTask/bin
+  artifact: bin
