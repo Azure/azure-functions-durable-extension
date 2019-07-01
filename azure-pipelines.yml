@@ -5,46 +5,54 @@
       
 trigger: none
 
-pool:
-  vmImage: 'windows-latest'
+jobs:
+  - job: BuildAndTest
 
-strategy:
-    parallel: 10
+    pool: 
+      vmImage: 'windows-latest'
 
-variables:
-  solution: 'WebJobs.Extensions.DurableTask.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+    strategy:
+      parallel: 10
 
-steps:
-- task: NuGetToolInstaller@0
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
 
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'restore'
-    projects: '**/**/*.csproj'
-    feedsToUse: 'config'
-    nugetConfigPath: '.nuget/nuget.config'
+    steps:
+    - task: NuGetToolInstaller@0
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
 
-- task: VSTest@2
-  inputs:
-    testSelector: 'testAssemblies'
-    testAssemblyVer2: '**/*tests.v2.dll'
-    testFiltercriteria: 'TestCategory!=DisabledInCI'
-    distributionBatchType: basedOnTestCases
-    diagnosticsEnabled: True
-    rerunFailedTests: true
-    rerunFailedThreshold: 20
-    rerunMaxAttempts: 2
-  env:
-    AzureWebJobsStorage: $(durablecitest)
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
 
-- publish: 'src/WebJobs.Extensions.DurableTask/bin'
-  artifact: bin
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: '**/*tests.v2.dll'
+        testFiltercriteria: 'TestCategory!=DisabledInCI'
+        distributionBatchType: basedOnTestCases
+        diagnosticsEnabled: True
+        rerunFailedTests: true
+        rerunFailedThreshold: 20
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(durablecitest)
+
+  - job: PublishPipelineArtifact
+    dependsOn: BuildAndTest
+
+    steps:
+
+    - publish: 'src/WebJobs.Extensions.DurableTask/bin'
+      artifact: bin
