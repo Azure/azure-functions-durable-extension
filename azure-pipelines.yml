@@ -8,9 +8,6 @@ trigger: none
 pool:
   vmImage: 'windows-latest'
 
-strategy:
-    parallel: 10
-
 variables:
   solution: 'WebJobs.Extensions.DurableTask.sln'
   buildPlatform: 'Any CPU'
@@ -45,3 +42,6 @@ steps:
     rerunMaxAttempts: 2
   env:
     AzureWebJobsStorage: $(durablecitest)
+
+- publish: /src/WebJobs.Extensions.DurableTask/bin/Debug/Microsoft.Azure.WebJobs.Extensions.DurableTask.2.0.0-alpha.nupkg
+  artifact: Microsoft.Azure.WebJobs.Extensions.DurableTask.2.0.0-alpha.nupkg
