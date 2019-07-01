@@ -49,10 +49,34 @@ jobs:
       env:
         AzureWebJobsStorage: $(durablecitest)
 
+
   - job: PublishPipelineArtifact
     dependsOn: BuildAndTest
 
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+
     steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
 
     - publish: 'src/WebJobs.Extensions.DurableTask/bin'
       artifact: bin
