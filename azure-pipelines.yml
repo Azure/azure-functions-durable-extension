@@ -38,7 +38,7 @@ steps:
     testSelector: 'testAssemblies'
     testAssemblyVer2: '**/*tests.v2.dll'
     testFiltercriteria: 'TestCategory!=DisabledInCI'
-    distributionBatchType: basedOnTestCases
+    distributionBatchType: basedOnExecutionTime
     diagnosticsEnabled: True
     rerunFailedTests: true
     rerunFailedThreshold: 20
