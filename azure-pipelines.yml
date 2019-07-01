@@ -45,5 +45,5 @@ steps:
 #  env:
 #    AzureWebJobsStorage: $(durablecitest)
 
-- publish: /src/WebJobs.Extensions.DurableTask/bin
+- publish: 'src/WebJobs.Extensions.DurableTask/bin'
   artifact: bin
