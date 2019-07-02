@@ -699,7 +699,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
 
-            if (request.Content == null)
+            if (request.Content == null || request.Content.Headers.ContentLength == 0)
             {
                 await client.SignalEntityAsync(entityId, operationName);
                 return request.CreateResponse(HttpStatusCode.Accepted);
