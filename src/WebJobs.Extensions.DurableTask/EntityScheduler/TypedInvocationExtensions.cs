@@ -35,15 +35,20 @@ namespace Microsoft.Azure.WebJobs
         {
             // find the method corresponding to the operation
             // (may throw an AmbiguousMatchException)
-            var method = typeof(T).GetMethod(
+            MethodInfo method = typeof(T).GetMethod(
                 context.OperationName,
                 System.Reflection.BindingFlags.IgnoreCase
                 | System.Reflection.BindingFlags.Public
                 | System.Reflection.BindingFlags.NonPublic
                 | System.Reflection.BindingFlags.Instance);
 
+            if (method == null)
+            {
+                throw new InvalidOperationException($"No operation named '{context.OperationName}' was found.");
+            }
+
             // check that the number of arguments is zero or one
-            var parameters = method.GetParameters();
+            ParameterInfo[] parameters = method.GetParameters();
             if (parameters.Length > 1)
             {
                 throw new InvalidOperationException("Only a single argument can be used for operation input.");
@@ -53,8 +58,8 @@ namespace Microsoft.Azure.WebJobs
             if (parameters.Length == 1)
             {
                 // determine the expected type of the operation input and deserialize
-                var inputType = method.GetParameters()[0].ParameterType;
-                var input = context.GetInput(inputType);
+                Type inputType = method.GetParameters()[0].ParameterType;
+                object input = context.GetInput(inputType);
                 args = new object[1] { input };
             }
             else
@@ -62,7 +67,7 @@ namespace Microsoft.Azure.WebJobs
                 args = Array.Empty<object>();
             }
 
-            var state = context.GetState(() => new T());
+            T state = context.GetState(() => new T());
 
             object result = method.Invoke(state, args);
 
