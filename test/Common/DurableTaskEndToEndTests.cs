@@ -2992,7 +2992,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Purge_All_History_By_TimePeriod(bool extendedSessions, string storageProvider)
         {
-            string testName = nameof(this.Purge_Partially_History_By_TimePeriod);
+            string testName = nameof(this.Purge_All_History_By_TimePeriod);
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,
