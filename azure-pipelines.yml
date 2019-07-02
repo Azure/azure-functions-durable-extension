@@ -32,19 +32,19 @@ jobs:
     - task: VSBuild@1
       inputs:
         solution: '$(solution)'
-        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true'
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
     - task: VSTest@2
       inputs:
         testSelector: 'testAssemblies'
-        testAssemblyVer2: '**/*tests.v2.dll'
+        testAssemblyVer2: 'test/**'
         testFiltercriteria: 'TestCategory!=DisabledInCI'
         distributionBatchType: basedOnTestCases
         diagnosticsEnabled: True
         rerunFailedTests: true
-        rerunFailedThreshold: 20
+        rerunFailedThreshold: 10
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(durablecitest)
@@ -78,5 +78,5 @@ jobs:
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
-    - publish: 'src/WebJobs.Extensions.DurableTask/bin'
-      artifact: bin
+    - publish: '**/*-alpha.nupkg'
+      artifact: NuGet
