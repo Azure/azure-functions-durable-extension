@@ -1,23 +1,16 @@
-# ASP.NET Core (.NET Framework)
-# Build and test ASP.NET Core projects targeting the full .NET Framework.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-      
-trigger: none
+trigger:
+- v2
 
 jobs:
-  - job: BuildAndTest
 
+  - job: FunctionsV1Tests
     pool: 
       vmImage: 'windows-latest'
-
-    strategy:
-      parallel: 10
 
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'
+      buildConfiguration: 'Debug'
 
     steps:
     - task: NuGetToolInstaller@0
@@ -32,26 +25,69 @@ jobs:
     - task: VSBuild@1
       inputs:
         solution: '$(solution)'
-        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true'
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
     - task: VSTest@2
       inputs:
         testSelector: 'testAssemblies'
-        testAssemblyVer2: 'test/**'
-        testFiltercriteria: 'TestCategory!=DisabledInCI'
-        distributionBatchType: basedOnTestCases
+        testAssemblyVer2: |
+          **/*tests.v1.dll
+        testFiltercriteria: 'Category=FunctionsV1_BVT'
         diagnosticsEnabled: True
         rerunFailedTests: true
         rerunFailedThreshold: 10
         rerunMaxAttempts: 2
       env:
-        AzureWebJobsStorage: $(durablecitest)
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
 
+  - job: FunctionsV2Tests
+    pool: 
+      vmImage: 'windows-latest'
 
+    strategy:
+      parallel: 9
+
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Debug'
+
+    steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **/*tests.v2.dll
+        testFiltercriteria:
+        distributionBatchType: basedOnExecutionTime
+        diagnosticsEnabled: True
+        rerunFailedTests: true
+        rerunFailedThreshold: 10
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
+
+    
   - job: PublishPipelineArtifact
-    dependsOn: BuildAndTest
+    dependsOn:
+      - FunctionsV1Tests
+      - FunctionsV2Tests
 
     pool: 
       vmImage: 'windows-latest'
@@ -74,9 +110,8 @@ jobs:
     - task: VSBuild@1
       inputs:
         solution: '$(solution)'
-        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
-    - publish: '**/*-alpha.nupkg'
-      artifact: NuGet
+    - publish: 'src/WebJobs.Extensions.DurableTask/bin'
+      artifact: bin
