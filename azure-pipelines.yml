@@ -34,7 +34,7 @@ jobs:
         testAssemblyVer2: |
           **/*tests.v1.dll
         testFiltercriteria: 'Category=FunctionsV1_BVT'
-        diagnosticsEnabled: True
+        diagnosticsEnabled: true
         rerunFailedTests: true
         rerunFailedThreshold: 10
         rerunMaxAttempts: 2
@@ -75,8 +75,8 @@ jobs:
         testAssemblyVer2: |
           **/*tests.v2.dll
         testFiltercriteria:
-        distributionBatchType: basedOnExecutionTime
-        diagnosticsEnabled: True
+        distributionBatchType: basedOnTestCases
+        diagnosticsEnabled: true
         rerunFailedTests: true
         rerunFailedThreshold: 10
         rerunMaxAttempts: 2
