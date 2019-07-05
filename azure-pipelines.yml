@@ -46,7 +46,7 @@ jobs:
       vmImage: 'windows-latest'
 
     strategy:
-      parallel: 8
+      parallel: 10
       
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
