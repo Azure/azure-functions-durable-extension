@@ -45,8 +45,44 @@ jobs:
     pool: 
       vmImage: 'windows-latest'
 
-    strategy:
-      parallel: 9
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Debug'
+
+    steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **/*tests.v2.dll
+        testFiltercriteria: 'Category=FunctionsV2'
+        distributionBatchType: basedOnExecutionTime
+        diagnosticsEnabled: true
+        rerunFailedTests: true
+        rerunFailedThreshold: 10
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
+
+  - job: FunctionsV2FlakeyTests
+    pool: 
+      vmImage: 'windows-latest'
 
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
@@ -74,7 +110,7 @@ jobs:
         testSelector: 'testAssemblies'
         testAssemblyVer2: |
           **/*tests.v2.dll
-        testFiltercriteria:
+        testFiltercriteria: 'Category=FunctionsV2_Flakey'
         distributionBatchType: basedOnExecutionTime
         diagnosticsEnabled: true
         rerunFailedTests: true
