@@ -33,9 +33,9 @@ jobs:
         configuration: '$(buildConfiguration)'
 
     - task: EsrpCodeSigning@1
-    displayName: 'ESRP CodeSigning: Authenticode'
-    inputs:
-      ConnectedServiceName: 'ESRP Service'
+      displayName: 'ESRP CodeSigning: Authenticode'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
         FolderPath: '**/$(BuildConfiguration)\Release'
         Pattern: '*DurableTask.dll'
         signConfigType: 'inlineSignParams'
