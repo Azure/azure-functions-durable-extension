@@ -36,8 +36,11 @@ jobs:
     displayName: 'ESRP CodeSigning: Authenticode'
     inputs:
       ConnectedServiceName: 'ESRP Service'
-      FolderPath: 'src\myapp\$(BuildConfiguration)\Release'
+      FolderPath: '''**/$(BuildConfiguration)\Release'''
       Pattern: '*DurableTask.dll'
+      SessionTimeout: '60'
+      MaxConcurrency: '50'
+      MaxRetryAttempts: '5'
       signConfigType: inlineSignParams
       inlineOperation: |
       [    
@@ -62,13 +65,12 @@ jobs:
            "ToolVersion": "1.0"
          }
       ]
-      condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
 
     - task: EsrpCodeSigning@1
     displayName: 'ESRP CodeSigning: Nupkg'
     inputs:
       ConnectedServiceName: 'ESRP Service'
-      FolderPath: 'src\myapp\$(BuildConfiguration)\Release'
+      FolderPath: '**/$(BuildConfiguration)\Release'
       Pattern: '*.nupkg'
       signConfigType: inlineSignParams
       inlineOperation: |
