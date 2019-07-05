@@ -36,7 +36,7 @@ jobs:
     displayName: 'ESRP CodeSigning: Authenticode'
     inputs:
       ConnectedServiceName: 'ESRP Service'
-      FolderPath: '''**/$(BuildConfiguration)\Release'''
+      FolderPath: '**/$(BuildConfiguration)\Release'
       Pattern: '*DurableTask.dll'
       SessionTimeout: '60'
       MaxConcurrency: '50'
@@ -44,7 +44,7 @@ jobs:
       signConfigType: inlineSignParams
       inlineOperation: |
       [    
-         {
+         :{
            "KeyCode": "CP-230012",
            "OperationCode": "SigntoolSign",
            "Parameters": {
