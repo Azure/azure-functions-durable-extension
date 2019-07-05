@@ -66,31 +66,34 @@ jobs:
         MaxConcurrency: '50'
         MaxRetryAttempts: '5'
 
+  
     - task: EsrpCodeSigning@1
-    displayName: 'ESRP CodeSigning: Nupkg'
-    inputs:
-      ConnectedServiceName: 'ESRP Service'
-      FolderPath: '**/$(BuildConfiguration)\Release'
-      Pattern: '*.nupkg'
-      signConfigType: inlineSignParams
-      inlineOperation: |
-      [
-         {
-           "KeyCode": "CP-401405",
-           "OperationCode": "NuGetSign",
-           "Parameters": {},
-           "ToolName": "sign",
-           "ToolVersion": "1.0"
-         },
-         {
-           "KeyCode": "CP-401405",
-           "OperationCode": "NuGetVerify",
-           "Parameters": {},
-           "ToolName": "sign",
-           "ToolVersion": "1.0"
-         }
-      ]
-      condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
-
+      displayName: 'ESRP CodeSigning: Nupkg'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: '**/$(BuildConfiguration)\Release'
+        Pattern: '*.nupkg'
+        signConfigType: 'inlineSignParams'
+        inlineOperation: |
+          [    
+                   {
+                     "KeyCode": "CP-230012",
+                     "OperationCode": "NuGetSign",
+                     "Parameters": {},
+                     "ToolName": "sign",
+                     "ToolVersion": "1.0"
+                   },
+                   {
+                     "KeyCode": "CP-230012",
+                     "OperationCode": "NuGetVerify",
+                     "Parameters": {},
+                     "ToolName": "sign",
+                     "ToolVersion": "1.0"
+                   }
+                ]
+        SessionTimeout: '60'
+        MaxConcurrency: '50'
+        MaxRetryAttempts: '5'
+        
     - publish: 'src/WebJobs.Extensions.DurableTask/bin'
       artifact: bin
