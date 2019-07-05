@@ -75,7 +75,7 @@ jobs:
         testAssemblyVer2: |
           **/*tests.v2.dll
         testFiltercriteria:
-        distributionBatchType: basedOnTestCases
+        distributionBatchType: basedOnExecutionTime
         diagnosticsEnabled: true
         rerunFailedTests: true
         rerunFailedThreshold: 10
