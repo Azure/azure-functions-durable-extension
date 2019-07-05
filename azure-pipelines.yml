@@ -4,9 +4,6 @@ trigger:
 jobs:
 
   - job: PublishPipelineArtifact
-    dependsOn:
-      - FunctionsV1Tests
-      - FunctionsV2Tests
 
     pool: 
       vmImage: 'windows-latest'
@@ -94,6 +91,6 @@ jobs:
         SessionTimeout: '60'
         MaxConcurrency: '50'
         MaxRetryAttempts: '5'
-        
+
     - publish: 'src/WebJobs.Extensions.DurableTask/bin'
       artifact: bin
