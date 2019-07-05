@@ -32,15 +32,15 @@ jobs:
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
-      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-    displayName: 'ESRP CodeSigning: Authenticode'
-    inputs:
-      ConnectedServiceName: 'ESRP Service'
-      FolderPath: 'src/Extensions/bin/$(BuildConfiguration)/'
-      Pattern: '*DurableTask.dll'
-      signConfigType: inlineSignParams
-      inlineOperation: |
-      [    
+    - task: EsrpCodeSigning@1
+      displayName: 'ESRP CodeSigning: Authenticode'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: 'src\myapp\$(BuildConfiguration)\Release'
+        Pattern: '*DurableTask.dll'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+        [    
          {
            "KeyCode": "CP-230012",
            "OperationCode": "SigntoolSign",
@@ -61,18 +61,18 @@ jobs:
            "ToolName": "sign",
            "ToolVersion": "1.0"
          }
-      ]
-    condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
+        ]
+      condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
 
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-    displayName: 'ESRP CodeSigning: Nupkg'
-    inputs:
-      ConnectedServiceName: 'ESRP Service'
-      FolderPath: '$(Build.BinariesDirectory)'
-      Pattern: '*.nupkg'
-      signConfigType: inlineSignParams
-      inlineOperation: |
-      [
+    - task: EsrpCodeSigning@1
+      displayName: 'ESRP CodeSigning: Nupkg'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: 'src\myapp\$(BuildConfiguration)\Release'
+        Pattern: '*.nupkg'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+        [
          {
            "KeyCode": "CP-401405",
            "OperationCode": "NuGetSign",
@@ -87,8 +87,8 @@ jobs:
            "ToolName": "sign",
            "ToolVersion": "1.0"
          }
-      ]
-    condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
+        ]
+      condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
 
     - publish: 'src/WebJobs.Extensions.DurableTask/bin'
       artifact: bin
