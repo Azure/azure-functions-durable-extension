@@ -45,6 +45,9 @@ jobs:
     pool: 
       vmImage: 'windows-latest'
 
+    strategy:
+      parallel: 8
+      
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
