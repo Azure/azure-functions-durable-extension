@@ -1,128 +1,8 @@
 trigger:
-- v2
+- none
 
 jobs:
 
-  - job: FunctionsV1Tests
-    pool: 
-      vmImage: 'windows-latest'
-
-    variables:
-      solution: 'WebJobs.Extensions.DurableTask.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Debug'
-
-    steps:
-    - task: NuGetToolInstaller@0
-
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'restore'
-        projects: '**/**/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
-
-    - task: VSBuild@1
-      inputs:
-        solution: '$(solution)'
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
-
-    - task: VSTest@2
-      inputs:
-        testSelector: 'testAssemblies'
-        testAssemblyVer2: |
-          **/*tests.v1.dll
-        testFiltercriteria: 'Category=FunctionsV1_BVT'
-        diagnosticsEnabled: true
-        rerunFailedTests: true
-        rerunFailedThreshold: 10
-        rerunMaxAttempts: 2
-      env:
-        AzureWebJobsStorage: $(AzureWebJobsStorage)
-
-  - job: FunctionsV2Tests
-    pool: 
-      vmImage: 'windows-latest'
-
-    strategy:
-      parallel: 8
-      
-    variables:
-      solution: 'WebJobs.Extensions.DurableTask.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Debug'
-
-    steps:
-    - task: NuGetToolInstaller@0
-
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'restore'
-        projects: '**/**/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
-
-    - task: VSBuild@1
-      inputs:
-        solution: '$(solution)'
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
-
-    - task: VSTest@2
-      inputs:
-        testSelector: 'testAssemblies'
-        testAssemblyVer2: |
-          **/*tests.v2.dll
-        testFiltercriteria: 'Category=FunctionsV2'
-        distributionBatchType: basedOnExecutionTime
-        diagnosticsEnabled: true
-        rerunFailedTests: true
-        rerunFailedThreshold: 10
-        rerunMaxAttempts: 2
-      env:
-        AzureWebJobsStorage: $(AzureWebJobsStorage)
-
-  - job: FunctionsV2FlakeyTests
-    pool: 
-      vmImage: 'windows-latest'
-
-    variables:
-      solution: 'WebJobs.Extensions.DurableTask.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Debug'
-
-    steps:
-    - task: NuGetToolInstaller@0
-
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'restore'
-        projects: '**/**/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
-
-    - task: VSBuild@1
-      inputs:
-        solution: '$(solution)'
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
-
-    - task: VSTest@2
-      inputs:
-        testSelector: 'testAssemblies'
-        testAssemblyVer2: |
-          **/*tests.v2.dll
-        testFiltercriteria: 'Category=FunctionsV2_Flakey'
-        distributionBatchType: basedOnExecutionTime
-        diagnosticsEnabled: true
-        rerunFailedTests: true
-        rerunFailedThreshold: 10
-        rerunMaxAttempts: 2
-      env:
-        AzureWebJobsStorage: $(AzureWebJobsStorage)
-
-    
   - job: PublishPipelineArtifact
     dependsOn:
       - FunctionsV1Tests
@@ -151,6 +31,64 @@ jobs:
         solution: '$(solution)'
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
+
+      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+    displayName: 'ESRP CodeSigning: Authenticode'
+    inputs:
+      ConnectedServiceName: 'ESRP Service'
+      FolderPath: 'src/Extensions/bin/$(BuildConfiguration)/'
+      Pattern: '*DurableTask.dll'
+      signConfigType: inlineSignParams
+      inlineOperation: |
+      [    
+         {
+           "KeyCode": "CP-230012",
+           "OperationCode": "SigntoolSign",
+           "Parameters": {
+             "OpusName": "Microsoft",
+             "OpusInfo": "http://www.microsoft.com",
+             "FileDigest": "/fd \"SHA256\"",
+             "PageHash": "/NPH",
+             "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+           },
+           "ToolName": "sign",
+           "ToolVersion": "1.0"
+         },
+         {
+           "KeyCode": "CP-230012",
+           "OperationCode": "SigntoolVerify",
+           "Parameters": {},
+           "ToolName": "sign",
+           "ToolVersion": "1.0"
+         }
+      ]
+    condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
+
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+    displayName: 'ESRP CodeSigning: Nupkg'
+    inputs:
+      ConnectedServiceName: 'ESRP Service'
+      FolderPath: '$(Build.BinariesDirectory)'
+      Pattern: '*.nupkg'
+      signConfigType: inlineSignParams
+      inlineOperation: |
+      [
+         {
+           "KeyCode": "CP-401405",
+           "OperationCode": "NuGetSign",
+           "Parameters": {},
+           "ToolName": "sign",
+           "ToolVersion": "1.0"
+         },
+         {
+           "KeyCode": "CP-401405",
+           "OperationCode": "NuGetVerify",
+           "Parameters": {},
+           "ToolName": "sign",
+           "ToolVersion": "1.0"
+         }
+      ]
+    condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
 
     - publish: 'src/WebJobs.Extensions.DurableTask/bin'
       artifact: bin
