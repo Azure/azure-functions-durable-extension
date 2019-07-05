@@ -44,7 +44,7 @@ jobs:
       signConfigType: inlineSignParams
       inlineOperation: |
       [    
-         :{
+         {
            "KeyCode": "CP-230012",
            "OperationCode": "SigntoolSign",
            "Parameters": {
