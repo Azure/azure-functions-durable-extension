@@ -33,7 +33,7 @@ jobs:
       displayName: 'ESRP CodeSigning: Authenticode'
       inputs:
         ConnectedServiceName: 'ESRP Service'
-        FolderPath: '**/$(BuildConfiguration)\Release'
+        FolderPath: '**/$(BuildConfiguration)'
         Pattern: '*DurableTask.dll'
         signConfigType: 'inlineSignParams'
         inlineOperation: |
@@ -68,7 +68,7 @@ jobs:
       displayName: 'ESRP CodeSigning: Nupkg'
       inputs:
         ConnectedServiceName: 'ESRP Service'
-        FolderPath: '**/$(BuildConfiguration)\Release'
+        FolderPath: '**/$(BuildConfiguration)'
         Pattern: '*.nupkg'
         signConfigType: 'inlineSignParams'
         inlineOperation: |
