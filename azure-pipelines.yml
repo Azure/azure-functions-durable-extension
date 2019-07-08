@@ -142,7 +142,6 @@ jobs:
                      "ToolVersion": "1.0"
                    }
                 ]
-          condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
         SessionTimeout: '60'
         MaxConcurrency: '50'
         MaxRetryAttempts: '5'
@@ -172,7 +171,6 @@ jobs:
                      "ToolVersion": "1.0"
                    }
                 ]
-          condition: and(succeeded(), startsWith(variables['SignArtifacts'], 'true'))
         SessionTimeout: '60'
         MaxConcurrency: '50'
         MaxRetryAttempts: '5'
