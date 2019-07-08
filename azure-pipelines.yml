@@ -83,7 +83,7 @@ jobs:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
 
 
-  - job: PublishPipelineArtifact
+  - job: SignAndPublishNUPKG
     dependsOn:
       - FunctionsV1Tests
       - FunctionsV2Tests
