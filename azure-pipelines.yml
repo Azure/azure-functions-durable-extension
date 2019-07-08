@@ -68,7 +68,7 @@ jobs:
       displayName: 'ESRP CodeSigning: Nupkg'
       inputs:
         ConnectedServiceName: 'ESRP Service'
-        FolderPath: '**/$(buildConfiguration)'
+        FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/$(buildConfiguration)'
         Pattern: '*.nupkg'
         signConfigType: 'inlineSignParams'
         inlineOperation: |
