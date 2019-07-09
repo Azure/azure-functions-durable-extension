@@ -111,6 +111,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @.");
             }
+            else if (instanceId.Contains("/") || instanceId.Contains("\\") || instanceId.Contains("#") || instanceId.Contains("?") || ContainsControl(instanceId))
+            {
+                throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not contain /, \\, #, ?, or control characters.");
+            }
 
             if (instanceId.Length > MaxInstanceIdLength)
             {
@@ -130,6 +134,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationInstance instance = await createTask;
             return instance.InstanceId;
+        }
+
+        private static bool ContainsControl(string instanceId)
+        {
+            for (int i = 0; i < instanceId.Length; i++)
+            {
+                if (char.IsControl(instanceId, i))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <inheritdoc />
