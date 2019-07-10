@@ -147,6 +147,8 @@ jobs:
         MaxRetryAttempts: '5'
 
   
+
+  
     - task: EsrpCodeSigning@1
       displayName: 'ESRP CodeSigning: Nupkg'
       inputs:
