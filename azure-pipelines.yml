@@ -146,7 +146,12 @@ jobs:
         MaxConcurrency: '50'
         MaxRetryAttempts: '5'
 
-  
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet pack'
+      inputs:
+        command: pack
+        packagesToPack: '**/*.csproj'
+        versioningScheme: 'off'
 
   
     - task: EsrpCodeSigning@1
