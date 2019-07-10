@@ -117,7 +117,7 @@ jobs:
       displayName: 'ESRP CodeSigning: Authenticode'
       inputs:
         ConnectedServiceName: 'ESRP Service'
-        FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/$(buildConfiguration)'
+        FolderPath: 'src'
         Pattern: '*DurableTask.dll'
         signConfigType: 'inlineSignParams'
         inlineOperation: |
