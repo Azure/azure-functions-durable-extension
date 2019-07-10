@@ -100,6 +100,7 @@ jobs:
     - task: NuGetToolInstaller@0
 
     - task: DotNetCoreCLI@2
+      displayName: 'dotnet restore'
       inputs:
         command: 'restore'
         projects: '**/**/*.csproj'
@@ -150,8 +151,10 @@ jobs:
       displayName: 'dotnet pack'
       inputs:
         command: pack
-        packagesToPack: '**/*.csproj'
+        packagesToPack: 'src/**/*.csproj'
         versioningScheme: 'off'
+        configuration: Release
+        nobuild: true
 
   
     - task: EsrpCodeSigning@1
@@ -181,6 +184,8 @@ jobs:
         SessionTimeout: '60'
         MaxConcurrency: '50'
         MaxRetryAttempts: '5'
+
+    
 
     - publish: 'src/WebJobs.Extensions.DurableTask/bin'
       artifact: bin
