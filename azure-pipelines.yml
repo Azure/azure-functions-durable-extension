@@ -103,5 +103,5 @@ jobs:
 
     
 
-    - publish: 'src/WebJobs.Extensions.DurableTask/bin'
-      artifact: bin
+    - publish: 'src/WebJobs.Extensions.DurableTask/bin/$(buildConfiguration)'
+      artifact: $(buildConfiguration)
