@@ -48,6 +48,7 @@ Here you will find comprehensive documentation with examples on all of the featu
 * [Durable timers](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-timers)
 * [External events](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-external-events)
 * [Eternal orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-eternal-orchestrations)
+* [Preview features](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-preview)
 * [Singleton orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-singletons)
 * [Sub-orchestrations](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-sub-orchestrations)
 * [Task hubs](https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-task-hubs)
