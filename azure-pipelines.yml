@@ -33,7 +33,7 @@ jobs:
       displayName: 'ESRP CodeSigning: Authenticode'
       inputs:
         ConnectedServiceName: 'ESRP Service'
-        FolderPath: 'src'
+        FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/$(buildConfiguration)'
         Pattern: '*DurableTask.dll'
         signConfigType: 'inlineSignParams'
         inlineOperation: |
@@ -68,7 +68,7 @@ jobs:
       inputs:
         command: pack
         packagesToPack: 'src/**/*.csproj'
-        packDirectory: 'src'
+        packDirectory: 'azure-functions-durable-extension'
         versioningScheme: 'off'
         configuration: Release
         nobuild: true
@@ -104,5 +104,5 @@ jobs:
 
     
 
-    - publish: 'src'
-      artifact: src
+    - publish: 'azure-functions-durable-extension'
+      artifact: azure-functions-durable-extension
