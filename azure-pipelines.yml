@@ -104,5 +104,5 @@ jobs:
 
     
 
-    - publish: 'azure-functions-durable-extension'
-      artifact: azure-functions-durable-extension
+    - publish: '.'
+      artifact: NuGet
