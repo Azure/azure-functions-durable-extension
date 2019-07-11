@@ -68,7 +68,7 @@ jobs:
       inputs:
         command: pack
         packagesToPack: 'src/**/*.csproj'
-        packDirectory: 'azure-functions-durable-extension'
+        packDirectory: '.'
         versioningScheme: 'off'
         configuration: Release
         nobuild: true
