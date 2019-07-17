@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static JobHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
             ILoggerProvider loggerProvider,
-            INameResolver nameResolver)
+            INameResolver nameResolver,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
@@ -31,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             IOrchestrationServiceFactory orchestrationServiceFactory = new OrchestrationServiceFactory(options, connectionResolver);
 
-            var extension = new DurableTaskExtension(options, loggerFactory, nameResolver, orchestrationServiceFactory);
+            var extension = new DurableTaskExtension(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler);
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.

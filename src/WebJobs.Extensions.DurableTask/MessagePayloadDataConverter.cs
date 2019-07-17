@@ -27,9 +27,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TypeNameHandling = TypeNameHandling.Objects,
         };
 
+        private static readonly JsonSerializerSettings HttpSettings = new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.Objects,
+        };
+
         // Default singleton instances
         public static readonly MessagePayloadDataConverter Default = new MessagePayloadDataConverter(MessageSettings);
         public static readonly MessagePayloadDataConverter ErrorConverter = new MessagePayloadDataConverter(ErrorSettings);
+        public static readonly MessagePayloadDataConverter HttpConverter = new MessagePayloadDataConverter(HttpSettings);
         public static readonly JsonSerializer DefaultSerializer = JsonSerializer.Create(MessageSettings);
 
         public MessagePayloadDataConverter(JsonSerializerSettings settings)
