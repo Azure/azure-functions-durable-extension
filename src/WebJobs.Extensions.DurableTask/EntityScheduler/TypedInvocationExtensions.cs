@@ -30,8 +30,7 @@ namespace Microsoft.Azure.WebJobs
         /// (which is the operation name) and the argument list (which is the operation content, deserialized into
         /// an object array).
         /// </remarks>
-        public static async Task DispatchAsync<T>(this IDurableEntityContext context)
-            where T : new()
+        public static async Task DispatchAsync<T>(this IDurableEntityContext context, params object[] constructorParameters)
         {
             // find the method corresponding to the operation
             // (may throw an AmbiguousMatchException)
@@ -67,7 +66,11 @@ namespace Microsoft.Azure.WebJobs
                 args = Array.Empty<object>();
             }
 
-            T state = context.GetState(() => new T());
+#if NETSTANDARD2_0
+            T state = context.GetState(() => (T)context.FunctionBindingContext.CreateObjectInstance(typeof(T), constructorParameters));
+#else
+            T state = context.GetState(() => (T)Activator.CreateInstance(typeof(T)));
+#endif
 
             object result = method.Invoke(state, args);
 

@@ -141,6 +141,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntities),
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
+#if NETCOREAPP2_0
+                typeof(TestEntityWithDependencyInjectionHelpers),
+#endif
             };
 
             ITypeLocator typeLocator = new ExplicitTypeLocator(types);

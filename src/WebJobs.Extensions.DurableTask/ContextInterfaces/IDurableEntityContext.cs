@@ -2,11 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Microsoft.Azure.WebJobs.Host.Bindings;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -43,6 +39,11 @@ namespace Microsoft.Azure.WebJobs
         /// Whether this entity is freshly constructed, i.e. did not exist prior to this operation being called.
         /// </summary>
         bool IsNewlyConstructed { get; }
+
+        /// <summary>
+        /// Contains function invocation context to assist with dependency injection at Entity construction time.
+        /// </summary>
+        FunctionBindingContext FunctionBindingContext { get; set; }
 
         /// <summary>
         /// Gets the current state of this entity, for reading and/or updating.
