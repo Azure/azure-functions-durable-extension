@@ -32,6 +32,8 @@ namespace Microsoft.Azure.WebJobs
 
         private static Type CreateProxyType(Type interfaceType)
         {
+            ValidateInterface(interfaceType);
+
             var typeName = $"{interfaceType.Name}_{Guid.NewGuid():N}";
 
             var typeBuilder = DynamicModuleBuilder.DefineType(
@@ -45,6 +47,19 @@ namespace Microsoft.Azure.WebJobs
             BuildMethods(typeBuilder, interfaceType);
 
             return typeBuilder.CreateTypeInfo();
+        }
+
+        private static void ValidateInterface(Type interfaceType)
+        {
+            if (interfaceType.GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 0)
+            {
+                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' can not define properties.");
+            }
+
+            if (interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public).Length == 0)
+            {
+                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' has no defined method.");
+            }
         }
 
         private static void BuildConstructor(TypeBuilder typeBuilder)
@@ -83,7 +98,7 @@ namespace Microsoft.Azure.WebJobs
                 // check that the number of arguments is zero or one
                 if (parameters.Length > 1)
                 {
-                    throw new InvalidOperationException("Only a single argument can be used for operation input.");
+                    throw new InvalidOperationException($"Method '{methodInfo.Name}' is only a single argument can be used for operation input.");
                 }
 
                 var returnType = methodInfo.ReturnType;
@@ -91,7 +106,7 @@ namespace Microsoft.Azure.WebJobs
                 // check that return type is void / Task / Task<T>.
                 if (returnType != typeof(void) && !(returnType == typeof(Task) || returnType.BaseType == typeof(Task)))
                 {
-                    throw new InvalidOperationException("Only a return type is void / Task / Task<T>.");
+                    throw new InvalidOperationException($"Method '{methodInfo.Name}' is only a return type is void / Task / Task<T>.");
                 }
 
                 var proxyMethod = typeBuilder.DefineMethod(

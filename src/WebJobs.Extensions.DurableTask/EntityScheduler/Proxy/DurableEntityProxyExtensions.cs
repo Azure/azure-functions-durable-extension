@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Extension methods.
+    /// Defines convenient overloads for creating entity proxy, for all the contexts.
     /// </summary>
     public static class DurableEntityProxyExtensions
     {
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Create Entity Proxy.
+        /// Create an entity proxy.
         /// </summary>
         /// <param name="context">orchestration context.</param>
         /// <param name="entityKey">The target entity key.</param>
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Create Entity Proxy.
+        /// Create an entity proxy.
         /// </summary>
         /// <param name="context">orchestration context.</param>
         /// <param name="entityId">The target entity.</param>
@@ -115,12 +115,12 @@ namespace Microsoft.Azure.WebJobs
 
             if (!implementedTypes.Any())
             {
-                throw new InvalidOperationException($"Cannot found {interfaceType.Name} implemented type.");
+                throw new InvalidOperationException($"Cannot find class that implements {interfaceType.FullName}.");
             }
 
             if (implementedTypes.Length > 1)
             {
-                throw new InvalidOperationException("Entity type is ambiguous.");
+                throw new InvalidOperationException($"Ambiguous derived class with implemented {interfaceType.FullName}.");
             }
 
             return implementedTypes[0];
