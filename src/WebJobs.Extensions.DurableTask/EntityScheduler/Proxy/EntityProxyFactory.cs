@@ -51,6 +51,11 @@ namespace Microsoft.Azure.WebJobs
 
         private static void ValidateInterface(Type interfaceType)
         {
+            if (!interfaceType.IsInterface)
+            {
+                throw new InvalidOperationException($"{interfaceType.Name} is not an interface.");
+            }
+
             if (interfaceType.GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 0)
             {
                 throw new InvalidOperationException($"Interface '{interfaceType.FullName}' can not define properties.");
