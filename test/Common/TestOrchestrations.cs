@@ -659,6 +659,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "ok";
         }
 
+        public static async Task<string> CaseInsensitivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = ctx.GetInput<EntityId>();
+
+            string content = new string('.', 100000);
+            await ctx.CallEntityAsync<int>(entityId, "set", content);
+
+            var result = await ctx.CallEntityAsync<string>(entityId, "get");
+            if (result != content)
+            {
+                return $"fail: wrong entity state";
+            }
+
+            return "ok";
+        }
+
         public static async Task<string> EntityToAndFromBlob([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // get the ids of the two entities used by this test

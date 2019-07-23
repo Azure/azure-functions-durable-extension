@@ -2537,6 +2537,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+
+
         /// <summary>
         /// End-to-end test which validates an entity scenario involving a blob-backed entity that stores text and,
         /// when deactivated, saves its state to storage. The test concurrently runs an orchestration that
@@ -2813,6 +2815,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// Test for EntityId case insensitivity.
+        /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
@@ -2821,17 +2826,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.LargeEntity),
+                nameof(TestOrchestrations.EntityIdCaseInsensitivity),
             };
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_LargeEntity),
+                nameof(this.DurableEntity_EntityIdCaseInsensitivity),
                 extendedSessions))
             {
                 await host.StartAsync();
 
-                var entityId = new EntityId("CASETEST", "CASETEST");
+                var entityKey = Guid.NewGuid().ToString();
+                var entityName = "StringStore2";
+
+                var entityId = new EntityId(entityName.ToUpper(), entityKey.ToUpper());
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
@@ -2839,7 +2847,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 IDurableOrchestrationClient durableOrchestrationClient = client.InnerClient;
 
-                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId("casetest", "casetest"));
+                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLower(), entityKey.ToLower()));
 
                 Assert.True(response.EntityExists);
 
