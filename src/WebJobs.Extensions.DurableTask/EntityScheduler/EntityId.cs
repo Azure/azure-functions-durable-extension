@@ -83,8 +83,8 @@ namespace Microsoft.Azure.WebJobs
         public int CompareTo(object obj)
         {
             var other = (EntityId)obj;
-            return ((IComparable) this.ToString())
-                      .CompareTo( other.ToString());
+            return ((IComparable)this.ToString())
+                      .CompareTo(other.ToString());
         }
     }
 }
