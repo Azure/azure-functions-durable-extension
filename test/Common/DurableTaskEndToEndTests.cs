@@ -2591,6 +2591,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", (string)status?.Output);
 
+
+
                 await host.StopAsync();
             }
         }
@@ -2806,6 +2808,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("200", state["https://bing.com"]);
 
                 Assert.Equal(2, state.Count);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityIdCaseInsensitivity(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LargeEntity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_LargeEntity),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId("CASETEST", "CASETEST");
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                IDurableOrchestrationClient durableOrchestrationClient = client.InnerClient;
+
+                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId("casetest", "casetest"));
+
+                Assert.True(response.EntityExists);
 
                 await host.StopAsync();
             }

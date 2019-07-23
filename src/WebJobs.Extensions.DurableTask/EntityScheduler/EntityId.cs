@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs
 
         internal static string GetSchedulerIdFromEntityId(EntityId entityId)
         {
-            return $"@{entityId.EntityName}@{entityId.EntityKey}";
+            return $"@{entityId.EntityName}@{entityId.EntityKey}".ToLower();
         }
 
         internal static EntityId GetEntityIdFromSchedulerId(string schedulerId)
@@ -70,21 +70,21 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc/>
         public bool Equals(EntityId other)
         {
-            return (this.EntityName, this.EntityKey).Equals((other.EntityName, other.EntityKey));
+            return this.ToString().Equals(other.ToString());
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return (this.EntityName, this.EntityKey).GetHashCode();
+            return this.ToString().GetHashCode();
         }
 
         /// <inheritdoc/>
         public int CompareTo(object obj)
         {
             var other = (EntityId)obj;
-            return ((IComparable)(this.EntityKey, this.EntityName))
-                      .CompareTo((other.EntityKey, other.EntityName));
+            return ((IComparable) this.ToString())
+                      .CompareTo( other.ToString());
         }
     }
 }
