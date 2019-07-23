@@ -659,7 +659,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "ok";
         }
 
-        public static async Task<string> CaseInsensitivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        public static async Task<string> EntityIdCaseInsensitivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var entityId = ctx.GetInput<EntityId>();
 
