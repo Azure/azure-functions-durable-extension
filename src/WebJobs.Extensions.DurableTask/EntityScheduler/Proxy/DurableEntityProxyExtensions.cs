@@ -115,12 +115,12 @@ namespace Microsoft.Azure.WebJobs
 
             if (!implementedTypes.Any())
             {
-                throw new InvalidOperationException($"Cannot find class that implements {interfaceType.FullName}.");
+                throw new InvalidOperationException($"Could not find any types that implement {interfaceType.FullName}.");
             }
 
             if (implementedTypes.Length > 1)
             {
-                throw new InvalidOperationException($"Ambiguous derived class with implemented {interfaceType.FullName}.");
+                throw new InvalidOperationException($"Found multiple types that implement {interfaceType.FullName}. Only one type is allowed to implement an interface used for entity proxy creation.");
             }
 
             return implementedTypes[0];

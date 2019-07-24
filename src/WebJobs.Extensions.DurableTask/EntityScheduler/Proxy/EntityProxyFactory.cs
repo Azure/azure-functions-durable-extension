@@ -53,17 +53,17 @@ namespace Microsoft.Azure.WebJobs
         {
             if (!interfaceType.IsInterface)
             {
-                throw new InvalidOperationException($"{interfaceType.Name} is not an interface.");
+                throw new InvalidOperationException($"{interfaceType.Name} is not an interface. Entity proxy type parameters must be interfaces.");
             }
 
             if (interfaceType.GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 0)
             {
-                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' can not define properties.");
+                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' defines properties. Entity proxy interfaces with properties are not supported.");
             }
 
             if (interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public).Length == 0)
             {
-                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' has no defined method.");
+                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' has no methods defined.");
             }
         }
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs
                 // check that the number of arguments is zero or one
                 if (parameters.Length > 1)
                 {
-                    throw new InvalidOperationException($"Method '{methodInfo.Name}' is only a single argument can be used for operation input.");
+                    throw new InvalidOperationException($"Method '{methodInfo.Name}' defines more than one parameter. Entity proxy interface methods must define at most one argument for operation input.");
                 }
 
                 var returnType = methodInfo.ReturnType;
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.WebJobs
                 // check that return type is void / Task / Task<T>.
                 if (returnType != typeof(void) && !(returnType == typeof(Task) || returnType.BaseType == typeof(Task)))
                 {
-                    throw new InvalidOperationException($"Method '{methodInfo.Name}' is only a return type is void / Task / Task<T>.");
+                    throw new InvalidOperationException($"Method '{methodInfo.Name}' has a return type which is neither void nor a Task. Entity proxy interface methods may only return void, Task, or Task<T>.");
                 }
 
                 var proxyMethod = typeBuilder.DefineMethod(
