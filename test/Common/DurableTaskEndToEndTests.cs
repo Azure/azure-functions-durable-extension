@@ -2818,7 +2818,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableEntity_EntityIdCaseInsensitivity(bool extendedSessions)
+        public async Task DurableEntity_EntityNameCaseInsensitivity(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -2827,7 +2827,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_EntityIdCaseInsensitivity),
+                nameof(this.DurableEntity_EntityNameCaseInsensitivity),
                 extendedSessions))
             {
                 await host.StartAsync();
