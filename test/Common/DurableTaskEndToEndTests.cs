@@ -2537,8 +2537,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
-
         /// <summary>
         /// End-to-end test which validates an entity scenario involving a blob-backed entity that stores text and,
         /// when deactivated, saves its state to storage. The test concurrently runs an orchestration that
