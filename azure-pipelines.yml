@@ -94,7 +94,7 @@ jobs:
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'
+      buildConfiguration: 'Debug'
 
     steps:
     - task: NuGetToolInstaller@0
