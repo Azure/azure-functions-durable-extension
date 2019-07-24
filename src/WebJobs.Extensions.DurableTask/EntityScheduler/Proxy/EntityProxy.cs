@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Entity Proxy class.
+    /// Provides the base implementation for the entity proxy.
     /// </summary>
     public abstract class EntityProxy
     {
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs
         private readonly EntityId entityId;
 
         /// <summary>
-        /// Create entity proxy.
+        /// Create an entity proxy.
         /// </summary>
         /// <param name="context">context.</param>
         /// <param name="entityId">Entity id.</param>
@@ -27,8 +27,8 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Call entity function.
         /// </summary>
-        /// <param name="operationName">Entity operation name.</param>
-        /// <param name="operationInput">Entity input value.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
         protected internal Task CallAsync(string operationName, object operationInput)
         {
@@ -38,9 +38,9 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Call entity function.
         /// </summary>
-        /// <typeparam name="TResult">return type.</typeparam>
-        /// <param name="operationName">Entity operation name.</param>
-        /// <param name="operationInput">Entity input value.</param>
+        /// <typeparam name="TResult">The return type of the called entity function.</typeparam>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         protected internal Task<TResult> CallAsync<TResult>(string operationName, object operationInput)
         {
@@ -50,8 +50,8 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Signal entity function.
         /// </summary>
-        /// <param name="operationName">Entity operation name.</param>
-        /// <param name="operationInput">Entity input value.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
         protected internal void Signal(string operationName, object operationInput)
         {
             this.context.Signal(this.entityId, operationName, operationInput);
