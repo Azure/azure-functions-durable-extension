@@ -2822,7 +2822,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.EntityIdCaseInsensitivity),
+                nameof(TestOrchestrations.LargeEntity),
             };
 
             using (var host = TestHelpers.GetJobHost(
@@ -2835,7 +2835,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityKey = Guid.NewGuid().ToString();
                 var entityName = "StringStore2";
 
-                var entityId = new EntityId(entityName.ToUpper(), entityKey.ToUpper());
+                var entityId = new EntityId(entityName.ToUpperInvariant(), entityKey);
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
@@ -2843,7 +2843,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 IDurableOrchestrationClient durableOrchestrationClient = client.InnerClient;
 
-                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLower(), entityKey.ToLower()));
+                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLowerInvariant(), entityKey));
 
                 Assert.True(response.EntityExists);
 

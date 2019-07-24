@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs
                 throw new ArgumentNullException(nameof(entityName), "Invalid entity id: entity name must not be a null or empty string.");
             }
 
-            this.EntityName = entityName;
+            this.EntityName = entityName.ToLowerInvariant();
             this.EntityKey = entityKey ?? throw new ArgumentNullException(nameof(entityKey), "Invalid entity id: entity key must not be null.");
         }
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs
 
         internal static string GetSchedulerIdFromEntityId(EntityId entityId)
         {
-            return $"@{entityId.EntityName}@{entityId.EntityKey}".ToLower();
+            return $"@{entityId.EntityName}@{entityId.EntityKey}";
         }
 
         internal static EntityId GetEntityIdFromSchedulerId(string schedulerId)
@@ -70,21 +70,21 @@ namespace Microsoft.Azure.WebJobs
         /// <inheritdoc/>
         public bool Equals(EntityId other)
         {
-            return this.ToString().Equals(other.ToString());
+            return (this.EntityName, this.EntityKey).Equals((other.EntityName, other.EntityKey));
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return this.ToString().GetHashCode();
+            return (this.EntityName, this.EntityKey).GetHashCode();
         }
 
         /// <inheritdoc/>
         public int CompareTo(object obj)
         {
             var other = (EntityId)obj;
-            return ((IComparable)this.ToString())
-                      .CompareTo(other.ToString());
+            return ((IComparable)(this.EntityKey, this.EntityName))
+                      .CompareTo((other.EntityKey, other.EntityName));
         }
     }
 }
