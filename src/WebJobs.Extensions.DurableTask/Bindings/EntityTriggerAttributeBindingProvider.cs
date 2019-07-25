@@ -53,8 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
             }
 
-            name = name.ToLowerInvariant();
-
             // The entity class name defaults to the method name.
             var entityName = new FunctionName(name);
             this.config.RegisterEntity(entityName, null);
