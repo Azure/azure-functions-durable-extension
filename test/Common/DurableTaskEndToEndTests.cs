@@ -2812,6 +2812,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Test for EntityId case insensitivity.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityNameCaseInsensitivity(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LargeEntity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityNameCaseInsensitivity),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityKey = Guid.NewGuid().ToString();
+                var entityName = "StringStore2";
+
+                var entityId = new EntityId(entityName.ToUpperInvariant(), entityKey);
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                IDurableOrchestrationClient durableOrchestrationClient = client.InnerClient;
+
+                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLowerInvariant(), entityKey));
+
+                Assert.True(response.EntityExists);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates basic use of the object dispatch feature.
         /// TODO: This test is flakey in Functions V1.
         /// </summary>

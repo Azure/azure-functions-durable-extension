@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs
                 throw new ArgumentNullException(nameof(entityName), "Invalid entity id: entity name must not be a null or empty string.");
             }
 
-            this.EntityName = entityName;
+            this.EntityName = entityName.ToLowerInvariant();
             this.EntityKey = entityKey ?? throw new ArgumentNullException(nameof(entityKey), "Invalid entity id: entity key must not be null.");
         }
 
