@@ -133,18 +133,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (orchestratorInfo.IsOutOfProc)
                 {
-                    JObject jObj = null;
+                    var jObj = returnValue as JObject;
 
-                    if (returnValue is JObject)
+                    if (jObj == null && returnValue is string jsonText)
                     {
-                        jObj = returnValue as JObject;
-                    }
-                    else
-                    {
-                        if (returnValue is string)
-                        {
-                            jObj = JObject.Parse(returnValue as string);
-                        }
+                        jObj = JObject.Parse(jsonText);
                     }
 
                     if (jObj != null)

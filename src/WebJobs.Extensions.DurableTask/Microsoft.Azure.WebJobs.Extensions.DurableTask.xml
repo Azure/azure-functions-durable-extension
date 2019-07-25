@@ -1917,26 +1917,3 @@
         </member>
     </members>
 </doc>
-r name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.FunctionName">
-            <summary>
-            Gets or sets the name of the orchestrator function to start.
-            </summary>
-            <value>The name of the orchestrator function to start.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.InstanceId">
-            <summary>
-            Gets or sets the instance ID to assign to the started orchestration.
-            </summary>
-            <remarks>
-            If this property value is null (the default), then a randomly generated instance ID will be assigned automatically.
-            </remarks>
-            <value>The instance ID to assign.</value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.StartOrchestrationArgs.Input">
-            <summary>
-            Gets or sets the JSON-serializeable input data for the orchestrator function.
-            </summary>
-            <value>JSON-serializeable input value for the orchestrator function.</value>
-        </member>
-    </members>
-</doc>
