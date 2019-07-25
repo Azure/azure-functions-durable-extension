@@ -39,6 +39,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_InvalidInstanceId_ThrowsException()
+        {
+            var instanceId = Guid.NewGuid().ToString();
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
+            var durableExtension = GetDurableTaskExtension();
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "@invalid", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "/invalid", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "invalid\\", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "invalid#", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "invalid?", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "invalid\t", new { message = "any obj" }));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "invalid\n", new { message = "any obj" }));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RaiseEventAsync_InvalidInstanceId_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();

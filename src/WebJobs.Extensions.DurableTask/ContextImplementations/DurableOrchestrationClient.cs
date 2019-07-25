@@ -111,6 +111,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @.");
             }
+            else if (instanceId.Any(IsInvalidCharacter))
+            {
+                throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not contain /, \\, #, ?, or control characters.");
+            }
 
             if (instanceId.Length > MaxInstanceIdLength)
             {
@@ -130,6 +134,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationInstance instance = await createTask;
             return instance.InstanceId;
+        }
+
+        private static bool IsInvalidCharacter(char c)
+        {
+            return c == '/' || c == '\\' || c == '?' || c == '#' || char.IsControl(c);
         }
 
         /// <inheritdoc />
