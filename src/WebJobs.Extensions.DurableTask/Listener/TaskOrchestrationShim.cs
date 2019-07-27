@@ -141,6 +141,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (orchestratorInfo.IsOutOfProc)
                 {
                     var jObj = returnValue as JObject;
+                    if (jObj == null && returnValue is string jsonText)
+                    {
+                        jObj = JObject.Parse(jsonText);
+                    }
+
                     if (jObj != null)
                     {
                         await this.HandleOutOfProcExecution(jObj);
