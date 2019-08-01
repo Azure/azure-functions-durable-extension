@@ -109,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 foreach (KeyValuePair<string, StringValues> pair in headers)
                 {
-                    newDictionary.Add(pair.Key, pair.Value);
+                    newDictionary[pair.Key] = pair.Value;
                 }
             }
 
