@@ -105,9 +105,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static Dictionary<string, StringValues> CreateDictionaryCopy(IDictionary<string, StringValues> headers)
         {
             Dictionary<string, StringValues> newDictionary = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-            foreach (KeyValuePair<string, StringValues> pair in headers)
+            if (headers != null)
             {
-                newDictionary.Add(pair.Key, pair.Value);
+                foreach (KeyValuePair<string, StringValues> pair in headers)
+                {
+                    newDictionary.Add(pair.Key, pair.Value);
+                }
             }
 
             return newDictionary;
