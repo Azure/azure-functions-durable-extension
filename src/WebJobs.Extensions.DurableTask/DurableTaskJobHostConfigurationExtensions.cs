@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Net.Http;
 #if NETSTANDARD2_0
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -33,7 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
                 .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>()
-                         .AddSingleton<IOrchestrationServiceFactory, OrchestrationServiceFactory>();
+                         .AddSingleton<IOrchestrationServiceFactory, OrchestrationServiceFactory>()
+                         .AddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
 
             return builder;
         }

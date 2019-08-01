@@ -19,6 +19,8 @@ using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -61,12 +63,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly bool isOptionsConfigured;
-
         private IOrchestrationServiceFactory orchestrationServiceFactory;
         private INameResolver nameResolver;
         private IOrchestrationService orchestrationService;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
+        private HttpClient durableHttpClient;
 
 #if !NETSTANDARD2_0
         private IConnectionStringResolver connectionStringResolver;
@@ -90,11 +92,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
+        /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IOrchestrationServiceFactory orchestrationServiceFactory)
+            IOrchestrationServiceFactory orchestrationServiceFactory,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null)
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -112,6 +116,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.orchestrationServiceFactory = orchestrationServiceFactory;
             this.isOptionsConfigured = true;
+
+            if (durableHttpMessageHandlerFactory == null)
+            {
+                durableHttpMessageHandlerFactory = new DurableHttpMessageHandlerFactory();
+            }
+
+            DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
+            this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
         }
 
 #if !NETSTANDARD2_0
@@ -120,8 +132,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IOrchestrationServiceFactory orchestrationServiceFactory,
-            IConnectionStringResolver connectionStringResolver)
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory)
+            IConnectionStringResolver connectionStringResolver,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
+            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
         }
@@ -314,6 +327,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>An activity shim that delegates execution to an activity function.</returns>
         TaskActivity INameVersionObjectManager<TaskActivity>.GetObject(string name, string version)
         {
+            if (IsDurableHttpTask(name))
+            {
+                return new TaskHttpActivityShim(this, this.durableHttpClient);
+            }
+
             FunctionName activityFunction = new FunctionName(name);
 
             RegisteredFunctionInfo info;
@@ -733,6 +751,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void ThrowIfFunctionDoesNotExist(string name, FunctionType functionType)
         {
+            if (IsDurableHttpTask(name))
+            {
+                return;
+            }
+
             var functionName = new FunctionName(name);
 
             if (functionType == FunctionType.Activity && !this.knownActivities.ContainsKey(functionName))
@@ -743,6 +766,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
+        }
+
+        private static bool IsDurableHttpTask(string functionName)
+        {
+            return string.Equals(functionName, HttpOptions.HttpTaskActivityReservedName);
         }
 
         internal string GetInvalidActivityFunctionMessage(string name)
