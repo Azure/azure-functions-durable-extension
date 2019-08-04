@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+    <Metadata>
+        <Identity Id="DurableFunctionsAnalyzer.75846b2b-98cb-4519-9350-4d6ca4e02d2b" Version="1.0" Language="en-US" Publisher="Simon Timms"/>
+        <DisplayName>DurableFunctionsAnalyzer</DisplayName>
+        <Description xml:space="preserve">This is a extension which adds a series of warnings and errors to your Azure Durable Functions project to catch common errors</Description>
+    </Metadata>
+    <Installation>
+        <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[15.0,16.0)" />
+    </Installation>
+    <Dependencies>
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
+    </Dependencies>
+    <Assets>
+    </Assets>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,16.0)" DisplayName="Visual Studio core editor" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.Roslyn.LanguageServices" Version="[15.0,16.0)" DisplayName="Roslyn Language Services" />
+    </Prerequisites>
+</PackageManifest>
