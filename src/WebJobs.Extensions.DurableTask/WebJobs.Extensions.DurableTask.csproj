@@ -55,9 +55,10 @@
     <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
   </ItemGroup>
 
-  <ItemGroup> 
+  <ItemGroup>
     <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.0-alpha" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.EventHubs" Version="0.1.0-alpha" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.1.2" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.6.3" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
   </ItemGroup>

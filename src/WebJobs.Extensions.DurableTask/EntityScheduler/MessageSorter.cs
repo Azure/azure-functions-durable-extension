@@ -42,6 +42,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public void LabelOutgoingMessage(RequestMessage message, string destination, DateTime now, TimeSpan reorderWindow)
         {
+            if (reorderWindow.Ticks == 0)
+            {
+                return; // we are not doing any message sorting.
+            }
+
             DateTime timestamp = now;
 
             if (this.SendHorizon + reorderWindow + MinIntervalBetweenCollections < now)
@@ -93,8 +98,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public IEnumerable<RequestMessage> ReceiveInOrder(RequestMessage message, TimeSpan reorderWindow)
         {
-            // messages sent from clients are  not participating in the sorting.
-            if (message.ParentInstanceId == null)
+            // messages sent from clients are not participating in the sorting.
+            if (reorderWindow.Ticks == 0 || message.ParentInstanceId == null)
             {
                 // Just pass the message through.
                 yield return message;

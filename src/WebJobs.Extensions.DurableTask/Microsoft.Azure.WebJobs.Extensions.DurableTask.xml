@@ -978,6 +978,39 @@
             A list of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
             </value>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions">
+            <summary>
+            Configuration options for the EventHubs storage provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.EventHubsConnectionStringName">
+            <summary>
+            Gets or sets the name of the environment variable or configuration setting for the.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.MaxConcurrentTaskActivityWorkItems">
+            <summary>
+            Gets or sets the maximum number of work items that can be processed concurrently on a single node.
+            The default value is 100.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.MaxConcurrentTaskOrchestrationWorkItems">
+            <summary>
+            Gets or sets the maximum number of orchestrations that can be processed concurrently on a single node.
+            The default value is 100.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.EventBehaviourForContinueAsNew">
+            <summary>
+             Should we carry over unexecuted raised events to the next iteration of an orchestration on ContinueAsNew
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.RunningInTestEnvironment">
+            <summary>
+             Whether we are running in a test environment. In that case, we reset storage before the first test,
+             and we keep the event processor running between tests.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.HttpOptions">
             <summary>
             Used for Durable HTTP functionality.
@@ -1028,6 +1061,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.Redis">
             <summary>
             The section for configuration related to the Redis provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.EventHubs">
+            <summary>
+            The section for configuration related to the EventHubs provider.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.TraceOptions">
