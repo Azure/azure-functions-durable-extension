@@ -1046,10 +1046,19 @@
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent(System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan)">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContext.ContinueAsNew(System.Object)">
@@ -1420,7 +1429,7 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String,System.TimeSpan)">
             <summary>
-            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> for duration <paramref name="timeout"/>.
             </summary>
             <remarks>
             External clients can raise events to a waiting orchestration instance using
@@ -1433,9 +1442,27 @@
             The external event was not received before the timeout expired.
             </exception>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent(System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> for duration <paramref name="timeout"/>.
+            Cancelling <paramref name="cancelToken"/> allows stopping the duration timeout early.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
+            </remarks>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
+            <returns>A durable task that completes when the external event is received.</returns>
+            <exception cref="T:System.TimeoutException">
+            The external event was not received before the timeout expired.
+            </exception>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan)">
             <summary>
-            Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> for duration <paramref name="timeout"/>
+            and returns the event data.
             </summary>
             <remarks>
             External clients can raise events to a waiting orchestration instance using
@@ -1449,9 +1476,28 @@
             The external event was not received before the timeout expired.
             </exception>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> for duration <paramref name="timeout"/>
+            and returns the event data.  Cancelling <paramref name="cancelToken"/> allows stopping the duration timeout early.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            </remarks>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
+            <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+            <returns>A durable task that completes when the external event is received.</returns>
+            <exception cref="T:System.TimeoutException">
+            The external event was not received before the timeout expired.
+            </exception>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
             <summary>
-            Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> for duration <paramref name="timeout"/>
+            and returns the event data.
             </summary>
             <remarks>
             External clients can raise events to a waiting orchestration instance using
@@ -1460,6 +1506,23 @@
             <param name="name">The name of the event to wait for.</param>
             <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
             <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+            <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+            <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
+            if the timeout expires.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableOrchestrationContextBase.WaitForExternalEvent``1(System.String,System.TimeSpan,``0,System.Threading.CancellationToken)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> for duration <paramref name="timeout"/>
+            and returns the event data.  Cancelling <paramref name="cancelToken"/> allows stopping the duration timeout early.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.DurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            </remarks>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
+            <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
             if the timeout expires.</returns>

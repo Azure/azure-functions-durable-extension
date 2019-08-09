@@ -229,7 +229,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> ApprovalWithTimeout([OrchestrationTrigger] DurableOrchestrationContext ctx)
         {
             (TimeSpan timeout, string defaultValue) = ctx.GetInput<(TimeSpan, string)>();
-            DateTime deadline = ctx.CurrentUtcDateTime.Add(timeout);
             string eventValue;
             if (defaultValue == "throw")
             {
@@ -252,6 +251,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return eventValue;
+        }
+
+        public static async Task ApprovalWithCancellationToken([OrchestrationTrigger] DurableOrchestrationContext ctx)
+        {
+            TimeSpan timeout = ctx.GetInput<TimeSpan>();
+
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Task waiterWithTimeout = ctx.WaitForExternalEvent("approvalNeverRaised", timeout, cts.Token);
+                Task waiterWithoutTimeout = ctx.WaitForExternalEvent("approval");
+
+                Task taskAwaited = await Task.WhenAny(waiterWithTimeout, waiterWithoutTimeout);
+                if (taskAwaited == waiterWithoutTimeout)
+                {
+                    cts.Cancel();
+                }
+            }
         }
 
         public static async Task ThrowOrchestrator([OrchestrationTrigger] DurableOrchestrationContext ctx)

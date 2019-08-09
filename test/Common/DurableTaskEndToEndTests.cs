@@ -1028,6 +1028,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates a CancellationToken-providing overload of WaitForExternalEvent.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForExternalEventWithCancellationToken()
+        {
+            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithCancellationToken) };
+            var extendedSessions = false;
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForExternalEventWithCancellationToken),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromSeconds(10);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
+                await client.WaitForStartupAsync(this.output);
+
+                await client.RaiseEventAsync("approval", this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.InRange(status.LastUpdatedTime - status.CreatedTime, TimeSpan.Zero, timeout);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates correct exceptions for invalid timeout values.
         /// </summary>
         [Fact]

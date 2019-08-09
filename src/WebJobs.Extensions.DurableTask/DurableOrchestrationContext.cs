@@ -330,24 +330,33 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <inheritdoc/>
-        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout)
+        public override Task WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken) => this.WaitForExternalEvent<object>(name, timeout, cancelToken);
+
+        /// <inheritdoc/>
+        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout) => this.WaitForExternalEvent<T>(name, timeout, CancellationToken.None);
+
+        /// <inheritdoc/>
+        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken)
         {
-            Action<TaskCompletionSource<T>> timedOutAction = cts =>
-                cts.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
-            return this.WaitForExternalEvent(name, timeout, timedOutAction);
+            Action<TaskCompletionSource<T>> timedOutAction = tcs =>
+                tcs.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
+            return this.WaitForExternalEvent(name, timeout, cancelToken, timedOutAction);
         }
 
         /// <inheritdoc/>
-        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
+        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue) => this.WaitForExternalEvent<T>(name, timeout, defaultValue, CancellationToken.None);
+
+        /// <inheritdoc/>
+        public override Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken)
         {
-            Action<TaskCompletionSource<T>> timedOutAction = cts => cts.TrySetResult(defaultValue);
-            return this.WaitForExternalEvent(name, timeout, timedOutAction);
+            Action<TaskCompletionSource<T>> timedOutAction = tcs => tcs.TrySetResult(defaultValue);
+            return this.WaitForExternalEvent(name, timeout, cancelToken, timedOutAction);
         }
 
-        private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction)
+        private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken, Action<TaskCompletionSource<T>> timeoutAction)
         {
             var tcs = new TaskCompletionSource<T>();
-            var cts = new CancellationTokenSource();
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
             var timeoutAt = this.CurrentUtcDateTime + timeout;
             var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
