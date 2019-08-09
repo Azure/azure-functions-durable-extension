@@ -12,26 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
     public class EventHubsStorageOptions : CommonStorageProviderOptions
     {
         /// <summary>
-        /// Gets or sets the name of the environment variable or configuration setting for the.
+        /// Gets or sets the name of the environment variable or configuration setting for the event-sourced backend.
         /// </summary>
-        public string EventHubsConnectionStringName { get; set; } = "AzureWebJobsEventHubs";
-
-        /// <summary>
-        /// Gets or sets the maximum number of work items that can be processed concurrently on a single node.
-        /// The default value is 100.
-        /// </summary>
-        public int MaxConcurrentTaskActivityWorkItems { get; set; } = 100;
-
-        /// <summary>
-        /// Gets or sets the maximum number of orchestrations that can be processed concurrently on a single node.
-        /// The default value is 100.
-        /// </summary>
-        public int MaxConcurrentTaskOrchestrationWorkItems { get; set; } = 100;
-
-        /// <summary>
-        ///  Should we carry over unexecuted raised events to the next iteration of an orchestration on ContinueAsNew
-        /// </summary>
-        public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew { get; set; } = BehaviorOnContinueAsNew.Carryover;
+        public string EventHubsConnectionStringName { get; set; }
 
         /// <summary>
         ///  Whether we are running in a test environment. In that case, we reset storage before the first test,
@@ -48,7 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         {
             if (string.IsNullOrEmpty(this.ConnectionStringName))
             {
-                throw new InvalidOperationException($"{nameof(EventHubsStorageOptions.ConnectionStringName)} must be populated to use the Redis storage provider");
+                throw new InvalidOperationException($"{nameof(EventHubsStorageOptions.ConnectionStringName)} must be populated to use the EventHubs storage provider");
+            }
+
+            if (string.IsNullOrEmpty(this.EventHubsConnectionStringName))
+            {
+                throw new InvalidOperationException($"{nameof(EventHubsStorageOptions.EventHubsConnectionStringName)} must be populated to use the EventHubs storage provider");
             }
         }
 

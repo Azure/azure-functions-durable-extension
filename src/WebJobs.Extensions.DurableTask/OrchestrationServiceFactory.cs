@@ -235,7 +235,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class EventHubsOrchestrationServiceFactory : IOrchestrationServiceFactory
         {
-
             private readonly Entry entry;
 
             // if running in test environment, we keep a service running and
@@ -250,9 +249,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     StorageConnectionString = connectionStringResolver.Resolve(options.StorageProvider.EventHubs.ConnectionStringName),
                     EventHubsConnectionString = connectionStringResolver.Resolve(options.StorageProvider.EventHubs.EventHubsConnectionStringName),
-                    MaxConcurrentTaskActivityWorkItems = options.StorageProvider.EventHubs.MaxConcurrentTaskActivityWorkItems,
-                    MaxConcurrentTaskOrchestrationWorkItems = options.StorageProvider.EventHubs.MaxConcurrentTaskOrchestrationWorkItems,
-                    EventBehaviourForContinueAsNew = options.StorageProvider.EventHubs.EventBehaviourForContinueAsNew,
+                    MaxConcurrentTaskActivityWorkItems = options.MaxConcurrentActivityFunctions,
+                    MaxConcurrentTaskOrchestrationWorkItems = options.MaxConcurrentOrchestratorFunctions,
                     KeepServiceRunning = runningInTestEnvironment,
                 };
 
