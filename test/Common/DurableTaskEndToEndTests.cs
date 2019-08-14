@@ -3282,6 +3282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+
         // No specified hubName will assign a default hubName, which will be the site name
         [InlineData("", "TestSiteName", "Production")]
         [InlineData("CustomName", "TestSiteName", "Production")]

@@ -75,7 +75,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 NotificationHandler = eventGridNotificationHandler,
             };
 
-            return GetJobHost(loggerProvider, durableTaskOptions, enableExtendedSessions);
+            return GetJobHost(
+                loggerProvider,
+                durableTaskOptions,
+                enableExtendedSessions,
+                eventGridKeySettingName,
+                nameResolver,
+                eventGridTopicEndpoint,
+                eventGridRetryCount,
+                eventGridRetryInterval,
+                eventGridRetryHttpStatus,
+                traceReplayEvents,
+                notificationUrl,
+                eventGridNotificationHandler,
+                maxQueuePollingInterval,
+                eventGridPublishEventTypes,
+                storageProviderType,
+                autoFetchLargeMessages,
+                httpAsyncSleepTime,
+                durableHttpMessageHandler);
         }
 
         public static JobHost GetJobHost(

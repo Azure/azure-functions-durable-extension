@@ -37,7 +37,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (this.hubName == null)
                 {
                     this.isDefaultHubName = true;
-                    this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+
+                    // "WEBSITE_SITE_NAME" is an environment variable used in production. When testing locally, you can set this
+                    // variable in your local.json file or it will be defaulted to "TestHubName"
+                    this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
                 }
 
                 return this.hubName;
@@ -191,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
-            if (Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") != "Production" && this.isDefaultHubName)
+            if (!string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.InvariantCultureIgnoreCase) && this.isDefaultHubName)
             {
                 throw new InvalidOperationException($"Task Hub name must be specified to be a unique value when using slots");
             }
