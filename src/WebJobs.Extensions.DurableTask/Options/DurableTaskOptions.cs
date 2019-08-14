@@ -13,6 +13,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
+        private string hubName;
+        private bool isDefaultHubName = false;
+
         /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
@@ -27,7 +30,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
-        public string HubName { get; set; }
+        public string HubName
+        {
+            get
+            {
+                if (this.hubName == null)
+                {
+                    this.isDefaultHubName = true;
+                    this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+                }
+
+                return this.hubName;
+            }
+
+            set
+            {
+                this.hubName = value;
+            }
+        }
 
         /// <summary>
         /// The section of configuration related to storage providers.
@@ -169,6 +189,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (string.IsNullOrEmpty(this.HubName))
             {
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
+            }
+
+            if (Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") != "Production" && this.isDefaultHubName)
+            {
+                throw new InvalidOperationException($"Task Hub name must be specified to be a unique value when using slots");
             }
 
             if (this.StorageProvider == null)

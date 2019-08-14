@@ -3277,6 +3277,80 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 argumentException.Message);
         }
 
+        /// <summary>
+        /// End-to-end test which validates that default task hub names are able to be assigned and custom values for tack hub names are allowed/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        // No specified hubName will assign a default hubName, which will be the site name
+        [InlineData("", "TestSiteName", "Production")]
+        [InlineData("CustomName", "TestSiteName", "Production")]
+        [InlineData("TestSiteName", "TestSiteName", "Test")]
+        public void TaskHubName_HappyPath(string customHubName, string siteName, string slotName)
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSiteName");
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", slotName);
+
+                var options = new DurableTaskOptions();
+
+                var hubName = siteName;
+
+                if (customHubName != "")
+                {
+                    hubName = customHubName;
+                    options.HubName = customHubName;
+                }
+
+                var host = TestHelpers.GetJobHost(this.loggerProvider, options, false);
+                Assert.Equal(hubName, options.HubName);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates that attempting to use a default task hub name while in a slot other than production will throw an exception <see cref="InvalidOperationException"/>.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TaskHubName_DefaultNameNonProductionSlot()
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSiteName");
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", "Test");
+                DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+
+                InvalidOperationException argumentException =
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        durableTaskOptions,
+                        false))
+                    {
+                        await host.StartAsync();
+                    }
+                });
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
         private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload
