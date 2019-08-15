@@ -3278,7 +3278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates that default task hub names are able to be assigned and custom values for tack hub names are allowed/>.
+        /// Test which validates that default task hub names are able to be assigned and custom values for tack hub names are allowed/>.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -3307,7 +3307,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     options.HubName = customHubName;
                 }
 
-                var host = TestHelpers.GetJobHost(this.loggerProvider, options, false);
+                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
                 Assert.Equal(hubName, options.HubName);
             }
             finally
@@ -3318,7 +3318,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates that attempting to use a default task hub name while in a slot other than production will throw an exception <see cref="InvalidOperationException"/>.
+        /// Test which validates that attempting to use a default task hub name while in a slot other than production will throw an exception <see cref="InvalidOperationException"/>.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -3338,8 +3338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     using (var host = TestHelpers.GetJobHost(
                         this.loggerProvider,
-                        durableTaskOptions,
-                        false))
+                        durableTaskOptions))
                     {
                         await host.StartAsync();
                     }

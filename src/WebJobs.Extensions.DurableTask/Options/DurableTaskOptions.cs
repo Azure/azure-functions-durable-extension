@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
-            if (!string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.InvariantCultureIgnoreCase) && this.isDefaultHubName)
+            if (!IsInProductionSlotOrTest() && this.isDefaultHubName)
             {
                 throw new InvalidOperationException($"Task Hub name must be specified to be a unique value when using slots");
             }
@@ -220,6 +220,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a non-negative integer value.");
             }
+        }
+
+        // Returns true if WEBSITE_SLOT_NAME is Production or when WEBSITE_SLOT_NAME is not set.
+        // When testing, there will be no environment variable set for slot name
+        private static bool IsInProductionSlotOrTest()
+        {
+            if (Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") == null ||
+                string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

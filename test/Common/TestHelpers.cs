@@ -75,47 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 NotificationHandler = eventGridNotificationHandler,
             };
 
-            return GetJobHost(
-                loggerProvider,
-                durableTaskOptions,
-                enableExtendedSessions,
-                eventGridKeySettingName,
-                nameResolver,
-                eventGridTopicEndpoint,
-                eventGridRetryCount,
-                eventGridRetryInterval,
-                eventGridRetryHttpStatus,
-                traceReplayEvents,
-                notificationUrl,
-                eventGridNotificationHandler,
-                maxQueuePollingInterval,
-                eventGridPublishEventTypes,
-                storageProviderType,
-                autoFetchLargeMessages,
-                httpAsyncSleepTime,
-                durableHttpMessageHandler);
-        }
-
-        public static JobHost GetJobHost(
-            ILoggerProvider loggerProvider,
-            DurableTaskOptions durableTaskOptions,
-            bool enableExtendedSessions,
-            string eventGridKeySettingName = null,
-            INameResolver nameResolver = null,
-            string eventGridTopicEndpoint = null,
-            int? eventGridRetryCount = null,
-            TimeSpan? eventGridRetryInterval = null,
-            int[] eventGridRetryHttpStatus = null,
-            bool traceReplayEvents = true,
-            Uri notificationUrl = null,
-            HttpMessageHandler eventGridNotificationHandler = null,
-            TimeSpan? maxQueuePollingInterval = null,
-            string[] eventGridPublishEventTypes = null,
-            string storageProviderType = AzureStorageProviderType,
-            bool autoFetchLargeMessages = true,
-            int httpAsyncSleepTime = 5000,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null)
-        {
             if (storageProviderType != null)
             {
                 durableTaskOptions.StorageProvider = new StorageProviderOptions();
@@ -158,6 +117,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableTaskOptions.StorageProvider.AzureStorage.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
             }
 
+            return GetJobHost(
+                loggerProvider,
+                durableTaskOptions,
+                nameResolver,
+                durableHttpMessageHandler);
+        }
+
+        public static JobHost GetJobHost(
+            ILoggerProvider loggerProvider,
+            DurableTaskOptions durableTaskOptions,
+            INameResolver nameResolver = null,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null)
+        {
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
             if (durableHttpMessageHandler == null)
