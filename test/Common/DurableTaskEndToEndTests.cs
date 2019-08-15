@@ -3278,14 +3278,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Test which validates that default task hub names are able to be assigned and custom values for tack hub names are allowed/>.
+        /// Tests default and custom values for task hub name/>.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-
-        // No specified hubName will assign a default hubName, which will be the site name
-        [InlineData("", "TestSiteName", "Production")]
+        [InlineData(null, "TestSiteName", "Production")]
+        [InlineData(null, "TestSiteName", null)]
         [InlineData("CustomName", "TestSiteName", "Production")]
+        [InlineData("CustomName", "TestSiteName", null)]
+        [InlineData("CustomName", "TestSiteName", "Test")]
         [InlineData("TestSiteName", "TestSiteName", "Test")]
         public void TaskHubName_HappyPath(string customHubName, string siteName, string slotName)
         {
@@ -3294,21 +3295,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             try
             {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSiteName");
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", siteName);
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", slotName);
 
                 var options = new DurableTaskOptions();
 
-                var hubName = siteName;
+                var expectedHubName = siteName;
 
-                if (customHubName != "")
+                if (customHubName != null)
                 {
-                    hubName = customHubName;
+                    expectedHubName = customHubName;
                     options.HubName = customHubName;
                 }
 
                 var host = TestHelpers.GetJobHost(this.loggerProvider, options);
-                Assert.Equal(hubName, options.HubName);
+                Assert.Equal(expectedHubName, options.HubName);
             }
             finally
             {
@@ -3318,11 +3319,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Test which validates that attempting to use a default task hub name while in a slot other than production will throw an exception <see cref="InvalidOperationException"/>.
+        /// Tests that an attempt to use a default task hub name while in a test slot will throw an exception <see cref="InvalidOperationException"/>.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TaskHubName_DefaultNameNonProductionSlot()
+        public async Task TaskHubName_DefaultNameNonProductionSlot_ThrowsException()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
             string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");

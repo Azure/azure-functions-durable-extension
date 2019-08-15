@@ -38,8 +38,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.isDefaultHubName = true;
 
-                    // "WEBSITE_SITE_NAME" is an environment variable used in production. When testing locally, you can set this
-                    // variable in your local.json file or it will be defaulted to "TestHubName"
+                    // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
+                    //      specified in local.settings.json file to avoid being defaulted to "TestHubName"
                     this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
                 }
 
@@ -194,9 +194,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
-            if (!IsInProductionSlotOrTest() && this.isDefaultHubName)
+            if (IsInNonProductionSlot() && this.isDefaultHubName)
             {
-                throw new InvalidOperationException($"Task Hub name must be specified to be a unique value when using slots");
+                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. See documentation on Task Hubs for " +
+                    $"information on how to set this: https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
             if (this.StorageProvider == null)
@@ -222,12 +223,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        // Returns true if WEBSITE_SLOT_NAME is Production or when WEBSITE_SLOT_NAME is not set.
-        // When testing, there will be no environment variable set for slot name
-        private static bool IsInProductionSlotOrTest()
+        private static bool IsInNonProductionSlot()
         {
-            if (Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") == null ||
-                string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.OrdinalIgnoreCase))
+            if (Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") != null &&
+                !string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
