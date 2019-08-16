@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.isDefaultHubName = true;
 
                     // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
-                    //      specified in local.settings.json file to avoid being defaulted to "TestHubName"
+                    // specified in local.settings.json file to avoid being defaulted to "TestHubName"
                     this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
                 }
 
@@ -196,8 +196,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (IsInNonProductionSlot() && this.isDefaultHubName)
             {
-                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. See documentation on Task Hubs for " +
-                    $"information on how to set this: https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-task-hubs");
+                throw new InvalidOperationException("Task Hub name must be specified in host.json when using slots. See documentation on Task Hubs for " +
+                    "information on how to set this: https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
             if (this.StorageProvider == null)
