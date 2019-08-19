@@ -20,8 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        private FunctionBindingContext bindingContext;
-
         public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
@@ -75,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public FunctionBindingContext FunctionBindingContext { get => this.bindingContext; set => this.bindingContext = value; }
+        public FunctionBindingContext FunctionBindingContext { get; set; }
 
         void IDurableEntityContext.DestructOnExit()
         {
