@@ -56,10 +56,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
 
-        private readonly DurableTaskExtension config;
+        private readonly DurableTaskExtensionBase config;
         private readonly ILogger logger;
 
-        public HttpApiHandler(DurableTaskExtension config, ILogger logger)
+        public HttpApiHandler(DurableTaskExtensionBase config, ILogger logger)
         {
             this.config = config;
             this.logger = logger;

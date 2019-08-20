@@ -9,12 +9,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class DurableTaskWorkerContext
     {
-        private readonly DurableTaskExtension listenerConfig;
+        private readonly DurableTaskExtensionBase listenerConfig;
         private readonly ExtensionConfigContext extensionContext;
         private readonly List<ObjectCreator<TaskOrchestration>> orchestrations;
         private readonly List<ObjectCreator<TaskActivity>> activities;
 
-        public DurableTaskWorkerContext(DurableTaskExtension configuration, ExtensionConfigContext extensionContext)
+        public DurableTaskWorkerContext(DurableTaskExtensionBase configuration, ExtensionConfigContext extensionContext)
         {
             this.listenerConfig = configuration;
             this.extensionContext = extensionContext;
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.activities = new List<ObjectCreator<TaskActivity>>();
         }
 
-        public DurableTaskExtension ListenerConfig => this.listenerConfig;
+        public DurableTaskExtensionBase ListenerConfig => this.listenerConfig;
 
         public ExtensionConfigContext ExtensionContext => this.extensionContext;
 

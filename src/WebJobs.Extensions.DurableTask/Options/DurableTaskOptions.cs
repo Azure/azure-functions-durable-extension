@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration options for the Durable Task extension.
     /// </summary>
-    public class DurableTaskOptions
+    public abstract class DurableTaskOptions
     {
         private string hubName;
         private bool isDefaultHubName = false;
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The section of configuration related to storage providers.
         /// </summary>
-        public StorageProviderOptions StorageProvider { get; set; }
+        public abstract IStorageOptions StorageOptions { get; }
 
         /// <summary>
         /// The section of configuration related to tracing.
@@ -142,9 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.AppendLine("Initializing extension with the following settings:");
             sb.Append(nameof(this.HubName)).Append(":").Append(this.HubName).Append(", ");
 
-            sb.Append(nameof(this.StorageProvider)).Append(": { ");
-            this.StorageProvider.AddToDebugString(sb);
-            sb.Append(" }, ");
+            this.AppendStorageProviderValuesToDebugString(sb);
 
             sb.Append(nameof(this.MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
@@ -172,16 +171,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return sb.ToString();
         }
 
+        private void AppendStorageProviderValuesToDebugString(StringBuilder sb)
+        {
+            sb.Append(this.StorageOptions.StorageTypeName).Append(": { ");
+            List<KeyValuePair<string, string>> storageProviderValues = this.StorageOptions.GetValues();
+            int numStorageProviderValues = storageProviderValues.Count;
+            if (numStorageProviderValues > 0)
+            {
+                for (int i = 0; i < numStorageProviderValues - 1; i++)
+                {
+                    var currentValue = storageProviderValues[i];
+                    sb.Append(currentValue.Key).Append(":").Append(currentValue.Value).Append(", ");
+                }
+
+                var lastValue = storageProviderValues[numStorageProviderValues - 1];
+                sb.Append(lastValue.Key).Append(":").Append(lastValue.Value);
+            }
+
+            sb.Append(" }, ");
+        }
+
         /// <summary>
         /// A helper method to help retrieve the connection string name for the configured storage provider.
         /// </summary>
         /// <returns>The connection string name for the configured storage provider.</returns>
         public string GetConnectionStringName()
         {
-            return this.StorageProvider.GetConfiguredProvider().ConnectionStringName;
+            return this.StorageOptions.ConnectionDetails;
         }
 
-        internal void Validate()
+        internal virtual void Validate()
         {
             if (string.IsNullOrEmpty(this.HubName))
             {
@@ -194,15 +213,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     "information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
-            if (this.StorageProvider == null)
-            {
-                this.StorageProvider = new StorageProviderOptions();
-            }
-
-            this.StorageProvider.Validate();
+            this.StorageOptions.Validate();
 
             // Each storage provider may have its own limitations for task hub names due to provider naming restrictions
-            this.StorageProvider.GetConfiguredProvider().ValidateHubName(this.HubName);
+            this.StorageOptions.ValidateHubName(this.HubName);
 
             this.Notifications.Validate();
 

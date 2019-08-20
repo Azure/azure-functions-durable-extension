@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
@@ -3404,7 +3405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", siteName);
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", slotName);
 
-                var options = new DurableTaskOptions();
+                var options = new DurableTaskAzureStorageOptions();
 
                 var expectedHubName = siteName;
 
@@ -3438,7 +3439,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSiteName");
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", "Test");
-                DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+                DurableTaskOptions durableTaskOptions = new DurableTaskAzureStorageOptions();
 
                 InvalidOperationException exception =
                     await Assert.ThrowsAsync<InvalidOperationException>(async () =>

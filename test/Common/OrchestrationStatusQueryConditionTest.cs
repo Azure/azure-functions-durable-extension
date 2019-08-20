@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHubNames = taskHubNames,
             };
 
-            var result = condition.Parse();
+            var result = DurableAzureStorageSpecialOperationsClient.ConvertWebjobsDurableConditionToAzureStorageCondition(condition);
 
             Assert.Equal(OrchestrationStatus.Failed, result.RuntimeStatus.First());
             Assert.Equal(OrchestrationStatus.Terminated, result.RuntimeStatus.Last());

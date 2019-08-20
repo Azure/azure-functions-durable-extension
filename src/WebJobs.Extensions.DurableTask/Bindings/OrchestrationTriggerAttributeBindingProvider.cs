@@ -16,12 +16,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class OrchestrationTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
-        private readonly DurableTaskExtension config;
+        private readonly DurableTaskExtensionBase config;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
         public OrchestrationTriggerAttributeBindingProvider(
-            DurableTaskExtension config,
+            DurableTaskExtensionBase config,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
         {
@@ -65,12 +65,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
-            private readonly DurableTaskExtension config;
+            private readonly DurableTaskExtensionBase config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
 
             public OrchestrationTriggerBinding(
-                DurableTaskExtension config,
+                DurableTaskExtensionBase config,
                 ParameterInfo parameterInfo,
                 FunctionName orchestratorName)
             {

@@ -22,14 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal abstract class TaskCommonShim : TaskOrchestration
     {
-        public TaskCommonShim(DurableTaskExtension config)
+        public TaskCommonShim(DurableTaskExtensionBase config)
         {
             this.Config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         public abstract DurableCommonContext Context { get; }
 
-        internal DurableTaskExtension Config { get; private set; }
+        internal DurableTaskExtensionBase Config { get; private set; }
 
         protected Func<Task> FunctionInvocationCallback { get; private set; }
 

@@ -11,13 +11,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal sealed class DurableTaskListener : IListener
     {
-        private readonly DurableTaskExtension config;
+        private readonly DurableTaskExtensionBase config;
         private readonly FunctionName functionName;
         private readonly ITriggeredFunctionExecutor executor;
         private readonly FunctionType functionType;
 
         public DurableTaskListener(
-            DurableTaskExtension config,
+            DurableTaskExtensionBase config,
             FunctionName functionName,
             ITriggeredFunctionExecutor executor,
             FunctionType functionType)

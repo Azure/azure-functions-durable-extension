@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
@@ -1210,7 +1211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     ("WholeStringTest", "dummy"),
                 });
 
-            var options = new DurableTaskOptions
+            var options = new DurableTaskAzureStorageOptions
             {
                 HubName = "DurableTaskHub",
                 Notifications = new NotificationOptions(),
@@ -1225,18 +1226,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 PublishRetryHttpStatus = retryStatus,
             };
 
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
-
-            IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var wrappedOptions = new OptionsWrapper<DurableTaskAzureStorageOptions>(options);
             var connectionStringResolver = new TestConnectionStringResolver();
-            var extension = new DurableTaskExtension(
+            var extension = new DurableTaskExtensionAzureStorageConfig(
                 wrappedOptions,
                 new LoggerFactory(),
                 mockNameResolver.Object,
-                new OrchestrationServiceFactory(wrappedOptions, connectionStringResolver));
+                new AzureStorageOrchestrationServiceFactory(wrappedOptions, connectionStringResolver));
 
             var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
 
@@ -1254,9 +1250,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void OrchestrationCustomHelperTypeFallback()
+        public void OrchestrationCustomHelperTypeActivationFailed()
         {
-            var options = new DurableTaskOptions
+            var options = new DurableTaskAzureStorageOptions
             {
                 HubName = "DurableTaskHub",
                 Notifications = new NotificationOptions()
@@ -1268,17 +1264,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     },
                 },
             };
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
 
-            var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var extension = new DurableTaskExtension(
+            options.HubName = "DurableTaskHub";
+
+            var wrappedOptions = new OptionsWrapper<DurableTaskAzureStorageOptions>(options);
+            var extension = new DurableTaskExtensionAzureStorageConfig(
                 wrappedOptions,
                 new LoggerFactory(),
                 new SimpleNameResolver(),
-                new OrchestrationServiceFactory(wrappedOptions, new TestConnectionStringResolver()));
+                new AzureStorageOrchestrationServiceFactory(wrappedOptions, new TestConnectionStringResolver()));
 
             var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
 
@@ -1290,16 +1284,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task OrchestrationCustomHelperTypeDependencyInjection()
         {
-            var options = new DurableTaskOptions
+            var options = new DurableTaskAzureStorageOptions
             {
                 HubName = "DurableTaskHub",
-                StorageProvider = new StorageProviderOptions
+                AzureStorageProvider = new AzureStorageOptions
                 {
-                    AzureStorage = new AzureStorageOptions(),
                 },
             };
 
-            IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var wrappedOptions = new OptionsWrapper<DurableTaskAzureStorageOptions>(options);
+            var extension = new DurableTaskExtensionAzureStorageConfig(
+                wrappedOptions,
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new AzureStorageOrchestrationServiceFactory(wrappedOptions, new TestConnectionStringResolver()));
 
             int callCount = 0;
             Action<string> handler = eventName => { callCount++; };

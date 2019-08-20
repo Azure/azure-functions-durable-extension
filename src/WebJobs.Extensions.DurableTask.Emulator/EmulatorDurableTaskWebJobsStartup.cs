@@ -5,15 +5,15 @@
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Hosting;
 
-[assembly: WebJobsStartup(typeof(DurableTaskWebJobsStartup))]
+[assembly: WebJobsStartup(typeof(EmulatorDurableTaskWebJobsStartup))]
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class DurableTaskWebJobsStartup : IWebJobsStartup
+    internal class EmulatorDurableTaskWebJobsStartup : IWebJobsStartup
     {
         public void Configure(IWebJobsBuilder builder)
         {
-            builder.AddDurableTask();
+            builder.AddEmulatorDurableTask();
         }
     }
 }

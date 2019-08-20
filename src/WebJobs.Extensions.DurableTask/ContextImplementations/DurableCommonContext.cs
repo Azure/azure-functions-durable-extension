@@ -2,16 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
-using DurableTask.Core;
-using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -24,14 +18,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly List<Func<Task>> deferredTasks
             = new List<Func<Task>>();
 
-        internal DurableCommonContext(DurableTaskExtension config, string functionName)
+        internal DurableCommonContext(DurableTaskExtensionBase config, string functionName)
         {
             this.Config = config ?? throw new ArgumentNullException(nameof(config));
             this.FunctionName = functionName;
             this.EntityMessageReorderWindow = TimeSpan.FromMinutes(config.Options.EntityMessageReorderWindowInMinutes);
         }
 
-        internal DurableTaskExtension Config { get; }
+        internal DurableTaskExtensionBase Config { get; }
 
         internal string FunctionName { get; }
 

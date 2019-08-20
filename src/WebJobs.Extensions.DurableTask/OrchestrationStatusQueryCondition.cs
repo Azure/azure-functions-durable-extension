@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using DurableTask.AzureStorage.Tracking;
-using DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -43,17 +40,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// ContinuationToken of the pager.
         /// </summary>
         public string ContinuationToken { get; set; }
-
-        internal OrchestrationInstanceStatusQueryCondition Parse()
-        {
-            return new OrchestrationInstanceStatusQueryCondition
-            {
-               RuntimeStatus = this.RuntimeStatus.Select(
-                    p => (OrchestrationStatus)Enum.Parse(typeof(OrchestrationStatus), p.ToString())),
-               CreatedTimeFrom = this.CreatedTimeFrom,
-               CreatedTimeTo = this.CreatedTimeTo,
-               TaskHubNames = this.TaskHubNames,
-            };
-        }
     }
 }

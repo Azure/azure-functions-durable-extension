@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 #if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,16 +33,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
-            var options = new DurableTaskOptions()
+            var options = new DurableTaskAzureStorageOptions()
             {
                 Notifications = new NotificationOptions(),
             };
             options.NotificationUrl = null;
             options.HubName = "DurableTaskHub";
-            options.StorageProvider = new StorageProviderOptions()
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
+            options.AzureStorageProvider = new AzureStorageOptions();
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
             var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
@@ -977,20 +976,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
         }
 
-        private static DurableTaskExtension GetTestExtension()
+        private static DurableTaskExtensionBase GetTestExtension()
         {
-            var options = new DurableTaskOptions();
+            var options = new DurableTaskAzureStorageOptions();
             options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
+            options.AzureStorageProvider = new AzureStorageOptions();
             options.HubName = "DurableFunctionsHub";
 
             return GetTestExtension(options);
         }
 
-        private static DurableTaskExtension GetTestExtension(DurableTaskOptions options)
+        private static DurableTaskExtensionBase GetTestExtension(DurableTaskAzureStorageOptions options)
         {
             return new MockDurableTaskExtension(options);
         }
@@ -1012,16 +1008,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private class MockDurableTaskExtension : DurableTaskExtension
+        private class MockDurableTaskExtension : DurableTaskExtensionBase
         {
-            public MockDurableTaskExtension(DurableTaskOptions options)
+            public MockDurableTaskExtension(DurableTaskAzureStorageOptions options)
                 : base(
-                    new OptionsWrapper<DurableTaskOptions>(options),
+                    options,
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new OrchestrationServiceFactory(new OptionsWrapper<DurableTaskOptions>(options), new TestConnectionStringResolver()),
+                    new AzureStorageOrchestrationServiceFactory(new OptionsWrapper<DurableTaskAzureStorageOptions>(options), new TestConnectionStringResolver()),
                     new DurableHttpMessageHandlerFactory())
             {
+            }
+
+            internal override DurableTaskOptions GetDefaultDurableTaskOptions()
+            {
+                return new DurableTaskAzureStorageOptions();
+            }
+
+            internal override IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client)
+            {
+                return new DefaultDurableSpecialOperationsClient("mock");
             }
 
             protected internal override IDurableClient GetClient(DurableClientAttribute attribute)

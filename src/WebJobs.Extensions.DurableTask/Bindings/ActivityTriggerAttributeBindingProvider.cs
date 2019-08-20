@@ -17,12 +17,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ActivityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
-        private readonly DurableTaskExtension durableTaskConfig;
+        private readonly DurableTaskExtensionBase durableTaskConfig;
         private readonly ExtensionConfigContext extensionContext;
         private readonly EndToEndTraceHelper traceHelper;
 
         public ActivityTriggerAttributeBindingProvider(
-            DurableTaskExtension durableTaskConfig,
+            DurableTaskExtensionBase durableTaskConfig,
             ExtensionConfigContext extensionContext,
             EndToEndTraceHelper traceHelper)
         {

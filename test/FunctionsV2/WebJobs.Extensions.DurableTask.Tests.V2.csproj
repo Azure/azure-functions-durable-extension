@@ -32,8 +32,15 @@
   <ItemGroup>
     <Compile Include="..\Common\*.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="..\Common\DurableOptionsConfigurationTests.cs" />
+  </ItemGroup>
   
   <ItemGroup>
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.AzureStorage\WebJobs.Extensions.DurableTask.AzureStorage.csproj" />
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Emulator\WebJobs.Extensions.DurableTask.Emulator.csproj" />
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Redis\WebJobs.Extensions.DurableTask.Redis.csproj" />
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
 

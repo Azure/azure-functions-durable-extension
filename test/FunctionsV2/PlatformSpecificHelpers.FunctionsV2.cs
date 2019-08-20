@@ -1,7 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using System.Net.Http;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string FlakeyTestCategory = TestCategory + "_Flakey";
 
         public static JobHost CreateJobHost(
-            IOptions<DurableTaskOptions> options,
+            DurableTaskOptions options,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -34,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddDurableTask(options);
+                        webJobsBuilder.AddCorrectDurableTaskExtension(options);
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -53,6 +55,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Build();
 
             return (JobHost)host.Services.GetService<IJobHost>();
+        }
+
+        private static IWebJobsBuilder AddCorrectDurableTaskExtension(this IWebJobsBuilder builder, DurableTaskOptions options)
+        {
+            switch (options)
+            {
+                case DurableTaskAzureStorageOptions azureOptions:
+                    builder.AddAzureStorageDurableTask(new OptionsWrapper<DurableTaskAzureStorageOptions>(azureOptions));
+                    return builder;
+                case DurableTaskRedisOptions redisOptions:
+                    builder.AddRedisDurableTask(new OptionsWrapper<DurableTaskRedisOptions>(redisOptions));
+                    return builder;
+                case DurableTaskEmulatorOptions emulatorOptions:
+                    builder.AddEmulatorDurableTask(new OptionsWrapper<DurableTaskEmulatorOptions>(emulatorOptions));
+                    return builder;
+                default:
+                    throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
+            }
         }
     }
 }

@@ -17,10 +17,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
     internal class TaskHttpActivityShim : TaskActivity
     {
         private readonly HttpClient httpClient;
-        private readonly DurableTaskExtension config;
+        private readonly DurableTaskExtensionBase config;
 
         public TaskHttpActivityShim(
-            DurableTaskExtension config,
+            DurableTaskExtensionBase config,
             HttpClient httpClientFactory)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
+        public DurableEntityContext(DurableTaskExtensionBase config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
             this.self = entity;

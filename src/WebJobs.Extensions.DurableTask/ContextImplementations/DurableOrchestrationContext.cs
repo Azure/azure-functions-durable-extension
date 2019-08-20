@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
-        internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
+        internal DurableOrchestrationContext(DurableTaskExtensionBase config, string functionName)
             : base(config, functionName)
         {
         }

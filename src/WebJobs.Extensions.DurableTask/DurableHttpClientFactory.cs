@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.durableHttpClient = new HttpClient(handler.CreateHttpMessageHandler());
 
-                var assembly = typeof(DurableTaskExtension).Assembly;
+                var assembly = typeof(DurableTaskExtensionBase).Assembly;
                 Version assemblyVersion = GetAssemblyVersion(assembly);
 
                 this.durableHttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(

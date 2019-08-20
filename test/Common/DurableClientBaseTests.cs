@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure;
 #if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -210,21 +211,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
         }
 
-        private static DurableTaskExtension GetDurableTaskExtension()
+        private static DurableTaskExtensionBase GetDurableTaskExtension()
         {
-            var options = new DurableTaskOptions();
+            var options = new DurableTaskAzureStorageOptions();
             options.HubName = "DurableTaskHub";
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
-            IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            options.AzureStorageProvider = new AzureStorageOptions();
+            var wrappedOptions = new OptionsWrapper<DurableTaskAzureStorageOptions>(options);
             var connectionStringResolver = new TestConnectionStringResolver();
-            return new DurableTaskExtension(
+            return new DurableTaskExtensionAzureStorageConfig(
                 wrappedOptions,
                 new LoggerFactory(),
                 TestHelpers.GetTestNameResolver(),
-                new OrchestrationServiceFactory(wrappedOptions, connectionStringResolver),
+                new AzureStorageOrchestrationServiceFactory(wrappedOptions, connectionStringResolver),
                 new DurableHttpMessageHandlerFactory());
         }
     }

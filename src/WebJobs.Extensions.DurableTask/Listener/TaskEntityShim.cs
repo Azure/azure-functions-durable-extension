@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly List<RequestMessage> operationBatch = new List<RequestMessage>();
         private RequestMessage lockRequest = null;
 
-        public TaskEntityShim(DurableTaskExtension config, string schedulerId)
+        public TaskEntityShim(DurableTaskExtensionBase config, string schedulerId)
             : base(config)
         {
             this.SchedulerId = schedulerId;

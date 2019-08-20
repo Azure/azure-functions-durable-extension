@@ -12,10 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string InstanceIdPlaceholder = "INSTANCEID";
 
-        private readonly DurableTaskExtension config;
+        private readonly DurableTaskExtensionBase config;
         private readonly EndToEndTraceHelper traceHelper;
 
-        public BindingHelper(DurableTaskExtension config, EndToEndTraceHelper traceHelper)
+        public BindingHelper(DurableTaskExtensionBase config, EndToEndTraceHelper traceHelper)
         {
             this.config = config;
             this.traceHelper = traceHelper;
