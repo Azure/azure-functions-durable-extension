@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-
 #if NETSTANDARD2_0
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -33,11 +32,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder.AddExtension<DurableTaskExtension>()
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>()
-                         .AddSingleton<IOrchestrationServiceFactory, OrchestrationServiceFactory>()
-                         .TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
 
             return builder;
         }
@@ -88,6 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return builder;
         }
+
 #else
         /// <summary>
         /// Enable running durable orchestrations implemented as functions.

@@ -48,54 +48,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
-            var durableTaskOptions = new DurableTaskOptions
+            DurableTaskOptions durableTaskOptions = TestHelpers.GetDurableTaskOptionsForStorageProvider(storageProviderType);
+            durableTaskOptions.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            durableTaskOptions.Tracing = new TraceOptions()
             {
-                HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
-                Tracing = new TraceOptions()
-                {
-                    TraceInputsAndOutputs = true,
-                    TraceReplayEvents = traceReplayEvents,
-                },
-                Notifications = new NotificationOptions()
-                {
-                    EventGrid = new EventGridNotificationOptions()
-                    {
-                        KeySettingName = eventGridKeySettingName,
-                        TopicEndpoint = eventGridTopicEndpoint,
-                        PublishEventTypes = eventGridPublishEventTypes,
-                    },
-                },
-                HttpSettings = new HttpOptions()
-                {
-                    DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
-                },
-                NotificationUrl = notificationUrl,
-                ExtendedSessionsEnabled = enableExtendedSessions,
-                MaxConcurrentOrchestratorFunctions = 200,
-                MaxConcurrentActivityFunctions = 200,
-                NotificationHandler = eventGridNotificationHandler,
+                TraceInputsAndOutputs = true,
+                TraceReplayEvents = traceReplayEvents,
             };
-
-            if (storageProviderType != null)
+            durableTaskOptions.Notifications = new NotificationOptions()
             {
-                durableTaskOptions.StorageProvider = new StorageProviderOptions();
-            }
+                EventGrid = new EventGridNotificationOptions()
+                {
+                    KeySettingName = eventGridKeySettingName,
+                    TopicEndpoint = eventGridTopicEndpoint,
+                    PublishEventTypes = eventGridPublishEventTypes,
+                },
+            };
+            durableTaskOptions.HttpSettings = new HttpOptions()
+            {
+                DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
+            };
+            durableTaskOptions.NotificationUrl = notificationUrl;
+            durableTaskOptions.ExtendedSessionsEnabled = enableExtendedSessions;
+            durableTaskOptions.MaxConcurrentOrchestratorFunctions = 200;
+            durableTaskOptions.MaxConcurrentActivityFunctions = 200;
+            durableTaskOptions.NotificationHandler = eventGridNotificationHandler;
 
+            // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
-                durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
-                durableTaskOptions.StorageProvider.AzureStorage.FetchLargeMessagesAutomatically = autoFetchLargeMessages;
-            }
-            else if (string.Equals(storageProviderType, EmulatorProviderType))
-            {
-                durableTaskOptions.StorageProvider.Emulator = new EmulatorStorageOptions();
-            }
-            else if (string.Equals(storageProviderType, RedisProviderType))
-            {
-                durableTaskOptions.StorageProvider.Redis = new RedisStorageOptions()
+                durableTaskOptions.Storage["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
+                if (maxQueuePollingInterval != null)
                 {
-                    ConnectionStringName = "RedisConnectionString",
-                };
+                    durableTaskOptions.Storage["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
+                }
             }
 
             if (eventGridRetryCount.HasValue)
@@ -115,12 +101,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (maxQueuePollingInterval != null)
             {
-                durableTaskOptions.StorageProvider.AzureStorage.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
+                durableTaskOptions.Storage["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
             }
 
             return GetJobHost(
                 loggerProvider,
                 durableTaskOptions,
+                storageProviderType,
                 nameResolver,
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper);
@@ -129,6 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
             DurableTaskOptions durableTaskOptions,
+            string storageProviderType = AzureStorageProviderType,
             INameResolver nameResolver = null,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
@@ -140,7 +128,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
             }
 
-            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, storageProviderType, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
+        }
+
+        public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)
+        {
+            switch (storageProvider)
+            {
+                case AzureStorageProviderType:
+#if NET_CORE
+                case RedisProviderType:
+                case EmulatorProviderType:
+#endif
+                    return new DurableTaskOptions();
+                default:
+                    throw new InvalidOperationException($"Storage provider {storageProvider} is not supported for testing infrastructure.");
+            }
         }
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
@@ -157,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntities),
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
-#if NETCOREAPP2_0
+#if NET_CORE
                 typeof(TestEntityWithDependencyInjectionHelpers),
 #endif
             };

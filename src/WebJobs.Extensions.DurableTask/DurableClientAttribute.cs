@@ -34,9 +34,8 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <value>The name of a connection string that exists in the app's application settings.</value>
         /// <remarks>
-        /// The default behavior is to use the value specified by
-        /// <see cref="DurableTaskOptions.GetConnectionStringName"/>. If no value exists there, then
-        /// the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+        /// The default behavior is to use the value ConnectionStringName in <see cref="DurableTaskOptions.Storage"/>.
+        /// If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         public string ConnectionName { get; set; }
 
