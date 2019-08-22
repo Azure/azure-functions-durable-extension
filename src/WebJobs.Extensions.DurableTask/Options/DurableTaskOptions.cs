@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public HttpOptions HttpSettings { get; set; }
 
         /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
+        /// Gets or sets default task hub name to be used by all <see cref="DurableClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
         /// </summary>
         /// <remarks>

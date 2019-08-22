@@ -21,6 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="attribute">An orchestration client attribute with parameters for the orchestration client.</param>
         /// <returns>An orchestration service client to be used by a function.</returns>
-        IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute);
+        IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute);
     }
 }

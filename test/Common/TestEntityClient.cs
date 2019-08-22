@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Newtonsoft.Json;
 using Xunit.Abstractions;
 
@@ -15,14 +16,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly EntityId entityId;
 
         public TestEntityClient(
-            IDurableOrchestrationClient innerClient,
+            IDurableEntityClient innerClient,
             EntityId entityId)
         {
             this.InnerClient = innerClient ?? throw new ArgumentNullException(nameof(innerClient));
             this.entityId = entityId;
         }
 
-        public IDurableOrchestrationClient InnerClient { get; }
+        public IDurableEntityClient InnerClient { get; }
 
         public async Task SignalEntity(
             ITestOutputHelper output,

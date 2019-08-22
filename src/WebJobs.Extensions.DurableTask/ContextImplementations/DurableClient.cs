@@ -13,6 +13,7 @@ using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AzureStorage = DurableTask.AzureStorage;
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Client for starting, querying, terminating, and raising events to orchestration instances.
     /// </summary>
-    internal class DurableOrchestrationClient : IDurableOrchestrationClient,
+    internal class DurableClient : IDurableClient,
 #pragma warning disable 618
         DurableOrchestrationClientBase // for v1 legacy compatibility.
 #pragma warning restore 618
@@ -37,13 +38,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly HttpApiHandler httpApiHandler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
-        private readonly OrchestrationClientAttribute attribute; // for rehydrating a Client after a webhook
+        private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
 
-        internal DurableOrchestrationClient(
+        internal DurableClient(
             IOrchestrationServiceClient serviceClient,
             DurableTaskExtension config,
             HttpApiHandler httpHandler,
-            OrchestrationClientAttribute attribute)
+            DurableClientAttribute attribute)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -172,19 +173,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 connectionName = this.attribute.ConnectionName;
             }
 
-            var attribute = new OrchestrationClientAttribute
+            var attribute = new DurableClientAttribute
             {
                 TaskHub = taskHubName,
                 ConnectionName = connectionName,
             };
 
-            TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
+            TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
 
             return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData);
         }
 
         /// <inheritdoc />
-        Task IDurableOrchestrationClient.SignalEntityAsync(EntityId entityId, string operationName, object operationInput, string taskHubName, string connectionName)
+        Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, string operationName, object operationInput, string taskHubName, string connectionName)
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
@@ -197,13 +198,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     connectionName = this.attribute.ConnectionName;
                 }
 
-                var attribute = new OrchestrationClientAttribute
+                var attribute = new DurableClientAttribute
                 {
                     TaskHub = taskHubName,
                     ConnectionName = connectionName,
                 };
 
-                TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
+                TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
                 return this.SignalEntityAsync(taskHubClient, taskHubName, entityId, operationName, operationInput);
             }
         }
@@ -356,7 +357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return results;
         }
 
-        Task<EntityStateResponse<T>> IDurableOrchestrationClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName)
+        Task<EntityStateResponse<T>> IDurableEntityClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName)
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
@@ -369,13 +370,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     connectionName = this.attribute.ConnectionName;
                 }
 
-                var attribute = new OrchestrationClientAttribute
+                var attribute = new DurableClientAttribute
                 {
                     TaskHub = taskHubName,
                     ConnectionName = connectionName,
                 };
 
-                TaskHubClient taskHubClient = ((DurableOrchestrationClient)this.config.GetClient(attribute)).client;
+                TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
                 return this.ReadEntityStateAsync<T>(taskHubClient, taskHubName, entityId);
             }
         }
@@ -672,7 +673,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
-            OrchestrationClientAttribute attribute)
+            DurableClientAttribute attribute)
         {
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
         }
@@ -691,7 +692,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
-            OrchestrationClientAttribute attribute,
+            DurableClientAttribute attribute,
             TimeSpan timeout,
             TimeSpan retryInterval)
         {

@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
             var durableExtension = GetDurableTaskExtension();
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "", new { message = "any obj" }));
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "@invalid", new { message = "any obj" }));
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.StartNewAsync("anyOrchestratorFunction", "/invalid", new { message = "any obj" }));
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
             var durableExtension = GetDurableTaskExtension();
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.RaiseEventAsync("invalid_instance_id", "anyEvent", new { message = "any message" }));
         }
 
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Completed));
             var durableExtension = GetDurableTaskExtension();
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
             await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await durableOrchestrationClient.RaiseEventAsync("valid_instance_id", "anyEvent", new { message = "any message" }));
         }
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInvalidInstanceState());
             var durableExtension = GetDurableTaskExtension();
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.TerminateAsync("invalid_instance_id", "any reason"));
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
             var durableExtension = GetDurableTaskExtension();
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
             await durableOrchestrationClient.TerminateAsync("valid_instance_id", "any reason");
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync("valid_instance_id", "any reason"), Times.Once());
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Completed));
             var durableExtension = GetDurableTaskExtension();
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new OrchestrationClientAttribute { });
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
             await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await durableOrchestrationClient.TerminateAsync("invalid_instance_id", "any reason"));
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never());

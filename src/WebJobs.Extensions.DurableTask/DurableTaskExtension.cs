@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,8 +15,8 @@ using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
-using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
@@ -48,8 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that OrchestrationClientAttribute defines a custom equality comparer.
-        private readonly ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient> cachedClients =
-            new ConcurrentDictionary<OrchestrationClientAttribute, DurableOrchestrationClient>();
+        private readonly ConcurrentDictionary<DurableClientAttribute, DurableClient> cachedClients =
+            new ConcurrentDictionary<DurableClientAttribute, DurableClient>();
 
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownOrchestrators =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
@@ -140,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
+        /// Gets or sets default task hub name to be used by all <see cref="DurableClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
         /// </summary>
         /// <remarks>
@@ -200,13 +198,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var bindings = new BindingHelper(this, this.TraceHelper);
 
             // Note that the order of the rules is important
-            var rule = context.AddBindingRule<OrchestrationClientAttribute>()
+            var rule = context.AddBindingRule<DurableClientAttribute>()
                 .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
-                .AddConverter<IDurableOrchestrationClient, string>(bindings.DurableOrchestrationClientToString);
+                .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
+            rule.BindToInput<IDurableEntityClient>(this.GetClient);
+            rule.BindToInput<IDurableClient>(this.GetClient);
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.TraceHelper));
@@ -620,18 +620,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Gets a <see cref="DurableOrchestrationClient"/> using configuration from a <see cref="OrchestrationClientAttribute"/> instance.
+        /// Gets a <see cref="DurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
         /// </summary>
         /// <param name="attribute">The attribute containing the client configuration parameters.</param>
-        /// <returns>Returns a <see cref="DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
-        protected internal virtual IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        /// <returns>Returns a <see cref="DurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        protected internal virtual IDurableClient GetClient(DurableClientAttribute attribute)
         {
-            DurableOrchestrationClient client = this.cachedClients.GetOrAdd(
+            DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
                 attr =>
                 {
                     IOrchestrationServiceClient innerClient = this.orchestrationServiceFactory.GetOrchestrationClient(attribute);
-                    return new DurableOrchestrationClient(innerClient, this, this.HttpApiHandler, attr);
+                    return new DurableClient(innerClient, this, this.HttpApiHandler, attr);
                 });
 
             return client;

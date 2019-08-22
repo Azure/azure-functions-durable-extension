@@ -9,12 +9,12 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Attribute used to bind a function parameter to a <see cref="DurableOrchestrationClient"/> instance.
+    /// Attribute used to bind a function parameter to a <see cref="DurableClient"/> instance.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("TaskHub={TaskHub}, ConnectionName={ConnectionName}")]
     [Binding]
-    public sealed class OrchestrationClientAttribute : Attribute, IEquatable<OrchestrationClientAttribute>
+    public sealed class DurableClientAttribute : Attribute, IEquatable<DurableClientAttribute>
     {
         /// <summary>
         /// Optional. Gets or sets the name of the task hub in which the orchestration data lives.
@@ -55,21 +55,21 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Compares two <see cref="OrchestrationClientAttribute"/> instances for value equality.
+        /// Compares two <see cref="DurableClientAttribute"/> instances for value equality.
         /// </summary>
-        /// <param name="obj">The <see cref="OrchestrationClientAttribute"/> object to compare with.</param>
+        /// <param name="obj">The <see cref="DurableClientAttribute"/> object to compare with.</param>
         /// <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
-            return this.Equals(obj as OrchestrationClientAttribute);
+            return this.Equals(obj as DurableClientAttribute);
         }
 
         /// <summary>
-        /// Compares two <see cref="OrchestrationClientAttribute"/> instances for value equality.
+        /// Compares two <see cref="DurableClientAttribute"/> instances for value equality.
         /// </summary>
-        /// <param name="other">The <see cref="OrchestrationClientAttribute"/> object to compare with.</param>
+        /// <param name="other">The <see cref="DurableClientAttribute"/> object to compare with.</param>
         /// <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
-        public bool Equals(OrchestrationClientAttribute other)
+        public bool Equals(DurableClientAttribute other)
         {
             if (other == null)
             {

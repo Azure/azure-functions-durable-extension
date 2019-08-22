@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.innerFactory.Value.GetOrchestrationService();
         }
 
-        public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
+        public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
         {
             return this.innerFactory.Value.GetOrchestrationClient(attribute);
         }
@@ -93,12 +93,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return this.defaultService;
             }
 
-            public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
+            public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
             {
                 return this.GetAzureStorageOrchestrationService(attribute);
             }
 
-            private AzureStorageOrchestrationService GetAzureStorageOrchestrationService(OrchestrationClientAttribute attribute)
+            private AzureStorageOrchestrationService GetAzureStorageOrchestrationService(DurableClientAttribute attribute)
             {
                 AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attribute);
 
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return innerClient;
             }
 
-            internal AzureStorageOrchestrationServiceSettings GetOrchestrationServiceSettings(OrchestrationClientAttribute attribute)
+            internal AzureStorageOrchestrationServiceSettings GetOrchestrationServiceSettings(DurableClientAttribute attribute)
             {
                 return this.GetAzureStorageOrchestrationServiceSettings(
                     this.options,
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.service = new LocalOrchestrationService();
             }
 
-            public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
+            public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
             {
                 return (IOrchestrationServiceClient)this.service;
             }
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             }
 
-            public IOrchestrationServiceClient GetOrchestrationClient(OrchestrationClientAttribute attribute)
+            public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
             {
                 if (string.IsNullOrEmpty(attribute.TaskHub) || string.Equals(attribute.TaskHub, this.defaultHubName))
                 {

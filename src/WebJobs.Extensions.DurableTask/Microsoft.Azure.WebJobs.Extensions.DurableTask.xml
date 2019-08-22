@@ -42,6 +42,65 @@
             The JSON-serializeable value to use as the activity function output.
             </param>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient">
+            <summary>
+            Client for starting, querying, terminating, and raising events to orchestration instances.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TaskHubName">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.TimeSpan,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#StartNewAsync(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#ContextInterfaces#IDurableEntityClient#SignalEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RewindAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
             <summary>
             Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>
@@ -76,65 +135,6 @@
             <summary>
             Context object passed to application code executing entity operations.
             </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient">
-            <summary>
-            Client for starting, querying, terminating, and raising events to orchestration instances.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TaskHubName">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.TimeSpan,System.TimeSpan)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#StartNewAsync(System.String,System.String,System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.Object)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.String,System.Object,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#SignalEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object,System.String,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#RewindAsync(System.String,System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
-            <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext">
             <summary>
@@ -207,6 +207,54 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IInterleavingContext#LockAsync(Microsoft.Azure.WebJobs.EntityId[])">
             <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableClient">
+            <summary>
+            Provides functionality available to durable orchestration and entity clients.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableClient.TaskHubName">
+            <summary>
+            Gets the name of the task hub configured on this client instance.
+            </summary>
+            <value>
+            The name of the task hub.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableEntityClient">
+            <summary>
+            Provides functionality available to durable entity clients.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableEntityClient.TaskHubName">
+            <summary>
+            Gets the name of the task hub configured on this client instance.
+            </summary>
+            <value>
+            The name of the task hub.
+            </value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableEntityClient.SignalEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object,System.String,System.String)">
+            <summary>
+            Signals an entity to perform an operation.
+            </summary>
+            <param name="entityId">The target entity.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationInput">The input for the operation.</param>
+            <param name="taskHubName">The TaskHubName of the target entity.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableEntityClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)">
+            <summary>
+            Tries to read the current state of an entity. Returns default(<typeparamref name="T"/>) if the entity does not
+            exist, or if the JSON-serialized state of the entity is larger than 16KB.
+            </summary>
+            <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
+            <param name="entityId">The target entity.</param>
+            <param name="taskHubName">The TaskHubName of the target entity.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+            <returns>a response containing the current state of the entity.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest">
             <summary>
@@ -325,7 +373,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
             <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/>,
+            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient"/>,
             <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext"/> instances.
             </summary>
             <remarks>
@@ -374,12 +422,12 @@
             <param name="version">Not used.</param>
             <returns>An activity shim that delegates execution to an activity function.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.DurableClientAttribute)">
             <summary>
-            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> instance.
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.DurableClientAttribute"/> instance.
             </summary>
             <param name="attribute">The attribute containing the client configuration parameters.</param>
-            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/> instance. The returned instance may be a cached instance.</returns>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient"/> instance. The returned instance may be a cached instance.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
             <inheritdoc/>
@@ -671,7 +719,7 @@
             </summary>
             <returns>An orchestration service to be used by the Durable Task Extension.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationClient(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationClient(Microsoft.Azure.WebJobs.DurableClientAttribute)">
             <summary>
             Creates or retrieves a cached orchestration service client to be used in a given function execution.
             </summary>
@@ -1074,7 +1122,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName">
             <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/>,
+            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient"/>,
             <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext"/> instances.
             </summary>
             <remarks>
@@ -2003,28 +2051,6 @@
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the event notification message has been enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.SignalEntityAsync(Microsoft.Azure.WebJobs.EntityId,System.String,System.Object,System.String,System.String)">
-            <summary>
-            Signals an entity to perform an operation.
-            </summary>
-            <param name="entityId">The target entity.</param>
-            <param name="operationName">The name of the operation.</param>
-            <param name="operationInput">The input for the operation.</param>
-            <param name="taskHubName">The TaskHubName of the target entity.</param>
-            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
-            <returns>A task that completes when the message has been reliably enqueued.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)">
-            <summary>
-            Tries to read the current state of an entity. Returns default(<typeparamref name="T"/>) if the entity does not
-            exist, or if the JSON-serialized state of the entity is larger than 16KB.
-            </summary>
-            <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
-            <param name="entityId">The target entity.</param>
-            <param name="taskHubName">The TaskHubName of the target entity.</param>
-            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
-            <returns>a response containing the current state of the entity.</returns>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.TerminateAsync(System.String,System.String)">
             <summary>
             Terminates a running orchestration instance.
@@ -2318,6 +2344,52 @@
             <returns>An IDisposable that releases the lock when disposed.</returns>
             <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks.</exception>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.DurableClientAttribute">
+            <summary>
+            Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableClientAttribute.TaskHub">
+            <summary>
+            Optional. Gets or sets the name of the task hub in which the orchestration data lives.
+            </summary>
+            <value>The task hub used by this binding.</value>
+            <remarks>
+            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
+            If no value exists there, then a default value will be used.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.DurableClientAttribute.ConnectionName">
+            <summary>
+            Optional. Gets or sets the name of the Azure Storage connection string used by this binding.
+            </summary>
+            <value>The name of a connection string that exists in the app's application settings.</value>
+            <remarks>
+            The default behavior is to use the value specified by
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.GetConnectionStringName"/>. If no value exists there, then
+            the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableClientAttribute.GetHashCode">
+            <summary>
+            Returns a hash code for this attribute.
+            </summary>
+            <returns>A hash code for this attribute.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableClientAttribute.Equals(System.Object)">
+            <summary>
+            Compares two <see cref="T:Microsoft.Azure.WebJobs.DurableClientAttribute"/> instances for value equality.
+            </summary>
+            <param name="obj">The <see cref="T:Microsoft.Azure.WebJobs.DurableClientAttribute"/> object to compare with.</param>
+            <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableClientAttribute.Equals(Microsoft.Azure.WebJobs.DurableClientAttribute)">
+            <summary>
+            Compares two <see cref="T:Microsoft.Azure.WebJobs.DurableClientAttribute"/> instances for value equality.
+            </summary>
+            <param name="other">The <see cref="T:Microsoft.Azure.WebJobs.DurableClientAttribute"/> object to compare with.</param>
+            <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableOrchestrationStatus">
             <summary>
             Represents the status of a durable orchestration instance.
@@ -2496,7 +2568,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.EntityStateResponse`1">
             <summary>
-            The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)"/>.
+            The response returned by <see cref="!:IDurableOrchestrationClient.ReadEntityStateAsync"/>.
             </summary>
             <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
         </member>
@@ -2520,7 +2592,7 @@
             Defines convenient overloads for creating entity proxy, for all the contexts.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,System.Action{``0})">
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableEntityClient,System.String,System.Action{``0})">
             <summary>
             Signals an entity to perform an operation.
             </summary>
@@ -2530,7 +2602,7 @@
             <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,Microsoft.Azure.WebJobs.EntityId,System.Action{``0})">
+        <member name="M:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces.IDurableEntityClient,Microsoft.Azure.WebJobs.EntityId,System.Action{``0})">
             <summary>
             Signals an entity to perform an operation.
             </summary>
@@ -2750,52 +2822,6 @@
             Gets the string value of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.
             </summary>
             <returns>The name and optional version of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.</returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute">
-            <summary>
-            Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationClient"/> instance.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.TaskHub">
-            <summary>
-            Optional. Gets or sets the name of the task hub in which the orchestration data lives.
-            </summary>
-            <value>The task hub used by this binding.</value>
-            <remarks>
-            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
-            If no value exists there, then a default value will be used.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.ConnectionName">
-            <summary>
-            Optional. Gets or sets the name of the Azure Storage connection string used by this binding.
-            </summary>
-            <value>The name of a connection string that exists in the app's application settings.</value>
-            <remarks>
-            The default behavior is to use the value specified by
-            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.GetConnectionStringName"/>. If no value exists there, then
-            the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-            </remarks>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.GetHashCode">
-            <summary>
-            Returns a hash code for this attribute.
-            </summary>
-            <returns>A hash code for this attribute.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.Equals(System.Object)">
-            <summary>
-            Compares two <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> instances for value equality.
-            </summary>
-            <param name="obj">The <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> object to compare with.</param>
-            <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.OrchestrationClientAttribute.Equals(Microsoft.Azure.WebJobs.OrchestrationClientAttribute)">
-            <summary>
-            Compares two <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> instances for value equality.
-            </summary>
-            <param name="other">The <see cref="T:Microsoft.Azure.WebJobs.OrchestrationClientAttribute"/> object to compare with.</param>
-            <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus">
             <summary>

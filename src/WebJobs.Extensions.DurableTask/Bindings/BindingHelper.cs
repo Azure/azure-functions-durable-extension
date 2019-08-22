@@ -21,13 +21,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.traceHelper = traceHelper;
         }
 
-        public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(OrchestrationClientAttribute clientAttribute)
+        public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(DurableClientAttribute clientAttribute)
         {
             IDurableOrchestrationClient client = this.config.GetClient(clientAttribute);
             return new OrchestrationClientAsyncCollector(client);
         }
 
-        public string DurableOrchestrationClientToString(IDurableOrchestrationClient client, OrchestrationClientAttribute attr)
+        public string DurableOrchestrationClientToString(IDurableOrchestrationClient client, DurableClientAttribute attr)
         {
             var payload = new OrchestrationClientInputData
             {
@@ -38,12 +38,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return JsonConvert.SerializeObject(payload);
         }
 
-        public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, OrchestrationClientAttribute attr)
+        public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, DurableClientAttribute attr)
         {
             return input?.ToObject<StartOrchestrationArgs>();
         }
 
-        public StartOrchestrationArgs StringToStartOrchestrationArgs(string input, OrchestrationClientAttribute attr)
+        public StartOrchestrationArgs StringToStartOrchestrationArgs(string input, DurableClientAttribute attr)
         {
             return !string.IsNullOrEmpty(input) ? JsonConvert.DeserializeObject<StartOrchestrationArgs>(input) : null;
         }

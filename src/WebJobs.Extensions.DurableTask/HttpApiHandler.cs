@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
-            OrchestrationClientAttribute attribute)
+            DurableClientAttribute attribute)
         {
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
             return this.CreateCheckStatusResponseMessage(
@@ -132,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal async Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
-            OrchestrationClientAttribute attribute,
+            DurableClientAttribute attribute,
             TimeSpan timeout,
             TimeSpan retryInterval)
         {
@@ -677,7 +678,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             EntityId entityId)
         {
-            IDurableOrchestrationClient client = this.GetClient(request);
+            IDurableEntityClient client = this.GetClient(request);
 
             var response = await client.ReadEntityStateAsync<JToken>(entityId);
 
@@ -695,7 +696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             EntityId entityId)
         {
-            IDurableOrchestrationClient client = this.GetClient(request);
+            IDurableEntityClient client = this.GetClient(request);
 
             string operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
 
@@ -730,7 +731,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private IDurableOrchestrationClient GetClient(HttpRequestMessage request)
+        private IDurableClient GetClient(HttpRequestMessage request)
         {
             string taskHub = null;
             string connectionName = null;
@@ -752,7 +753,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            var attribute = new OrchestrationClientAttribute
+            var attribute = new DurableClientAttribute
             {
                 TaskHub = taskHub,
                 ConnectionName = connectionName,
@@ -762,7 +763,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // protected virtual to allow mocking in unit tests.
-        protected virtual IDurableOrchestrationClient GetClient(OrchestrationClientAttribute attribute)
+        protected virtual IDurableClient GetClient(DurableClientAttribute attribute)
         {
             return this.config.GetClient(attribute);
         }

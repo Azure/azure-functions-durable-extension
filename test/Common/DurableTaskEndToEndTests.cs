@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates task hub name configured via the <see cref="OrchestrationClientAttribute"/> when
+        /// End-to-end test which validates task hub name configured via the <see cref="DurableClientAttribute"/> when
         /// simple orchestrator function which that doesn't call any activity functions is executed.
         /// </summary>
         [Theory]
@@ -2841,7 +2842,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                IDurableOrchestrationClient durableOrchestrationClient = client.InnerClient;
+                IDurableEntityClient durableOrchestrationClient = client.InnerClient;
 
                 var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLowerInvariant(), entityKey));
 

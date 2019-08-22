@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -10,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         [NoAutomaticTrigger]
         public static async Task StartFunction(
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             string functionName,
             string instanceId,
             object input,
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // NOTE: The TestTaskHub app setting name must exist in order for the job host to successfully index this function.
         [NoAutomaticTrigger]
         public static async Task StartFunctionWithTaskHub(
-            [OrchestrationClient(TaskHub = "%TestTaskHub%")] IDurableOrchestrationClient client,
+            [DurableClient(TaskHub = "%TestTaskHub%")] IDurableClient client,
             string functionName,
             string instanceId,
             object input,
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [NoAutomaticTrigger]
         public static void GetEntityClient(
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableEntityClient client,
             EntityId entityId,
             TestEntityClient[] clientRef)
         {

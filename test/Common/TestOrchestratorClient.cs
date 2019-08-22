@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,13 +14,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal class TestOrchestratorClient
     {
-        private readonly IDurableOrchestrationClient innerClient;
+        private readonly IDurableClient innerClient;
         private readonly string functionName;
         private readonly string instanceId;
         private readonly DateTime instanceCreationTime;
 
         internal TestOrchestratorClient(
-            IDurableOrchestrationClient innerClient,
+            IDurableClient innerClient,
             string functionName,
             string instanceId,
             DateTime instanceCreationTime)
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public string InstanceId => this.instanceId;
 
-        internal IDurableOrchestrationClient InnerClient => this.innerClient;
+        internal IDurableClient InnerClient => this.innerClient;
 
         public async Task<DurableOrchestrationStatus> GetStatusAsync(bool showHistory = false, bool showHistoryOutput = false, bool showInput = true)
         {
