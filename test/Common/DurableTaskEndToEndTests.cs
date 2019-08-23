@@ -2875,7 +2875,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableEntity_BasicObjects),
-                extendedSessions))
+                extendedSessions,
+                storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 

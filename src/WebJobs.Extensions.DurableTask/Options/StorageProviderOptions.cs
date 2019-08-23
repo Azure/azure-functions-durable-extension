@@ -35,7 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// </summary>
         public EventHubsStorageOptions EventHubs { get; set; }
 
-
         internal CommonStorageProviderOptions GetConfiguredProvider()
         {
             if (this.configuredProvider == null)
