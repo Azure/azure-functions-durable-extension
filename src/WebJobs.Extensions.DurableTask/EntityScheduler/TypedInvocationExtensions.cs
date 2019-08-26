@@ -2,12 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -30,6 +26,10 @@ namespace Microsoft.Azure.WebJobs
         /// (which is the operation name) and the argument list (which is the operation content, deserialized into
         /// an object array).
         /// </remarks>
+        /// <param name="context">Context object to use to dispatch entity operations.</param>
+        /// <param name="constructorParameters">Parameters to feed to the entity constructor. Should be primarily used for
+        /// output bindings. Parameters must match the order in the constructor after ignoring parameters populated on
+        /// constructor via dependency injection.</param>
         public static async Task DispatchAsync<T>(this IDurableEntityContext context, params object[] constructorParameters)
         {
             // find the method corresponding to the operation

@@ -40,10 +40,12 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         bool IsNewlyConstructed { get; }
 
+#if NETSTANDARD2_0
         /// <summary>
         /// Contains function invocation context to assist with dependency injection at Entity construction time.
         /// </summary>
         FunctionBindingContext FunctionBindingContext { get; set; }
+#endif
 
         /// <summary>
         /// Gets the current state of this entity, for reading and/or updating.

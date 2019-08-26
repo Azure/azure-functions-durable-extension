@@ -73,7 +73,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+#if NETSTANDARD2_0
         public FunctionBindingContext FunctionBindingContext { get; set; }
+#endif
 
         void IDurableEntityContext.DestructOnExit()
         {
