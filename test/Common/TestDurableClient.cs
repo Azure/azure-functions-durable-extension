@@ -5,21 +5,20 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestOrchestratorClient
+    internal class TestDurableClient
     {
         private readonly IDurableClient innerClient;
         private readonly string functionName;
         private readonly string instanceId;
         private readonly DateTime instanceCreationTime;
 
-        internal TestOrchestratorClient(
+        internal TestDurableClient(
             IDurableClient innerClient,
             string functionName,
             string instanceId,

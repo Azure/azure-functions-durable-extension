@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 #if NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -1028,7 +1027,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             protected internal override IDurableClient GetClient(DurableClientAttribute attribute)
             {
                 var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-                return new DurableOrchestrationClientMock(orchestrationServiceClientMock.Object, this, attribute);
+                return new DurableClientMock(orchestrationServiceClientMock.Object, this, attribute);
             }
         }
     }

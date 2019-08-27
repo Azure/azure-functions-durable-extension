@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces
+namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
     /// Provides functionality available to durable entity clients.

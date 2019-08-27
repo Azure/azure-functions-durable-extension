@@ -22,7 +22,7 @@ using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandler
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class DurableOrchestrationClientBaseTests
+    public class DurableClientBaseTests
     {
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]

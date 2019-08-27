@@ -9,7 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Attribute used to bind a function parameter to a <see cref="DurableClient"/> instance.
+    /// Attribute used to bind a function parameter to a <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, or <see cref="IDurableOrchestrationClient"/> instance.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("TaskHub={TaskHub}, ConnectionName={ConnectionName}")]

@@ -13,7 +13,6 @@ using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AzureStorage = DurableTask.AzureStorage;

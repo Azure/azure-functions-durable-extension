@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
@@ -2723,7 +2721,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // in parallel, start one transfer per counter, each decrementing a counter and incrementing
                 // its successor (where the last one wraps around to the first)
                 // This is a pattern that would deadlock if we didn't order the lock acquisition.
-                var clients = new Task<TestOrchestratorClient>[numberEntities];
+                var clients = new Task<TestDurableClient>[numberEntities];
                 for (int i = 0; i < numberEntities; i++)
                 {
                     clients[i] = host.StartOrchestratorAsync(
@@ -3004,7 +3002,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string instanceId = Guid.NewGuid().ToString();
                 string message = GenerateMediumRandomStringPayload().ToString();
-                TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
+                TestDurableClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 

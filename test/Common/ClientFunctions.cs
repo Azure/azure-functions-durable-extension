@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -15,12 +14,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string functionName,
             string instanceId,
             object input,
-            TestOrchestratorClient[] clientRef)
+            TestDurableClient[] clientRef)
         {
             DateTime instanceCreationTime = DateTime.UtcNow;
 
             instanceId = await client.StartNewAsync(functionName, instanceId, input);
-            clientRef[0] = new TestOrchestratorClient(
+            clientRef[0] = new TestDurableClient(
                 client,
                 functionName,
                 instanceId,
@@ -34,12 +33,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string functionName,
             string instanceId,
             object input,
-            TestOrchestratorClient[] clientRef)
+            TestDurableClient[] clientRef)
         {
             DateTime instanceCreationTime = DateTime.UtcNow;
 
             instanceId = await client.StartNewAsync(functionName, instanceId, input);
-            clientRef[0] = new TestOrchestratorClient(
+            clientRef[0] = new TestDurableClient(
                 client,
                 functionName,
                 instanceId,
@@ -48,12 +47,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [NoAutomaticTrigger]
         public static void GetEntityClient(
-            [DurableClient] IDurableEntityClient client,
+            [DurableClient] IDurableClient client,
             EntityId entityId,
             TestEntityClient[] clientRef)
         {
             // Give a client object created via the binding back to the caller
             clientRef[0] = new TestEntityClient(client, entityId);
+        }
+
+        /// <summary>
+        /// Helper method for the IDurableOrchestrationClientBinding test. Gets an IDurableEntityClient.
+        /// </summary>
+        [NoAutomaticTrigger]
+        public static void GetEntityClientBindingTest(
+            [DurableClient] IDurableEntityClient client,
+            IDurableEntityClient[] clientRef)
+        {
+            clientRef[0] = client;
+        }
+
+        /// <summary>
+        /// Helper method for the IDurableOrchestrationClientBinding test. Gets an IDurableOrchestrationClient.
+        /// </summary>
+        [NoAutomaticTrigger]
+        public static void GetOrchestrationClientBindingTest(
+            [DurableClient] IDurableOrchestrationClient client,
+            IDurableOrchestrationClient[] clientRef)
+        {
+            clientRef[0] = client;
         }
     }
 }

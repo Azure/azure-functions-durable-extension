@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 
 namespace Microsoft.Azure.WebJobs
 {

@@ -8,7 +8,7 @@ using System.Text;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// The response returned by <see cref="IDurableOrchestrationClient.ReadEntityStateAsync"/>.
+    /// The response returned by <see cref="IDurableEntityClient.ReadEntityStateAsync"/>.
     /// </summary>
     /// <typeparam name="T">The JSON-serializable type of the entity.</typeparam>
     public struct EntityStateResponse<T>

@@ -16,7 +16,6 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
@@ -620,10 +619,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Gets a <see cref="DurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
+        /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
         /// </summary>
         /// <param name="attribute">The attribute containing the client configuration parameters.</param>
-        /// <returns>Returns a <see cref="DurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
         protected internal virtual IDurableClient GetClient(DurableClientAttribute attribute)
         {
             DurableClient client = this.cachedClients.GetOrAdd(

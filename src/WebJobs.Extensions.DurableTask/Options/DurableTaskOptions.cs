@@ -19,8 +19,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public HttpOptions HttpSettings { get; set; }
 
         /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="DurableClient"/>,
-        /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
+        /// Gets or sets default task hub name to be used by all <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, <see cref="IDurableOrchestrationClient"/>,
+        /// <see cref="IDurableOrchestrationContext"/>, and <see cref="IDurableActivityContext"/> instances.
         /// </summary>
         /// <remarks>
         /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces
+namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
     /// Provides functionality available to durable orchestration and entity clients.
@@ -15,6 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextInterfaces
         /// <value>
         /// The name of the task hub.
         /// </value>
-        string TaskHubName { get; }
+        new string TaskHubName { get; }
     }
 }
