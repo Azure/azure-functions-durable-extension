@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (IsInNonProductionSlot() && this.isDefaultHubName)
             {
                 throw new InvalidOperationException("Task Hub name must be specified in host.json when using slots. See documentation on Task Hubs for " +
-                    "information on how to set this: https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-task-hubs");
+                    "information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
             if (this.StorageProvider == null)
@@ -225,8 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static bool IsInNonProductionSlot()
         {
-            if (Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") != null &&
-                !string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -3334,8 +3333,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", "Test");
                 DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
 
-                InvalidOperationException argumentException =
-                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                InvalidOperationException exception =
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
                     using (var host = TestHelpers.GetJobHost(
                         this.loggerProvider,
@@ -3344,6 +3343,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await host.StartAsync();
                     }
                 });
+
+                Assert.NotNull(exception);
+                Assert.Contains("Task Hub name must be specified in host.json when using slots", exception.Message);
             }
             finally
             {
