@@ -231,7 +231,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> ApprovalWithTimeout([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             (TimeSpan timeout, string defaultValue) = ctx.GetInput<(TimeSpan, string)>();
-            DateTime deadline = ctx.CurrentUtcDateTime.Add(timeout);
             string eventValue;
             if (defaultValue == "throw")
             {
