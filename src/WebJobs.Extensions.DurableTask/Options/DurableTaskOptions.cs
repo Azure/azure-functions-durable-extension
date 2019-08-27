@@ -225,7 +225,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static bool IsInNonProductionSlot()
         {
-            if (!string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME"), "Production", StringComparison.OrdinalIgnoreCase))
+            var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            // slotName can be null in a test environment
+            if (slotName != null && !string.Equals(slotName, "Production", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
