@@ -416,7 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,
                     context.Name,
-                    context.FunctionType,
+                    FunctionType.Orchestrator,
                     context.InstanceId,
                     context.IsReplaying);
             }
@@ -506,7 +506,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     entityContext.InstanceId,
                                     message.ParentInstanceId,
                                     message.LockRequestId,
-                                    entityContext.IsReplaying);
+                                    isReplay: false);
 
                                 entityContext.State.LockedBy = null;
                             }
@@ -557,15 +557,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             string exceptionDetails = e.ToString();
 
-                            if (!entityContext.IsReplaying)
-                            {
-                                entityContext.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                            entityContext.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                                     entityContext.HubName,
                                     entityContext.Name,
                                     entityContext.InstanceId,
                                     exceptionDetails,
-                                    entityContext.IsReplaying));
-                            }
+                                    isReplay: false));
 
                             var entitySchedulerExceptions = new OrchestrationFailureException(
                                 $"Entity scheduler {entityShim.EntityId} failed: {e.Message}",

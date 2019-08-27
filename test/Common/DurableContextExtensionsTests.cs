@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CallActivityAsync_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IDeterministicExecutionContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CallActivityAsync<object>(FunctionName, this.inputObject)).Returns(this.taskFromTen);
             var result = durableOrchestrationContextBaseMock.Object.CallActivityAsync(FunctionName, this.inputObject);
             result.Should().Be(this.taskFromTen);
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task CallActivityWithRetryAsync_is_calling_extension_method()
         {
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(10), 5);
-            var durableOrchestrationContextBaseMock = new Mock<IDeterministicExecutionContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock
                 .Setup(x => x.CallActivityWithRetryAsync<object>(FunctionName, retryOptions, this.inputObject))
                 .Returns(this.taskFromTen);
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorAsync_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CallSubOrchestratorAsync<object>(FunctionName, null, this.inputObject))
                 .Returns(this.taskFromTen);
             var result = durableOrchestrationContextBaseMock.Object.CallSubOrchestratorAsync(FunctionName, this.inputObject);
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorAsync_with_instanceId_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { CallBase = true };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { CallBase = true };
             var instanceId = Guid.NewGuid().ToString();
             durableOrchestrationContextBaseMock.Setup(x => x.CallSubOrchestratorAsync<object>(FunctionName, instanceId, this.inputObject))
                 .Returns(this.taskFromTen);
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorAsync_typed_task_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CallSubOrchestratorAsync<int>(FunctionName, null, this.inputObject)).Returns(this.intResultTask);
             var result = await durableOrchestrationContextBaseMock.Object.CallSubOrchestratorAsync<int>(FunctionName, this.inputObject);
             result.Should().Be(this.stateValueFive);
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task CallSubOrchestratorWithRetryAsync_with_4_parameters_is_calling_extension_method()
         {
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(10), 5);
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock
                 .Setup(x => x.CallSubOrchestratorWithRetryAsync<object>(FunctionName, retryOptions, null, this.inputObject))
                 .Returns(this.taskFromTen);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(10), 5);
             var instanceId = Guid.NewGuid().ToString();
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock
                 .Setup(x => x.CallSubOrchestratorWithRetryAsync<object>(FunctionName, retryOptions, instanceId, this.inputObject))
                 .Returns(this.taskFromTen);
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallSubOrchestratorWithRetryAsync_typed_task_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CallSubOrchestratorAsync<int>(FunctionName, null, this.inputObject)).ReturnsAsync(this.stateValueFive);
             var result = await durableOrchestrationContextBaseMock.Object.CallSubOrchestratorAsync<int>(FunctionName, this.inputObject);
             result.Should().Be(this.stateValueFive);
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var dateTime = DateTime.Now;
             var cancelToken = CancellationToken.None;
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.WaitForExternalEvent<object>(this.operationName)).Returns(this.taskFromTen);
             var result = durableOrchestrationContextBaseMock.Object.WaitForExternalEvent(this.operationName);
             var resultValue = await (Task<object>)result;
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var dateTime = DateTime.Now;
             var cancelToken = CancellationToken.None;
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.WaitForExternalEvent<object>(this.operationName, this.timeSpan)).Returns(this.taskFromTen);
             var result = durableOrchestrationContextBaseMock.Object.WaitForExternalEvent(this.operationName, this.timeSpan);
             var resultValue = await (Task<object>)result;
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var dateTime = DateTime.Now;
             var cancelToken = CancellationToken.None;
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CreateTimer<object>(dateTime, null, cancelToken)).ReturnsAsync(this.stateValueFive);
             var result = durableOrchestrationContextBaseMock.Object.CreateTimer(dateTime, cancelToken);
             var resultValue = await (Task<object>)result;
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallEntityAsync_without_content_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CallEntityAsync<object>(this.entityId, this.operationName, null))
                 .Returns(this.taskFromTen);
             var result = durableOrchestrationContextBaseMock.Object.CallEntityAsync(this.entityId, this.operationName);
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public Task CallEntityAsync_with_resulttype_without_content_is_calling_extension_method()
         {
-            var durableOrchestrationContextBaseMock = new Mock<IInterleavingContext> { };
+            var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
             durableOrchestrationContextBaseMock.Setup(x => x.CallEntityAsync<int>(this.entityId, this.operationName, null))
                 .Returns(this.intResultTask);
             var result = durableOrchestrationContextBaseMock.Object.CallEntityAsync<int>(this.entityId, this.operationName);

@@ -30,11 +30,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        private const string DefaultVersion = "";
+
         private const int MaxTimerDurationInDays = 6;
+
+        private readonly Dictionary<string, Stack> pendingExternalEvents =
+    new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
+            new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
 
         private string serializedOutput;
         private string serializedCustomStatus;
         private static JsonSerializer serializer = CreateDurableHttpResponseSerializer();
+
+        private bool isReplaying;
 
         private int newGuidCounter = 0;
 
@@ -47,6 +57,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
+        internal string ParentInstanceId { get; set; }
+
+        internal OrchestrationContext InnerContext { get; set; }
+
+        internal bool IsReplaying
+        {
+            get
+            {
+                return this.InnerContext?.IsReplaying ?? this.isReplaying;
+            }
+
+            set
+            {
+                this.isReplaying = value;
+            }
+        }
+
         internal bool ContinuedAsNew { get; private set; }
 
         internal bool IsCompleted { get; set; }
@@ -57,13 +84,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private string OrchestrationName => this.FunctionName;
 
-        internal override FunctionType FunctionType => FunctionType.Orchestrator;
+        internal bool PreserveUnprocessedEvents { get; set; }
+
+        /// <inheritdoc/>
+        DateTime IDurableOrchestrationContext.CurrentUtcDateTime => this.InnerContext.CurrentUtcDateTime;
+
+        /// <inheritdoc/>
+        bool IDurableOrchestrationContext.IsReplaying => this.InnerContext?.IsReplaying ?? this.IsReplaying;
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.InstanceId => this.InstanceId;
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.ParentInstanceId => this.ParentInstanceId;
+
+        protected List<EntityId> ContextLocks { get; set; }
+
+        protected string LockRequestId { get; set; }
 
         private MessageSorter MessageSorter => this.messageSorter ?? (this.messageSorter = new MessageSorter());
 
@@ -169,13 +206,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<TResult> IInterleavingContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, null, input);
         }
 
         /// <inheritdoc />
-        Task<TResult> IInterleavingContext.CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input)
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input)
         {
             if (retryOptions == null)
             {
@@ -254,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<T> IInterleavingContext.CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
+        async Task<T> IDurableOrchestrationContext.CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
 
@@ -287,14 +324,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<T> IInterleavingContext.WaitForExternalEvent<T>(string name)
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name)
         {
             this.ThrowIfInvalidAccess();
             return this.WaitForExternalEvent<T>(name, "ExternalEvent");
         }
 
         /// <inheritdoc/>
-        Task<T> IInterleavingContext.WaitForExternalEvent<T>(string name, TimeSpan timeout)
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout)
         {
             this.ThrowIfInvalidAccess();
             Action<TaskCompletionSource<T>> timedOutAction = cts =>
@@ -303,11 +340,480 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<T> IInterleavingContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
         {
             this.ThrowIfInvalidAccess();
             Action<TaskCompletionSource<T>> timedOutAction = cts => cts.TrySetResult(defaultValue);
             return this.WaitForExternalEvent(name, timeout, timedOutAction);
+        }
+
+        /// <inheritdoc />
+        Task<TResult> IDurableOrchestrationContext.CallActivityAsync<TResult>(string functionName, object input)
+        {
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, null, input);
+        }
+
+        /// <inheritdoc />
+        Task<TResult> IDurableOrchestrationContext.CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
+        {
+            if (retryOptions == null)
+            {
+                throw new ArgumentNullException(nameof(retryOptions));
+            }
+
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        bool IDurableOrchestrationContext.IsLocked(out IReadOnlyList<EntityId> ownedLocks)
+        {
+            ownedLocks = this.ContextLocks;
+            return ownedLocks != null;
+        }
+
+        /// <inheritdoc/>
+        Guid IDurableOrchestrationContext.NewGuid()
+        {
+            return this.NewGuid();
+        }
+
+        /// <inheritdoc/>
+        void IDurableOrchestrationContext.SignalEntity(EntityId entity, string operationName, object operationInput)
+        {
+            this.ThrowIfInvalidAccess();
+            if (operationName == null)
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
+            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+        }
+
+        /// <inheritdoc/>
+        string IDurableOrchestrationContext.StartNewOrchestration(string functionName, object input, string instanceId)
+        {
+            this.ThrowIfInvalidAccess();
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, instanceId, null, null, input);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "starting orchestrations is synchronous");
+            return alreadyCompletedTask.Result;
+        }
+
+        internal async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
+       string functionName,
+       FunctionType functionType,
+       bool oneWay,
+       string instanceId,
+       string operation,
+       RetryOptions retryOptions,
+       object input)
+        {
+            this.ThrowIfInvalidAccess();
+
+            // TODO: Support for versioning
+            string version = DefaultVersion;
+            this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
+
+            Task<TResult> callTask = null;
+            EntityId? lockToUse = null;
+            string operationId = string.Empty;
+            string operationName = string.Empty;
+
+            switch (functionType)
+            {
+                case FunctionType.Activity:
+                    System.Diagnostics.Debug.Assert(instanceId == null, "The instanceId parameter should not be used for activity functions.");
+                    System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
+                    System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
+                    if (retryOptions == null)
+                    {
+                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
+                    }
+                    else
+                    {
+                        callTask = this.InnerContext.ScheduleWithRetry<TResult>(
+                            functionName,
+                            version,
+                            retryOptions.GetRetryOptions(),
+                            input);
+                    }
+
+                    break;
+
+                case FunctionType.Orchestrator:
+                    // Instance IDs should not be reused when creating sub-orchestrations. This is a best-effort
+                    // check. We cannot easily check the full hierarchy, so we just look at the current orchestration
+                    // and the immediate parent.
+                    if (string.Equals(instanceId, this.InstanceId, StringComparison.OrdinalIgnoreCase) ||
+                        (this.ParentInstanceId != null && string.Equals(instanceId, this.ParentInstanceId, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new ArgumentException("The instance ID of a sub-orchestration must be different than the instance ID of a parent orchestration.");
+                    }
+
+                    System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
+                    if (instanceId != null && instanceId.StartsWith("@"))
+                    {
+                        throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
+                    }
+
+                    if (oneWay)
+                    {
+                        throw new NotImplementedException(); // TODO
+                    }
+                    else
+                    {
+                        if (this.ContextLocks != null)
+                        {
+                            throw new LockingRulesViolationException("While holding locks, cannot call suborchestrators.");
+                        }
+
+                        if (retryOptions == null)
+                        {
+                            callTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                input);
+                        }
+                        else
+                        {
+                            callTask = this.InnerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                retryOptions.GetRetryOptions(),
+                                input);
+                        }
+                    }
+
+                    break;
+
+                case FunctionType.Entity:
+                    System.Diagnostics.Debug.Assert(operation != null, "The operation parameter is required.");
+                    System.Diagnostics.Debug.Assert(retryOptions == null, "Retries are not supported for entity calls.");
+                    System.Diagnostics.Debug.Assert(instanceId != null, "Entity calls need to specify the target entity.");
+
+                    if (this.ContextLocks != null)
+                    {
+                        lockToUse = EntityId.GetEntityIdFromSchedulerId(instanceId);
+                        if (oneWay)
+                        {
+                            if (this.ContextLocks.Contains(lockToUse.Value))
+                            {
+                                throw new LockingRulesViolationException("While holding locks, cannot signal entities whose lock is held.");
+                            }
+                        }
+                        else
+                        {
+                            if (!this.ContextLocks.Remove(lockToUse.Value))
+                            {
+                                throw new LockingRulesViolationException("While holding locks, cannot call entities whose lock is not held.");
+                            }
+                        }
+                    }
+
+                    var guid = this.NewGuid(); // deterministically replayable unique id for this request
+                    var target = new OrchestrationInstance() { InstanceId = instanceId };
+                    operationId = guid.ToString();
+                    operationName = operation;
+                    var request = new RequestMessage()
+                    {
+                        ParentInstanceId = this.InstanceId,
+                        Id = guid,
+                        IsSignal = oneWay,
+                        Operation = operation,
+                    };
+                    if (input != null)
+                    {
+                        request.SetInput(input);
+                    }
+
+                    this.SendEntityMessage(target, "op", request);
+
+                    if (!oneWay)
+                    {
+                        callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
+                    }
+
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected function type '{functionType}'.");
+            }
+
+            string sourceFunctionId = this.FunctionName;
+
+            this.Config.TraceHelper.FunctionScheduled(
+                this.Config.Options.HubName,
+                functionName,
+                this.InstanceId,
+                reason: sourceFunctionId,
+                functionType: functionType,
+                isReplay: this.IsReplaying);
+
+            TResult output;
+            Exception exception = null;
+
+            if (oneWay)
+            {
+                return default(TResult);
+            }
+
+            System.Diagnostics.Debug.Assert(callTask != null, "Two-way operations are asynchronous, so callTask must not be null.");
+
+            try
+            {
+                output = await callTask;
+            }
+            catch (TaskFailedException e)
+            {
+                exception = e;
+                string message = string.Format(
+                    "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
+                    functionType.ToString().ToLowerInvariant(),
+                    functionName,
+                    e.InnerException?.Message);
+                throw new FunctionFailedException(message, e.InnerException);
+            }
+            catch (SubOrchestrationFailedException e)
+            {
+                exception = e;
+                string message = string.Format(
+                    "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
+                    functionType.ToString().ToLowerInvariant(),
+                    functionName,
+                    e.InnerException?.Message);
+                throw new FunctionFailedException(message, e.InnerException);
+            }
+            catch (Exception e)
+            {
+                exception = e;
+                throw;
+            }
+            finally
+            {
+                if (exception != null && this.IsReplaying)
+                {
+                    // If this were not a replay, then the orchestrator/activity/entity function trigger would have already
+                    // emitted a FunctionFailed trace with the full exception details.
+
+                    if (functionType == FunctionType.Entity)
+                    {
+                        this.Config.TraceHelper.OperationFailed(
+                            this.Config.Options.HubName,
+                            functionName,
+                            this.InstanceId,
+                            operationId,
+                            operationName,
+                            input: "(replayed)",
+                            output: "(replayed)",
+                            duration: 0,
+                            isReplay: true);
+                    }
+                    else
+                    {
+                        this.Config.TraceHelper.FunctionFailed(
+                            this.Config.Options.HubName,
+                            functionName,
+                            this.InstanceId,
+                            reason: $"(replayed {exception.GetType().Name})",
+                            functionType: functionType,
+                            isReplay: true);
+                    }
+                }
+            }
+
+            if (this.IsReplaying)
+            {
+                // If this were not a replay, then the orchestrator/activity/entity function trigger would have already
+                // emitted a FunctionCompleted trace with the actual output details.
+
+                if (functionType == FunctionType.Entity)
+                {
+                    this.Config.TraceHelper.OperationCompleted(
+                        this.Config.Options.HubName,
+                        functionName,
+                        this.InstanceId,
+                        operationId,
+                        operationName,
+                        input: "(replayed)",
+                        output: "(replayed)",
+                        duration: 0,
+                        isReplay: true);
+                }
+                else
+                {
+                    this.Config.TraceHelper.FunctionCompleted(
+                        this.Config.Options.HubName,
+                        functionName,
+                        this.InstanceId,
+                        output: "(replayed)",
+                        continuedAsNew: false,
+                        functionType: functionType,
+                        isReplay: true);
+                }
+            }
+
+            return output;
+        }
+
+        internal async Task<TResult> WaitForEntityResponse<TResult>(Guid guid, EntityId? lockToUse)
+        {
+            var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "EntityResponse");
+
+            if (lockToUse.HasValue)
+            {
+                // the lock is available again now that the entity call returned
+                this.ContextLocks.Add(lockToUse.Value);
+            }
+
+            // can rethrow an exception if that was the result of the operation
+            return response.GetResult<TResult>();
+        }
+
+        internal Task<T> WaitForExternalEvent<T>(string name, string reason)
+        {
+            lock (this.pendingExternalEvents)
+            {
+                // We use a stack to make it easier for users to abandon external events
+                // that they no longer care about. The common case is a Task.WhenAny in a loop.
+                Stack taskCompletionSources;
+                TaskCompletionSource<T> tcs;
+
+                // Set up the stack for listening to external events
+                if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
+                {
+                    tcs = new TaskCompletionSource<T>();
+                    taskCompletionSources = new Stack();
+                    taskCompletionSources.Push(tcs);
+                    this.pendingExternalEvents[name] = taskCompletionSources;
+                }
+                else
+                {
+                    if (taskCompletionSources.Count > 0 &&
+                        taskCompletionSources.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    {
+                        throw new ArgumentException("Events with the same name should have the same type argument.");
+                    }
+                    else
+                    {
+                        tcs = new TaskCompletionSource<T>();
+                        taskCompletionSources.Push(tcs);
+                    }
+                }
+
+                // Check the queue to see if any events came in before the orchestrator was listening
+                if (this.bufferedExternalEvents.TryGetValue(name, out Queue<string> queue))
+                {
+                    string rawInput = queue.Dequeue();
+
+                    if (queue.Count == 0)
+                    {
+                        this.bufferedExternalEvents.Remove(name);
+                    }
+
+                    // We can call raise event right away, since we already have an event's input
+                    this.RaiseEvent(name, rawInput);
+                }
+                else
+                {
+                    this.Config.TraceHelper.FunctionListening(
+                        this.Config.Options.HubName,
+                        this.FunctionName,
+                        this.InstanceId,
+                        reason: $"WaitFor{reason}:{name}",
+                        isReplay: this.IsReplaying);
+                }
+
+                return tcs.Task;
+            }
+        }
+
+        internal void RaiseEvent(string name, string input)
+        {
+            lock (this.pendingExternalEvents)
+            {
+                Stack taskCompletionSources;
+                if (this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
+                {
+                    object tcs = taskCompletionSources.Pop();
+                    Type tcsType = tcs.GetType();
+                    Type genericTypeArgument = tcsType.GetGenericArguments()[0];
+
+                    // If we're going to raise an event we should remove it from the pending collection
+                    // because otherwise WaitForExternalEventAsync() will always find one with this key and run infinitely.
+                    if (taskCompletionSources.Count == 0)
+                    {
+                        this.pendingExternalEvents.Remove(name);
+                    }
+
+                    object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
+
+                    if (deserializedObject is ResponseMessage responseMessage)
+                    {
+                        this.Config.TraceHelper.EntityResponseReceived(
+                            this.HubName,
+                            this.Name,
+                            FunctionType.Orchestrator,
+                            this.InstanceId,
+                            name,
+                            this.Config.GetIntputOutputTrace(responseMessage.Result),
+                            this.IsReplaying);
+                    }
+                    else
+                    {
+                        this.Config.TraceHelper.ExternalEventRaised(
+                             this.HubName,
+                             this.Name,
+                             this.InstanceId,
+                             name,
+                             this.Config.GetIntputOutputTrace(input),
+                             this.IsReplaying);
+                    }
+
+                    MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
+                    trySetResult.Invoke(tcs, new[] { deserializedObject });
+                }
+                else
+                {
+                    // Add the event to an (in-memory) queue, so we don't drop or lose it
+                    if (!this.bufferedExternalEvents.TryGetValue(name, out Queue<string> bufferedEvents))
+                    {
+                        bufferedEvents = new Queue<string>();
+                        this.bufferedExternalEvents[name] = bufferedEvents;
+                    }
+
+                    bufferedEvents.Enqueue(input);
+
+                    this.Config.TraceHelper.ExternalEventSaved(
+                        this.HubName,
+                        this.Name,
+                        FunctionType.Orchestrator,
+                        this.InstanceId,
+                        name,
+                        this.IsReplaying);
+                }
+            }
+        }
+
+        internal void RescheduleBufferedExternalEvents()
+        {
+            var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
+
+            foreach (var pair in this.bufferedExternalEvents)
+            {
+                string eventName = pair.Key;
+                Queue<string> events = pair.Value;
+
+                while (events.Count > 0)
+                {
+                    // Need to round-trip serialization since SendEvent always tries to serialize.
+                    string rawInput = events.Dequeue();
+                    JToken jsonData = JToken.Parse(rawInput);
+                    this.InnerContext.SendEvent(instance, eventName, jsonData);
+                }
+            }
         }
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction)
@@ -370,21 +876,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<TResult> IInterleavingContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput)
+        Task<TResult> IDurableOrchestrationContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
             return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
         }
 
         /// <inheritdoc/>
-        Task IInterleavingContext.CallEntityAsync(EntityId entityId, string operationName, object operationInput)
+        Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
             return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
         }
 
         /// <inheritdoc/>
-        async Task<IDisposable> IInterleavingContext.LockAsync(params EntityId[] entities)
+        async Task<IDisposable> IDurableOrchestrationContext.LockAsync(params EntityId[] entities)
         {
             this.ThrowIfInvalidAccess();
             if (this.ContextLocks != null)
@@ -464,7 +970,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal override void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
+        private void ThrowIfInvalidAccess()
+        {
+            if (this.InnerContext == null)
+            {
+                throw new InvalidOperationException("The inner context has not been initialized.");
+            }
+
+            if (!OrchestrationContext.IsOrchestratorThread)
+            {
+                throw new InvalidOperationException(
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.");
+            }
+        }
+
+        internal void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
         {
             if (eventContent is RequestMessage requestMessage)
             {
@@ -488,7 +1008,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.InnerContext.SendEvent(target, eventName, eventContent);
         }
 
-        internal override Guid NewGuid()
+        private Guid NewGuid()
         {
             // The name is a combination of the instance ID, the current orchestrator date/time, and a counter.
             string guidNameValue = string.Concat(

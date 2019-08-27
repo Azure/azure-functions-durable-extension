@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using Newtonsoft.Json;
 
@@ -47,8 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableEntityContext.EntityKey => this.self.EntityKey;
 
         EntityId IDurableEntityContext.EntityId => this.self;
-
-        internal override FunctionType FunctionType => FunctionType.Entity;
 
         internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
 
@@ -128,17 +128,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        void IDurableEntityContext.SignalEntity(EntityId entity, string operationName, object operationInput)
+        void IDurableEntityContext.SignalEntity(EntityId entity, string operation, object input)
         {
             this.ThrowIfInvalidAccess();
-            if (operationName == null)
+            if (operation == null)
             {
-                throw new ArgumentNullException(nameof(operationName));
+                throw new ArgumentNullException(nameof(operation));
             }
 
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
-            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signalling entities is synchronous");
-            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+            string functionName = entity.EntityName;
+            this.Config.ThrowIfFunctionDoesNotExist(functionName, FunctionType.Entity);
+
+            var target = new OrchestrationInstance()
+            {
+                InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
+            };
+            var request = new RequestMessage()
+            {
+                ParentInstanceId = this.InstanceId,
+                Id = Guid.NewGuid(),
+                IsSignal = true,
+                Operation = operation,
+            };
+            if (input != null)
+            {
+                request.SetInput(input);
+            }
+
+            this.SendEntityMessage(target, "op", request);
+
+            this.Config.TraceHelper.FunctionScheduled(
+                this.Config.Options.HubName,
+                functionName,
+                this.InstanceId,
+                reason: this.FunctionName,
+                functionType: FunctionType.Entity,
+                isReplay: false);
         }
 
         void IDurableEntityContext.Return(object result)
@@ -147,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CurrentOperationResponse.SetResult(result);
         }
 
-        internal override void ThrowIfInvalidAccess()
+        private void ThrowIfInvalidAccess()
         {
             if (this.CurrentOperation == null)
             {
@@ -155,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal override void SendEntityMessage(OrchestrationInstance target, string eventName, object message)
+        internal void SendEntityMessage(OrchestrationInstance target, string eventName, object message)
         {
             lock (this.outbox)
             {
@@ -191,11 +216,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.outbox.Clear();
             }
-        }
-
-        internal override Guid NewGuid()
-        {
-            return Guid.NewGuid();
         }
 
         private struct OutgoingMessage
