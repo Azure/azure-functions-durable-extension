@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Creates or retrieves a cached orchestration service client to be used in a given function execution.
         /// </summary>
-        /// <param name="attribute">An durable client attribute with parameters for the orchestration client.</param>
+        /// <param name="attribute">A durable client attribute with parameters for the orchestration client.</param>
         /// <returns>An orchestration service client to be used by a function.</returns>
         IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute);
     }
