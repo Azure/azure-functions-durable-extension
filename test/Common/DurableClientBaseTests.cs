@@ -52,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
             var durableExtension = GetDurableTaskExtension();
+
             var durableClient = (IDurableClient)new DurableClient(orchestrationServiceClientMock.Object, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.StartNewAsync("anyOrchestratorFunction", instanceId, new { message = "any obj" }));
