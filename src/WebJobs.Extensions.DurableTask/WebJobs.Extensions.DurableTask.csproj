@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
-    <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
+    <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
     <MajorVersion>1</MajorVersion>
     <MinorVersion>8</MinorVersion>
     <PatchVersion>3</PatchVersion>
