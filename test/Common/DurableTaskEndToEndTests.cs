@@ -342,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(string name, bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(string taskHubName, bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                name,
+                taskHubName,
                 extendedSessions,
                 logReplayEvents: logReplayEvents))
             {
