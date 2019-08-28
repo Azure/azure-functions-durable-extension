@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity(bool extendedSessions)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_Activity), extendedSessions);
         }
 
         /// <summary>
@@ -216,9 +216,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool logReplayEvents)
+        public async Task HelloWorldOrchestration_ValidateReplayEventLogs(bool logReplayEvents)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(false, logReplayEvents: logReplayEvents);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_ValidateReplayEventLogs), false, logReplayEvents: logReplayEvents);
         }
 
         /// <summary>
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task HelloWorldOrchestration_Activity_History(bool extendedSessions)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_Activity_History), extendedSessions, true);
         }
 
         /// <summary>
@@ -240,9 +240,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task HelloWorldOrchestration_Activity_HistoryInputOutput(bool extendedSessions)
+        public async Task HelloWorldOrchestration_ShowHistoryInputOutput(bool extendedSessions)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, true, true);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_ShowHistoryInputOutput), extendedSessions, true, true);
         }
 
         /// <summary>
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(string taskHubName, bool extendedSessions, bool showHistory = false, bool showHistoryOutput = false, bool logReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.HelloWorldOrchestration_Activity),
+                taskHubName,
                 extendedSessions,
                 logReplayEvents: logReplayEvents))
             {
