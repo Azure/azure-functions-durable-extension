@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MaxTimerDurationInDays = 6;
 
         private readonly Dictionary<string, Stack> pendingExternalEvents =
-    new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
+            new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
             new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
@@ -401,13 +401,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         internal async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
-       string functionName,
-       FunctionType functionType,
-       bool oneWay,
-       string instanceId,
-       string operation,
-       RetryOptions retryOptions,
-       object input)
+            string functionName,
+            FunctionType functionType,
+            bool oneWay,
+            string instanceId,
+            string operation,
+            RetryOptions retryOptions,
+            object input)
         {
             this.ThrowIfInvalidAccess();
 
