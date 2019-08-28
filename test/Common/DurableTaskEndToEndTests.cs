@@ -223,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity(bool extendedSessions, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_Activity), extendedSessions, storageProvider);
         }
 
         /// <summary>
@@ -232,9 +232,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool traceReplayEvents, string storageProvider)
+        public async Task HelloWorldOrchestration_ValidateReplayEventLogs(bool traceReplayEvents, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(false, storageProvider, traceReplayEvents: traceReplayEvents);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_ValidateReplayEventLogs), false, storageProvider, traceReplayEvents: traceReplayEvents);
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity_History(bool extendedSessions, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider, showHistory: true);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_Activity_History), extendedSessions, storageProvider, showHistory: true);
         }
 
         /// <summary>
@@ -254,9 +254,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task HelloWorldOrchestration_Activity_HistoryInputOutput(bool extendedSessions, string storageProvider)
+        public async Task HelloWorldOrchestration_ShowHistoryInputOutput(bool extendedSessions, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider, showHistory: true, showHistoryOutput: true);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_ShowHistoryInputOutput), extendedSessions, storageProvider, showHistory: true, showHistoryOutput: true);
         }
 
         /// <summary>
@@ -356,7 +356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, string storageProvider, bool showHistory = false, bool showHistoryOutput = false, bool traceReplayEvents = true)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(string taskHubName, bool extendedSessions, string storageProvider, bool showHistory = false, bool showHistoryOutput = false, bool traceReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.HelloWorldOrchestration_Activity),
+                taskHubName,
                 extendedSessions,
                 traceReplayEvents: traceReplayEvents,
                 storageProviderType: storageProvider))

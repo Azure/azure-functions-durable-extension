@@ -7,54 +7,42 @@ assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is. Please make an effort to fill in all the sections below; the information will help us investigate your issue.
+### Description
+> A clear and concise description of what the bug is. Please make an effort to fill in all the sections below; the information will help us investigate your issue.
 
-**Investigative information**
+> NOTE: JavaScript issues should be reported here: https://github.com/Azure/azure-functions-durable-js
 
-- Durable Functions extension version:
-- Function App version (1.0 or 2.0):
-- Programming language used:
+### Expected behavior
+> A clear and concise description of what you expected to happen.
 
-***If JavaScript***
+### Actual behavior
+> A clear and concise description of what actually happened.
 
-- durable-functions npm module version:
+### Relevant source code snippets
+```csharp
+// insert code snippet here
+```
 
-***If deployed to Azure***
+### Known workarounds
+> Provide a description of any known workarounds you used.
 
-- Timeframe issue observed:
-- Function App name:
-- Function name(s):
-- Region:
-- Orchestration instance ID(s):
+### App Details
 
-> If you don't want to share your Function App name or Functions names on GitHub, please be sure to provide your Invocation ID, Timestamp, and Region - we can use this to look up your Function App/Function. Provide an invocation id per Function. See the [Functions Host wiki](https://github.com/Azure/azure-webjobs-sdk-script/wiki/Sharing-Your-Function-App-name-privately) for more details.
+- **Durable Functions extension version (e.g. v1.8.3)**:
+- **Azure Functions runtime version (1.0 or 2.0)**:
+- **Programming language used**:
 
-**To Reproduce**
-Steps to reproduce the behavior:
+### Screenshots
+> If applicable, add screenshots to help explain your problem.
 
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+### If deployed to Azure
+> We have access to a lot of telemetry that can help with investigations. Please provide as much of the following information as you can to help us investigate!
 
-> While not required, providing your orchestrator's source code in anonymized form is often very helpful when investigating unexpected orchestrator behavior.
+- **Timeframe issue observed**:
+- **Function App name**:
+- **Function name(s)**:
+- **Azure region**:
+- **Orchestration instance ID(s)**:
+- **Azure storage account name**:
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Actual behavior**
-A clear and concise description of what actually happened.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Known workarounds**
-Provide a description of any known workarounds you used.
-
-**Additional context**
-
-- Development environment (ex. Visual Studio)
-- Links to source
-- Additional bindings used
-- Function invocation IDs
+> If you don't want to share your Function App or storage account name GitHub, please at least share the orchestration instance ID. Otherwise it's extremely difficult to look up information.
