@@ -2928,6 +2928,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_UsesBindings(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy),
+            };
+
+            string storageConnectionString = TestHelpers.GetStorageConnectionString();
+            CloudStorageAccount.TryParse(storageConnectionString, out CloudStorageAccount storageAccount);
+
+            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityClasses.BlobContainerPath);
+            await cloudBlobContainer.CreateIfNotExistsAsync();
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.StorageBackedCounter), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task DurableEntity_EntityProxy_NameResolve(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =

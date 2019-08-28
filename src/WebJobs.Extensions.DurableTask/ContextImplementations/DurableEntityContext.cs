@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -72,6 +73,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+#if NETSTANDARD2_0
+        public FunctionBindingContext FunctionBindingContext { get; set; }
+#endif
+
         void IDurableEntityContext.DestructOnExit()
         {
             this.ThrowIfInvalidAccess();
@@ -96,16 +101,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.StateWasAccessed)
             {
-                var result = (this.State.EntityState == null)
-                    ? (initializer != null ? initializer() : default(TState))
-                    : MessagePayloadDataConverter.Default.Deserialize<TState>(this.State.EntityState);
-                this.CurrentState = result;
+                TState defaultValue = initializer != null ? initializer() : default(TState);
+
+                if (this.State.EntityState != null)
+                {
+                    this.CurrentState = this.GetPopulatedState<TState>(defaultValue, initializer != null);
+                }
+                else
+                {
+                    this.CurrentState = defaultValue;
+                }
+
                 this.StateWasAccessed = true;
-                return result;
+            }
+
+            return (TState)this.CurrentState;
+        }
+
+        private TState GetPopulatedState<TState>(TState initialValue, bool usedTypeInitializer)
+        {
+            if (usedTypeInitializer)
+            {
+                // Only populate serialized state, as some fields may be populated by the initializer
+                // using dependency injection.
+                JsonConvert.PopulateObject(this.State.EntityState, initialValue);
+                return initialValue;
             }
             else
             {
-                return (TState)this.CurrentState;
+                return JsonConvert.DeserializeObject<TState>(this.State.EntityState);
             }
         }
 
