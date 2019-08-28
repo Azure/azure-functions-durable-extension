@@ -27,11 +27,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task IDurableEOrchestrationClientBinding()
+        public async Task IDurableOrchestrationClientBinding()
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.IDurableEOrchestrationClientBinding),
+                nameof(this.IDurableOrchestrationClientBinding),
                 enableExtendedSessions: false))
             {
                 await host.StartAsync();

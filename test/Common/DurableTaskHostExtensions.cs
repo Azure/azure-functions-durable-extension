@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Helper method for the IDurableEntityClientBinding test. Gets an IDurableEntityClient.
+        /// Helper function for the IDurableEntityClientBinding test. Gets an IDurableEntityClient.
         /// </summary>
         public static async Task<IDurableEntityClient> GetEntityClientBindingTest(
             this JobHost host,
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Helper method for the IDurableOrchestrationClientBinding test. Gets an IDurableOrchestrationClient.
+        /// Helper function for the IDurableOrchestrationClientBinding test. Gets an IDurableOrchestrationClient.
         /// </summary>
         public static async Task<IDurableOrchestrationClient> GetOrchestrationClientBindingTest(
             this JobHost host,

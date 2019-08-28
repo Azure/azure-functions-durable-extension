@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
-        // Note that OrchestrationClientAttribute defines a custom equality comparer.
+        // Note that DurableClientAttribute defines a custom equality comparer.
         private readonly ConcurrentDictionary<DurableClientAttribute, DurableClient> cachedClients =
             new ConcurrentDictionary<DurableClientAttribute, DurableClient>();
 
@@ -137,8 +137,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="DurableClient"/>,
-        /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
+        /// Gets or sets default task hub name to be used by all <see cref="IDurableClient"/>, <see cref="IDurableOrchestrationClient"/>, <see cref="IDurableEntityClient"/>,
+        /// <see cref="IDurableOrchestrationContext"/>, and <see cref="IDurableActivityContext"/> instances.
         /// </summary>
         /// <remarks>
         /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
