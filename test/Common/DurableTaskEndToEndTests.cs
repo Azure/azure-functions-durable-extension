@@ -223,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity(bool extendedSessions, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_Activity), extendedSessions, storageProvider);
         }
 
         /// <summary>
@@ -232,9 +232,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetAllSupportedExtendedSessionWithStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task HelloWorldOrchestration_Activity_Validate_Logs_For_Replay_Events(bool traceReplayEvents, string storageProvider)
+        public async Task HelloWorldOrchestration_ValidateReplayEventLogs(bool traceReplayEvents, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(false, storageProvider, traceReplayEvents: traceReplayEvents);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_ValidateReplayEventLogs), false, storageProvider, traceReplayEvents: traceReplayEvents);
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HelloWorldOrchestration_Activity_History(bool extendedSessions, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider, showHistory: true);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_Activity_History), extendedSessions, storageProvider, showHistory: true);
         }
 
         /// <summary>
@@ -254,9 +254,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task HelloWorldOrchestration_Activity_HistoryInputOutput(bool extendedSessions, string storageProvider)
+        public async Task HelloWorldOrchestration_ShowHistoryInputOutput(bool extendedSessions, string storageProvider)
         {
-            await this.HelloWorldOrchestration_Activity_Main_Logic(extendedSessions, storageProvider, showHistory: true, showHistoryOutput: true);
+            await this.HelloWorldOrchestration_Activity_Main_Logic(nameof(this.HelloWorldOrchestration_ShowHistoryInputOutput), extendedSessions, storageProvider, showHistory: true, showHistoryOutput: true);
         }
 
         /// <summary>
@@ -356,7 +356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private async Task HelloWorldOrchestration_Activity_Main_Logic(bool extendedSessions, string storageProvider, bool showHistory = false, bool showHistoryOutput = false, bool traceReplayEvents = true)
+        private async Task HelloWorldOrchestration_Activity_Main_Logic(string taskHubName, bool extendedSessions, string storageProvider, bool showHistory = false, bool showHistoryOutput = false, bool traceReplayEvents = true)
         {
             string[] orchestratorFunctionNames =
             {
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.HelloWorldOrchestration_Activity),
+                taskHubName,
                 extendedSessions,
                 traceReplayEvents: traceReplayEvents,
                 storageProviderType: storageProvider))
@@ -2928,6 +2928,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_UsesBindings(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy),
+            };
+
+            string storageConnectionString = TestHelpers.GetStorageConnectionString();
+            CloudStorageAccount.TryParse(storageConnectionString, out CloudStorageAccount storageAccount);
+
+            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityClasses.BlobContainerPath);
+            await cloudBlobContainer.CreateIfNotExistsAsync();
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.StorageBackedCounter), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task DurableEntity_EntityProxy_NameResolve(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
@@ -3274,6 +3315,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
                     : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
                 argumentException.Message);
+        }
+
+        /// <summary>
+        /// Tests default and custom values for task hub name/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(null, "TestSiteName", "Production")]
+        [InlineData(null, "TestSiteName", null)]
+        [InlineData("CustomName", "TestSiteName", "Production")]
+        [InlineData("CustomName", "TestSiteName", null)]
+        [InlineData("CustomName", "TestSiteName", "Test")]
+        [InlineData("TestSiteName", "TestSiteName", "Test")]
+        public void TaskHubName_HappyPath(string customHubName, string siteName, string slotName)
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", siteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", slotName);
+
+                var options = new DurableTaskOptions();
+
+                var expectedHubName = siteName;
+
+                if (customHubName != null)
+                {
+                    expectedHubName = customHubName;
+                    options.HubName = customHubName;
+                }
+
+                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                Assert.Equal(expectedHubName, options.HubName);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
+        /// <summary>
+        /// Tests that an attempt to use a default task hub name while in a test slot will throw an exception <see cref="InvalidOperationException"/>.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TaskHubName_DefaultNameNonProductionSlot_ThrowsException()
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSiteName");
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", "Test");
+                DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+
+                InvalidOperationException exception =
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        durableTaskOptions))
+                    {
+                        await host.StartAsync();
+                    }
+                });
+
+                Assert.NotNull(exception);
+                Assert.Contains("Task Hub name must be specified in host.json when using slots", exception.Message);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
         }
 
         private static StringBuilder GenerateMediumRandomStringPayload()
