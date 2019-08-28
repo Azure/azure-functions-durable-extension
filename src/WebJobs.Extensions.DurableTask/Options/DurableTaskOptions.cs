@@ -13,6 +13,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
+        private string hubName;
+        private bool isDefaultHubName = false;
+
         /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
@@ -27,7 +30,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
-        public string HubName { get; set; }
+        public string HubName
+        {
+            get
+            {
+                if (this.hubName == null)
+                {
+                    this.isDefaultHubName = true;
+
+                    // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
+                    // specified in local.settings.json file to avoid being defaulted to "TestHubName"
+                    this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+                }
+
+                return this.hubName;
+            }
+
+            set
+            {
+                this.hubName = value;
+            }
+        }
 
         /// <summary>
         /// The section of configuration related to storage providers.
@@ -171,6 +194,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
+            if (IsInNonProductionSlot() && this.isDefaultHubName)
+            {
+                throw new InvalidOperationException("Task Hub name must be specified in host.json when using slots. See documentation on Task Hubs for " +
+                    "information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
+            }
+
             if (this.StorageProvider == null)
             {
                 this.StorageProvider = new StorageProviderOptions();
@@ -192,6 +221,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a non-negative integer value.");
             }
+        }
+
+        private static bool IsInNonProductionSlot()
+        {
+            var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            // slotName can be null in a test environment
+            if (slotName != null && !string.Equals(slotName, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

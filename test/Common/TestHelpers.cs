@@ -117,6 +117,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableTaskOptions.StorageProvider.AzureStorage.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
             }
 
+            return GetJobHost(
+                loggerProvider,
+                durableTaskOptions,
+                nameResolver,
+                durableHttpMessageHandler);
+        }
+
+        public static JobHost GetJobHost(
+            ILoggerProvider loggerProvider,
+            DurableTaskOptions durableTaskOptions,
+            INameResolver nameResolver = null,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null)
+        {
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
             if (durableHttpMessageHandler == null)
