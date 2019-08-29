@@ -18,7 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
     {
         private readonly HttpClient httpClient;
         private readonly DurableTaskExtension config;
-        private static JsonSerializerSettings serializerSettings = CreateDurableHttpResponseSerializerSettings();
 
         public TaskHttpActivityShim(
             DurableTaskExtension config,
@@ -40,49 +39,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             HttpResponseMessage response = await this.httpClient.SendAsync(requestMessage);
             DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
 
-            return MessagePayloadDataConverter.HttpConverter.Serialize(value: durableHttpResponse, formatted: true);
-        }
-
-        private static JsonSerializerSettings CreateDurableHttpResponseSerializerSettings()
-        {
-            JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
-            serializerSettings.TypeNameHandling = TypeNameHandling.Objects;
-            serializerSettings.Converters.Add(new DurableHttpRequestJsonConverter());
-            return serializerSettings;
-        }
-
-        private static async Task<DurableHttpResponse> CopyDurableHttpResponseAsync(HttpResponseMessage response)
-        {
-            DurableHttpResponse durableHttpResponse = new DurableHttpResponse(
-                statusCode: response.StatusCode,
-                headers: CreateStringValuesHeaderDictionary(response.Headers),
-                content: await response.Content.ReadAsStringAsync());
-
-            return durableHttpResponse;
-        }
-
-        internal static IDictionary<string, StringValues> CreateStringValuesHeaderDictionary(IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-        {
-            IDictionary<string, StringValues> newHeaders = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-            if (headers != null)
-            {
-                foreach (var header in headers)
-                {
-                    newHeaders[header.Key] = new StringValues(header.Value.ToArray());
-                }
-            }
-
-            return newHeaders;
+            return JsonConvert.SerializeObject(durableHttpResponse);
         }
 
         private async Task<HttpRequestMessage> ReconstructHttpRequestMessage(string serializedRequest)
         {
             // DeserializeObject deserializes into a List and then the first element
-            // of that list is the serialized DurableHttpRequest
-            IList<string> input = JsonConvert.DeserializeObject<List<string>>(serializedRequest, serializerSettings);
-            string durableHttpRequestString = input.First();
-
-            DurableHttpRequest durableHttpRequest = JsonConvert.DeserializeObject<DurableHttpRequest>(durableHttpRequestString, serializerSettings);
+            // of that list is the DurableHttpRequest
+            IList<DurableHttpRequest> input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(serializedRequest);
+            DurableHttpRequest durableHttpRequest = input.First();
 
             string contentType = "";
             HttpRequestMessage requestMessage = new HttpRequestMessage(durableHttpRequest.Method, durableHttpRequest.Uri);
@@ -90,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             {
                 foreach (KeyValuePair<string, StringValues> entry in durableHttpRequest.Headers)
                 {
-                    if (entry.Key == "Content-Type")
+                    if (entry.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
                     {
                         foreach (string value in entry.Value)
                         {
@@ -118,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                     contentType = "text/plain";
                 }
 
-                if (contentType == "application/x-www-form-urlencoded")
+                if (string.Equals(contentType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
                 {
                     requestMessage.Content = new StringContent(durableHttpRequest.Content, Encoding.UTF8, contentType);
                 }
