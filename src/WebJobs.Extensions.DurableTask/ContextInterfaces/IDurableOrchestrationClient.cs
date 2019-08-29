@@ -125,7 +125,7 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
-        /// <see cref="IInterleavingContext.WaitForExternalEvent{T}(string)"/> API.
+        /// <see cref="IDurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
-        /// <see cref="IInterleavingContext.WaitForExternalEvent{T}(string)"/> API.
+        /// <see cref="IDurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para><para>
         /// If the specified instance is not found or not running, this operation will throw an exception.
         /// </para>

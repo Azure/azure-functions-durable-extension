@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs
     /// <summary>
     /// Provides functionality available to orchestration code.
     /// </summary>
-    public interface IDurableOrchestrationContext : IInterleavingContext
+    public interface IDurableOrchestrationContext
     {
         /// <summary>
         /// Gets the instance ID of the currently executing orchestration.
@@ -40,6 +40,29 @@ namespace Microsoft.Azure.WebJobs
         /// The ID of the parent orchestration of the current sub-orchestration instance. The value will be available only in sub-orchestrations.
         /// </value>
         string ParentInstanceId { get; }
+
+        /// <summary>
+        /// Gets the current date/time in a way that is safe for use in orchestrations and entity operations.
+        /// </summary>
+        /// <remarks>
+        /// This date/time value is derived from the orchestration or entity history. It always returns the same value
+        /// at specific points in the orchestrator function code, making it deterministic and safe for replay.
+        /// </remarks>
+        /// <value>The orchestration or entity's current date/time in UTC.</value>
+        DateTime CurrentUtcDateTime { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the orchestration or operation is currently replaying itself.
+        /// </summary>
+        /// <remarks>
+        /// This property is useful when there is logic that needs to run only when *not* replaying. For example, certain types of application logging may become too noisy when duplicated
+        /// as part of replay. The application code could check to see whether the function is
+        /// being replayed and then issue the log statements when this value is <c>false</c>.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> if the orchestration or operation is currently being replayed; otherwise <c>false</c>.
+        /// </value>
+        bool IsReplaying { get; }
 
         /// <summary>
         /// Gets the input of the current orchestrator function as a deserialized value.
@@ -92,5 +115,220 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
         /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
         Task<DurableHttpResponse> CallHttpAsync(DurableHttpRequest req);
+
+        /// <summary>
+        /// Calls an operation on an entity, passing an argument, and returns the result asynchronously.
+        /// </summary>
+        /// <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
+        /// <returns>A task representing the result of the operation.</returns>
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="entityId"/>.</exception>
+        Task<TResult> CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput);
+
+        /// <summary>
+        /// Calls an operation on an entity, passing an argument, and waits for it to complete.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
+        /// <returns>A task representing the completion of the operation on the entity.</returns>
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="entityId"/>.</exception>
+        Task CallEntityAsync(EntityId entityId, string operationName, object operationInput);
+
+        /// <summary>
+        /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input);
+
+        /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
+        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input);
+
+        /// <summary>
+        /// Creates a durable timer that expires at a specified time.
+        /// </summary>
+        /// <remarks>
+        /// All durable timers created using this method must either expire or be cancelled
+        /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
+        /// Otherwise the underlying framework will keep the instance alive until the timer expires.
+        /// </remarks>
+        /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
+        /// <param name="fireAt">The time at which the timer should expire.</param>
+        /// <param name="state">Any state to be preserved by the timer.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <returns>A durable task that completes when the durable timer expires.</returns>
+        Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        Task<T> WaitForExternalEvent<T>(string name);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
+        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        /// <exception cref="TimeoutException">
+        /// The external event was not received before the timeout expired.
+        /// </exception>
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
+        /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+        /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
+        /// if the timeout expires.</returns>
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue);
+
+        /// <summary>
+        /// Acquires one or more locks, for the specified entities.
+        /// </summary>
+        /// <remarks>
+        /// Locks can only be acquired if the current context does not hold any locks already.
+        /// </remarks>
+        /// <param name="entities">The entities whose locks should be acquired.</param>
+        /// <returns>An IDisposable that releases the lock when disposed.</returns>
+        /// <exception cref="LockingRulesViolationException">if the context already holds some locks.</exception>
+        Task<IDisposable> LockAsync(params EntityId[] entities);
+
+        /// <summary>
+        /// Determines whether the current context is locked, and if so, what locks are currently owned.
+        /// </summary>
+        /// <param name="ownedLocks">The collection of owned locks.</param>
+        /// <remarks>
+        /// Note that the collection of owned locks can be empty even if the context is locked. This happens
+        /// if an orchestration calls a suborchestration without lending any locks.
+        /// </remarks>
+        /// <returns><c>true</c> if the context already holds some locks.</returns>
+        bool IsLocked(out IReadOnlyList<EntityId> ownedLocks);
+
+        /// <summary>
+        /// Creates a new GUID that is safe for replay within an orchestration or operation.
+        /// </summary>
+        /// <remarks>
+        /// The default implementation of this method creates a name-based UUID using the algorithm from
+        /// RFC 4122 §4.3. The name input used to generate this value is a combination of the orchestration
+        /// instance ID and an internally managed sequence number.
+        /// </remarks>
+        /// <returns>The new <see cref="Guid"/> value.</returns>
+        Guid NewGuid();
+
+        /// <summary>
+        /// Schedules an activity function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
+        /// <param name="functionName">The name of the activity function to call.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
+        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallActivityAsync<TResult>(string functionName, object input);
+
+        /// <summary>
+        /// Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
+        /// <param name="functionName">The name of the activity function to call.</param>
+        /// <param name="retryOptions">The retry option for the activity function.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
+        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
+        /// </summary>
+        /// <param name="entity">The target entity.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
+        void SignalEntity(EntityId entity, string operationName, object operationInput = null);
+
+        /// <summary>
+        /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
+        /// Any result or exception is ignored (fire and forget).
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="input">the input to pass to the orchestrator function.</param>
+        /// <param name="instanceId">optionally, an instance id for the orchestration. By default, a random GUID is used.</param>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <returns>The instance id of the new orchestration.</returns>
+        string StartNewOrchestration(string functionName, object input, string instanceId = null);
     }
 }

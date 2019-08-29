@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
-                    this.context.IsReplaying));
+                    isReplay: false));
             }
         }
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.InstanceId,
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Entity,
-                this.context.IsReplaying);
+                isReplay: false);
 
             // Send all buffered outgoing messages
             this.context.SendOutbox(innerContext);
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Config.GetIntputOutputTrace(this.context.State.EntityState),
                 continuedAsNew: true,
                 functionType: FunctionType.Entity,
-                isReplay: this.context.IsReplaying);
+                isReplay: false);
 
             // The return value is not used.
             return string.Empty;
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.InstanceId,
                 request.ParentInstanceId,
                 request.Id.ToString(),
-                this.context.IsReplaying);
+                isReplay: false);
 
             System.Diagnostics.Debug.Assert(this.context.State.LockedBy == request.ParentInstanceId, "Lock was set.");
 
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // send lock request to next entity in the lock set
                 var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(request.LockSet[request.Position]) };
-                this.Context.SendEntityMessage(target, "op", request);
+                this.context.SendEntityMessage(target, "op", request);
             }
             else
             {
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                 };
-                this.Context.SendEntityMessage(target, request.Id.ToString(), message);
+                this.context.SendEntityMessage(target, request.Id.ToString(), message);
             }
         }
 
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.GetIntputOutputTrace(this.context.RawInput),
                         this.Config.GetIntputOutputTrace(response.Result),
                         stopwatch.Elapsed.TotalMilliseconds,
-                        isReplay: this.context.IsReplaying);
+                        isReplay: false);
             }
             else
             {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.GetIntputOutputTrace(this.context.RawInput),
                         this.Config.GetIntputOutputTrace(response.Result),
                         stopwatch.Elapsed.TotalMilliseconds,
-                        isReplay: this.context.IsReplaying);
+                        isReplay: false);
             }
 
             // send response
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
                 var guid = request.Id.ToString();
                 var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
-                this.Context.SendEntityMessage(target, guid, jresponse);
+                this.context.SendEntityMessage(target, guid, jresponse);
             }
 
             // destruct the entity if the application code requested it
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.GetIntputOutputTrace(request.Input),
                         this.Config.GetIntputOutputTrace(result.Result),
                         result.DurationInMilliseconds,
-                        isReplay: this.context.IsReplaying);
+                        isReplay: false);
                 }
                 else
                 {
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Config.GetIntputOutputTrace(request.Input),
                         this.Config.GetIntputOutputTrace(result.Result),
                         result.DurationInMilliseconds,
-                        isReplay: this.context.IsReplaying);
+                        isReplay: false);
                 }
 
                 if (!request.IsSignal)

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task CallActivityAsync(this IDeterministicExecutionContext context, string functionName, object input)
+        public static Task CallActivityAsync(this IDurableOrchestrationContext context, string functionName, object input)
         {
             return context.CallActivityAsync<object>(functionName, input);
         }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task CallActivityWithRetryAsync(this IDeterministicExecutionContext context, string functionName, RetryOptions retryOptions, object input)
+        public static Task CallActivityWithRetryAsync(this IDurableOrchestrationContext context, string functionName, RetryOptions retryOptions, object input)
         {
             return context.CallActivityWithRetryAsync<object>(functionName, retryOptions, input);
         }
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The sub-orchestrator function failed with an unhandled exception.
         /// </exception>
-        public static Task CallSubOrchestratorAsync(this IInterleavingContext context, string functionName, object input)
+        public static Task CallSubOrchestratorAsync(this IDurableOrchestrationContext context, string functionName, object input)
         {
             return context.CallSubOrchestratorAsync<object>(functionName, input);
         }
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task CallSubOrchestratorAsync(this IInterleavingContext context, string functionName, string instanceId, object input)
+        public static Task CallSubOrchestratorAsync(this IDurableOrchestrationContext context, string functionName, string instanceId, object input)
         {
             return context.CallSubOrchestratorAsync<object>(functionName, instanceId, input);
         }
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task<TResult> CallSubOrchestratorAsync<TResult>(this IInterleavingContext context, string functionName, object input)
+        public static Task<TResult> CallSubOrchestratorAsync<TResult>(this IDurableOrchestrationContext context, string functionName, object input)
         {
             return context.CallSubOrchestratorAsync<TResult>(functionName, null, input);
         }
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task CallSubOrchestratorWithRetryAsync(this IInterleavingContext context, string functionName, RetryOptions retryOptions, object input)
+        public static Task CallSubOrchestratorWithRetryAsync(this IDurableOrchestrationContext context, string functionName, RetryOptions retryOptions, object input)
         {
             return context.CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, null, input);
         }
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task CallSubOrchestratorWithRetryAsync(this IInterleavingContext context, string functionName, RetryOptions retryOptions, string instanceId, object input)
+        public static Task CallSubOrchestratorWithRetryAsync(this IDurableOrchestrationContext context, string functionName, RetryOptions retryOptions, string instanceId, object input)
         {
             return context.CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, instanceId, input);
         }
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        public static Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(this IInterleavingContext context, string functionName, RetryOptions retryOptions, object input)
+        public static Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(this IDurableOrchestrationContext context, string functionName, RetryOptions retryOptions, object input)
         {
             return context.CallSubOrchestratorWithRetryAsync<TResult>(functionName, retryOptions, null, input);
         }
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="fireAt">The time at which the timer should expire.</param>
         /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
         /// <returns>A durable task that completes when the durable timer expires.</returns>
-        public static Task CreateTimer(this IInterleavingContext context, DateTime fireAt, CancellationToken cancelToken)
+        public static Task CreateTimer(this IDurableOrchestrationContext context, DateTime fireAt, CancellationToken cancelToken)
         {
             return context.CreateTimer<object>(fireAt, null, cancelToken);
         }
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="context">The context object.</param>
         /// <param name="name">The name of the event to wait for.</param>
         /// <returns>A durable task that completes when the external event is received.</returns>
-        public static Task WaitForExternalEvent(this IInterleavingContext context, string name)
+        public static Task WaitForExternalEvent(this IDurableOrchestrationContext context, string name)
         {
             return context.WaitForExternalEvent<object>(name);
         }
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.WebJobs
         /// <exception cref="TimeoutException">
         /// The external event was not received before the timeout expired.
         /// </exception>
-        public static Task WaitForExternalEvent(this IInterleavingContext context, string name, TimeSpan timeout)
+        public static Task WaitForExternalEvent(this IDurableOrchestrationContext context, string name, TimeSpan timeout)
         {
             return context.WaitForExternalEvent<object>(name, timeout);
         }
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="entityId">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <returns>A task representing the result of the operation.</returns>
-        public static Task<TResult> CallEntityAsync<TResult>(this IInterleavingContext context, EntityId entityId, string operationName)
+        public static Task<TResult> CallEntityAsync<TResult>(this IDurableOrchestrationContext context, EntityId entityId, string operationName)
         {
             return context.CallEntityAsync<TResult>(entityId, operationName, null);
         }
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="entityId">The target entity.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <returns>A task representing the completion of the operation on the entity.</returns>
-        public static Task CallEntityAsync(this IInterleavingContext context, EntityId entityId, string operationName)
+        public static Task CallEntityAsync(this IDurableOrchestrationContext context, EntityId entityId, string operationName)
         {
             return context.CallEntityAsync<object>(entityId, operationName, null);
         }
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.WebJobs
         /// <para>
         /// In order to handle the event, the target orchestration instance must be waiting for an
         /// event named <paramref name="eventName"/> using the
-        /// <see cref="IInterleavingContext.WaitForExternalEvent(string)"/> API.
+        /// <see cref="IDurableOrchestrationContext.WaitForExternalEvent(string)"/> API.
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
