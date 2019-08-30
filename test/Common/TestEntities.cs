@@ -161,6 +161,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        //-------------- An entity that launches an orchestration -----------------
+
+        public static void LauncherEntity([EntityTrigger(EntityName = "Launcher")] IDurableEntityContext context)
+        {
+            var (id, done) = context.IsNewlyConstructed ? (null, false) : context.GetState<(string, bool)>();
+
+            switch (context.OperationName)
+            {
+                case "launch":
+                    {
+                        id = context.StartNewOrchestration(nameof(TestOrchestrations.DelayedSignal), context.EntityId);
+                        break;
+                    }
+
+                case "done":
+                    {
+                        done = true;
+                        break;
+                    }
+
+                case "get":
+                    {
+                        context.Return(done ? id : null);
+                        break;
+                    }
+
+                default:
+                    throw new NotImplementedException("no such entity operation");
+            }
+
+            context.SetState((id, done));
+        }
+
         //-------------- An entity representing a phone book, using a typed C# dictionary -----------------
 
         public static void PhoneBookEntity2([EntityTrigger(EntityName = "PhoneBook2")] IDurableEntityContext context)

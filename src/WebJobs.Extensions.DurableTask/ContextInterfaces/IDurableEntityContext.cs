@@ -102,5 +102,18 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="operationInput">The operation input.</param>
         void SignalEntity(EntityId entity, string operationName, object operationInput = null);
+
+        /// <summary>
+        /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
+        /// Any result or exception is ignored (fire and forget).
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="input">the input to pass to the orchestrator function.</param>
+        /// <param name="instanceId">optionally, an instance id for the orchestration. By default, a random GUID is used.</param>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <returns>The instance id of the new orchestration.</returns>
+        string StartNewOrchestration(string functionName, object input, string instanceId = null);
     }
 }

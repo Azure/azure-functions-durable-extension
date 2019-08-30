@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
-        private const string DefaultVersion = "";
+        public const string DefaultVersion = "";
 
         private const int MaxTimerDurationInDays = 6;
 
@@ -384,9 +384,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableOrchestrationContext.StartNewOrchestration(string functionName, object input, string instanceId)
         {
             this.ThrowIfInvalidAccess();
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, instanceId, null, null, input);
+            var actualInstanceId = string.IsNullOrEmpty(instanceId) ? this.NewGuid().ToString() : instanceId;
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "starting orchestrations is synchronous");
-            return alreadyCompletedTask.Result;
+            return actualInstanceId;
         }
 
         internal async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
@@ -448,7 +449,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     if (oneWay)
                     {
-                        throw new NotImplementedException(); // TODO
+                        var dummyTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                input,
+                                new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });
+
+                        System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
                     }
                     else
                     {

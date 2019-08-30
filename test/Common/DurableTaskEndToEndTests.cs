@@ -487,6 +487,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates fire-and-forget of a suborchestration.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task FireAndForgetSuborchestration(bool extendedSessions, string storageProvider)
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.FireAndForgetSuborchestration),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FireAndForgetHelloOrchestration), null, this.output);
+
+                // Wait for it to complete
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                string subOrchestrationInstanceId = (string)status?.Output;
+
+                var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+
+                do
+                {
+                    status = await client.InnerClient.GetStatusAsync(subOrchestrationInstanceId);
+                    await Task.Delay(50);
+                }
+                while (DateTime.UtcNow <= deadline
+                        && status?.RuntimeStatus != OrchestrationRuntimeStatus.Completed);
+
+                Assert.Equal("Hello, Heloise!", (string)status?.Output);
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates function chaining by implementing a naive factorial function orchestration.
         /// </summary>
         [Theory]
@@ -2492,6 +2529,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("ok", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates launching orchestrations from entities.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityFireAndForget(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityFireAndForget),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.LaunchOrchestrationFromEntity),
+                    null,
+                    this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                var instanceId = (string)status?.Output;
+                Assert.NotNull(instanceId);
+                var launchedStatus = await client.InnerClient.GetStatusAsync(instanceId, false, false, false);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, launchedStatus.RuntimeStatus);
 
                 await host.StopAsync();
             }
