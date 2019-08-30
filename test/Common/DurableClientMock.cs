@@ -7,9 +7,9 @@ using DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class DurableOrchestrationClientMock : DurableOrchestrationClient, IDurableOrchestrationClient
+    internal class DurableClientMock : DurableClient, IDurableOrchestrationClient
     {
-        internal DurableOrchestrationClientMock(IOrchestrationServiceClient serviceClient, DurableTaskExtension config, OrchestrationClientAttribute attribute)
+        internal DurableClientMock(IOrchestrationServiceClient serviceClient, DurableTaskExtension config, DurableClientAttribute attribute)
             : base(serviceClient, config, config.HttpApiHandler, attribute)
         {
         }

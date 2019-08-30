@@ -2,12 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
-using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Xunit;
@@ -24,6 +20,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
+        }
+
+        /// <summary>
+        /// Tests DurableClient attribute binds a client instance with the IDurableOrchestrationClient interface.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableOrchestrationClientBinding()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.IDurableOrchestrationClientBinding),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                IDurableOrchestrationClient client = await host.GetOrchestrationClientBindingTest(this.output);
+            }
+        }
+
+        /// <summary>
+        /// Tests DurableClient attribute binds a client instance with the IDurableEntityClient interface.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableEntityClientBinding()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.IDurableEntityClientBinding),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                IDurableEntityClient client = await host.GetEntityClientBindingTest(this.output);
+            }
         }
 
         [Theory]

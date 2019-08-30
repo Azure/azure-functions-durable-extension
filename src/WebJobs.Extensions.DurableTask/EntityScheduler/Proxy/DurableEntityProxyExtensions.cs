@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="entityKey">The target entity key.</param>
         /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
         /// <returns>A task that completes when the message has been reliably enqueued.</returns>
-        public static Task SignalEntityAsync<TEntityInterface>(this IDurableOrchestrationClient client, string entityKey, Action<TEntityInterface> operation)
+        public static Task SignalEntityAsync<TEntityInterface>(this IDurableEntityClient client, string entityKey, Action<TEntityInterface> operation)
         {
             return SignalEntityAsync<TEntityInterface>(client, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey), operation);
         }
@@ -36,9 +36,9 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="entityId">The target entity.</param>
         /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
         /// <returns>A task that completes when the message has been reliably enqueued.</returns>
-        public static Task SignalEntityAsync<TEntityInterface>(this IDurableOrchestrationClient client, EntityId entityId, Action<TEntityInterface> operation)
+        public static Task SignalEntityAsync<TEntityInterface>(this IDurableEntityClient client, EntityId entityId, Action<TEntityInterface> operation)
         {
-            var proxyContext = new OrchestrationClientProxy(client);
+            var proxyContext = new EntityClientProxy(client);
             var proxy = EntityProxyFactory.Create<TEntityInterface>(proxyContext, entityId);
 
             operation(proxy);

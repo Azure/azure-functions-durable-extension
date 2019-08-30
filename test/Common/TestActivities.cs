@@ -116,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static HttpManagementPayload GetAndReturnHttpManagementPayload(
             [ActivityTrigger] IDurableActivityContext ctx,
-            [OrchestrationClient] IDurableOrchestrationClient client)
+            [DurableClient] IDurableOrchestrationClient client)
         {
             HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(ctx.InstanceId);
             return httpManagementPayload;

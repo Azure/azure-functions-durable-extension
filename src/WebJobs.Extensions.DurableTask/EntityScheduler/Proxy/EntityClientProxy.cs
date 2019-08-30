@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs
 {
-    internal class OrchestrationClientProxy : IEntityProxyContext
+    internal class EntityClientProxy : IEntityProxyContext
     {
-        private readonly IDurableOrchestrationClient client;
+        private readonly IDurableEntityClient client;
 
-        internal OrchestrationClientProxy(IDurableOrchestrationClient client)
+        internal EntityClientProxy(IDurableEntityClient client)
         {
             this.client = client;
         }

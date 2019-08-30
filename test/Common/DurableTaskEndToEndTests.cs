@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates task hub name configured via the <see cref="OrchestrationClientAttribute"/> when
+        /// End-to-end test which validates task hub name configured via the <see cref="DurableClientAttribute"/> when
         /// simple orchestrator function which that doesn't call any activity functions is executed.
         /// </summary>
         [Theory]
@@ -2721,7 +2721,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // in parallel, start one transfer per counter, each decrementing a counter and incrementing
                 // its successor (where the last one wraps around to the first)
                 // This is a pattern that would deadlock if we didn't order the lock acquisition.
-                var clients = new Task<TestOrchestratorClient>[numberEntities];
+                var clients = new Task<TestDurableClient>[numberEntities];
                 for (int i = 0; i < numberEntities; i++)
                 {
                     clients[i] = host.StartOrchestratorAsync(
@@ -2840,7 +2840,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                IDurableOrchestrationClient durableOrchestrationClient = client.InnerClient;
+                IDurableEntityClient durableOrchestrationClient = client.InnerClient;
 
                 var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLowerInvariant(), entityKey));
 
@@ -3043,7 +3043,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string instanceId = Guid.NewGuid().ToString();
                 string message = GenerateMediumRandomStringPayload().ToString();
-                TestOrchestratorClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
+                TestDurableClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
