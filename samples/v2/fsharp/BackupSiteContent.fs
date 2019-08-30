@@ -14,7 +14,7 @@ open FSharp.Control.Tasks
 module BackupSiteContent =
 
   [<FunctionName("E2_BackupSiteContent")>]
-  let Run([<OrchestrationTrigger>] backupContext: DurableOrchestrationContext) = task {
+  let Run([<OrchestrationTrigger>] backupContext: IDurableOrchestrationContext) = task {
     let input = backupContext.GetInput<string>()
     let rootDirectory = 
       if String.IsNullOrEmpty(input) then input.Trim()
