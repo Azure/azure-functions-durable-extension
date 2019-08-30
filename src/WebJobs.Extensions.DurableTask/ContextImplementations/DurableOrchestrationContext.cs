@@ -9,12 +9,10 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
-using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -42,7 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private string serializedOutput;
         private string serializedCustomStatus;
-        private static JsonSerializer serializer = CreateDurableHttpResponseSerializer();
 
         private bool isReplaying;
 
@@ -91,6 +88,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         bool IDurableOrchestrationContext.IsReplaying => this.InnerContext?.IsReplaying ?? this.IsReplaying;
+
+        /// <inheritdoc />
+        string IDurableOrchestrationContext.Name => this.OrchestrationName;
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.InstanceId => this.InstanceId;
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If this method is not called explicitly, the return value of the orchestrator function is used as the output.
         /// </remarks>
         /// <param name="output">The JSON-serializeable value to use as the orchestrator function output.</param>
-        internal void SetOutput(object output)
+        public void SetOutput(object output)
         {
             this.ThrowIfInvalidAccess();
 
@@ -196,13 +196,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetSerializedCustomStatus()
         {
             return this.serializedCustomStatus;
-        }
-
-        private static JsonSerializer CreateDurableHttpResponseSerializer()
-        {
-            JsonSerializer serializer = new JsonSerializer();
-            serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-            return serializer;
         }
 
         /// <inheritdoc />
@@ -262,20 +255,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req)
         {
-            string serializedRequest = MessagePayloadDataConverter.HttpConverter.Serialize(req);
-
-            // Using JToken to preserve StringValues data in DurableHttpRequest.Headers
-            // because StringValues cannot be deserialized using a default Json Converter
-            JToken durableHttpResponseJson = await this.CallDurableTaskFunctionAsync<JToken>(
+            DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
                 functionName: HttpOptions.HttpTaskActivityReservedName,
                 functionType: FunctionType.Activity,
                 oneWay: false,
                 instanceId: null,
                 operation: null,
                 retryOptions: null,
-                input: serializedRequest);
+                input: req);
 
-            return durableHttpResponseJson.ToObject<DurableHttpResponse>(serializer);
+            return durableHttpResponse;
         }
 
         private DurableHttpRequest CreateHttpRequestMessageCopy(DurableHttpRequest durableHttpRequest, string locationUri)

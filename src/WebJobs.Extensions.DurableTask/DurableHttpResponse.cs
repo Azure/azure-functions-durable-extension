@@ -7,17 +7,14 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Response received from the HTTP request made by the Durable Function.
     /// </summary>
-    // [JsonConverter(typeof(DurableHttpResponseJsonConverter))]
     public class DurableHttpResponse
     {
         /// <summary>
@@ -33,47 +30,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string content = null)
         {
             this.StatusCode = statusCode;
-            this.Headers = headers ?? new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+            this.Headers = HttpHeadersConverter.CreateCopy(headers);
             this.Content = content;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DurableHttpResponse"/> class.
-        /// </summary>
-        /// <param name="jObject">JObject containing information from HttpResponseMessage.</param>
-        public DurableHttpResponse(JObject jObject)
-        {
-            int codeInt = int.Parse(jObject["StatusCode"].Value<string>());
-            HttpStatusCode statusCode = (HttpStatusCode)codeInt;
-
-            Dictionary<string, StringValues> headerDictStringValues = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-            Dictionary<string, IEnumerable<string>> headersDictEnumerable = jObject["Headers"].ToObject<Dictionary<string, IEnumerable<string>>>();
-            foreach (var header in headersDictEnumerable)
-            {
-                string key = header.Key;
-                string[] headerValues = header.Value.ToArray<string>();
-                StringValues values = new StringValues(headerValues);
-                headerDictStringValues.Add(key, values);
-            }
-
-            this.StatusCode = statusCode;
-            this.Headers = headerDictStringValues;
-            this.Content = jObject["Content"].Value<string>();
         }
 
         /// <summary>
         /// Status code returned from an HTTP request.
         /// </summary>
+        [JsonProperty("statusCode")]
         public HttpStatusCode StatusCode { get; }
 
         /// <summary>
         /// Headers in the response from an HTTP request.
         /// </summary>
+        [JsonProperty("headers")]
+        [JsonConverter(typeof(HttpHeadersConverter))]
         public IDictionary<string, StringValues> Headers { get; }
 
         /// <summary>
         /// Content returned from an HTTP request.
         /// </summary>
+        [JsonProperty("content")]
         public string Content { get; }
 
         /// <summary>
@@ -85,10 +62,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             DurableHttpResponse durableHttpResponse = new DurableHttpResponse(
                 statusCode: httpResponseMessage.StatusCode,
-                headers: TaskHttpActivityShim.CreateStringValuesHeaderDictionary(httpResponseMessage.Headers),
+                headers: CreateStringValuesHeaderDictionary(httpResponseMessage.Headers),
                 content: await httpResponseMessage.Content.ReadAsStringAsync());
 
             return durableHttpResponse;
+        }
+
+        private static IDictionary<string, StringValues> CreateStringValuesHeaderDictionary(IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            IDictionary<string, StringValues> newHeaders = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+            if (headers != null)
+            {
+                foreach (var header in headers)
+                {
+                    newHeaders[header.Key] = new StringValues(header.Value.ToArray());
+                }
+            }
+
+            return newHeaders;
         }
     }
 }

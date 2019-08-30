@@ -2,15 +2,12 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -21,23 +18,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class TaskOrchestrationShim : TaskCommonShim
     {
         private readonly DurableOrchestrationContext context;
+        private readonly OutOfProcOrchestrationShim outOfProcShim;
 
         public TaskOrchestrationShim(DurableTaskExtension config, string name)
             : base(config)
         {
             this.context = new DurableOrchestrationContext(config, name);
-        }
-
-        private enum AsyncActionType
-        {
-            CallActivity = 0,
-            CallActivityWithRetry = 1,
-            CallSubOrchestrator = 2,
-            CallSubOrchestratorWithRetry = 3,
-            ContinueAsNew = 4,
-            CreateTimer = 5,
-            WaitForExternalEvent = 6,
-            CallEntity = 7,
+            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
 
         public override DurableCommonContext Context => this.context;
@@ -148,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     if (jObj != null)
                     {
-                        await this.HandleOutOfProcExecution(jObj);
+                        await this.outOfProcShim.HandleOutOfProcExecutionAsync(jObj);
                     }
                     else
                     {
@@ -186,142 +173,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return serializedOutput;
-        }
-
-        private async Task HandleOutOfProcExecution(JObject executionResult)
-        {
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(executionResult.ToString());
-            if (execution.CustomStatus != null)
-            {
-                ((IDurableOrchestrationContext)this.context).SetCustomStatus(execution.CustomStatus);
-            }
-
-            await this.ProcessAsyncActions(execution.Actions);
-
-            if (!string.IsNullOrEmpty(execution.Error))
-            {
-                throw new OrchestrationFailureException(
-                    $"Orchestrator function '{this.Context.Name}' failed: {execution.Error}");
-            }
-
-            if (execution.IsDone)
-            {
-                this.context.SetOutput(execution.Output);
-            }
-            else
-            {
-                // Don't return executions unless the orchestrator has completed.
-                await Task.Delay(-1);
-            }
-        }
-
-        private async Task ProcessAsyncActions(AsyncAction[][] actions)
-        {
-            if (actions == null)
-            {
-                throw new ArgumentNullException("Out-of-proc orchestrator schema must have a non-null actions property.");
-            }
-
-            // Each actionSet represents a particular execution of the orchestration.
-            foreach (AsyncAction[] actionSet in actions)
-            {
-                var tasks = new List<Task>(actions.Length);
-
-                // An actionSet represents all actions that were scheduled within that execution.
-                foreach (AsyncAction action in actionSet)
-                {
-                    switch (action.ActionType)
-                    {
-                        case AsyncActionType.CallActivity:
-                            tasks.Add(this.context.CallActivityAsync(action.FunctionName, action.Input));
-                            break;
-                        case AsyncActionType.CreateTimer:
-                            using (var cts = new CancellationTokenSource())
-                            {
-                                tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
-                                if (action.IsCanceled)
-                                {
-                                    cts.Cancel();
-                                }
-                            }
-
-                            break;
-                        case AsyncActionType.CallActivityWithRetry:
-                            tasks.Add(this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input));
-                            break;
-                        case AsyncActionType.CallSubOrchestrator:
-                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input));
-                            break;
-                        case AsyncActionType.CallSubOrchestratorWithRetry:
-                            tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
-                            break;
-                        case AsyncActionType.CallEntity:
-                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(((IDurableOrchestrationContext)this.context).CallEntityAsync(entityId, action.ExternalEventName, action.Input));
-                            break;
-                        case AsyncActionType.ContinueAsNew:
-                            ((IDurableOrchestrationContext)this.context).ContinueAsNew(action.Input);
-                            break;
-                        case AsyncActionType.WaitForExternalEvent:
-                            tasks.Add(this.context.WaitForExternalEvent<object>(action.ExternalEventName, "ExternalEvent"));
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-                if (tasks.Count > 0)
-                {
-                    await Task.WhenAny(tasks);
-                }
-            }
-        }
-
-        private class OutOfProcOrchestratorState
-        {
-            [JsonProperty("isDone")]
-            internal bool IsDone { get; set; }
-
-            [JsonProperty("actions")]
-            internal AsyncAction[][] Actions { get; set; }
-
-            [JsonProperty("output")]
-            internal object Output { get; set; }
-
-            [JsonProperty("error")]
-            internal string Error { get; set; }
-
-            [JsonProperty("customStatus")]
-            internal object CustomStatus { get; set; }
-        }
-
-        private class AsyncAction
-        {
-            [JsonProperty("actionType")]
-            [JsonConverter(typeof(StringEnumConverter))]
-            internal AsyncActionType ActionType { get; set; }
-
-            [JsonProperty("functionName")]
-            internal string FunctionName { get; set; }
-
-            [JsonProperty("input")]
-            internal object Input { get; set; }
-
-            [JsonProperty("fireAt")]
-            internal DateTime FireAt { get; set; }
-
-            [JsonProperty("externalEventName")]
-            internal string ExternalEventName { get; set; }
-
-            [JsonProperty("isCanceled")]
-            internal bool IsCanceled { get; set; }
-
-            [JsonProperty("retryOptions")]
-            [JsonConverter(typeof(RetryOptionsConverter))]
-            internal RetryOptions RetryOptions { get; set; }
-
-            [JsonProperty("instanceId")]
-            internal string InstanceId { get; set; }
         }
     }
 }

@@ -18,6 +18,7 @@ using Microsoft.Extensions.Primitives;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -71,6 +72,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DeserializeCallActivity()
+        {
+            // {
+            //   "method": "POST",
+            //   "uri": "https://example.com",
+            //   "headers": {
+            //     "Content-Type": "application/json",
+            //     "Accept": [
+            //       "application/json",
+            //       "application/xml"
+            //     ],
+            //     "x-ms-foo": []
+            //   },
+            //   "content": "5"
+            // }
+            var json = new JObject(
+                new JProperty("method", "POST"),
+                new JProperty("uri", "https://example.com"),
+                new JProperty("headers", new JObject(
+                    new JProperty("Content-Type", "application/json"),
+                    new JProperty("Accept", new JArray(
+                        "application/json",
+                        "application/xml")),
+                    new JProperty("x-ms-foo", new JArray()))),
+                new JProperty("content", "5"));
+
+            DurableHttpRequest request = JsonConvert.DeserializeObject<DurableHttpRequest>(json.ToString());
+            Assert.NotNull(request);
+            Assert.Equal(HttpMethod.Post, request.Method);
+            Assert.Equal(new Uri("https://example.com"), request.Uri);
+            Assert.Equal("5", request.Content);
+            Assert.Equal(3, request.Headers.Count);
+
+            Assert.True(request.Headers.TryGetValue("Content-Type", out StringValues contentTypeValues));
+            Assert.Single(contentTypeValues);
+            Assert.Equal("application/json", contentTypeValues[0]);
+
+            Assert.True(request.Headers.TryGetValue("Accept", out StringValues acceptValues));
+            Assert.Equal(2, acceptValues.Count);
+            Assert.Equal("application/json", acceptValues[0]);
+            Assert.Equal("application/xml", acceptValues[1]);
+
+            Assert.True(request.Headers.TryGetValue("x-ms-foo", out StringValues customHeaderValues));
+            Assert.Empty(customHeaderValues);
+        }
+
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
         /// </summary>
@@ -102,9 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -141,9 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -180,9 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -222,9 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
 
                 await host.StopAsync();
@@ -317,9 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var output = status?.Output;
 
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 var hostHeaders = response.Headers["Host"];
                 bool hasHostValueOne = response.Headers["Host"].Contains("test.host.com");
@@ -358,9 +397,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             testHeaders.Add("Access-Control-Expose-Headers", accessControlStringValues);
 
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessageMultHeaders(
-                                                                                        statusCode: HttpStatusCode.OK,
-                                                                                        headers: testHeaders,
-                                                                                        content: "test content");
+                statusCode: HttpStatusCode.OK,
+                headers: testHeaders,
+                content: "test content");
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
@@ -385,9 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var output = status?.Output;
 
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 var hostHeaders = response.Headers["Host"];
                 bool hasHostValueOne = hostHeaders.Contains("test.host.com");
@@ -465,9 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var output = status?.Output;
 
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 var hostHeaders = response.Headers["Host"];
                 bool hasHostValueOne = response.Headers["Host"].Contains("test.host.com");
@@ -518,9 +553,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(240));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -565,9 +598,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -608,9 +639,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -651,9 +680,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -698,9 +725,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await host.StopAsync();
@@ -895,9 +920,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
                 var output = status?.Output;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new DurableHttpResponseJsonConverter());
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>(serializer);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1193,9 +1216,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         private static HttpResponseMessage CreateTestHttpResponseMessage(
-                                                                    HttpStatusCode statusCode,
-                                                                    Dictionary<string, string> headers = null,
-                                                                    string content = "")
+            HttpStatusCode statusCode,
+            Dictionary<string, string> headers = null,
+            string content = "")
         {
             HttpResponseMessage newHttpResponseMessage = new HttpResponseMessage(statusCode);
             if (headers != null)
@@ -1213,9 +1236,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         private static HttpResponseMessage CreateTestHttpResponseMessageMultHeaders(
-                                                                    HttpStatusCode statusCode,
-                                                                    Dictionary<string, StringValues> headers = null,
-                                                                    string content = "")
+            HttpStatusCode statusCode,
+            Dictionary<string, StringValues> headers = null,
+            string content = "")
         {
             HttpResponseMessage newHttpResponseMessage = new HttpResponseMessage(statusCode);
             if (headers != null)
