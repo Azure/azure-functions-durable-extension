@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        private void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
+        public void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
             var options = new DurableTaskOptions()
             {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
         }
 
-        private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus runtimeStatus, HttpStatusCode httpStatusCode = HttpStatusCode.OK)
+        private async Task CheckRuntimeStatus(string instanceId, OrchestrationRuntimeStatus expectedRuntimeStatus, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -318,10 +318,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 TimeSpan.FromSeconds(30),
                 TimeSpan.FromSeconds(8));
-            Assert.Equal(httpResponseMessage.StatusCode, httpStatusCode);
+            Assert.Equal(expectedStatusCode, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var response = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal(response["runtimeStatus"], runtimeStatus.ToString());
+            Assert.Equal(expectedRuntimeStatus.ToString(), (string)response["runtimeStatus"]);
         }
 
         [Fact]

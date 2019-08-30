@@ -7,7 +7,7 @@ using DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class DurableClientMock : DurableClient
+    internal class DurableClientMock : DurableClient, IDurableOrchestrationClient
     {
         internal DurableClientMock(IOrchestrationServiceClient serviceClient, DurableTaskExtension config, DurableClientAttribute attribute)
             : base(serviceClient, config, config.HttpApiHandler, attribute)
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public int Counter { get; set; }
 
-        private Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
+        Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
         {
             var runtimeStatus = OrchestrationRuntimeStatus.Running;
             switch (instanceId)
