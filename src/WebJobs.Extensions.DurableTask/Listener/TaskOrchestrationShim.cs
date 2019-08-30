@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
         {
-            this.Context.RaiseEvent(eventName, serializedEventData);
+            this.context.RaiseEvent(eventName, serializedEventData);
         }
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     switch (action.ActionType)
                     {
                         case AsyncActionType.CallActivity:
-                            tasks.Add(this.Context.CallActivityAsync(action.FunctionName, action.Input));
+                            tasks.Add(this.context.CallActivityAsync(action.FunctionName, action.Input));
                             break;
                         case AsyncActionType.CreateTimer:
                             using (var cts = new CancellationTokenSource())
@@ -257,13 +257,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             break;
                         case AsyncActionType.CallEntity:
                             var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(((IInterleavingContext)this.context).CallEntityAsync(entityId, action.ExternalEventName, action.Input));
+                            tasks.Add(((IDurableOrchestrationContext)this.context).CallEntityAsync(entityId, action.ExternalEventName, action.Input));
                             break;
                         case AsyncActionType.ContinueAsNew:
                             ((IDurableOrchestrationContext)this.context).ContinueAsNew(action.Input);
                             break;
                         case AsyncActionType.WaitForExternalEvent:
-                            tasks.Add(this.Context.WaitForExternalEvent<object>(action.ExternalEventName, "ExternalEvent"));
+                            tasks.Add(this.context.WaitForExternalEvent<object>(action.ExternalEventName, "ExternalEvent"));
                             break;
                         default:
                             break;
