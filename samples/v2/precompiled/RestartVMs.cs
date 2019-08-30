@@ -60,9 +60,9 @@ namespace VSSample
                     new Uri($"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Compute/virtualMachines/{vmName}/restart?api-version={apiVersion}"),
                     tokenSource: managedIdentityTokenSource);
                 DurableHttpResponse restartResponse = await context.CallHttpAsync(restartRequest);
-                if (listAllResponse.StatusCode != HttpStatusCode.OK)
+                if (restartResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new ArgumentException($"Failed to restart VM: {listAllResponse.StatusCode}: {listAllResponse.Content}");
+                    throw new ArgumentException($"Failed to restart VM: {restartResponse.StatusCode}: {restartResponse.Content}");
                 }
             }
         }
