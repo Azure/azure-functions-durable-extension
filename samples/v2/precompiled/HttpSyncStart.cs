@@ -19,7 +19,7 @@ namespace VSSample
         public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
             HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient starter,
+            [DurableClient] IDurableOrchestrationClient starter,
             string functionName,
             ILogger log)
         {
