@@ -9,7 +9,7 @@ open FSharp.Control.Tasks
 module HelloSequence =
 
   [<FunctionName("E1_HelloSequence")>]
-  let Run([<OrchestrationTrigger>] context: DurableOrchestrationContext) = task {
+  let Run([<OrchestrationTrigger>] context: IDurableOrchestrationContext) = task {
     let! hello1 = context.CallActivityAsync<string>("E1_SayHello", "Tokyo")
     let! hello2 = context.CallActivityAsync<string>("E1_SayHello", "Seattle")
     let! hello3 = context.CallActivityAsync<string>("E1_SayHello", "London")
