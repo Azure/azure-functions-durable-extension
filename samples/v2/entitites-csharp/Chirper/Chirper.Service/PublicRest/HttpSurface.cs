@@ -22,7 +22,7 @@ namespace Chirper.Service
         [FunctionName("UserTimelineGet")]
         public static async Task<HttpResponseMessage> UserTimelineGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/timeline")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId)
         {
@@ -34,7 +34,7 @@ namespace Chirper.Service
         [FunctionName("UserChirpsGet")]
         public static async Task<HttpResponseMessage> UserChirpsGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/chirps")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId)
         {
@@ -49,7 +49,7 @@ namespace Chirper.Service
         [FunctionName("UserChirpsPost")]
         public static async Task<HttpResponseMessage> UserChirpsPost(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/chirps")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log, 
             string userId)
         {
@@ -67,7 +67,7 @@ namespace Chirper.Service
         [FunctionName("UserChirpsDelete")]
         public static async Task<HttpResponseMessage> UserChirpsDelete(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/chirps/{timestamp}")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId,
             DateTime timestamp)
@@ -80,7 +80,7 @@ namespace Chirper.Service
         [FunctionName("UserFollowsGet")]
         public static async Task<HttpResponseMessage> UserFollowsGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/follows")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId)
         {
@@ -95,7 +95,7 @@ namespace Chirper.Service
         [FunctionName("UserFollowsPost")]
         public static async Task<HttpResponseMessage> UserFollowsPost(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/follows/{userId2}")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId,
             string userId2)
@@ -108,7 +108,7 @@ namespace Chirper.Service
         [FunctionName("UserFollowsDelete")]
         public static async Task<HttpResponseMessage> UserFollowsDelete(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/follows/{userId2}")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId,
             string userId2)

@@ -18,7 +18,7 @@ namespace RideSharing
         [FunctionName("UserStatusGet")]
         public static async Task<HttpResponseMessage> UserInfoGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/status")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId)
         {
@@ -33,7 +33,7 @@ namespace RideSharing
         [FunctionName("UserPostAvailable")]
         public static async Task<HttpResponseMessage> UserPostAvailable(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/available")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId)
         {
@@ -50,7 +50,7 @@ namespace RideSharing
         [FunctionName("UserDeleteAvailable")]
         public static async Task<HttpResponseMessage> UserDeleteAvailable(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/available")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string userId)
         {
@@ -63,7 +63,7 @@ namespace RideSharing
         [FunctionName("DriverPostComplete")]
         public static async Task<HttpResponseMessage> DriverPostComplete(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{driverId}/completed")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             string driverId)
         {
@@ -85,7 +85,7 @@ namespace RideSharing
         [FunctionName("RegionGet")]
         public static async Task<HttpResponseMessage> RegionGet(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "region/{location}")] HttpRequestMessage req,
-            [OrchestrationClient] IDurableOrchestrationClient client,
+            [DurableClient] IDurableClient client,
             ILogger log,
             int location)
         {
