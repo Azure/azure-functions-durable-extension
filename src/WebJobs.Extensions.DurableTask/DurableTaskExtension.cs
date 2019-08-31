@@ -90,12 +90,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
+        /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IOrchestrationServiceFactory orchestrationServiceFactory,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null)
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -110,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
-            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.orchestrationServiceFactory = orchestrationServiceFactory;
             this.isOptionsConfigured = true;
 

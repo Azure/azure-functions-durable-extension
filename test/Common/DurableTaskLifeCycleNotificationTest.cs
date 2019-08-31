@@ -1342,6 +1342,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationCustomHelperTypeDependencyInjection()
+        {
+            var options = new DurableTaskOptions
+            {
+                CustomLifeCycleNotificationHelperType = typeof(TestLifeCycleNotificationHelper).AssemblyQualifiedName,
+            };
+            options.StorageProvider = new StorageProviderOptions
+            {
+                AzureStorage = new AzureStorageOptions(),
+            };
+            options.HubName = "DurableTaskHub";
+
+            IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var connectionStringResolver = new TestConnectionStringResolver();
+            var extension = new DurableTaskExtension(
+                wrappedOptions,
+                new LoggerFactory(),
+                new SimpleNameResolver(),
+                new OrchestrationServiceFactory(wrappedOptions, connectionStringResolver),
+                lifeCycleNotificationHelper: new TestLifeCycleNotificationHelper());
+
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+
+            Assert.NotNull(lifeCycleNotificationHelper);
+            Assert.IsType<TestLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
+        }
+
         private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
         {
             var mock = new Mock<INameResolver>();
