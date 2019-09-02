@@ -22,7 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IOptions<DurableTaskOptions> options,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandler)
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper)
         {
             IHost host = new HostBuilder()
                 .ConfigureLogging(
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         serviceCollection.AddSingleton(typeLocator);
                         serviceCollection.AddSingleton(nameResolver);
                         serviceCollection.AddSingleton(durableHttpMessageHandler);
+                        serviceCollection.AddSingleton(lifeCycleNotificationHelper);
                     })
                 .Build();
 

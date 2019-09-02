@@ -1344,31 +1344,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void OrchestrationCustomHelperTypeDependencyInjection()
+        public async Task OrchestrationCustomHelperTypeDependencyInjection()
         {
             var options = new DurableTaskOptions
             {
-                CustomLifeCycleNotificationHelperType = typeof(TestLifeCycleNotificationHelper).AssemblyQualifiedName,
+                HubName = "DurableTaskHub",
+                StorageProvider = new StorageProviderOptions
+                {
+                    AzureStorage = new AzureStorageOptions(),
+                },
             };
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
-            options.HubName = "DurableTaskHub";
 
             IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var connectionStringResolver = new TestConnectionStringResolver();
-            var extension = new DurableTaskExtension(
-                wrappedOptions,
-                new LoggerFactory(),
-                new SimpleNameResolver(),
-                new OrchestrationServiceFactory(wrappedOptions, connectionStringResolver),
-                lifeCycleNotificationHelper: new TestLifeCycleNotificationHelper());
 
-            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+            int callCount = 0;
+            Action<string> handler = eventName => { callCount++; };
 
-            Assert.NotNull(lifeCycleNotificationHelper);
-            Assert.IsType<TestLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                wrappedOptions.Value,
+                lifeCycleNotificationHelper: new MockLifeCycleNotificationHelper(handler)))
+            {
+                await host.StartAsync();
+
+                var status = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
+
+                await status.WaitForCompletionAsync(this.output);
+
+                await host.StopAsync();
+
+                Assert.Equal(2, callCount);
+            }
         }
 
         private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
@@ -1391,6 +1397,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, bool isReplay)
             {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, bool isReplay)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorTerminatedAsync(string hubName, string functionName, string instanceId, string reason)
+            {
+                return Task.CompletedTask;
+            }
+        }
+
+        public class MockLifeCycleNotificationHelper : ILifeCycleNotificationHelper
+        {
+            private readonly Action<string> handler;
+
+            public MockLifeCycleNotificationHelper(Action<string> handler)
+            {
+                this.handler = handler;
+            }
+
+            public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, bool isReplay)
+            {
+                this.handler(nameof(this.OrchestratorStartingAsync));
+
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, bool isReplay)
+            {
+                this.handler(nameof(this.OrchestratorCompletedAsync));
+
                 return Task.CompletedTask;
             }
 

@@ -45,7 +45,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string storageProviderType = AzureStorageProviderType,
             bool autoFetchLargeMessages = true,
             int httpAsyncSleepTime = 5000,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null)
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -121,14 +122,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 loggerProvider,
                 durableTaskOptions,
                 nameResolver,
-                durableHttpMessageHandler);
+                durableHttpMessageHandler,
+                lifeCycleNotificationHelper);
         }
 
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
             DurableTaskOptions durableTaskOptions,
             INameResolver nameResolver = null,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null)
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
@@ -137,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
             }
 
-            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver, durableHttpMessageHandler);
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
         }
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
