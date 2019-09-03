@@ -978,17 +978,17 @@
             A list of strings. Possible values 'Started', 'Completed', 'Failed', 'Terminated'.
             </value>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventSourcedStorageOptions">
             <summary>
-            Configuration options for the EventHubs storage provider.
+            Configuration options for the EventSourced storage provider.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.EventHubsConnectionStringName">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventSourcedStorageOptions.EventHubsConnectionStringName">
             <summary>
             Gets or sets the name of the environment variable or configuration setting for the event-sourced backend.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventHubsStorageOptions.RunningInTestEnvironment">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.EventSourcedStorageOptions.RunningInTestEnvironment">
             <summary>
              Whether we are running in a test environment. In that case, we reset storage before the first test,
              and we keep the event processor running between tests.
@@ -1046,9 +1046,9 @@
             The section for configuration related to the Redis provider.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.EventHubs">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageProviderOptions.EventSourced">
             <summary>
-            The section for configuration related to the EventHubs provider.
+            The section for configuration related to the EventSourced provider.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.TraceOptions">

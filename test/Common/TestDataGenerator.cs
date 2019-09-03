@@ -9,9 +9,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class TestDataGenerator
     {
         private static readonly object[] BoolOptions = new object[] { true, false };
-        private static readonly object[] FullFeaturedStorageProviders = new object[] { TestHelpers.AzureStorageProviderType, TestHelpers.EventHubsProviderType };
+        private static readonly object[] FullFeaturedStorageProviders = new object[] { TestHelpers.AzureStorageProviderType, TestHelpers.EventSourcedProviderType };
         private static readonly object[] ExtendedSessionsStorageProviders = new object[] { TestHelpers.AzureStorageProviderType };
-        private static readonly object[] AllStorageProviders = new object[] { TestHelpers.AzureStorageProviderType, TestHelpers.RedisProviderType, TestHelpers.EventHubsProviderType };
+        private static readonly object[] AllStorageProviders = new object[] { TestHelpers.AzureStorageProviderType, TestHelpers.RedisProviderType, TestHelpers.EventSourcedProviderType };
 
         public static IEnumerable<object[]> GetFullFeaturedStorageProviderOptions()
         {
@@ -51,8 +51,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Currently no support for extended sessions in Redis provider type.
             // yield return new object[] { true, TestHelpers.RedisProviderType };
 
-            // Currently no support for extended sessions in EventHubs provider type.
-            // yield return new object[] { true, TestHelpers.EventHubsProviderType };
+            // Currently no support for extended sessions in EventSourced provider type.
+            // yield return new object[] { true, TestHelpers.EventSourcedProviderType };
 
             // Currently no support for Redis provider type in CI. Can uncomment out configuration below if have Redis setup locally.
             // yield return new object[] { false, TestHelpers.RedisProviderType };

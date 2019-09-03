@@ -7,9 +7,9 @@ using DurableTask.Core;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
 {
     /// <summary>
-    /// Configuration options for the EventHubs storage provider.
+    /// Configuration options for the EventSourced storage provider.
     /// </summary>
-    public class EventHubsStorageOptions : CommonStorageProviderOptions
+    public class EventSourcedStorageOptions : CommonStorageProviderOptions
     {
         /// <summary>
         /// Gets or sets the name of the environment variable or configuration setting for the event-sourced backend.
@@ -31,12 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         {
             if (string.IsNullOrEmpty(this.ConnectionStringName))
             {
-                throw new InvalidOperationException($"{nameof(EventHubsStorageOptions.ConnectionStringName)} must be populated to use the EventHubs storage provider");
+                throw new InvalidOperationException($"{nameof(EventSourcedStorageOptions.ConnectionStringName)} must be populated to use the EventSourced storage provider");
             }
 
             if (string.IsNullOrEmpty(this.EventHubsConnectionStringName))
             {
-                throw new InvalidOperationException($"{nameof(EventHubsStorageOptions.EventHubsConnectionStringName)} must be populated to use the EventHubs storage provider");
+                throw new InvalidOperationException($"{nameof(EventSourcedStorageOptions.EventHubsConnectionStringName)} must be populated to use the EventSourced storage provider");
             }
         }
 

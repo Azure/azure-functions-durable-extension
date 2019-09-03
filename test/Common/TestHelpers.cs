@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string AzureStorageProviderType = "azure_storage";
         public const string EmulatorProviderType = "emulator";
         public const string RedisProviderType = "redis";
-        public const string EventHubsProviderType = "eventhubs";
+        public const string EventSourcedProviderType = "eventsourced";
 
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
@@ -97,9 +97,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     ConnectionStringName = "RedisConnectionString",
                 };
             }
-            else if (string.Equals(storageProviderType, EventHubsProviderType))
+            else if (string.Equals(storageProviderType, EventSourcedProviderType))
             {
-                durableTaskOptions.StorageProvider.EventHubs = new EventHubsStorageOptions()
+                durableTaskOptions.StorageProvider.EventSourced = new EventSourcedStorageOptions()
                 {
                     ConnectionStringName = "Storage",
                     EventHubsConnectionStringName = "EventHubsConnectionString",

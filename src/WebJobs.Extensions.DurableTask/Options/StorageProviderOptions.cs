@@ -31,15 +31,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public RedisStorageOptions Redis { get; set; }
 
         /// <summary>
-        /// The section for configuration related to the EventHubs provider.
+        /// The section for configuration related to the EventSourced provider.
         /// </summary>
-        public EventHubsStorageOptions EventHubs { get; set; }
+        public EventSourcedStorageOptions EventSourced { get; set; }
 
         internal CommonStorageProviderOptions GetConfiguredProvider()
         {
             if (this.configuredProvider == null)
             {
-                var storageProviderOptions = new CommonStorageProviderOptions[] { this.AzureStorage, this.Emulator, this.Redis, this.EventHubs };
+                var storageProviderOptions = new CommonStorageProviderOptions[] { this.AzureStorage, this.Emulator, this.Redis, this.EventSourced };
                 var activeProviders = storageProviderOptions.Where(provider => provider != null);
                 if (!activeProviders.Any())
                 {

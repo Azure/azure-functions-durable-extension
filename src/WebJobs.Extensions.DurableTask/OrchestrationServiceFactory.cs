@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Emulator;
-using DurableTask.EventHubs;
+using DurableTask.EventSourced;
 using DurableTask.Redis;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
@@ -35,8 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new EmulaterOrchestrationServiceFactory(options);
                 case RedisStorageOptions redisStorageOptions:
                     return new RedisOrchestrationServiceFactory(options, connectionStringResolver);
-                case EventHubsStorageOptions eventHubsStorageOptions:
-                    return new EventHubsOrchestrationServiceFactory(options, connectionStringResolver);
+                case EventSourcedStorageOptions eventSourcedStorageOptions:
+                    return new EventSourcedOrchestrationServiceFactory(options, connectionStringResolver);
                 default:
                     throw new InvalidOperationException($"{configuredProvider.GetType()} is not a supported storage provider.");
             }
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private class EventHubsOrchestrationServiceFactory : IOrchestrationServiceFactory
+        private class EventSourcedOrchestrationServiceFactory : IOrchestrationServiceFactory
         {
             private readonly Entry entry;
 
@@ -241,14 +241,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // cache it in a static variable. Also, we delete previous taskhub before first run.
             private static Entry cachedEntry;
 
-            public EventHubsOrchestrationServiceFactory(DurableTaskOptions options, IConnectionStringResolver connectionStringResolver)
+            public EventSourcedOrchestrationServiceFactory(DurableTaskOptions options, IConnectionStringResolver connectionStringResolver)
             {
-                var runningInTestEnvironment = options.StorageProvider.EventHubs.RunningInTestEnvironment;
+                var runningInTestEnvironment = options.StorageProvider.EventSourced.RunningInTestEnvironment;
 
-                var settings = new EventHubsOrchestrationServiceSettings()
+                var settings = new EventSourcedOrchestrationServiceSettings()
                 {
-                    StorageConnectionString = connectionStringResolver.Resolve(options.StorageProvider.EventHubs.ConnectionStringName),
-                    EventHubsConnectionString = connectionStringResolver.Resolve(options.StorageProvider.EventHubs.EventHubsConnectionStringName),
+                    StorageConnectionString = connectionStringResolver.Resolve(options.StorageProvider.EventSourced.ConnectionStringName),
+                    EventHubsConnectionString = connectionStringResolver.Resolve(options.StorageProvider.EventSourced.EventHubsConnectionStringName),
                     MaxConcurrentTaskActivityWorkItems = options.MaxConcurrentActivityFunctions,
                     MaxConcurrentTaskOrchestrationWorkItems = options.MaxConcurrentOrchestratorFunctions,
                     KeepServiceRunning = runningInTestEnvironment,
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.entry = new Entry()
                 {
                     Settings = settings,
-                    OrchestrationService = new EventHubsOrchestrationService(settings),
+                    OrchestrationService = new EventSourcedOrchestrationService(settings),
                     TaskHubName = options.HubName,
                 };
 
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    throw new InvalidOperationException("eventhubs client does not support using multiple task hubs");
+                    throw new InvalidOperationException("eventsourced client does not support using multiple task hubs");
                 }
             }
 
@@ -311,9 +311,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             private class Entry
             {
-                public EventHubsOrchestrationServiceSettings Settings { get; set; }
+                public EventSourcedOrchestrationServiceSettings Settings { get; set; }
 
-                public EventHubsOrchestrationService OrchestrationService { get; set; }
+                public EventSourcedOrchestrationService OrchestrationService { get; set; }
 
                 public string TaskHubName { get; set; }
             }
