@@ -4,9 +4,9 @@
 using System;
 using System.Net.Http;
 
-using Microsoft.Extensions.DependencyInjection.Extensions;
 #if NETSTANDARD2_0
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 #else
 using Microsoft.Azure.WebJobs.Host;
