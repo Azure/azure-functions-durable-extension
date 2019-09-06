@@ -1254,61 +1254,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void OrchestrationCustomHelperTypeActivationSuccess()
-        {
-            var options = new DurableTaskOptions
-            {
-                CustomLifeCycleNotificationHelperType = typeof(TestLifeCycleNotificationHelper).AssemblyQualifiedName,
-            };
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
-            options.HubName = "DurableTaskHub";
-
-            IOptions<DurableTaskOptions> wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var connectionStringResolver = new TestConnectionStringResolver();
-            var extension = new DurableTaskExtension(
-                wrappedOptions,
-                new LoggerFactory(),
-                new SimpleNameResolver(),
-                new OrchestrationServiceFactory(wrappedOptions, connectionStringResolver));
-
-            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
-
-            Assert.NotNull(lifeCycleNotificationHelper);
-            Assert.IsType<TestLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void OrchestrationCustomHelperTypeActivationFailed()
-        {
-            var options = new DurableTaskOptions
-            {
-                CustomLifeCycleNotificationHelperType = "Test.TestLifeCycleNotificationHelper",
-            };
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
-            options.HubName = "DurableTaskHub";
-
-            var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var extension = new DurableTaskExtension(
-                wrappedOptions,
-                new LoggerFactory(),
-                new SimpleNameResolver(),
-                new OrchestrationServiceFactory(wrappedOptions, new TestConnectionStringResolver()));
-
-            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
-
-            Assert.NotNull(lifeCycleNotificationHelper);
-            Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void OrchestrationCustomHelperTypeFallback()
         {
             var options = new DurableTaskOptions
@@ -1322,7 +1267,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         TopicEndpoint = null,
                     },
                 },
-                CustomLifeCycleNotificationHelperType = null,
             };
             options.StorageProvider = new StorageProviderOptions
             {
@@ -1386,29 +1330,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return mock;
-        }
-
-        public class TestLifeCycleNotificationHelper : ILifeCycleNotificationHelper
-        {
-            public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, bool isReplay)
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, bool isReplay)
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, bool isReplay)
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task OrchestratorTerminatedAsync(string hubName, string functionName, string instanceId, string reason)
-            {
-                return Task.CompletedTask;
-            }
         }
 
         public class MockLifeCycleNotificationHelper : ILifeCycleNotificationHelper

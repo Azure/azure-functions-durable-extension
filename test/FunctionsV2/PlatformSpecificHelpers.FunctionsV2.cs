@@ -44,7 +44,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         serviceCollection.AddSingleton(typeLocator);
                         serviceCollection.AddSingleton(nameResolver);
                         serviceCollection.AddSingleton(durableHttpMessageHandler);
-                        serviceCollection.AddSingleton(lifeCycleNotificationHelper);
+
+                        if (lifeCycleNotificationHelper != null)
+                        {
+                            serviceCollection.AddSingleton(lifeCycleNotificationHelper);
+                        }
                     })
                 .Build();
 

@@ -133,12 +133,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public int EntityMessageReorderWindowInMinutes { get; set; } = 30;
 
-        /// <summary>
-        /// Gets or sets the type name of a custom to use for handling lifecycle notification events.
-        /// </summary>
-        /// <value>Assembly qualified class name that implements <see cref="ILifeCycleNotificationHelper">ILifeCycleNotificationHelper</see>.</value>
-        public string CustomLifeCycleNotificationHelperType { get; set; }
-
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 

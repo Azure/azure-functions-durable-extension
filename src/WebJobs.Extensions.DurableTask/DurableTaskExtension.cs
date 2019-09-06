@@ -260,17 +260,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
             }
 
-            // Second: Custom LifeCycle Helper Type
-            if (!string.IsNullOrEmpty(this.Options.CustomLifeCycleNotificationHelperType))
-            {
-                var notificationType = Type.GetType(this.Options.CustomLifeCycleNotificationHelperType);
-
-                if (notificationType != null && typeof(ILifeCycleNotificationHelper).IsAssignableFrom(notificationType))
-                {
-                    return (ILifeCycleNotificationHelper)Activator.CreateInstance(notificationType);
-                }
-            }
-
             // Fallback: Disable Notification
             return new NullLifeCycleNotificationHelper();
         }
