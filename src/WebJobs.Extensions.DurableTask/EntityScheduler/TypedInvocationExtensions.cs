@@ -1,8 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.AspNetCore.JsonPatch.Operations;
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs
@@ -87,14 +89,50 @@ namespace Microsoft.Azure.WebJobs
 
         internal static MethodInfo FindMethodForContext<T>(IDurableEntityContext context)
         {
-            // find the method corresponding to the operation
-            // (may throw an AmbiguousMatchException)
-            return typeof(T).GetMethod(
-                context.OperationName,
-                System.Reflection.BindingFlags.IgnoreCase
-                | System.Reflection.BindingFlags.Public
-                | System.Reflection.BindingFlags.NonPublic
-                | System.Reflection.BindingFlags.Instance);
+            var type = typeof(T);
+
+            var interfaces = type.GetInterfaces();
+            if (interfaces.Length > 1)
+            {
+                throw new InvalidOperationException("Only a single interface can be implemented on an entity");
+            }
+
+            var method = GetMethodByName(context.OperationName);
+
+            if (interfaces.Length == 0 || method != null)
+            {
+                return method;
+            }
+
+            var entityInterface = interfaces[0];
+            var operationName = $"{entityInterface.Namespace}.{TypeNameHierarchy(entityInterface)}.{context.OperationName}";
+
+            return GetMethodByName(operationName);
+
+            MethodInfo GetMethodByName(string name)
+            {
+                // find the method corresponding to the operation
+                // (may throw an AmbiguousMatchException)
+                return typeof(T).GetMethod(
+                    name,
+                    System.Reflection.BindingFlags.IgnoreCase
+                    | System.Reflection.BindingFlags.Public
+                    | System.Reflection.BindingFlags.NonPublic
+                    | System.Reflection.BindingFlags.Instance);
+            }
+
+            // Nested types are separated by `+` in `type.FullName`, but `.` in the name used
+            // for the explicit interface implementation, so we walk to the top of the
+            // hierarchy and generate the name.
+            string TypeNameHierarchy(Type t)
+            {
+                if (t.IsNested)
+                {
+                    return TypeNameHierarchy(t.DeclaringType) + "." + t.Name;
+                }
+
+                return t.Name;
+            }
         }
     }
 }
