@@ -32,14 +32,7 @@ namespace Microsoft.Azure.WebJobs
         /// constructor via dependency injection.</param>
         public static async Task DispatchAsync<T>(this IDurableEntityContext context, params object[] constructorParameters)
         {
-            // find the method corresponding to the operation
-            // (may throw an AmbiguousMatchException)
-            MethodInfo method = typeof(T).GetMethod(
-                context.OperationName,
-                System.Reflection.BindingFlags.IgnoreCase
-                | System.Reflection.BindingFlags.Public
-                | System.Reflection.BindingFlags.NonPublic
-                | System.Reflection.BindingFlags.Instance);
+            MethodInfo method = FindMethodForContext<T>(context);
 
             if (method == null)
             {
@@ -90,6 +83,18 @@ namespace Microsoft.Azure.WebJobs
                     context.Return(result);
                 }
             }
+        }
+
+        internal static MethodInfo FindMethodForContext<T>(IDurableEntityContext context)
+        {
+            // find the method corresponding to the operation
+            // (may throw an AmbiguousMatchException)
+            return typeof(T).GetMethod(
+                context.OperationName,
+                System.Reflection.BindingFlags.IgnoreCase
+                | System.Reflection.BindingFlags.Public
+                | System.Reflection.BindingFlags.NonPublic
+                | System.Reflection.BindingFlags.Instance);
         }
     }
 }
