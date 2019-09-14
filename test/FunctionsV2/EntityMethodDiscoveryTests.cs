@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Moq;
 using Xunit;
 
@@ -12,6 +13,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CanFindMemberOnClassWithoutInterface()
         {
             var context = new Mock<IDurableEntityContext>();
@@ -23,6 +25,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void WillReceiveNullForMissingMember()
         {
             var context = new Mock<IDurableEntityContext>();
@@ -34,6 +37,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void WillFindMemberOnClassWithImplicitInterface()
         {
             var context = new Mock<IDurableEntityContext>();
@@ -45,6 +49,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void WillFindMemberOnClassWithExplicitInterface()
         {
             var context = new Mock<IDurableEntityContext>();
