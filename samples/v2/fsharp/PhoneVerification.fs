@@ -15,7 +15,7 @@ open FSharp.Control.Tasks
 module PhoneVerification =
 
   [<FunctionName("E4_SmsPhoneVerification")>]
-  let Run([<OrchestrationTrigger>] context: DurableOrchestrationContext) = task {
+  let Run([<OrchestrationTrigger>] context: IDurableOrchestrationContext) = task {
     let phoneNumber = context.GetInput<string>()
     if String.IsNullOrEmpty(phoneNumber)
     then raise (ArgumentNullException("phoneNumber", "A phone number input is required."))

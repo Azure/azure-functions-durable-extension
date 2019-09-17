@@ -21,7 +21,7 @@ module HttpSyncStart =
 
   [<FunctionName("HttpSyncStart")>]
   let Run([<HttpTrigger(AuthorizationLevel.Function, "post", Route = "orchestrators/{functionName}/wait")>] req: HttpRequestMessage,
-          [<OrchestrationClient>] starter: DurableOrchestrationClient,
+          [<OrchestrationClient>] starter: IDurableOrchestrationClient,
           functionName: string,
           log: ILogger) =
     task {
