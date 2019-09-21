@@ -124,8 +124,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
                         case AsyncActionType.CallEntity:
-                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(this.context.CallEntityAsync(entityId, action.ExternalEventName, action.Input));
+                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.EntitySchedulerId);
+                            tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
                             break;
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
@@ -196,6 +196,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("httpRequest")]
             internal DurableHttpRequest HttpRequest { get; set; }
+
+            [JsonProperty("entity")]
+            internal string EntitySchedulerId { get; set; }
+
+            [JsonProperty("operation")]
+            internal string EntityOperation { get; set; }
         }
     }
 }

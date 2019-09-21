@@ -767,19 +767,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.config.GetClient(attribute);
         }
 
-        internal HttpCreationPayload GetInstanceCreationLinks()
+        internal string GetBaseUrl()
         {
             this.ThrowIfWebhooksNotConfigured();
 
             Uri notificationUri = this.config.Options.NotificationUrl;
 
             string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
-            string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
-            string instancePrefix = baseUrl + "/" + OrchestratorsControllerSegment + "{functionName}[/{instanceId}]";
+            return hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
+        }
 
-            string querySuffix = !string.IsNullOrEmpty(notificationUri.Query)
+        internal string GetUniversalQueryStrings()
+        {
+            this.ThrowIfWebhooksNotConfigured();
+
+            Uri notificationUri = this.config.Options.NotificationUrl;
+
+            return !string.IsNullOrEmpty(notificationUri.Query)
                 ? notificationUri.Query.TrimStart('?')
                 : string.Empty;
+        }
+
+        internal HttpCreationPayload GetInstanceCreationLinks()
+        {
+            string baseUrl = this.GetBaseUrl();
+            string instancePrefix = baseUrl + "/" + OrchestratorsControllerSegment + "{functionName}[/{instanceId}]";
+
+            string querySuffix = this.GetUniversalQueryStrings();
 
             HttpCreationPayload httpCreationPayload = new HttpCreationPayload
             {

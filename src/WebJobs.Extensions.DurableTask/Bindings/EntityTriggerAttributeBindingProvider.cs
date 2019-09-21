@@ -83,12 +83,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             private static IReadOnlyDictionary<string, Type> GetBindingDataContract(ParameterInfo parameterInfo)
             {
-                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+                var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // This binding supports return values of any type
+                    { "$return", typeof(object).MakeByRefType() },
+                };
 
                 // allow binding to the parameter name
                 contract[parameterInfo.Name] = parameterInfo.ParameterType;
-
-                // do not allow any return types (other than void)
 
                 return contract;
             }
