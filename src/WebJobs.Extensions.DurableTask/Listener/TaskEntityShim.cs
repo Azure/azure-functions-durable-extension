@@ -84,13 +84,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
             }
 
-            return MessagePayloadDataConverter.Default.Serialize(new EntityStatus()
+            if (this.context.InternalError != null)
             {
-                EntityExists = this.context.State.EntityExists,
-                QueueSize = this.context.State.Queue?.Count ?? 0,
-                LockedBy = this.context.State.LockedBy,
-                CurrentOperation = opStatus,
-            });
+                return $"Internal Error: {this.context.InternalError.SourceException}";
+            }
+            else
+            {
+                return MessagePayloadDataConverter.Default.Serialize(new EntityStatus()
+                {
+                    EntityExists = this.context.State.EntityExists,
+                    QueueSize = this.context.State.Queue?.Count ?? 0,
+                    LockedBy = this.context.State.LockedBy,
+                    CurrentOperation = opStatus,
+                });
+            }
         }
 
         public override void RaiseEvent(OrchestrationContext unused, string eventName, string serializedEventData)
@@ -117,8 +124,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                // a previous incarnation of this instance called continueAsNew
-                this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
+                try
+                {
+                    // a previous incarnation of this instance called continueAsNew
+                    this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
+                }
+                catch (Exception e)
+                {
+                    throw new EntitySchedulerException("failed to deserialize entity scheduler state - may be corrupted or wrong version.", e);
+                }
             }
 
             if (serializedInput == null)
@@ -148,29 +162,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Entity,
                 isReplay: false);
 
-            // Send all buffered outgoing messages
-            this.context.SendOutbox(innerContext);
-
             if (this.NumberEventsToReceive > 0)
             {
                 await this.doneProcessingMessages.Task;
             }
 
-            // write back the state
-            this.context.Writeback();
-            var jstate = JToken.FromObject(this.context.State);
+            // Commit the effects of this batch, if
+            // we have not already run into an internal error
+            // (in which case we will abort the batch instead of committing it)
+            if (this.context.InternalError == null)
+            {
+                // try to serialize the updated entity state
+                this.context.Writeback(out var stateSerializationFailedNotification);
 
-            // continue as new
-            innerContext.ContinueAsNew(jstate);
+                // Send all buffered outgoing messages
+                this.context.SendOutbox(innerContext, stateSerializationFailedNotification);
 
-            this.Config.TraceHelper.FunctionCompleted(
-                this.context.HubName,
-                this.context.Name,
-                this.context.InstanceId,
-                this.Config.GetIntputOutputTrace(this.context.State.EntityState),
-                continuedAsNew: true,
-                functionType: FunctionType.Entity,
-                isReplay: false);
+                var jstate = JToken.FromObject(this.context.State);
+
+                // continue as new
+                innerContext.ContinueAsNew(jstate);
+            }
+
+            if (this.context.ErrorsPresent(out var description))
+            {
+                this.Config.TraceHelper.FunctionFailed(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.InstanceId,
+                    description,
+                    functionType: FunctionType.Entity,
+                    isReplay: false);
+            }
+            else
+            {
+                this.Config.TraceHelper.FunctionCompleted(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.InstanceId,
+                    this.Config.GetIntputOutputTrace(this.context.State.EntityState),
+                    continuedAsNew: true,
+                    functionType: FunctionType.Entity,
+                    isReplay: false);
+            }
 
             // The return value is not used.
             return string.Empty;
@@ -218,7 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // send lock request to next entity in the lock set
                 var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(request.LockSet[request.Position]) };
-                this.context.SendEntityMessage(target, "op", request);
+                this.context.SendLockMessage(target, "op", request);
             }
             else
             {
@@ -228,7 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                 };
-                this.context.SendEntityMessage(target, request.Id.ToString(), message);
+                this.context.SendLockMessage(target, request.Id.ToString(), message);
             }
         }
 
@@ -247,6 +281,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
 
+            string exceptionDetails = string.Empty;
+
             try
             {
                 Task invokeTask = this.FunctionInvocationCallback();
@@ -264,6 +300,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (Exception e)
             {
                 stopwatch.Stop();
+
+                exceptionDetails = e.ToString();
+
+                this.context.CaptureApplicationError(e);
 
                 // exception must be sent with response back to caller
                 this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.EntityId);
@@ -300,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.Id.ToString(),
                         request.Operation,
                         this.Config.GetIntputOutputTrace(this.context.RawInput),
-                        this.Config.GetIntputOutputTrace(response.Result),
+                        exceptionDetails,
                         stopwatch.Elapsed.TotalMilliseconds,
                         isReplay: false);
             }
@@ -311,7 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
                 var guid = request.Id.ToString();
                 var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
-                this.context.SendEntityMessage(target, guid, jresponse);
+                this.context.SendResponseMessage(target, guid, jresponse, !response.IsException);
             }
 
             // destruct the entity if the application code requested it
@@ -371,6 +411,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
+                    this.context.CaptureApplicationError(new OperationErrorException(
+                        $"Error in operation '{request.Operation}': {result}"));
+
                     this.Config.TraceHelper.OperationFailed(
                         this.context.HubName,
                         this.context.Name,
@@ -395,7 +438,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         ExceptionType = result.IsError ? "Error" : null,
                     };
                     var guid = request.Id.ToString();
-                    this.context.SendEntityMessage(target, guid, responseMessage);
+                    this.context.SendResponseMessage(target, guid, responseMessage, !result.IsError);
                 }
             }
 
@@ -414,7 +457,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     InstanceId = EntityId.GetSchedulerIdFromEntityId(signal.Target),
                 };
-                this.context.SendEntityMessage(target, "op", request);
+                this.context.SendOperationMessage(target, "op", request);
             }
         }
 

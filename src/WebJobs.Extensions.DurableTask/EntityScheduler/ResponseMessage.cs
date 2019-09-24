@@ -39,7 +39,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
-            this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(exception);
+            try
+            {
+                this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(exception);
+            }
+            catch (Exception e)
+            {
+                // sometimes, exceptions cannot be serialized. In that case we create a serializable wrapper
+                // exception which lets the caller know something went wrong.
+
+                var wrapper = new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
+                this.ExceptionType = wrapper.GetType().AssemblyQualifiedName;
+                this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(wrapper);
+            }
         }
 
         public T GetResult<T>()

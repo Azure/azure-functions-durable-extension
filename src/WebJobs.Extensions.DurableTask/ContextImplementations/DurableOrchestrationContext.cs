@@ -604,7 +604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             operationId,
                             operationName,
                             input: "(replayed)",
-                            output: "(replayed)",
+                            exception: "(replayed)",
                             duration: 0,
                             isReplay: true);
                     }

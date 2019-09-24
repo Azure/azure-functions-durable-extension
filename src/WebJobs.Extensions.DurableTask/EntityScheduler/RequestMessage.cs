@@ -78,24 +78,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void SetInput(object obj)
         {
-            if (obj is JToken jtoken)
+            try
             {
-                this.Input = jtoken.ToString(Formatting.None);
+                if (obj is JToken jtoken)
+                {
+                    this.Input = jtoken.ToString(Formatting.None);
+                }
+                else
+                {
+                    this.Input = MessagePayloadDataConverter.Default.Serialize(obj);
+                }
             }
-            else
+            catch (Exception e)
             {
-                this.Input = MessagePayloadDataConverter.Default.Serialize(obj);
+                throw new EntitySchedulerException($"failed to serialize input for operation '{this.Operation}': {e.Message}", e);
             }
         }
 
         public T GetInput<T>()
         {
-            return JsonConvert.DeserializeObject<T>(this.Input);
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(this.Input);
+            }
+            catch (Exception e)
+            {
+                throw new EntitySchedulerException($"failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
+            }
         }
 
         public object GetInput(Type inputType)
         {
-            return JsonConvert.DeserializeObject(this.Input, inputType);
+            try
+            {
+                return JsonConvert.DeserializeObject(this.Input, inputType);
+            }
+            catch (Exception e)
+            {
+                throw new EntitySchedulerException($"failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
+            }
         }
 
         public override string ToString()
