@@ -190,6 +190,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 isReplay: false);
         }
 
+        string IDurableEntityContext.StartNewOrchestration(string functionName, object input, string instanceId)
+        {
+            this.ThrowIfInvalidAccess();
+
+            if (string.IsNullOrEmpty(instanceId))
+            {
+                instanceId = Guid.NewGuid().ToString();
+            }
+            else if (instanceId.StartsWith("@"))
+            {
+                throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
+            }
+
+            lock (this.outbox)
+            {
+                this.outbox.Add(new FireAndForgetMessage()
+                {
+                    InstanceId = instanceId,
+                    FunctionName = functionName,
+                    Input = input,
+                });
+            }
+
+            this.Config.TraceHelper.FunctionScheduled(
+                this.Config.Options.HubName,
+                functionName,
+                this.InstanceId,
+                reason: this.FunctionName,
+                functionType: FunctionType.Orchestrator,
+                isReplay: false);
+
+            return instanceId;
+        }
+
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
@@ -213,7 +247,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
                 }
 
-                this.outbox.Add(new OutgoingMessage()
+                this.outbox.Add(new EventMessage()
                 {
                     Target = target,
                     EventName = eventName,
@@ -228,25 +262,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 foreach (var message in this.outbox)
                 {
-                    this.Config.TraceHelper.SendingEntityMessage(
+                    if (message is EventMessage eventMessage)
+                    {
+                        this.Config.TraceHelper.SendingEntityMessage(
                         this.InstanceId,
                         this.ExecutionId,
-                        message.Target.InstanceId,
-                        message.EventName,
-                        message.EventContent);
+                        eventMessage.Target.InstanceId,
+                        eventMessage.EventName,
+                        eventMessage.EventContent);
 
-                    innerContext.SendEvent(message.Target, message.EventName, message.EventContent);
+                        innerContext.SendEvent(eventMessage.Target, eventMessage.EventName, eventMessage.EventContent);
+                    }
+                    else if (message is FireAndForgetMessage fireAndForgetMessage)
+                    {
+                        var dummyTask = innerContext.CreateSubOrchestrationInstance<object>(
+                          fireAndForgetMessage.FunctionName,
+                          DurableOrchestrationContext.DefaultVersion,
+                          fireAndForgetMessage.InstanceId,
+                          fireAndForgetMessage.Input,
+                          new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });
+
+                        System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
+                    }
                 }
 
                 this.outbox.Clear();
             }
         }
 
-        private struct OutgoingMessage
+        private abstract class OutgoingMessage
         {
-            public OrchestrationInstance Target;
-            public string EventName;
-            public object EventContent;
+        }
+
+        private class FireAndForgetMessage : OutgoingMessage
+        {
+            public string InstanceId { get; set; }
+
+            public string FunctionName { get; set; }
+
+            public object Input { get; set; }
+        }
+
+        private class EventMessage : OutgoingMessage
+        {
+            public OrchestrationInstance Target { get; set; }
+
+            public string EventName { get; set; }
+
+            public object EventContent { get; set; }
         }
     }
 }

@@ -683,6 +683,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        public static Task<string> FireAndForgetHelloOrchestration([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var id = ctx.StartNewOrchestration(nameof(TestOrchestrations.SayHelloWithActivity), "Heloise");
+            return Task.FromResult(id);
+        }
+
+        public static async Task<string> LaunchOrchestrationFromEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = new EntityId("Launcher", ctx.NewGuid().ToString());
+
+            await ctx.CallEntityAsync(entityId, "launch", "hello");
+
+            while (true)
+            {
+                var orchestrationId = await ctx.CallEntityAsync<string>(entityId, "get");
+
+                if (orchestrationId != null)
+                {
+                    return orchestrationId;
+                }
+
+                await ctx.CreateTimer(DateTime.UtcNow + TimeSpan.FromSeconds(1), CancellationToken.None);
+            }
+        }
+
+        public static async Task DelayedSignal([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = ctx.GetInput<EntityId>();
+
+            await ctx.CreateTimer(DateTime.UtcNow + TimeSpan.FromSeconds(.2), CancellationToken.None);
+
+            ctx.SignalEntity(entityId, "done");
+        }
+
         public static async Task<string> LargeEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var entityId = ctx.GetInput<EntityId>();
