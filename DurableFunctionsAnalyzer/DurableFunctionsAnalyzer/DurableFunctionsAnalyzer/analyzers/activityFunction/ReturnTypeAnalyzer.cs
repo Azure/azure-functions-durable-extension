@@ -1,0 +1,41 @@
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace DurableFunctionsAnalyzer.analyzers.function
+{
+    class ReturnTypeAnalyzer
+    {
+        public const string DiagnosticId = "DF0110";
+        private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityReturnTypeAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.ActivityReturnTypeAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.ActivityReturnTypeAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
+        private const string Category = "Naming";
+        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+
+        public static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+
+
+        public void ReportProblems(CompilationAnalysisContext cac, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        {
+            foreach (var node in calledFunctions)
+            {
+                var functionDefinition = availableFunctions.Where(x => x.FunctionName == node.Name).SingleOrDefault();
+                if (functionDefinition != null)
+                {
+
+                    if (functionDefinition.ReturnType != node.ExpectedReturnType &&
+                        !(functionDefinition.ReturnType == "System.Void" && node.ExpectedReturnType == "System.Threading.Tasks.Task"))
+                    {
+                        if ($"System.Threading.Tasks.Task<{functionDefinition.ReturnType}>" != node.ExpectedReturnType)
+                            cac.ReportDiagnostic(Diagnostic.Create(Rule, node.ExpectedReturnTypeNode.GetLocation(), node.Name, functionDefinition.ReturnType, node.ExpectedReturnType));
+                    }
+                }
+            }
+        }
+    }
+}
