@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                throw new EntitySchedulerException($"failed to serialize input for operation '{this.Operation}': {e.Message}", e);
+                throw new EntitySchedulerException($"Failed to serialize input for operation '{this.Operation}': {e.Message}", e);
             }
         }
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                throw new EntitySchedulerException($"failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
+                throw new EntitySchedulerException($"Failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
             }
         }
 
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                throw new EntitySchedulerException($"failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
+                throw new EntitySchedulerException($"Failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
             }
         }
 

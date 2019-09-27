@@ -131,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (Exception e)
                 {
-                    throw new EntitySchedulerException("failed to deserialize entity scheduler state - may be corrupted or wrong version.", e);
+                    throw new EntitySchedulerException("Failed to deserialize entity scheduler state - may be corrupted or wrong version.", e);
                 }
             }
 
@@ -173,10 +173,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.context.InternalError == null)
             {
                 // try to serialize the updated entity state
-                this.context.Writeback(out var stateSerializationFailedNotification);
+                bool writeBackSuccessful = this.context.TryWriteback(out var serializationErrorMessage);
 
                 // Send all buffered outgoing messages
-                this.context.SendOutbox(innerContext, stateSerializationFailedNotification);
+                this.context.SendOutbox(innerContext, writeBackSuccessful, serializationErrorMessage);
 
                 var jstate = JToken.FromObject(this.context.State);
 

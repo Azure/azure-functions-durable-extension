@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(exception);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // sometimes, exceptions cannot be serialized. In that case we create a serializable wrapper
                 // exception which lets the caller know something went wrong.

@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     catch (Exception e)
                     {
-                        throw new EntitySchedulerException($"failed to construct entity state: {e.Message}", e);
+                        throw new EntitySchedulerException($"Failed to initialize entity state: {e.Message}", e);
                     }
                 }
 
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                throw new EntitySchedulerException($"failed to deserialize entity state: {e.Message}", e);
+                throw new EntitySchedulerException($"Failed to deserialize entity state: {e.Message}", e);
             }
         }
 
@@ -228,9 +228,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.StateWasAccessed = true;
         }
 
-        internal void Writeback(out ResponseMessage stateSerializationFailedNotification)
+        internal bool TryWriteback(out ResponseMessage serializationErrorMessage)
         {
-            stateSerializationFailedNotification = null;
+            serializationErrorMessage = null;
 
             if (this.StateWasAccessed)
             {
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // we cannot serialize the entity state - this is an application error.
                     var serializationException = new EntitySchedulerException(
-                        $"failed to serialize state of '{this.FunctionName}' entity: {e.Message}", e);
+                        $"Failed to serialize state of '{this.FunctionName}' entity: {e.Message}", e);
 
                     this.CaptureApplicationError(serializationException);
 
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // is lost, we don't want the calling orchestrations to think everything is o.k.
                     // They should be notified, so we replace all non-error operation results
                     // with an exception result.
-                    stateSerializationFailedNotification = new ResponseMessage()
+                    serializationErrorMessage = new ResponseMessage()
                     {
                         ExceptionType = serializationException.GetType().AssemblyQualifiedName,
                         Result = MessagePayloadDataConverter.ErrorConverter.Serialize(serializationException),
@@ -260,6 +260,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.CurrentState = null;
                 this.StateWasAccessed = false;
             }
+
+            return serializationErrorMessage == null;
         }
 
         void IDurableEntityContext.SignalEntity(EntityId entity, string operation, object input)
@@ -385,7 +387,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendLockMessage(OrchestrationInstance target, string eventName, object message, bool notifyOnFailedWriteback = false)
+        internal void SendLockMessage(OrchestrationInstance target, string eventName, object message)
         {
             lock (this.outbox)
             {
@@ -403,7 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOutbox(OrchestrationContext innerContext, ResponseMessage writebackFailedResponse)
+        internal void SendOutbox(OrchestrationContext innerContext, bool writeBackSuccessful, ResponseMessage serializationErrorMessage)
         {
             lock (this.outbox)
             {
@@ -423,9 +425,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     else if (message is ResultMessage resultMessage)
                     {
                         // non-error result messages are replaced with the writeback failed response
-                        if (writebackFailedResponse != null && !resultMessage.IsError)
+                        if (!writeBackSuccessful && !resultMessage.IsError)
                         {
-                            resultMessage.EventContent = writebackFailedResponse;
+                            resultMessage.EventContent = serializationErrorMessage;
                         }
 
                         this.Config.TraceHelper.SendingEntityMessage(
@@ -437,7 +439,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent);
                     }
-                    else if (writebackFailedResponse != null)
+                    else if (!writeBackSuccessful)
                     {
                         // all other messages (signals and fire-and-forget) are suppressed if the writeback failed
                         // this helps to keep the observer pattern correct, for example.
