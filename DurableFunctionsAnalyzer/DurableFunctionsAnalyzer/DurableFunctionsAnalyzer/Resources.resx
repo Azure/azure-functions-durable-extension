@@ -160,20 +160,14 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="DispatchClassNameAnalyzerDescription" xml:space="preserve">
     <value>DispatchAsync must be called with the Entity Class it's used in</value>
   </data>
+  <data name="DispatchClassNameAnalyzerIncorrectTypeMessageFormat" xml:space="preserve">
+    <value>DispatchAsync must be called with the Entity Class it's used in</value>
+  </data>
   <data name="DispatchClassNameAnalyzerMessageFormat" xml:space="preserve">
     <value>DispatchAsync was used with '{0}' but must be called with the Entity Class '{1}' it's used in</value>
   </data>
   <data name="DispatchClassNameAnalyzerTitle" xml:space="preserve">
     <value>DispatchAsync must be called with the Entity Class it's used in</value>
-  </data>
-  <data name="DurableClientAnalyzerDescription" xml:space="preserve">
-    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
-  </data>
-  <data name="DurableClientAnalyzerMessageFormat" xml:space="preserve">
-    <value>DurableClient attribute is applied to a '{0}' but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
-  </data>
-  <data name="DurableClientAnalyzerTitle" xml:space="preserve">
-    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
   </data>
   <data name="EntityClassNameAnalyzerDescription" xml:space="preserve">
     <value>Entity class name and Entity function name must match</value>
@@ -197,11 +191,11 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>An Entity Interface must only contain methods and must contain at least one method.</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerMessageFormat" xml:space="preserve">
-    <value>Interface contains content other than methods
+    <value>Entity Interface contains content other than methods
  ('{0}')</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerNoMethodsMessageFormat" xml:space="preserve">
-    <value>Interface doesn't contain any methods and must contain at least one.</value>
+    <value>Entity Interface doesn't contain any methods and must contain at least one.</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerTitle" xml:space="preserve">
     <value>An Entity Interface must only contain methods and must contain at least one method.</value>
@@ -210,7 +204,7 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>An Entity Interface must only have methods with at most one parameter</value>
   </data>
   <data name="EntityInterfaceParameterAnalyzerMessageFormat" xml:space="preserve">
-    <value>Method '{0}' has more than one parameter</value>
+    <value>Method in Entity Interface has more than one parameter ('{0}')</value>
   </data>
   <data name="EntityInterfaceParameterAnalyzerTitle" xml:space="preserve">
     <value>An Entity Interface must only have methods with at most one parameter</value>
@@ -219,7 +213,7 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>An Entity Interface must only have methods that return void, Task, or Task&lt;T&gt;</value>
   </data>
   <data name="EntityInterfaceReturnTypeAnalyzerMessageFormat" xml:space="preserve">
-    <value>Method '{0}' has a return type '{1}'; return type should only be void, Task, or Task&lt;T&gt;</value>
+    <value>Method has a return type '{0}'; return type should only be void, Task, or Task&lt;T&gt;</value>
   </data>
   <data name="EntityInterfaceReturnTypeAnalyzerTitle" xml:space="preserve">
     <value>An Entity Interface must only have methods that return void, Task, or Task&lt;T&gt;</value>
@@ -260,6 +254,15 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="TimerAnalyzerTitle" xml:space="preserve">
     <value>Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator</value>
   </data>
+  <data name="V1ClientAnalyzerDescription" xml:space="preserve">
+    <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient</value>
+  </data>
+  <data name="V1ClientAnalyzerMessageFormat" xml:space="preserve">
+    <value>OrchestrationClient attribute is applied to a '{0}' but must be used with a DurableOrchestrationClient</value>
+  </data>
+  <data name="V1ClientAnalyzerTitle" xml:space="preserve">
+    <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient</value>
+  </data>
   <data name="V1OrchestratorContextAnalyzerDescription" xml:space="preserve">
     <value>OrchestrationTrigger must be used with an DurableOrchestrationContext or DurableOrchestrationContextBase</value>
   </data>
@@ -268,6 +271,15 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   </data>
   <data name="V1OrchestratorContextAnalyzerTitle" xml:space="preserve">
     <value>OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase</value>
+  </data>
+  <data name="V2ClientAnalyzerDescription" xml:space="preserve">
+    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
+  </data>
+  <data name="V2ClientAnalyzerMessageFormat" xml:space="preserve">
+    <value>DurableClient attribute is applied to a '{0}' but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
+  </data>
+  <data name="V2ClientAnalyzerTitle" xml:space="preserve">
+    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
   </data>
   <data name="V2OrchestratorContextAnalyzerDescription" xml:space="preserve">
     <value>OrchestrationTrigger must be used with an IDurableOrchestrationContext</value>

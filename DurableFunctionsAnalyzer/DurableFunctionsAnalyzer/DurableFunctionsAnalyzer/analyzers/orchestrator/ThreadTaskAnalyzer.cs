@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ThreadTaskAnalyzer : DiagnosticAnalyzer
@@ -105,7 +105,7 @@ namespace DurableFunctionsAnalyzer.analyzers
                     {
                         return;
                     }
-                    else if (hasExecuteSynchronously(identifierName))
+                    else if (HasExecuteSynchronously(identifierName))
                     {
                         return;
                     }
@@ -123,7 +123,7 @@ namespace DurableFunctionsAnalyzer.analyzers
             }
         }
 
-        private bool hasExecuteSynchronously(SyntaxNode node)
+        private bool HasExecuteSynchronously(SyntaxNode node)
         {
             var invocationExpression = GetInvocationExpression(node);
             if (invocationExpression == null)

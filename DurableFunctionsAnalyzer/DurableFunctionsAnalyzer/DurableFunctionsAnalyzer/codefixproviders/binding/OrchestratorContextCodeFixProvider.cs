@@ -5,12 +5,11 @@ using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using DurableFunctionsAnalyzer.analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 
-namespace DurableFunctionsAnalyzer.codefixproviders
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(OrchestratorContextCodeFixProvider)), Shared]
     public class OrchestratorContextCodeFixProvider : DurableFunctionsCodeFixProvider

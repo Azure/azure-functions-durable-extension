@@ -9,10 +9,10 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.entity
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    class ClassNameAnalyzer : DiagnosticAnalyzer
+    public class ClassNameAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DF0305";
 
@@ -36,15 +36,15 @@ namespace DurableFunctionsAnalyzer.analyzers.entity
             var attributeExpression = context.Node as AttributeSyntax;
             if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "EntityTrigger")
             {
-                if (SyntaxNodeUtils.TryGetFunctionAttribute(out SyntaxNode functionAttribute, attributeExpression))
+                if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(out string functionName, functionAttribute))
+                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out string functionName))
                     {
-                        if (SyntaxNodeUtils.TryGetClassSymbol(out INamedTypeSymbol classSymbol, context.SemanticModel))
+                        if (SyntaxNodeUtils.TryGetClassSymbol(attributeExpression, context.SemanticModel, out INamedTypeSymbol classSymbol))
                         {
                             var className = classSymbol.Name.ToString();
 
-                            if (!classNameMatchesFunctionName(classSymbol, functionName))
+                            if (!ClassNameMatchesFunctionName(classSymbol, functionName))
                             {
                                 var diagnosticClassName = Diagnostic.Create(Rule, classSymbol.Locations[0], className, functionName);
                                 var diagnosticAttribute = Diagnostic.Create(Rule, functionAttribute.GetLocation(), className, functionName);
@@ -58,7 +58,7 @@ namespace DurableFunctionsAnalyzer.analyzers.entity
             }
         }
 
-        private static bool classNameMatchesFunctionName(INamedTypeSymbol classSymbol, string functionName)
+        private static bool ClassNameMatchesFunctionName(INamedTypeSymbol classSymbol, string functionName)
         {
             var classNameWithNamespce = classSymbol.ToString();
             var className = classSymbol.Name.ToString();

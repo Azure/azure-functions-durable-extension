@@ -4,9 +4,9 @@
 using System;
 using Microsoft.CodeAnalysis;
 
-namespace DurableFunctionsAnalyzer
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class ActivityFunctionCall
+    public class ActivityFunctionCall
     {
         public string Name { get; set; }
         public SyntaxNode NameNode { get; set; }

@@ -2,20 +2,23 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
 
-namespace WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
+namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
 {
     [TestClass]
-    public class GuidAnalyzerTests : CodeFixVerifier
+    public class InterfaceAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = GuidAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = GuidAnalyzer.severity;
-        String fixtest = @"
+        private readonly string diagnosticId = InterfaceAnalyzer.DiagnosticId;
+        private readonly DiagnosticSeverity severity = InterfaceAnalyzer.severity;
+        
+        [TestMethod]
+        public void InterfaceAnalyzer_NonIssue()
+        {
+            var test = @"
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
@@ -29,26 +32,13 @@ namespace WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-context.NewGuid();
+                context.SignalEntityAsync<IEntityExample>();
             }
         }
-    }";
 
-        [TestMethod]
-        public void NewGuid_NonIssueCalls()
+        public interface IEntityExample
         {
-            var test = @"
-    using System;
-
-    namespace VSSample
-    {
-        public static class GuidNewGuidExample
-        {
-            public void guidNonIssueCalls()
-            {
-			    Guid.NewGuid();
-                System.Guid.NewGuid();
-            }
+            public static void methodTest();
         }
     }";
 
@@ -56,7 +46,7 @@ context.NewGuid();
         }
 
         [TestMethod]
-        public void NewGuidInOrchestrator()
+        public void InterfaceAnalyzer_Object()
         {
             var test = @"
     using System;
@@ -72,18 +62,23 @@ context.NewGuid();
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                Guid.NewGuid();
+                context.SignalEntityAsync<Object>();
             }
+        }
+
+        public interface IEntityExample
+        {
+            public static void methodTest();
         }
     }";
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
+                Message = String.Format(Resources.SignalEntityAnalyzerMessageFormat, "Object"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 
@@ -93,7 +88,7 @@ context.NewGuid();
         }
 
         [TestMethod]
-        public void NewGuidInOrchestrator_Namespace()
+        public void InterfaceAnalyzer_ImportedInterface()
         {
             var test = @"
     using System;
@@ -109,18 +104,23 @@ context.NewGuid();
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                System.Guid.NewGuid();
+                context.SignalEntityAsync<ILogger>();
             }
+        }
+
+        public interface IEntityExample
+        {
+            public static void methodTest();
         }
     }";
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
+                Message = String.Format(Resources.SignalEntityAnalyzerMessageFormat, "ILogger"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 
@@ -130,59 +130,48 @@ context.NewGuid();
         }
 
         [TestMethod]
-        public void NewGuidInMethod_DeterministicAttribute()
+        public void InterfaceAnalyzer_String()
         {
             var test = @"
     using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
 
     namespace VSSample
     {
-        [Deterministic]
-        public int testDeterministicMethod()
+        public static class HelloSequence
         {
-            Guid.NewGuid();
-            return 5;   
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.SignalEntityAsync<string>();
+            }
+        }
+
+        public interface IEntityExample
+        {
+            public static void methodTest();
         }
     }";
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
+                Message = String.Format(Resources.SignalEntityAnalyzerMessageFormat, "<string>"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 10, 13)
+                            new DiagnosticResultLocation("Test0.cs", 15, 42)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            var fixtestAttribute = @"
-    using System;
-    using Microsoft.Azure.WebJobs;
-
-    namespace VSSample
-    {
-        
-        public int testDeterministicMethod()
-        {
-            Guid.NewGuid();
-            return 5;   
-        }
-    }";
-
-            //VerifyCSharpFix(test, fixtestAttribute);
-        }
-
-        protected override CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            return new GuidCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new GuidAnalyzer();
+            return new InterfaceAnalyzer();
         }
     }
 }

@@ -9,16 +9,20 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DurableFunctionsAnalyzer
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     public abstract class DurableFunctionsCodeFixProvider: CodeFixProvider
     {
         protected async Task<Document> RemoveDeterministicAttributeAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var attribute = SyntaxNodeUtils.GetDeterministicAttribute(identifierNode);
-            var newRoot = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepExteriorTrivia);
-            return document.WithSyntaxRoot(newRoot);
+            if (SyntaxNodeUtils.TryGetDeterministicAttribute(identifierNode, out SyntaxNode deterministicAttribute))
+            {
+                var newRoot = root.RemoveNode(deterministicAttribute, SyntaxRemoveOptions.KeepExteriorTrivia);
+                return document.WithSyntaxRoot(newRoot);
+            }
+
+            return document;
         }
 
         protected async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, String expression)
@@ -38,7 +42,7 @@ namespace DurableFunctionsAnalyzer
 
         protected static string GetDurableOrchestrationContextVariableName(SyntaxNode node)
         {
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(out SyntaxNode methodDeclaration, node))
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
                 var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
 

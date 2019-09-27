@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.entityInterface
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class ParameterAnalyzer
+    public class ParameterAnalyzer
     {
         public const string DiagnosticId = "DF0303";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.EntityInterfaceParameterAnalyzerTitle), Resources.ResourceManager, typeof(Resources));

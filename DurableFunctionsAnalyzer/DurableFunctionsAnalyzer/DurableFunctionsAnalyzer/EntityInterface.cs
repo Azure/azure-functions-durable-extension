@@ -4,9 +4,9 @@
 using Microsoft.CodeAnalysis;
 using System;
 
-namespace DurableFunctionsAnalyzer
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class EntityInterface
+    public class EntityInterface
     {
         public String name { get; set; }
 

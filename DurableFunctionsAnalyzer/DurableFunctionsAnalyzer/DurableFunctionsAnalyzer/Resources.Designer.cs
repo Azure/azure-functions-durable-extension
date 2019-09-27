@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DurableFunctionsAnalyzer {
+namespace WebJobs.Extensions.DurableTask.Analyzers {
     using System;
     using System.Reflection;
     
@@ -40,7 +40,7 @@ namespace DurableFunctionsAnalyzer {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DurableFunctionsAnalyzer.Resources", typeof(Resources).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WebJobs.Extensions.DurableTask.Analyzers.Resources", typeof(Resources).GetTypeInfo().Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -189,6 +189,15 @@ namespace DurableFunctionsAnalyzer {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to DispatchAsync must be called with the Entity Class it&apos;s used in.
+        /// </summary>
+        public static string DispatchClassNameAnalyzerIncorrectTypeMessageFormat {
+            get {
+                return ResourceManager.GetString("DispatchClassNameAnalyzerIncorrectTypeMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be called with the Entity Class &apos;{1}&apos; it&apos;s used in.
         /// </summary>
         public static string DispatchClassNameAnalyzerMessageFormat {
@@ -203,33 +212,6 @@ namespace DurableFunctionsAnalyzer {
         public static string DispatchClassNameAnalyzerTitle {
             get {
                 return ResourceManager.GetString("DispatchClassNameAnalyzerTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
-        /// </summary>
-        public static string DurableClientAnalyzerDescription {
-            get {
-                return ResourceManager.GetString("DurableClientAnalyzerDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to DurableClient attribute is applied to a &apos;{0}&apos; but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
-        /// </summary>
-        public static string DurableClientAnalyzerMessageFormat {
-            get {
-                return ResourceManager.GetString("DurableClientAnalyzerMessageFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
-        /// </summary>
-        public static string DurableClientAnalyzerTitle {
-            get {
-                return ResourceManager.GetString("DurableClientAnalyzerTitle", resourceCulture);
             }
         }
         
@@ -297,7 +279,7 @@ namespace DurableFunctionsAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Interface contains content other than methods
+        ///   Looks up a localized string similar to Entity Interface contains content other than methods
         /// (&apos;{0}&apos;).
         /// </summary>
         public static string EntityInterfaceContentAnalyzerMessageFormat {
@@ -307,7 +289,7 @@ namespace DurableFunctionsAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Interface doesn&apos;t contain any methods and must contain at least one..
+        ///   Looks up a localized string similar to Entity Interface doesn&apos;t contain any methods and must contain at least one..
         /// </summary>
         public static string EntityInterfaceContentAnalyzerNoMethodsMessageFormat {
             get {
@@ -334,7 +316,7 @@ namespace DurableFunctionsAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method &apos;{0}&apos; has more than one parameter.
+        ///   Looks up a localized string similar to Method in Entity Interface has more than one parameter (&apos;{0}&apos;).
         /// </summary>
         public static string EntityInterfaceParameterAnalyzerMessageFormat {
             get {
@@ -361,7 +343,7 @@ namespace DurableFunctionsAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method &apos;{0}&apos; has a return type &apos;{1}&apos;; return type should only be void, Task, or Task&lt;T&gt;.
+        ///   Looks up a localized string similar to Method has a return type &apos;{0}&apos;; return type should only be void, Task, or Task&lt;T&gt;.
         /// </summary>
         public static string EntityInterfaceReturnTypeAnalyzerMessageFormat {
             get {
@@ -487,6 +469,33 @@ namespace DurableFunctionsAnalyzer {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to OrchestrationClient attribute must be used with a DurableOrchestrationClient.
+        /// </summary>
+        public static string V1ClientAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("V1ClientAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OrchestrationClient attribute is applied to a &apos;{0}&apos; but must be used with a DurableOrchestrationClient.
+        /// </summary>
+        public static string V1ClientAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("V1ClientAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OrchestrationClient attribute must be used with a DurableOrchestrationClient.
+        /// </summary>
+        public static string V1ClientAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("V1ClientAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to OrchestrationTrigger must be used with an DurableOrchestrationContext or DurableOrchestrationContextBase.
         /// </summary>
         public static string V1OrchestratorContextAnalyzerDescription {
@@ -510,6 +519,33 @@ namespace DurableFunctionsAnalyzer {
         public static string V1OrchestratorContextAnalyzerTitle {
             get {
                 return ResourceManager.GetString("V1OrchestratorContextAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
+        /// </summary>
+        public static string V2ClientAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("V2ClientAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DurableClient attribute is applied to a &apos;{0}&apos; but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
+        /// </summary>
+        public static string V2ClientAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("V2ClientAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
+        /// </summary>
+        public static string V2ClientAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("V2ClientAnalyzerTitle", resourceCulture);
             }
         }
         

@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CodeFixes;
 
-namespace DurableFunctionsAnalyzer.codefixproviders
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     //[ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MethodAttributeCodeFixProvider)), Shared]
     public class MethodAttributeCodeFixProvider : DurableFunctionsCodeFixProvider

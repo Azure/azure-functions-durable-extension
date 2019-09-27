@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.779
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DurableFunctionsAnalyzer", "DurableFunctionsAnalyzer\DurableFunctionsAnalyzer\DurableFunctionsAnalyzer.csproj", "{BB8AA94B-0967-424D-BC4A-6912942B9412}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers", "DurableFunctionsAnalyzer\DurableFunctionsAnalyzer\WebJobs.Extensions.DurableTask.Analyzers.csproj", "{BB8AA94B-0967-424D-BC4A-6912942B9412}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DurableFunctionsAnalyzer.Test", "DurableFunctionsAnalyzer\DurableFunctionsAnalyzer.Test\DurableFunctionsAnalyzer.Test.csproj", "{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test", "DurableFunctionsAnalyzer\DurableFunctionsAnalyzer.Test\WebJobs.Extensions.DurableTask.Analyzers.Test.csproj", "{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DurableFunctionsAnalyzer.Vsix", "DurableFunctionsAnalyzer\DurableFunctionsAnalyzer.Vsix\DurableFunctionsAnalyzer.Vsix.csproj", "{40044F63-396E-4480-BEEE-B06908579402}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebJobs.Extensions.DurableTask.Analyzers.Vsix", "DurableFunctionsAnalyzer\DurableFunctionsAnalyzer.Vsix\WebJobs.Extensions.DurableTask.Analyzers.Vsix.csproj", "{40044F63-396E-4480-BEEE-B06908579402}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

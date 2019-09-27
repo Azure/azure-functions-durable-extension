@@ -10,45 +10,46 @@ using System.Collections.Immutable;
 namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class OrchestratorContextAnalyzer : DiagnosticAnalyzer
+    public class ClientAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "DF0201";
+        public const string DiagnosticId = "DF0203";
 
-        private static readonly LocalizableString V1Title = new LocalizableResourceString(nameof(Resources.V1OrchestratorContextAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString V2Title = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString V1MessageFormat = new LocalizableResourceString(nameof(Resources.V1OrchestratorContextAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString V1Description = new LocalizableResourceString(nameof(Resources.V1OrchestratorContextAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString V2MessageFormat = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString V2Description = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "OrchestrationContextAnalyzer";
+        private static readonly LocalizableString V1Title = new LocalizableResourceString(nameof(Resources.V1ClientAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString V1MessageFormat = new LocalizableResourceString(nameof(Resources.V1ClientAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString V1Description = new LocalizableResourceString(nameof(Resources.V1ClientAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString V2Title = new LocalizableResourceString(nameof(Resources.V2ClientAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString V2MessageFormat = new LocalizableResourceString(nameof(Resources.V2ClientAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString V2Description = new LocalizableResourceString(nameof(Resources.V2ClientAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
+        private const string Category = "DurableClientAnalyzer";
         public const DiagnosticSeverity severity = DiagnosticSeverity.Error;
 
         private static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, severity, isEnabledByDefault: true, description: V1Description);
         private static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: V2Description);
-        
+
         private DurableVersion version;
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(V1Rule, V2Rule); } }
 
         public override void Initialize(AnalysisContext context)
         {
-            context.RegisterSyntaxNodeAction(FindOrchestrationTriggers, SyntaxKind.Attribute);
+            context.RegisterSyntaxNodeAction(FindEntityTriggers, SyntaxKind.Attribute);
         }
 
-        public void FindOrchestrationTriggers(SyntaxNodeAnalysisContext context)
+        public void FindEntityTriggers(SyntaxNodeAnalysisContext context)
         {
             var attribute = context.Node as AttributeSyntax;
 
             var semanticModel = context.SemanticModel;
             version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-            if (string.Equals(attribute.ToString(), "OrchestrationTrigger"))
+            if (AttributeMatchesVersionClientBinding(attribute))
             {
                 if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attribute, context, out SyntaxNode parameterNode))
                 {
+                    var paramTypeName = parameterNode.ToString();
                     if (!ParameterTypeIsCorrectDurableType(parameterNode))
                     {
-                        if(TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                        if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
                         {
                             var diagnostic = Diagnostic.Create(rule, parameterNode.GetLocation(), parameterNode);
 
@@ -57,6 +58,23 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
+        }
+
+        private bool AttributeMatchesVersionClientBinding(AttributeSyntax attribute)
+        {
+            var attributeString = attribute.ToString();
+
+            if (version == DurableVersion.V1 && string.Equals(attributeString, "OrchestrationClient"))
+            {
+                return true;
+            }
+
+            if (version == DurableVersion.V2 && string.Equals(attributeString, "DurableClient"))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryGetRuleFromVersion(out DiagnosticDescriptor rule)
@@ -82,7 +100,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
             if (version.Equals(DurableVersion.V1))
             {
-                if (string.Equals(paramTypeName, "DurableOrchestrationContext") || string.Equals(paramTypeName, "DurableOrchestrationContextBase"))
+                if (string.Equals(paramTypeName, "DurableOrchestrationClient"))
                 {
                     return true;
                 }
@@ -90,7 +108,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
             }
             else if (version.Equals(DurableVersion.V2))
             {
-                if (string.Equals(paramTypeName, "IDurableOrchestrationContext"))
+                if (string.Equals(paramTypeName, "IDurableClient") || string.Equals(paramTypeName, "IDurableEntityClient") || string.Equals(paramTypeName, "IDurableOrchestrationClient"))
                 {
                     return true;
                 }

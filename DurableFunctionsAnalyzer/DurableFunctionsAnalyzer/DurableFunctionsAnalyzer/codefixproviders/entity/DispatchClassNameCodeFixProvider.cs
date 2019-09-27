@@ -1,22 +1,18 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using DurableFunctionsAnalyzer.analyzers.entity;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace DurableFunctionsAnalyzer.codefixproviders.entity
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassNameCodeFixProvider)), Shared]
-    class DispatchClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class DispatchClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
     {
         private const string title = "EntityContextFix";
 
@@ -39,7 +35,7 @@ namespace DurableFunctionsAnalyzer.codefixproviders.entity
 
             var identifierNode = root.FindNode(diagnosticSpan);
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
-            if (SyntaxNodeUtils.TryGetClassSymbol(out INamedTypeSymbol classSymbol, semanticModel))
+            if (SyntaxNodeUtils.TryGetClassSymbol(identifierNode, semanticModel, out INamedTypeSymbol classSymbol))
             {
                 var className = classSymbol.Name.ToString();
 

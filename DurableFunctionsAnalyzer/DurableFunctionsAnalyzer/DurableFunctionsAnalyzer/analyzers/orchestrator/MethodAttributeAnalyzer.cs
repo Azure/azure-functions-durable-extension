@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class MethodAttributeAnalyzer : DiagnosticAnalyzer

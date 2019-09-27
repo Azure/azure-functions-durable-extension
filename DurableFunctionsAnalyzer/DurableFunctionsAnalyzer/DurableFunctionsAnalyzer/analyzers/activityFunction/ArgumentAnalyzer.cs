@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.function
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class ArgumentAnalyzer
+    public class ArgumentAnalyzer
     {
         public const string DiagnosticId = "DF0108";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerTitle), Resources.ResourceManager, typeof(Resources));

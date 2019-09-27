@@ -7,10 +7,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 
-namespace DurableFunctionsAnalyzer.analyzers.binding
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    class EntityContextAnalyzer: DiagnosticAnalyzer
+    public class EntityContextAnalyzer: DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DF0202";
 
@@ -35,7 +35,7 @@ namespace DurableFunctionsAnalyzer.analyzers.binding
 
             if (string.Equals(attribute.ToString(), "EntityTrigger"))
             {
-                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(out SyntaxNode parameterNode, attribute, context))
+                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attribute, context, out SyntaxNode parameterNode))
                 {
                     var paramTypeName = parameterNode.ToString();
                     if (!string.Equals(paramTypeName, "IDurableEntityContext"))

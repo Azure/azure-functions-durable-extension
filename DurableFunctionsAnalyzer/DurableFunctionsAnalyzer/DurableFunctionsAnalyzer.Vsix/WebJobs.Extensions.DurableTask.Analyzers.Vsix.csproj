@@ -58,9 +58,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DurableFunctionsAnalyzer\DurableFunctionsAnalyzer.csproj">
+    <ProjectReference Include="..\DurableFunctionsAnalyzer\WebJobs.Extensions.DurableTask.Analyzers.csproj">
       <Project>{BB8AA94B-0967-424D-BC4A-6912942B9412}</Project>
-      <Name>DurableFunctionsAnalyzer</Name>
+      <Name>WebJobs.Extensions.DurableTask.Analyzers</Name>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

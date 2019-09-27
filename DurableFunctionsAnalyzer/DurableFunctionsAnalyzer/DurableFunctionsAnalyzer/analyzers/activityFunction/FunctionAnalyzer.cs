@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using DurableFunctionsAnalyzer.analyzers.function;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -10,13 +9,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.activityFunction
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    class FunctionAnalyzer : DiagnosticAnalyzer
+    public class FunctionAnalyzer : DiagnosticAnalyzer
     {
-        List<ActivityFunctionDefinition> availableFunctions = new List<ActivityFunctionDefinition>();
-        List<ActivityFunctionCall> calledFunctions = new List<ActivityFunctionCall>();
+        public List<ActivityFunctionDefinition> availableFunctions = new List<ActivityFunctionDefinition>();
+        public List<ActivityFunctionCall> calledFunctions = new List<ActivityFunctionCall>();
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
@@ -26,7 +25,7 @@ namespace DurableFunctionsAnalyzer.analyzers.activityFunction
                     NameAnalyzer.MissingRule,
                     NameAnalyzer.CloseRule,
                     ArgumentAnalyzer.Rule,
-                    ReturnTypeAnalyzer.Rule);
+                    FunctionReturnTypeAnalyzer.Rule);
             }
         }
 
@@ -47,7 +46,7 @@ namespace DurableFunctionsAnalyzer.analyzers.activityFunction
         {
             ArgumentAnalyzer argumentAnalyzer = new ArgumentAnalyzer();
             NameAnalyzer nameAnalyzer = new NameAnalyzer();
-            ReturnTypeAnalyzer returnTypeAnalyzer = new ReturnTypeAnalyzer();
+            FunctionReturnTypeAnalyzer returnTypeAnalyzer = new FunctionReturnTypeAnalyzer();
 
             argumentAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
             nameAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
@@ -133,64 +132,39 @@ namespace DurableFunctionsAnalyzer.analyzers.activityFunction
             var attributeExpression = context.Node as AttributeSyntax;
             if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "ActivityTrigger")
             {
-                if (SyntaxNodeUtils.TryGetFunctionAttribute(out SyntaxNode functionAttribute, attributeExpression))
+                if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(out string functionName, functionAttribute))
+                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out string functionName))
                     {
-                        if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(out SyntaxNode inputTypeNode, attributeExpression, context))
+                        if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attributeExpression, context, out SyntaxNode inputTypeNode))
                         {
                             ITypeSymbol inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
-                            if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext"))
+                            if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
                             {
-                                if (TryGetInputTypeFromDurableContextCall(out inputType, context, attributeExpression))
+                                if (!TryGetInputTypeFromDurableContextCall(out inputType, context, attributeExpression))
                                 {
-                                    if (SyntaxNodeUtils.TryGetReturnType(out ITypeSymbol returnType, attributeExpression, context))
-                                    {
-                                        availableFunctions.Add(new ActivityFunctionDefinition
-                                        {
-                                            FunctionName = functionName,
-                                            InputType = GetQualifiedTypeName(inputType),
-                                            ReturnType = GetQualifiedTypeName(returnType)
-                                        });
-                                    }
+                                    return;
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        }
 
-        private SyntaxNode getInputTypeNodeFromContextCall(SyntaxNodeAnalysisContext context, SyntaxNode methodDeclaration)
-        {
-            var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
-            foreach(var memberAccessExpression in memberAccessExpressionList)
-            {
-                var identifierName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-                if (identifierName.Any())
-                {
-                    var identifierNameType = context.SemanticModel.GetTypeInfo(identifierName.First()).Type.Name;
-                    if (identifierNameType.Equals("IDurableActivityContext"))
-                    {
-                        var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
-                        if (genericName.Any())
-                        {
-                            var typeArgumentList = genericName.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList));
-                            if (typeArgumentList.Any())
+                            if (SyntaxNodeUtils.TryGetReturnType(attributeExpression, context, out ITypeSymbol returnType))
                             {
-                                var inputTypeNode = typeArgumentList.First().ChildNodes();
-                                return inputTypeNode.First();
+                                availableFunctions.Add(new ActivityFunctionDefinition
+                                {
+                                    FunctionName = functionName,
+                                    InputType = GetQualifiedTypeName(inputType),
+                                    ReturnType = GetQualifiedTypeName(returnType)
+                                });
                             }
                         }
                     }
                 }
             }
-            return null;
         }
 
         private static bool TryGetInputTypeFromDurableContextCall(out ITypeSymbol inputTypeNode, SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
         {
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(out SyntaxNode methodDeclaration, attributeExpression))
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {
                 var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
                 foreach (var memberAccessExpression in memberAccessExpressionList)
@@ -199,7 +173,7 @@ namespace DurableFunctionsAnalyzer.analyzers.activityFunction
                     if (identifierName.Any())
                     {
                         var identifierNameType = context.SemanticModel.GetTypeInfo(identifierName.First()).Type.Name;
-                        if (identifierNameType.Equals("IDurableActivityContext"))
+                        if (identifierNameType.Equals("IDurableActivityContext") || identifierNameType.Equals("DurableActivityContext"))
                         {
                             var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
                             if (genericName.Any())

@@ -2,10 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace DurableFunctionsAnalyzer
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     public static class StringExtensions
     {

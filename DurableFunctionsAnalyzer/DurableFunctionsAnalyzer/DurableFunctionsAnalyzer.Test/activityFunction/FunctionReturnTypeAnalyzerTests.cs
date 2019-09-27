@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DurableFunctionsAnalyzer.Test.activityFunction
+namespace WebJobs.Extensions.DurableTask.Analyzers.Test.ActivityFunction
 {
-    class ReturnTypeAnalyzerTests
+    class FunctionReturnTypeAnalyzerTests
     {
     }
 }

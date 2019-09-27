@@ -1,14 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using DurableFunctionsAnalyzer.analyzers;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
 using Microsoft.CodeAnalysis;
 
-namespace DurableFunctionsAnalyzer.Test
+namespace WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 {
     [TestClass]
     public class IOTypesAnalyzerTests : CodeFixVerifier

@@ -6,9 +6,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
-using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class IOTypesAnalyzer : DiagnosticAnalyzer
@@ -41,7 +40,7 @@ namespace DurableFunctionsAnalyzer.analyzers
                 if (typeInfo.Type != null)
                 {
                     var type = typeInfo.Type.ToString();
-                    if (IsIOClass(identifierText) || IsIOClass(type))
+                    if (IsIOClass(type))
                     {
                         if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
                         {
@@ -49,7 +48,7 @@ namespace DurableFunctionsAnalyzer.analyzers
                         }
                         else
                         {
-                            var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), identifierName);
+                            var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
 
                             context.ReportDiagnostic(diagnostic);
                         }

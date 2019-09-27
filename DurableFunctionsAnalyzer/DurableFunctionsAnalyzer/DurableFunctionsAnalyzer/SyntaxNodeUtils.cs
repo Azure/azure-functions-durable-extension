@@ -5,10 +5,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     public static class SyntaxNodeUtils
     {
@@ -28,48 +27,53 @@ namespace DurableFunctionsAnalyzer
         
         public static bool IsInsideOrchestrator(SyntaxNode node)
         {
-            if (TryGetMethodDeclaration(out SyntaxNode methodDeclaration, node))
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
                 var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
-                    var attributeList = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                    if (attributeList.Count() >= 1 && attributeList.First().ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
+                    var attributeListEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
+                    foreach (SyntaxNode attribute in attributeListEnumerable)
                     {
-                        return true;
+                        if (attribute.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
+
             return false;
         }
 
-        internal static bool TryGetClassSymbol(out INamedTypeSymbol classSymbol, SemanticModel semanticModel)
+        internal static bool TryGetClassSymbol(SyntaxNode node, SemanticModel semanticModel, out INamedTypeSymbol classSymbol)
         {
-            var classDeclarationSyntax = semanticModel.SyntaxTree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>().Last();
-            if (classDeclarationSyntax != null)
+            var currNode = node.IsKind(SyntaxKind.ClassDeclaration) ? node : node.Parent;
+            while (!currNode.IsKind(SyntaxKind.ClassDeclaration))
             {
-                var classDeclarationSymbol = semanticModel.GetDeclaredSymbol(classDeclarationSyntax);
-                if (classDeclarationSymbol != null)
+                if (currNode.IsKind(SyntaxKind.CompilationUnit))
                 {
-                    classSymbol = classDeclarationSymbol;
-                    return true;
+                    classSymbol = null;
+                    return false;
                 }
+                currNode = currNode.Parent;
             }
 
-            classSymbol = null;
-            return false;
+            var classDeclaration = (ClassDeclarationSyntax)currNode;
+            classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
+            return true;
         }
 
-        internal static bool TryGetFunctionName(out string functionName, SyntaxNode functionAttribute)
+        internal static bool TryGetFunctionName(SyntaxNode functionAttribute, out string functionName)
         {
-            var attributeArgumentListEnumerable = functionAttribute.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeArgumentList));
-            if (attributeArgumentListEnumerable.Any())
+            var attributeArgumentListSyntax = ((AttributeSyntax)functionAttribute).ArgumentList;
+            if (attributeArgumentListSyntax != null)
             {
-                var attributeArgumentEnumerable = attributeArgumentListEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeArgument));
-                if (attributeArgumentListEnumerable.Any())
+                var attributeArgumentSyntax = attributeArgumentListSyntax.Arguments.FirstOrDefault();
+                if (attributeArgumentSyntax != null)
                 {
-                    functionName = attributeArgumentListEnumerable.First().ToString().Trim('"');
+                    functionName = attributeArgumentSyntax.ToString().Trim('"');
                     return true;
                 }
             }
@@ -78,9 +82,9 @@ namespace DurableFunctionsAnalyzer
             return false;
         }
 
-        internal static bool TryGetFunctionAttribute(out SyntaxNode functionAttribute, SyntaxNode attributeExpression)
+        internal static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute)
         {
-            if (TryGetMethodDeclaration(out SyntaxNode methodDeclaration, attributeExpression))
+            if (TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {
                 var attributeLists = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
                 if (attributeLists.Any())
@@ -103,16 +107,16 @@ namespace DurableFunctionsAnalyzer
         
         public static bool IsMarkedDeterministic(SyntaxNode node)
         {
-            if (GetDeterministicAttribute(node) != null)
+            if (TryGetDeterministicAttribute(node, out SyntaxNode deterministicAttribute))
             {
                 return true;
             }
             return false;
         }
 
-        public static SyntaxNode GetDeterministicAttribute(SyntaxNode node)
+        public static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute)
         {
-            if (TryGetMethodDeclaration(out SyntaxNode methodDeclaration, node))
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
                 var IEnumeratorAttributeList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
                 if (IEnumeratorAttributeList.Any())
@@ -121,18 +125,19 @@ namespace DurableFunctionsAnalyzer
                     {
                         if (attributeList.ToString().Equals("[Deterministic]"))
                         {
-
-                            return attributeList;
+                            deterministicAttribute = attributeList;
+                            return true;
                         }
                     }
                 }
                 
             }
-            
-            return null;
+
+            deterministicAttribute = null;
+            return false;
         }
 
-        internal static bool TryGetParameterNodeNextToAttribute(out SyntaxNode inputType, AttributeSyntax attributeExpression, SyntaxNodeAnalysisContext context)
+        internal static bool TryGetParameterNodeNextToAttribute(AttributeSyntax attributeExpression, SyntaxNodeAnalysisContext context, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
             var parameterTypeNamesEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType));
@@ -146,9 +151,9 @@ namespace DurableFunctionsAnalyzer
             return false;
         }
 
-        internal static bool TryGetReturnType(out ITypeSymbol returnType, AttributeSyntax attributeExpression, SyntaxNodeAnalysisContext context)
+        internal static bool TryGetReturnType(AttributeSyntax attributeExpression, SyntaxNodeAnalysisContext context, out ITypeSymbol returnType)
         {
-            if (TryGetMethodDeclaration(out SyntaxNode methodDeclaration, attributeExpression))
+            if (TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {
                 returnType = context.SemanticModel.GetTypeInfo((methodDeclaration as MethodDeclarationSyntax).ReturnType).Type;
                 return true;
@@ -158,7 +163,7 @@ namespace DurableFunctionsAnalyzer
             return false;
         }
 
-        internal static bool TryGetMethodDeclaration(out SyntaxNode methodDeclaration, SyntaxNode node)
+        internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration)
         {
             var currNode = node.IsKind(SyntaxKind.MethodDeclaration) ? node : node.Parent;
             while (!currNode.IsKind(SyntaxKind.MethodDeclaration))
@@ -172,7 +177,7 @@ namespace DurableFunctionsAnalyzer
             }
 
             methodDeclaration = currNode;
-            return true; ;
+            return true;
         }
     }
 }

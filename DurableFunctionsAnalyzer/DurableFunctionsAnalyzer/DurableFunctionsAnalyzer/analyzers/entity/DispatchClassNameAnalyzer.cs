@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.entity
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(Microsoft.CodeAnalysis.LanguageNames.CSharp)]
     public class DispatchClassNameAnalyzer: DiagnosticAnalyzer
@@ -17,13 +17,15 @@ namespace DurableFunctionsAnalyzer.analyzers.entity
 
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString IncorrectTypeMessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerIncorrectTypeMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = "Entity";
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        private static DiagnosticDescriptor IncorrectTypeRule = new DiagnosticDescriptor(DiagnosticId, Title, IncorrectTypeMessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, IncorrectTypeRule); } }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -38,17 +40,28 @@ namespace DurableFunctionsAnalyzer.analyzers.entity
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
                 {
-                    if (TryGetIdentifierName(out SyntaxNode identifierName, expression))
+                    if (TryGetTypeArgumentList(out SyntaxNode typeArgumentList, expression))
                     {
-                        if (SyntaxNodeUtils.TryGetClassSymbol(out INamedTypeSymbol classSymbol, context.SemanticModel))
+                        if(!TryGetIdentifierName(out SyntaxNode identifierName, typeArgumentList))
                         {
-                            var className = classSymbol.Name.ToString();
+                            var diagnostic = Diagnostic.Create(IncorrectTypeRule, typeArgumentList.GetLocation(), typeArgumentList);
 
-                            if (!string.Equals(className, identifierName.ToString()))
+                            context.ReportDiagnostic(diagnostic);
+
+                            return;
+                        }
+                        else
+                        {
+                            if (SyntaxNodeUtils.TryGetClassSymbol(expression, context.SemanticModel, out INamedTypeSymbol classSymbol))
                             {
-                                var diagnostic = Diagnostic.Create(Rule, identifierName.GetLocation(), identifierName, className);
+                                var className = classSymbol.Name.ToString();
 
-                                context.ReportDiagnostic(diagnostic);
+                                if (!string.Equals(className, identifierName.ToString()))
+                                {
+                                    var diagnostic = Diagnostic.Create(Rule, identifierName.GetLocation(), identifierName, className);
+
+                                    context.ReportDiagnostic(diagnostic);
+                                }
                             }
                         }
                     }
@@ -56,18 +69,26 @@ namespace DurableFunctionsAnalyzer.analyzers.entity
             }
         }
 
-        private bool TryGetIdentifierName(out SyntaxNode identifierName, SyntaxNode expression)
+        private bool TryGetTypeArgumentList(out SyntaxNode typeArgumentList, MemberAccessExpressionSyntax expression)
         {
             var genericNameEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
             if (genericNameEnumerable.Any())
             {
-                var typeArgumentList = genericNameEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
-                var identifierNameEnumerable = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-                if (identifierNameEnumerable.Any())
-                {
-                    identifierName = identifierNameEnumerable.First();
-                    return true;
-                }
+                typeArgumentList = genericNameEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
+                return true;
+            }
+
+            typeArgumentList = null;
+            return false;
+        }
+
+        private bool TryGetIdentifierName(out SyntaxNode identifierName, SyntaxNode typeArgumentList)
+        {
+            var identifierNameEnumerable = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+            if (identifierNameEnumerable.Any())
+            {
+                identifierName = identifierNameEnumerable.First();
+                return true;
             }
 
             identifierName = null;

@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.entityInterface
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class ReturnTypeAnalyzer
+    public class EntityInterfaceReturnTypeAnalyzer
     {
         public const string DiagnosticId = "DF0304";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.EntityInterfaceReturnTypeAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
@@ -31,14 +31,12 @@ namespace DurableFunctionsAnalyzer.analyzers.entityInterface
                     if (returnTypeNode.Any())
                     {
                         var returnType = returnTypeNode.First().ToString();
-                        if (returnType.Equals("void") || returnType.StartsWith("Task"))
+                        if (!returnType.Equals("void") && !returnType.StartsWith("Task"))
                         {
-                            return;
+                            var diagnostic = Diagnostic.Create(Rule, node.GetLocation(), returnType);
+
+                            context.ReportDiagnostic(diagnostic);
                         }
-
-                        var diagnostic = Diagnostic.Create(Rule, node.GetLocation(), node, returnType);
-
-                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }

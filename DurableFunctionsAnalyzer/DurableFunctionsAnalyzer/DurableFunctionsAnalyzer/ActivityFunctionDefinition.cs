@@ -2,9 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 
-namespace DurableFunctionsAnalyzer
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class ActivityFunctionDefinition
+    public class ActivityFunctionDefinition
     {
         public string FunctionName { get; set; }
         public string InputType { get; set; }

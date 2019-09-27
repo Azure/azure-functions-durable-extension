@@ -9,13 +9,13 @@ using TestHelper;
 namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
 {
     [TestClass]
-    public class InterfaceContentAnalyzerTests : CodeFixVerifier
+    public class EntityInterfaceReturnTypeAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = InterfaceContentAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = InterfaceContentAnalyzer.severity;
+        private readonly string diagnosticId = EntityInterfaceReturnTypeAnalyzer.DiagnosticId;
+        private readonly DiagnosticSeverity severity = EntityInterfaceReturnTypeAnalyzer.severity;
 
         [TestMethod]
-        public void InterfaceContentAnalyzer_NonIssue()
+        public void ReturnTypeAnalyzer_NonIssue()
         {
             var test = @"
     using System;
@@ -37,7 +37,11 @@ namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
 
         public interface IEntityExample
         {
-            public static void methodTest();
+            public static void methodTestVoid();
+
+            public static Task methodTestTask(string test);
+
+            public static Task<T> methodTestTaskT(string test);
         }
     }";
 
@@ -45,7 +49,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
         }
 
         [TestMethod]
-        public void InterfaceContentAnalyzer_NoMethods()
+        public void ReturnTypeAnalyzer_IncorrectReturn_Object()
         {
             var test = @"
     using System;
@@ -67,16 +71,17 @@ namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
 
         public interface IEntityExample
         {
+            public static Object methodTestOneParameter(string test);
         }
     }";
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = Resources.EntityInterfaceContentAnalyzerNoMethodsMessageFormat,
+                Message = string.Format(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat, "Object"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 19, 9)
+                            new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 
@@ -84,7 +89,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
         }
 
         [TestMethod]
-        public void InterfaceContentAnalyzer_Field()
+        public void ReturnTypeAnalyzer_IncorrectReturn_string()
         {
             var test = @"
     using System;
@@ -106,15 +111,13 @@ namespace WebJobs.Extensions.DurableTask.Analyzers.Test.EntityInterface
 
         public interface IEntityExample
         {
-            public string fieldTest;
-
-            public static void methodTest();
+            public static string methodTestOneParameter(string test);
         }
     }";
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.EntityInterfaceContentAnalyzerMessageFormat, "public string fieldTest;"),
+                Message = string.Format(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat, "string"),
                 Severity = severity,
                 Locations =
                     new[] {

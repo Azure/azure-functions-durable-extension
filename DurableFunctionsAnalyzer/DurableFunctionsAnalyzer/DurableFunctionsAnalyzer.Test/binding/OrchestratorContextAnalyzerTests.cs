@@ -7,12 +7,10 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
-using DurableFunctionsAnalyzer.codefixproviders;
-using DurableFunctionsAnalyzer.analyzers;
 
-namespace DurableFunctionsAnalyzer.Test
+namespace WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
 {
-    //[TestClass]
+    [TestClass]
     public class OrchestratorContextAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = OrchestratorContextAnalyzer.DiagnosticId;
@@ -41,7 +39,7 @@ namespace ExternalInteraction
 }";
 
         [TestMethod]
-        public void V2_DurableInterface()
+        public void V2_DurableInterface_NonIssue()
         {
             var test = @"
 using System.Collections.Generic;
@@ -97,7 +95,7 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format("OrchestrationTrigger is attached to a '{0}' but must be attached to an IDurableOrchestrationContext instead", "Object"),
+                Message = String.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "Object"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -139,7 +137,7 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format("OrchestrationTrigger is attached to a '{0}' but must be attached to an IDurableOrchestrationContext instead", "string"),
+                Message = String.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "string"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -181,7 +179,7 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format("OrchestrationTrigger is attached to a '{0}' but must be attached to an IDurableOrchestrationContext instead", "DurableOrchestrationContext"),
+                Message = String.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "DurableOrchestrationContext"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -194,7 +192,191 @@ namespace ExternalInteraction
 
             //VerifyCSharpFix(test, fixtest);
         }
-        
+
+        [TestMethod]
+        public void V1_DurableContext_NonIssue()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [OrchestrationTrigger] DurableOrchestrationContext context,
+            ILogger log)
+            {
+               
+            }
+}";
+            SyntaxNodeUtils.version = DurableVersion.V1;
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void V1_DurableContextBase_NonIssue()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [OrchestrationTrigger] DurableOrchestrationContextBase context,
+            ILogger log)
+            {
+               
+            }
+}";
+            SyntaxNodeUtils.version = DurableVersion.V1;
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void V1_NonDurable_Object()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [OrchestrationTrigger] Object context,
+            ILogger log)
+            {
+               
+            }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = String.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "Object"),
+                Severity = severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 17, 36)
+                     }
+            };
+
+            SyntaxNodeUtils.version = DurableVersion.V1;
+            VerifyCSharpDiagnostic(test, expected);
+
+            //VerifyCSharpFix(test, fixtest);
+        }
+
+        [TestMethod]
+        public void V1_NonDurable_String()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [OrchestrationTrigger] string context,
+            ILogger log)
+            {
+               
+            }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = String.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "string"),
+                Severity = severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 17, 36)
+                     }
+            };
+
+            SyntaxNodeUtils.version = DurableVersion.V1;
+            VerifyCSharpDiagnostic(test, expected);
+
+            //VerifyCSharpFix(test, fixtest);
+        }
+
+        [TestMethod]
+        public void V1_V2DurableInterface()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [OrchestrationTrigger] IDurableOrchestrationContext context,
+            ILogger log)
+            {
+               
+            }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = String.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "IDurableOrchestrationContext"),
+                Severity = severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 17, 36)
+                     }
+            };
+
+            SyntaxNodeUtils.version = DurableVersion.V1;
+            VerifyCSharpDiagnostic(test, expected);
+
+            //VerifyCSharpFix(test, fixtest);
+        }
+
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
             return new OrchestratorContextCodeFixProvider();

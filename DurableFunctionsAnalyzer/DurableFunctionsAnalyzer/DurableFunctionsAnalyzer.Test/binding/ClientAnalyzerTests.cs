@@ -11,10 +11,10 @@ using TestHelper;
 namespace WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
 {
     [TestClass]
-    public class EntityContetAnalyzerTests : CodeFixVerifier
+    public class ClientAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = EntityContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = EntityContextAnalyzer.severity;
+        private readonly string diagnosticId = ClientAnalyzer.DiagnosticId;
+        private readonly DiagnosticSeverity severity = ClientAnalyzer.severity;
         private readonly string fixtestV2 = @"
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +38,7 @@ namespace ExternalInteraction
 }";
 
         [TestMethod]
-        public void EntityTrigger_NonIssue()
+        public void DurableClient_NonIssue()
         {
             var test = @"
 using System.Collections.Generic;
@@ -56,16 +56,17 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
+            [DurableClient] IDurableClient durableClient, [DurableClient] IDurableOrchestrationClient durableOrchestrationClient, 
+            [DurableClient] IDurableEntityClient durableEntityClient, ILogger log)
             {
             }
 }";
+            SyntaxNodeUtils.version = DurableVersion.V2;
             VerifyCSharpDiagnostic(test);
         }
 
         [TestMethod]
-        public void EntityTrigger_Object()
+        public void DurableClient_Object()
         {
             var test = @"
 using System.Collections.Generic;
@@ -83,7 +84,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] Object context,
+            [DurableClient] Object context,
             ILogger log)
             {
             }
@@ -91,21 +92,22 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityContextAnalyzerMessageFormat, "Object"),
+                Message = String.Format(Resources.V2ClientAnalyzerMessageFormat, "Object"),
                 Severity = severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 29)
                      }
             };
-            
+
+            SyntaxNodeUtils.version = DurableVersion.V2;
             VerifyCSharpDiagnostic(test, expected);
 
             //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
-        public void EntityTrigger_String()
+        public void DurableClient_String()
         {
             var test = @"
 using System.Collections.Generic;
@@ -123,7 +125,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] string context,
+            [DurableClient] string context,
             ILogger log)
             {
             }
@@ -131,21 +133,22 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityContextAnalyzerMessageFormat, "string"),
+                Message = String.Format(Resources.V2ClientAnalyzerMessageFormat, "string"),
                 Severity = severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 29)
                      }
             };
-            
+
+            SyntaxNodeUtils.version = DurableVersion.V2;
             VerifyCSharpDiagnostic(test, expected);
 
             //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
-        public void EntityTrigger_WrongDurableInterface()
+        public void DurableClient_WrongDurableInterface()
         {
             var test = @"
 using System.Collections.Generic;
@@ -163,7 +166,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableOrchestrationContext context,
+            [DurableClient] IDurableOrchestrationContext context,
             ILogger log)
             {
             }
@@ -171,14 +174,15 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityContextAnalyzerMessageFormat, "IDurableOrchestrationContext"),
+                Message = String.Format(Resources.V2ClientAnalyzerMessageFormat, "IDurableOrchestrationContext"),
                 Severity = severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 29)
                      }
             };
-            
+
+            SyntaxNodeUtils.version = DurableVersion.V2;
             VerifyCSharpDiagnostic(test, expected);
 
             //VerifyCSharpFix(test, fixtest);
@@ -186,12 +190,12 @@ namespace ExternalInteraction
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new EntityContextCodeFixProvider();
+            return new ClientCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new EntityContextAnalyzer();
+            return new ClientAnalyzer();
         }
     }
 }

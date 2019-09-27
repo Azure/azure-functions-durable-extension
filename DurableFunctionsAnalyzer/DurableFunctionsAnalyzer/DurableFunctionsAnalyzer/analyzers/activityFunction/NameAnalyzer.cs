@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.function
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class NameAnalyzer
+    public class NameAnalyzer
     {
         public const string DiagnosticId = "DF0109";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
@@ -37,7 +37,7 @@ namespace DurableFunctionsAnalyzer.analyzers.function
                 }
                 else if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
                 {
-                    cac.ReportDiagnostic(Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name, GetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName))));
+                    cac.ReportDiagnostic(Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, GetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName))));
                 }
             }
         }

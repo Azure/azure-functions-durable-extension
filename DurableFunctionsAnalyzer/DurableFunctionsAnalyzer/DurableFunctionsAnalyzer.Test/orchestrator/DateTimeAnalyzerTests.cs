@@ -1,8 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using DurableFunctionsAnalyzer.analyzers;
-using DurableFunctionsAnalyzer.codefixproviders;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -10,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
 
-namespace DurableFunctionsAnalyzer.Test
+namespace WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 
 {
     [TestClass]

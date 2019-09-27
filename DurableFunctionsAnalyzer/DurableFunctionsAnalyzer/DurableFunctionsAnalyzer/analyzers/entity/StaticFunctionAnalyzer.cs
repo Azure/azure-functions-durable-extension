@@ -8,10 +8,10 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.entity
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    class StaticFunctionAnalyzer : DiagnosticAnalyzer
+    public class StaticFunctionAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DF0306";
 
@@ -35,7 +35,7 @@ namespace DurableFunctionsAnalyzer.analyzers.entity
             var attributeExpression = context.Node as AttributeSyntax;
             if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "EntityTrigger")
             {
-                if (SyntaxNodeUtils.TryGetMethodDeclaration(out SyntaxNode methodDeclaration, attributeExpression))
+                if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
                 {
                     var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword));
                     if (!staticKeyword.Any())

@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DurableFunctionsAnalyzer.analyzers.function
+namespace WebJobs.Extensions.DurableTask.Analyzers
 {
-    class ReturnTypeAnalyzer
+    public class FunctionReturnTypeAnalyzer
     {
         public const string DiagnosticId = "DF0110";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityReturnTypeAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
