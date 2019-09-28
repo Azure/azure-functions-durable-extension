@@ -448,86 +448,93 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             entityContext.History = runtimeState.Events;
             entityContext.RawInput = runtimeState.Input;
 
-            // 1. First time through the history
-            // we count events, add any under-lock op to the batch, and process lock releases
-            foreach (HistoryEvent e in runtimeState.Events)
+            try
             {
-                switch (e.EventType)
+                // 1. First time through the history
+                // we count events, add any under-lock op to the batch, and process lock releases
+                foreach (HistoryEvent e in runtimeState.Events)
                 {
-                    case EventType.ExecutionStarted:
-                        entityShim.Rehydrate(runtimeState.Input);
-                        break;
+                    switch (e.EventType)
+                    {
+                        case EventType.ExecutionStarted:
+                            entityShim.Rehydrate(runtimeState.Input);
+                            break;
 
-                    case EventType.EventRaised:
-                        EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
+                        case EventType.EventRaised:
+                            EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
 
-                        this.TraceHelper.DeliveringEntityMessage(
-                            entityContext.InstanceId,
-                            entityContext.ExecutionId,
-                            e.EventId,
-                            eventRaisedEvent.Name,
-                            eventRaisedEvent.Input);
+                            this.TraceHelper.DeliveringEntityMessage(
+                                entityContext.InstanceId,
+                                entityContext.ExecutionId,
+                                e.EventId,
+                                eventRaisedEvent.Name,
+                                eventRaisedEvent.Input);
 
-                        entityShim.NumberEventsToReceive++;
+                            entityShim.NumberEventsToReceive++;
 
-                        if (eventRaisedEvent.Name == "op")
-                        {
-                            // we are receiving an operation request or a lock request
-                            var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
-
-                            // run this through the message sorter to help with reordering and duplicate filtering
-                            var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
-
-                            foreach (var message in deliverNow)
+                            if (eventRaisedEvent.Name == "op")
                             {
+                                // we are receiving an operation request or a lock request
+                                var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
+
+                                // run this through the message sorter to help with reordering and duplicate filtering
+                                var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+
+                                foreach (var message in deliverNow)
+                                {
+                                    if (entityContext.State.LockedBy == message.ParentInstanceId)
+                                    {
+                                        // operation requests from the lock holder are processed immediately
+                                        entityShim.AddOperationToBatch(message);
+                                    }
+                                    else
+                                    {
+                                        // others go to the back of the queue
+                                        entityContext.State.Enqueue(message);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // we are receiving a lock release
+                                var message = JsonConvert.DeserializeObject<ReleaseMessage>(eventRaisedEvent.Input);
+
                                 if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {
-                                    // operation requests from the lock holder are processed immediately
-                                    entityShim.AddOperationToBatch(message);
-                                }
-                                else
-                                {
-                                    // others go to the back of the queue
-                                    entityContext.State.Enqueue(message);
+                                    this.TraceHelper.EntityLockReleased(
+                                        entityContext.HubName,
+                                        entityContext.Name,
+                                        entityContext.InstanceId,
+                                        message.ParentInstanceId,
+                                        message.LockRequestId,
+                                        isReplay: false);
+
+                                    entityContext.State.LockedBy = null;
                                 }
                             }
-                        }
-                        else
-                        {
-                            // we are receiving a lock release
-                            var message = JsonConvert.DeserializeObject<ReleaseMessage>(eventRaisedEvent.Input);
 
-                            if (entityContext.State.LockedBy == message.ParentInstanceId)
-                            {
-                                this.TraceHelper.EntityLockReleased(
-                                    entityContext.HubName,
-                                    entityContext.Name,
-                                    entityContext.InstanceId,
-                                    message.ParentInstanceId,
-                                    message.LockRequestId,
-                                    isReplay: false);
+                            break;
+                    }
+                }
 
-                                entityContext.State.LockedBy = null;
-                            }
-                        }
-
-                        break;
+                // 2. We add as many requests from the queue to the batch as possible (stopping at lock requests)
+                while (entityContext.State.LockedBy == null
+                    && entityContext.State.TryDequeue(out var request))
+                {
+                    if (request.IsLockRequest)
+                    {
+                        entityShim.AddLockRequestToBatch(request);
+                        entityContext.State.LockedBy = request.ParentInstanceId;
+                    }
+                    else
+                    {
+                        entityShim.AddOperationToBatch(request);
+                    }
                 }
             }
-
-            // 2. We add as many requests from the queue to the batch as possible (stopping at lock requests)
-            while (entityContext.State.LockedBy == null
-                && entityContext.State.TryDequeue(out var request))
+            catch (Exception e)
             {
-                if (request.IsLockRequest)
-                {
-                    entityShim.AddLockRequestToBatch(request);
-                    entityContext.State.LockedBy = request.ParentInstanceId;
-                }
-                else
-                {
-                    entityShim.AddOperationToBatch(request);
-                }
+                entityContext.CaptureInternalError(e);
             }
 
             // 3. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
@@ -538,43 +545,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
-                    {
-                        entityShim.SetFunctionInvocationCallback(userCodeInvoker);
+                            {
+                                entityShim.SetFunctionInvocationCallback(userCodeInvoker);
 
-                        try
-                        {
-                            // 3. Run all the operations in the batch
-                            await entityShim.ExecuteBatch();
+                                // 3. Run all the operations in the batch
+                                if (entityContext.InternalError == null)
+                                {
+                                    try
+                                    {
+                                        await entityShim.ExecuteBatch();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        entityContext.CaptureInternalError(e);
+                                    }
+                                }
 
-                            // 4. Run the DTFx orchestration to persist the effects,
-                            // send the outbox, and continue as new
-                            await next();
-                        }
-                        catch (Exception e)
-                        {
-                            // something went wrong in our code (application exceptions don't make it here)
+                                // 4. Run the DTFx orchestration to persist the effects,
+                                // send the outbox, and continue as new
+                                await next();
 
-                            string exceptionDetails = e.ToString();
-
-                            entityContext.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
-                                    entityContext.HubName,
-                                    entityContext.Name,
-                                    entityContext.InstanceId,
-                                    exceptionDetails,
-                                    isReplay: false));
-
-                            var entitySchedulerExceptions = new OrchestrationFailureException(
-                                $"Entity scheduler {entityShim.EntityId} failed: {e.Message}",
-                                Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
-
-                            throw entitySchedulerExceptions;
-                        }
-                    },
+                                // 5. If there were internal or application errors, indicate to the functions host
+                                entityContext.ThrowInternalExceptionIfAny();
+                                entityContext.ThrowApplicationExceptionsIfAny();
+                            },
 #pragma warning restore CS0618
                 },
                 CancellationToken.None);
 
             await entityContext.RunDeferredTasks();
+
+            // If there were internal errors, do not commit the batch, but instead rethrow
+            // here so DTFx can abort the batch and back off the work item
+            entityContext.ThrowInternalExceptionIfAny();
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
@@ -762,6 +765,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
+            else if (functionType == FunctionType.Entity && !this.knownEntities.ContainsKey(functionName))
+            {
+                throw new ArgumentException(this.GetInvalidEntityFunctionMessage(name));
+            }
         }
 
         private static bool IsDurableHttpTask(string functionName)
@@ -794,6 +801,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 message += "No orchestrator functions are currently registered!";
+            }
+
+            return message;
+        }
+
+        internal string GetInvalidEntityFunctionMessage(string name)
+        {
+            string message = $"The function '{name}' doesn't exist, is disabled, or is not an entity function. Additional info: ";
+            if (this.knownOrchestrators.Keys.Count > 0)
+            {
+                message += $"The following are the known entity functions: '{string.Join("', '", this.knownEntities.Keys)}'.";
+            }
+            else
+            {
+                message += "No entity functions are currently registered!";
             }
 
             return message;
@@ -868,6 +890,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Azure Storage uses UTF-32 encoding for string payloads
                 return "(" + Encoding.UTF32.GetByteCount(rawInputOutputData) + " bytes)";
+            }
+        }
+
+        internal string GetExceptionTrace(string rawExceptionData)
+        {
+            if (rawExceptionData == null)
+            {
+                return "(null)";
+            }
+            else
+            {
+                return rawExceptionData;
             }
         }
 

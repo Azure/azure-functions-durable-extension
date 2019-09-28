@@ -4,6 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host.Bindings;
@@ -53,6 +55,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
 
+        internal ExceptionDispatchInfo InternalError { get; set; }
+
+        internal List<ExceptionDispatchInfo> ApplicationErrors { get; set; }
+
         internal EntityId Self => this.self;
 
         string IDurableEntityContext.OperationName
@@ -76,6 +82,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if NETSTANDARD2_0
         public FunctionBindingContext FunctionBindingContext { get; set; }
 #endif
+
+        public void CaptureInternalError(Exception e)
+        {
+            this.InternalError = ExceptionDispatchInfo.Capture(e);
+        }
+
+        public void CaptureApplicationError(Exception e)
+        {
+            if (this.ApplicationErrors == null)
+            {
+                this.ApplicationErrors = new List<ExceptionDispatchInfo>();
+            }
+
+            this.ApplicationErrors.Add(ExceptionDispatchInfo.Capture(e));
+        }
+
+        public void ThrowInternalExceptionIfAny()
+        {
+            if (this.InternalError != null)
+            {
+                this.InternalError.Throw();
+            }
+        }
+
+        public void ThrowApplicationExceptionsIfAny()
+        {
+            if (this.ApplicationErrors != null)
+            {
+                if (this.ApplicationErrors.Count == 1)
+                {
+                    // throw single exceptions directly
+                    this.ApplicationErrors[0].Throw();
+                }
+                else
+                {
+                    // aggregate multiple exceptions
+                    throw new AggregateException(
+                        "One or more operations failed.",
+                        this.ApplicationErrors.Select(i => i.SourceException));
+                }
+            }
+        }
+
+        public bool ErrorsPresent(out string description)
+        {
+            if (this.InternalError != null)
+            {
+                description = $"Internal error: {this.InternalError.SourceException}";
+                return true;
+            }
+            else if (this.ApplicationErrors != null)
+            {
+                var messages = this.ApplicationErrors.Select(i => $"({i.SourceException.Message})");
+                description = $"One or more operations failed: {string.Concat(messages)}";
+                return true;
+            }
+            else
+            {
+                description = string.Empty;
+                return false;
+            }
+        }
 
         void IDurableEntityContext.DestructOnExit()
         {
@@ -101,7 +169,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.StateWasAccessed)
             {
-                TState defaultValue = initializer != null ? initializer() : default(TState);
+                TState defaultValue = default(TState);
+
+                if (initializer != null)
+                {
+                    try
+                    {
+                        defaultValue = initializer();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new EntitySchedulerException($"Failed to initialize entity state: {e.Message}", e);
+                    }
+                }
 
                 if (this.State.EntityState != null)
                 {
@@ -120,16 +200,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private TState GetPopulatedState<TState>(TState initialValue, bool usedTypeInitializer)
         {
-            if (usedTypeInitializer)
+            try
             {
-                // Only populate serialized state, as some fields may be populated by the initializer
-                // using dependency injection.
-                JsonConvert.PopulateObject(this.State.EntityState, initialValue);
-                return initialValue;
+                if (usedTypeInitializer)
+                {
+                    // Only populate serialized state, as some fields may be populated by the initializer
+                    // using dependency injection.
+                    JsonConvert.PopulateObject(this.State.EntityState, initialValue);
+                    return initialValue;
+                }
+                else
+                {
+                    return JsonConvert.DeserializeObject<TState>(this.State.EntityState);
+                }
             }
-            else
+            catch (Exception e)
             {
-                return JsonConvert.DeserializeObject<TState>(this.State.EntityState);
+                throw new EntitySchedulerException($"Failed to deserialize entity state: {e.Message}", e);
             }
         }
 
@@ -141,15 +228,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.StateWasAccessed = true;
         }
 
-        internal void Writeback()
+        internal bool TryWriteback(out ResponseMessage serializationErrorMessage)
         {
+            serializationErrorMessage = null;
+
             if (this.StateWasAccessed)
             {
-                this.State.EntityState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
+                try
+                {
+                    this.State.EntityState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
+                }
+                catch (Exception e)
+                {
+                    // we cannot serialize the entity state - this is an application error.
+                    var serializationException = new EntitySchedulerException(
+                        $"Failed to serialize state of '{this.FunctionName}' entity: {e.Message}", e);
+
+                    this.CaptureApplicationError(serializationException);
+
+                    // Since for all of the operations in the batch, their effect on the entity state
+                    // is lost, we don't want the calling orchestrations to think everything is o.k.
+                    // They should be notified, so we replace all non-error operation results
+                    // with an exception result.
+                    serializationErrorMessage = new ResponseMessage()
+                    {
+                        ExceptionType = serializationException.GetType().AssemblyQualifiedName,
+                        Result = MessagePayloadDataConverter.ErrorConverter.Serialize(serializationException),
+                    };
+                }
 
                 this.CurrentState = null;
                 this.StateWasAccessed = false;
             }
+
+            return serializationErrorMessage == null;
         }
 
         void IDurableEntityContext.SignalEntity(EntityId entity, string operation, object input)
@@ -179,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 request.SetInput(input);
             }
 
-            this.SendEntityMessage(target, "op", request);
+            this.SendOperationMessage(target, "op", request);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -238,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendEntityMessage(OrchestrationInstance target, string eventName, object message)
+        internal void SendOperationMessage(OrchestrationInstance target, string eventName, object message)
         {
             lock (this.outbox)
             {
@@ -247,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
                 }
 
-                this.outbox.Add(new EventMessage()
+                this.outbox.Add(new OperationMessage()
                 {
                     Target = target,
                     EventName = eventName,
@@ -256,22 +368,92 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOutbox(OrchestrationContext innerContext)
+        internal void SendResponseMessage(OrchestrationInstance target, string eventName, object message, bool isException)
+        {
+            lock (this.outbox)
+            {
+                if (message is RequestMessage requestMessage)
+                {
+                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                }
+
+                this.outbox.Add(new ResultMessage()
+                {
+                    Target = target,
+                    EventName = eventName,
+                    EventContent = message,
+                    IsError = isException,
+                });
+            }
+        }
+
+        internal void SendLockMessage(OrchestrationInstance target, string eventName, object message)
+        {
+            lock (this.outbox)
+            {
+                if (message is RequestMessage requestMessage)
+                {
+                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                }
+
+                this.outbox.Add(new OperationMessage()
+                {
+                    Target = target,
+                    EventName = eventName,
+                    EventContent = message,
+                });
+            }
+        }
+
+        internal void SendOutbox(OrchestrationContext innerContext, bool writeBackSuccessful, ResponseMessage serializationErrorMessage)
         {
             lock (this.outbox)
             {
                 foreach (var message in this.outbox)
                 {
-                    if (message is EventMessage eventMessage)
+                    if (message is LockMessage lockMessage)
                     {
                         this.Config.TraceHelper.SendingEntityMessage(
-                        this.InstanceId,
-                        this.ExecutionId,
-                        eventMessage.Target.InstanceId,
-                        eventMessage.EventName,
-                        eventMessage.EventContent);
+                            this.InstanceId,
+                            this.ExecutionId,
+                            lockMessage.Target.InstanceId,
+                            lockMessage.EventName,
+                            lockMessage.EventContent);
 
-                        innerContext.SendEvent(eventMessage.Target, eventMessage.EventName, eventMessage.EventContent);
+                        innerContext.SendEvent(lockMessage.Target, lockMessage.EventName, lockMessage.EventContent);
+                    }
+                    else if (message is ResultMessage resultMessage)
+                    {
+                        // non-error result messages are replaced with the writeback failed response
+                        if (!writeBackSuccessful && !resultMessage.IsError)
+                        {
+                            resultMessage.EventContent = serializationErrorMessage;
+                        }
+
+                        this.Config.TraceHelper.SendingEntityMessage(
+                            this.InstanceId,
+                            this.ExecutionId,
+                            resultMessage.Target.InstanceId,
+                            resultMessage.EventName,
+                            resultMessage.EventContent);
+
+                        innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent);
+                    }
+                    else if (!writeBackSuccessful)
+                    {
+                        // all other messages (signals and fire-and-forget) are suppressed if the writeback failed
+                        // this helps to keep the observer pattern correct, for example.
+                    }
+                    else if (message is OperationMessage operationMessage)
+                    {
+                        this.Config.TraceHelper.SendingEntityMessage(
+                            this.InstanceId,
+                            this.ExecutionId,
+                            operationMessage.Target.InstanceId,
+                            operationMessage.EventName,
+                            operationMessage.EventContent);
+
+                        innerContext.SendEvent(operationMessage.Target, operationMessage.EventName, operationMessage.EventContent);
                     }
                     else if (message is FireAndForgetMessage fireAndForgetMessage)
                     {
@@ -303,7 +485,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public object Input { get; set; }
         }
 
-        private class EventMessage : OutgoingMessage
+        private class OperationMessage : OutgoingMessage
+        {
+            public OrchestrationInstance Target { get; set; }
+
+            public string EventName { get; set; }
+
+            public object EventContent { get; set; }
+        }
+
+        private class ResultMessage : OutgoingMessage
+        {
+            public OrchestrationInstance Target { get; set; }
+
+            public string EventName { get; set; }
+
+            public object EventContent { get; set; }
+
+            public bool IsError { get; set; }
+        }
+
+        private class LockMessage : OutgoingMessage
         {
             public OrchestrationInstance Target { get; set; }
 

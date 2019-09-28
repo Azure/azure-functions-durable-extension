@@ -352,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            string operationId,
            string operationName,
            string input,
-           string output,
+           string exception,
            double duration,
            bool isReplay)
         {
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 operationId,
                 operationName,
                 input,
-                output,
+                exception,
                 duration,
                 FunctionType.Entity.ToString(),
                 ExtensionVersion,
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.logger.LogError(
                     "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, output, input, isReplay, hubName,
+                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, exception, input, isReplay, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }

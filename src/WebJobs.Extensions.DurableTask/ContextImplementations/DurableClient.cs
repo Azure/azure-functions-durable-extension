@@ -215,6 +215,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
+            this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
@@ -382,6 +384,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(TaskHubClient client, string hubName, EntityId entityId)
         {
+            this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             IList<OrchestrationState> stateList = await client.ServiceClient.GetOrchestrationStateAsync(instanceId, false);
 

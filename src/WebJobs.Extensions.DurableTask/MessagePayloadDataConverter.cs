@@ -25,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             ContractResolver = new ExceptionResolver(),
             TypeNameHandling = TypeNameHandling.Objects,
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
         };
 
         // Default singleton instances
