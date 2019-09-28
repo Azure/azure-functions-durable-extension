@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// Attribute used with the Durable Functions Analyzer to label a method as Deterministic. This allows the method to be called in an Orchestration funciton without causing a compiler warning.
+    /// Attribute used with the Durable Functions Analyzer to label a method as Deterministic. This allows the method to be called in an Orchestration function without causing a compiler warning.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class DeterministicAttribute : Attribute
