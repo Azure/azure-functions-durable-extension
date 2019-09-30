@@ -75,5 +75,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.True(request.Headers.TryGetValue("x-ms-foo", out StringValues customHeaderValues));
             Assert.Empty(customHeaderValues);
         }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallHttpActionOrchestrationWithManagedIdentity()
+        {
+            DurableHttpRequest request = null;
+
+            // Mock the CallHttpAsync API so we can capture the request and return a fixed response.
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+            contextMock
+                .Setup(ctx => ctx.CallHttpAsync(It.IsAny<DurableHttpRequest>()))
+                .Callback<DurableHttpRequest>(req => request = req)
+                .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
+
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var executionJson = @"
+{
+    ""isDone"": false,
+    ""actions"": [
+        [{
+            ""actionType"": ""CallHttp"",
+            ""httpRequest"": {
+                ""method"": ""GET"",
+                ""uri"": ""https://example.com"",
+                ""tokenSource"": {
+                    ""kind"": ""AzureManagedIdentity"",
+                    ""resource"": ""https://management.core.windows.net""
+                }
+            }
+        }]
+    ]
+}";
+
+            // Feed the out-of-proc execution result JSON to the out-of-proc shim.
+            var jsonObject = JObject.Parse(executionJson);
+            await shim.ExecuteAsync(jsonObject);
+
+            Assert.NotNull(request);
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal(new Uri("https://example.com"), request.Uri);
+            Assert.Null(request.Content);
+
+            Assert.NotNull(request.TokenSource);
+            ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(request.TokenSource);
+            Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
+        }
     }
 }

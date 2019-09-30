@@ -67,9 +67,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string Content { get; }
 
         /// <summary>
-        /// Information needed to get a token for a specified service.
+        /// Mechanism for attaching an OAuth token to the request.
         /// </summary>
-        [JsonProperty("tokenSource", TypeNameHandling = TypeNameHandling.Auto)]
+        [JsonProperty("tokenSource")]
+        [JsonConverter(typeof(TokenSourceConverter))]
         public ITokenSource TokenSource { get; }
 
         /// <summary>
@@ -108,6 +109,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 HttpMethod method = (HttpMethod)value ?? HttpMethod.Get;
                 writer.WriteValue(method.ToString());
+            }
+        }
+
+        private class TokenSourceConverter : JsonConverter
+        {
+            private enum TokenSourceType
+            {
+                None = 0,
+                AzureManagedIdentity = 1,
+            }
+
+            public override bool CanConvert(Type objectType)
+            {
+                return objectType is ITokenSource;
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            {
+                JToken json = JToken.ReadFrom(reader);
+                if (json.Type == JTokenType.Null)
+                {
+                    return null;
+                }
+
+                JObject jsonObject = (JObject)json;
+                if (jsonObject.TryGetValue("kind", out JToken kindValue))
+                {
+                    if (Enum.TryParse((string)kindValue, out TokenSourceType tokenSourceKind) &&
+                        tokenSourceKind == TokenSourceType.AzureManagedIdentity)
+                    {
+                        return new ManagedIdentityTokenSource((string)jsonObject.GetValue("resource", StringComparison.Ordinal));
+                    }
+
+                    throw new NotSupportedException($"The token source kind '{kindValue.ToString(Formatting.None)}' is not supported.");
+                }
+                else if (jsonObject.TryGetValue("$type", StringComparison.Ordinal, out JToken clrTypeValue))
+                {
+                    Type runtimeType = Type.GetType((string)clrTypeValue, throwOnError: true);
+                    return jsonObject.ToObject(runtimeType, serializer);
+                }
+                else
+                {
+                    // Don't know how to deserialize this - use default behavior (this may fail)
+                    return jsonObject.ToObject(objectType);
+                }
+            }
+
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                if (value is ManagedIdentityTokenSource tokenSource)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("kind");
+                    writer.WriteValue(TokenSourceType.AzureManagedIdentity.ToString());
+                    writer.WritePropertyName("resource");
+                    writer.WriteValue(tokenSource.Resource);
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    // Don't know how to serialize this - use default behavior
+                    serializer.Serialize(writer, value);
+                }
             }
         }
     }
