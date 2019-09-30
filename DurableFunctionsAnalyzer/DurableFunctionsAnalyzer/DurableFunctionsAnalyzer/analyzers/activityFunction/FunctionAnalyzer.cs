@@ -31,6 +31,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             FunctionAnalyzer functionAnalyzer = new FunctionAnalyzer();
             context.RegisterCompilationStartAction(compilation =>
             {

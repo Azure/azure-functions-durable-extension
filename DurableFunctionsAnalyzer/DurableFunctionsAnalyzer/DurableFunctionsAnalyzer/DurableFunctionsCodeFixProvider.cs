@@ -40,7 +40,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         }
 
 
-        protected static string GetDurableOrchestrationContextVariableName(SyntaxNode node)
+        protected static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out String variableName)
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
@@ -48,15 +48,28 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
-                    var attributeList = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                    if (attributeList.Count() >= 1 && attributeList.First().ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
+                    var attributeListEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
+                    foreach (SyntaxNode attribute in attributeListEnumerable)
                     {
-
-                        return parameter.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).First().ToString();
+                        if (attribute.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
+                        {
+                            var identifierName = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                            if (string.Equals(identifierName, "IDurableOrchestrationContext") || string.Equals(identifierName, "DurableOrchestrationContext") || string.Equals(identifierName, "DurableOrchestrationContextBase"))
+                            {
+                                var identifierToken = parameter.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken));
+                                if (identifierToken.Any())
+                                {
+                                    variableName = identifierToken.First().ToString();
+                                    return true;
+                                }
+                            }
+                        }
                     }
                 }
             }
-            return null;
+
+            variableName = null;
+            return false;
         }
     }
 }

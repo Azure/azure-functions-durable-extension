@@ -15,7 +15,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString NotAMethodMessageFormat = new LocalizableResourceString(nameof(Resources.EntityInterfaceContentAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString NoMethodsMessageFormat = new LocalizableResourceString(nameof(Resources.EntityInterfaceContentAnalyzerNoMethodsMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityInterfaceContentAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "Argument";
+        private const string Category = SupportedCategories.EntityInterface;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         public static DiagnosticDescriptor NotAMethodRule = new DiagnosticDescriptor(DiagnosticId, Title, NotAMethodMessageFormat, Category, severity, isEnabledByDefault: true, description: Description);

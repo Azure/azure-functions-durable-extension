@@ -19,7 +19,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.SignalEntityAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.SignalEntityAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.SignalEntityAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "Entity";
+        private const string Category = SupportedCategories.EntityInterface;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
@@ -30,6 +30,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             InterfaceAnalyzer interfaceAnalyzer = new InterfaceAnalyzer();
 
             context.RegisterCompilationStartAction(compilation =>

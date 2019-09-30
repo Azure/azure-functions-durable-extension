@@ -19,7 +19,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString IncorrectTypeMessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerIncorrectTypeMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "Entity";
+        private const string Category = SupportedCategories.Entity;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
@@ -29,6 +29,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+            context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(AnalyzeDispatchEntityName, SyntaxKind.SimpleMemberAccessExpression);
         }
 
@@ -40,7 +42,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
                 {
-                    if (TryGetTypeArgumentList(out SyntaxNode typeArgumentList, expression))
+                    if (TryGetTypeArgumentList(expression, out SyntaxNode typeArgumentList))
                     {
                         if(!TryGetIdentifierName(out SyntaxNode identifierName, typeArgumentList))
                         {
@@ -69,7 +71,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private bool TryGetTypeArgumentList(out SyntaxNode typeArgumentList, MemberAccessExpressionSyntax expression)
+        private bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode typeArgumentList)
         {
             var genericNameEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
             if (genericNameEnumerable.Any())

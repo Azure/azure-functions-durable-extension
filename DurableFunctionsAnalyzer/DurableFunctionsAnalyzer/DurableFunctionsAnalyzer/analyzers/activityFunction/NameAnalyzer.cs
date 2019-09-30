@@ -15,7 +15,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString CloseMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerCloseMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MissingMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerMissingMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "Naming";
+        private const string Category = SupportedCategories.Activity;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         public static DiagnosticDescriptor CloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, severity, isEnabledByDefault: true, description: Description);

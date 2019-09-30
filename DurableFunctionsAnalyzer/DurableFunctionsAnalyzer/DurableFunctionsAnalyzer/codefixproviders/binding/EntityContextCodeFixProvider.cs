@@ -14,7 +14,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(EntityContextCodeFixProvider)), Shared]
     public class EntityContextCodeFixProvider: DurableFunctionsCodeFixProvider
     {
-        private const string title = "EntityContextFix";
+        private static readonly LocalizableString FixIDurableEntityContext = new LocalizableResourceString(nameof(Resources.FixIDurableEntityContext), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -36,7 +36,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
             var identifierNode = root.FindNode(diagnosticSpan);
 
             context.RegisterCodeFix(
-            CodeAction.Create("Replace with IDurableEntityContext", cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableEntityContext"), EntityContextAnalyzer.DiagnosticId),
+            CodeAction.Create(FixIDurableEntityContext.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableEntityContext"), nameof(EntityContextCodeFixProvider)),
             diagnostic);
         }
     }

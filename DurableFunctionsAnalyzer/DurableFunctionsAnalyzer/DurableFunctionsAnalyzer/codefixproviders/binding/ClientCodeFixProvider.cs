@@ -14,7 +14,10 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClientCodeFixProvider)), Shared]
     public class ClientCodeFixProvider : DurableFunctionsCodeFixProvider
     {
-        private const string title = "DurableClientFix";
+        private static readonly LocalizableString FixIDurableClient = new LocalizableResourceString(nameof(Resources.FixIDurableClient), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString FixIDurableEntityClient = new LocalizableResourceString(nameof(Resources.FixIDurableEntityClient), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString FixIDurableOrchestrationClient = new LocalizableResourceString(nameof(Resources.FixIDurableOrchestrationClient), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString FixDurableOrchestrationClient = new LocalizableResourceString(nameof(Resources.FixDurableOrchestrationClient), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -35,17 +38,29 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
             var identifierNode = root.FindNode(diagnosticSpan);
 
-            context.RegisterCodeFix(
-            CodeAction.Create("Replace with IDurableClient", cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableClient")),
-            diagnostic);
+            SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
+            var durableVersion = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-            context.RegisterCodeFix(
-            CodeAction.Create("Replace with IDurableEntityClient", cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableEntityClient")),
-            diagnostic);
+            if (durableVersion.Equals(DurableVersion.V1))
+            {
+                context.RegisterCodeFix(
+                CodeAction.Create(FixDurableOrchestrationClient.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "DurableOrchestrationClient"), nameof(ClientCodeFixProvider) + nameof(FixDurableOrchestrationClient)),
+                diagnostic);
+            }
+            else if (durableVersion.Equals(DurableVersion.V2))
+            {
+                context.RegisterCodeFix(
+                CodeAction.Create(FixIDurableClient.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableClient"), nameof(ClientCodeFixProvider) + nameof(FixIDurableClient)),
+                diagnostic);
 
-            context.RegisterCodeFix(
-            CodeAction.Create("Replace with IDurableOrchestrationClient", cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableOrchestrationClient")),
-            diagnostic);
+                context.RegisterCodeFix(
+                CodeAction.Create(FixIDurableEntityClient.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableEntityClient"), nameof(ClientCodeFixProvider) + nameof(FixIDurableEntityClient)),
+                diagnostic);
+
+                context.RegisterCodeFix(
+                CodeAction.Create(FixIDurableOrchestrationClient.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableOrchestrationClient"), nameof(ClientCodeFixProvider) + nameof(FixIDurableOrchestrationClient)),
+                diagnostic);
+            }
         }
     }
 }

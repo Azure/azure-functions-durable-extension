@@ -14,7 +14,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(GuidCodeFixProvider)), Shared]
     public class GuidCodeFixProvider: DurableFunctionsCodeFixProvider
     {
-        private const string title = "Replace with context.NewGuid";
+        private static readonly LocalizableString FixGuidInOrchestrator = new LocalizableResourceString(nameof(Resources.FixGuidInOrchestrator), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -37,16 +38,17 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
             {
-                var contextName = GetDurableOrchestrationContextVariableName(expression);
-
-                context.RegisterCodeFix(
-                CodeAction.Create("Replace with (IDurableOrchestrationContext).NewGuid()", c => ReplaceWithIdentifierAsync(context.Document, expression, c, contextName + ".NewGuid()")),
-                diagnostic);
+                if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
+                {
+                    context.RegisterCodeFix(
+                    CodeAction.Create(FixGuidInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, variableName + ".NewGuid()"), nameof(GuidCodeFixProvider)),
+                    diagnostic);
+                }
             }
             else if (SyntaxNodeUtils.IsMarkedDeterministic(expression))
             {
                 context.RegisterCodeFix(
-                CodeAction.Create("Remove Deterministic Attribute", c => RemoveDeterministicAttributeAsync(context.Document, expression, c)), diagnostic);
+                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(GuidCodeFixProvider)), diagnostic);
             }
 }
     }

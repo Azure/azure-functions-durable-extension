@@ -14,7 +14,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(DateTimeCodeFixProvider)), Shared]
     public class DateTimeCodeFixProvider : DurableFunctionsCodeFixProvider
     {
-        private const string title = "Replace with context.CurrentUtcDateTime";
+        private static readonly LocalizableString FixDateTimeInOrchestrator = new LocalizableResourceString(nameof(Resources.FixDateTimeInOrchestrator), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -37,15 +38,16 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
             {
-                var contextName = GetDurableOrchestrationContextVariableName(expression);
-
-                context.RegisterCodeFix(
-                CodeAction.Create("Replace with (IDurableOrchestrationContext).CurrentUtcDateTime", c => ReplaceWithIdentifierAsync(context.Document, expression, c, contextName + ".CurrentUtcDateTime")), diagnostic);
+                if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
+                {
+                    context.RegisterCodeFix(
+                    CodeAction.Create(FixDateTimeInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, variableName + ".CurrentUtcDateTime"), nameof(DateTimeCodeFixProvider)), diagnostic);
+                }
             }
             else if (SyntaxNodeUtils.IsMarkedDeterministic(expression))
             {
                 context.RegisterCodeFix(
-                CodeAction.Create("Remove Deterministic Attribute", c => RemoveDeterministicAttributeAsync(context.Document, expression, c)), diagnostic);
+                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(DateTimeCodeFixProvider)), diagnostic);
             }
         }
     }

@@ -10,7 +10,6 @@
 
 namespace WebJobs.Extensions.DurableTask.Analyzers {
     using System;
-    using System.Reflection;
     
     
     /// <summary>
@@ -40,7 +39,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WebJobs.Extensions.DurableTask.Analyzers.Resources", typeof(Resources).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WebJobs.Extensions.DurableTask.Analyzers.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -62,7 +61,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function call specifies a parameter that dosn&apos;t match the function definition parameter.
+        ///   Looks up a localized string similar to Activity function call specifies a parameter that doesn&apos;t match the function definition parameter..
         /// </summary>
         public static string ActivityArgumentAnalyzerDescription {
             get {
@@ -71,7 +70,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function named &apos;{0}&apos; takes a &apos;{1}&apos; but was given a &apos;{2}&apos;.
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes a &apos;{1}&apos; but was given a &apos;{2}&apos;..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormat {
             get {
@@ -80,7 +79,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function call is using the wrong argument type.
+        ///   Looks up a localized string similar to Activity function call is using the wrong argument type..
         /// </summary>
         public static string ActivityArgumentAnalyzerTitle {
             get {
@@ -98,7 +97,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function call references unknown Activity Function.
+        ///   Looks up a localized string similar to Activity function call references unknown activity function..
         /// </summary>
         public static string ActivityNameAnalyzerDescription {
             get {
@@ -107,7 +106,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function named &apos;{0}&apos; does not exist. Could not find any function references..
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; does not exist. Could not find any function references..
         /// </summary>
         public static string ActivityNameAnalyzerMissingMessageFormat {
             get {
@@ -116,7 +115,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function call references unknown Activity Function.
+        ///   Looks up a localized string similar to Activity function call references unknown Activity function..
         /// </summary>
         public static string ActivityNameAnalyzerTitle {
             get {
@@ -125,7 +124,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function call return type doesn&apos;t match function definition return type.
+        ///   Looks up a localized string similar to Activity function call return type doesn&apos;t match function definition return type..
         /// </summary>
         public static string ActivityReturnTypeAnalyzerDescription {
             get {
@@ -134,7 +133,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; returns &apos;{1}&apos; but &apos;{2}&apos; is expected.
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; returns &apos;{1}&apos; but &apos;{2}&apos; is expected..
         /// </summary>
         public static string ActivityReturnTypeAnalyzerMessageFormat {
             get {
@@ -143,7 +142,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity Function call return type doesn&apos;t match function definition return type.
+        ///   Looks up a localized string similar to Activity function call return type doesn&apos;t match function definition return type..
         /// </summary>
         public static string ActivityReturnTypeAnalyzerTitle {
             get {
@@ -152,7 +151,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DateTime calls must be deterministic inside an orchestrator.
+        ///   Looks up a localized string similar to DateTime calls must be deterministic inside an orchestrator function..
         /// </summary>
         public static string DateTimeAnalyzerTitle {
             get {
@@ -161,7 +160,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Orchestrator must be deterministic. For more information on orchestrator code constraints, see:
+        ///   Looks up a localized string similar to An orchestrator function must be deterministic. For more information on orchestrator code constraints, see:
         ///https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.
         /// </summary>
         public static string DeterministicAnalyzerDescription {
@@ -171,7 +170,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; violates the orchestrator deterministic code constraint.
+        ///   Looks up a localized string similar to &apos;{0}&apos; violates the orchestrator deterministic code constraint..
         /// </summary>
         public static string DeterministicAnalyzerMessageFormat {
             get {
@@ -180,7 +179,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the Entity Class it&apos;s used in.
+        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
         /// </summary>
         public static string DispatchClassNameAnalyzerDescription {
             get {
@@ -189,7 +188,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the Entity Class it&apos;s used in.
+        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
         /// </summary>
         public static string DispatchClassNameAnalyzerIncorrectTypeMessageFormat {
             get {
@@ -198,7 +197,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be called with the Entity Class &apos;{1}&apos; it&apos;s used in.
+        ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be called with the entity class &apos;{1}&apos; it&apos;s used in..
         /// </summary>
         public static string DispatchClassNameAnalyzerMessageFormat {
             get {
@@ -207,7 +206,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the Entity Class it&apos;s used in.
+        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
         /// </summary>
         public static string DispatchClassNameAnalyzerTitle {
             get {
@@ -216,7 +215,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity class name and Entity function name must match.
+        ///   Looks up a localized string similar to Entity class name and entity function name must match..
         /// </summary>
         public static string EntityClassNameAnalyzerDescription {
             get {
@@ -225,7 +224,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Class name (&apos;{0}&apos;) and entity function name (&apos;{1}&apos;) do not match.
+        ///   Looks up a localized string similar to Class name &apos;{0}&apos; and entity function name &apos;{1}&apos; do not match..
         /// </summary>
         public static string EntityClassNameAnalyzerMessageFormat {
             get {
@@ -234,7 +233,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity class name and Entity function name must match.
+        ///   Looks up a localized string similar to Entity class name and entity function name must match..
         /// </summary>
         public static string EntityClassNameAnalyzerTitle {
             get {
@@ -243,7 +242,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to EntityTrigger attribute must be used with an IDurableEntityContext.
+        ///   Looks up a localized string similar to EntityTrigger attribute must be used with an IDurableEntityContext..
         /// </summary>
         public static string EntityContextAnalyzerDescription {
             get {
@@ -252,7 +251,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to EntityTrigger attribute is applied to a &apos;{0}&apos; but must be used with an IDurableEntityContext instead.
+        ///   Looks up a localized string similar to EntityTrigger attribute is applied to a &apos;{0}&apos; but must be used with an IDurableEntityContext instead..
         /// </summary>
         public static string EntityContextAnalyzerMessageFormat {
             get {
@@ -261,7 +260,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to EntityTrigger attribute must be used with an IDurableEntityContext.
+        ///   Looks up a localized string similar to EntityTrigger attribute must be used with an IDurableEntityContext..
         /// </summary>
         public static string EntityContextAnalyzerTitle {
             get {
@@ -270,7 +269,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must only contain methods and must contain at least one method..
+        ///   Looks up a localized string similar to An entity interface must only contain methods and must contain at least one method..
         /// </summary>
         public static string EntityInterfaceContentAnalyzerDescription {
             get {
@@ -279,8 +278,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity Interface contains content other than methods
-        /// (&apos;{0}&apos;).
+        ///   Looks up a localized string similar to Entity interface contains members other than methods:
+        /// &apos;{0}&apos;..
         /// </summary>
         public static string EntityInterfaceContentAnalyzerMessageFormat {
             get {
@@ -289,7 +288,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity Interface doesn&apos;t contain any methods and must contain at least one..
+        ///   Looks up a localized string similar to Entity interface doesn&apos;t contain any methods and must contain at least one..
         /// </summary>
         public static string EntityInterfaceContentAnalyzerNoMethodsMessageFormat {
             get {
@@ -298,7 +297,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must only contain methods and must contain at least one method..
+        ///   Looks up a localized string similar to An entity interface must only contain methods and must contain at least one method..
         /// </summary>
         public static string EntityInterfaceContentAnalyzerTitle {
             get {
@@ -307,7 +306,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must only have methods with at most one parameter.
+        ///   Looks up a localized string similar to An entity interface must only have methods with at most one parameter..
         /// </summary>
         public static string EntityInterfaceParameterAnalyzerDescription {
             get {
@@ -316,7 +315,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method in Entity Interface has more than one parameter (&apos;{0}&apos;).
+        ///   Looks up a localized string similar to Method in entity interface has more than one parameter: &apos;{0}&apos;..
         /// </summary>
         public static string EntityInterfaceParameterAnalyzerMessageFormat {
             get {
@@ -325,7 +324,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must only have methods with at most one parameter.
+        ///   Looks up a localized string similar to An entity interface must only have methods with at most one parameter..
         /// </summary>
         public static string EntityInterfaceParameterAnalyzerTitle {
             get {
@@ -334,7 +333,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must only have methods that return void, Task, or Task&lt;T&gt;.
+        ///   Looks up a localized string similar to An entity interface must only have methods that return void, Task, or Task&lt;T&gt;..
         /// </summary>
         public static string EntityInterfaceReturnTypeAnalyzerDescription {
             get {
@@ -343,7 +342,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method has a return type &apos;{0}&apos;; return type should only be void, Task, or Task&lt;T&gt;.
+        ///   Looks up a localized string similar to Method has a return type &apos;{0}&apos;; return type should only be void, Task, or Task&lt;T&gt;..
         /// </summary>
         public static string EntityInterfaceReturnTypeAnalyzerMessageFormat {
             get {
@@ -352,7 +351,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must only have methods that return void, Task, or Task&lt;T&gt;.
+        ///   Looks up a localized string similar to An entity interface must only have methods that return void, Task, or Task&lt;T&gt;..
         /// </summary>
         public static string EntityInterfaceReturnTypeAnalyzerTitle {
             get {
@@ -361,7 +360,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity functions must be static.
+        ///   Looks up a localized string similar to Entity functions must be static..
         /// </summary>
         public static string EntityStaticAnalyzerDescription {
             get {
@@ -370,7 +369,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Function &apos;{0}&apos; is not marked static.
+        ///   Looks up a localized string similar to Entity function &apos;{0}&apos; is not marked static..
         /// </summary>
         public static string EntityStaticAnalyzerMessageFormat {
             get {
@@ -379,7 +378,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity functions must be static.
+        ///   Looks up a localized string similar to Entity functions must be static..
         /// </summary>
         public static string EntityStaticAnalyzerTitle {
             get {
@@ -388,7 +387,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Environment Variables must be accessed in a deterministic way inside an orchestrator.
+        ///   Looks up a localized string similar to Environment variables must be accessed in a deterministic way inside an orchestrator function..
         /// </summary>
         public static string EnvironmentVariableAnalyzerTitle {
             get {
@@ -397,7 +396,133 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Guid calls must be deterministic inside an orchestrator.
+        ///   Looks up a localized string similar to Replace with (DurableOrchestrationContext).CurrentUtcDateTime.
+        /// </summary>
+        public static string FixDateTimeInOrchestrator {
+            get {
+                return ResourceManager.GetString("FixDateTimeInOrchestrator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Remove Deterministic Attribute.
+        /// </summary>
+        public static string FixDeterministicAttribute {
+            get {
+                return ResourceManager.GetString("FixDeterministicAttribute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with DurableOrchestrationClient.
+        /// </summary>
+        public static string FixDurableOrchestrationClient {
+            get {
+                return ResourceManager.GetString("FixDurableOrchestrationClient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with DurableOrchestrationContext.
+        /// </summary>
+        public static string FixDurableOrchestrationContext {
+            get {
+                return ResourceManager.GetString("FixDurableOrchestrationContext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with DurableOrchestrationContextBase.
+        /// </summary>
+        public static string FixDurableOrchestrationContextBase {
+            get {
+                return ResourceManager.GetString("FixDurableOrchestrationContextBase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace entity function name with class name.
+        /// </summary>
+        public static string FixEntityFunctionName {
+            get {
+                return ResourceManager.GetString("FixEntityFunctionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add keyword static to the entity function method signature.
+        /// </summary>
+        public static string FixEntityFunctionStaticModifier {
+            get {
+                return ResourceManager.GetString("FixEntityFunctionStaticModifier", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with (DurableOrchestrationContext).NewGuid().
+        /// </summary>
+        public static string FixGuidInOrchestrator {
+            get {
+                return ResourceManager.GetString("FixGuidInOrchestrator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with IDurableClient.
+        /// </summary>
+        public static string FixIDurableClient {
+            get {
+                return ResourceManager.GetString("FixIDurableClient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with IDurableEntityClient.
+        /// </summary>
+        public static string FixIDurableEntityClient {
+            get {
+                return ResourceManager.GetString("FixIDurableEntityClient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with IDurableEntityContext.
+        /// </summary>
+        public static string FixIDurableEntityContext {
+            get {
+                return ResourceManager.GetString("FixIDurableEntityContext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with IDurableOrchestrationClient.
+        /// </summary>
+        public static string FixIDurableOrchestrationClient {
+            get {
+                return ResourceManager.GetString("FixIDurableOrchestrationClient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with IDurableOrchestrationContext.
+        /// </summary>
+        public static string FixIDurableOrchestrationContext {
+            get {
+                return ResourceManager.GetString("FixIDurableOrchestrationContext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace with (DurableOrchestrationContext).CreateTimer(DateTime, CancellationToken).
+        /// </summary>
+        public static string FixTimerInOrchestrator {
+            get {
+                return ResourceManager.GetString("FixTimerInOrchestrator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Guid calls must be deterministic inside an orchestrator function..
         /// </summary>
         public static string GuidAnalyzerTitle {
             get {
@@ -406,7 +531,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to I/O operations are not allowed inside an orchestrator.
+        ///   Looks up a localized string similar to I/O operations are not allowed inside an orchestrator function..
         /// </summary>
         public static string IOTypesAnalyzerTitle {
             get {
@@ -415,7 +540,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method calls in an orchestrator must be marked [Deterministic] above the method declaration.
+        ///   Looks up a localized string similar to Method calls in an orchestrator must be marked [Deterministic] on the method declaration..
         /// </summary>
         public static string MethodAttributeAnalyzerTitle {
             get {
@@ -424,7 +549,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SignalEntityAsync must use an Entity Interface.
+        ///   Looks up a localized string similar to SignalEntityAsync must use an Entity Interface..
         /// </summary>
         public static string SignalEntityAnalyzerDescription {
             get {
@@ -433,7 +558,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Entity Interface must be used instead of &apos;{0}&apos;.
+        ///   Looks up a localized string similar to An entity interface must be used instead of &apos;{0}&apos;..
         /// </summary>
         public static string SignalEntityAnalyzerMessageFormat {
             get {
@@ -442,7 +567,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SignalEntityAsync must use an Entity Interface.
+        ///   Looks up a localized string similar to SignalEntityAsync must use an entity interface..
         /// </summary>
         public static string SignalEntityAnalyzerTitle {
             get {
@@ -451,7 +576,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Thread and Task calls must be deterministic inside an orchestrator.
+        ///   Looks up a localized string similar to Thread and Task calls must be deterministic inside an orchestrator function..
         /// </summary>
         public static string ThreadTaskAnalyzerTitle {
             get {
@@ -460,7 +585,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator.
+        ///   Looks up a localized string similar to Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator function..
         /// </summary>
         public static string TimerAnalyzerTitle {
             get {
@@ -469,7 +594,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationClient attribute must be used with a DurableOrchestrationClient.
+        ///   Looks up a localized string similar to OrchestrationClient attribute must be used with a DurableOrchestrationClient..
         /// </summary>
         public static string V1ClientAnalyzerDescription {
             get {
@@ -478,7 +603,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationClient attribute is applied to a &apos;{0}&apos; but must be used with a DurableOrchestrationClient.
+        ///   Looks up a localized string similar to OrchestrationClient attribute is applied to a &apos;{0}&apos; but must be used with a DurableOrchestrationClient..
         /// </summary>
         public static string V1ClientAnalyzerMessageFormat {
             get {
@@ -487,7 +612,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationClient attribute must be used with a DurableOrchestrationClient.
+        ///   Looks up a localized string similar to OrchestrationClient attribute must be used with a DurableOrchestrationClient..
         /// </summary>
         public static string V1ClientAnalyzerTitle {
             get {
@@ -496,7 +621,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationTrigger must be used with an DurableOrchestrationContext or DurableOrchestrationContextBase.
+        ///   Looks up a localized string similar to OrchestrationTrigger must be used with an DurableOrchestrationContext or DurableOrchestrationContextBase..
         /// </summary>
         public static string V1OrchestratorContextAnalyzerDescription {
             get {
@@ -505,7 +630,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationTrigger is applied to a &apos;{0}&apos; but must be used with a DurableOrchestrationContext or a DurableOrchestrationContextBase instead.
+        ///   Looks up a localized string similar to OrchestrationTrigger is applied to a &apos;{0}&apos; but must be used with a DurableOrchestrationContext or a DurableOrchestrationContextBase instead..
         /// </summary>
         public static string V1OrchestratorContextAnalyzerMessageFormat {
             get {
@@ -514,7 +639,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase.
+        ///   Looks up a localized string similar to OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase..
         /// </summary>
         public static string V1OrchestratorContextAnalyzerTitle {
             get {
@@ -523,7 +648,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
+        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient..
         /// </summary>
         public static string V2ClientAnalyzerDescription {
             get {
@@ -532,7 +657,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DurableClient attribute is applied to a &apos;{0}&apos; but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
+        ///   Looks up a localized string similar to DurableClient attribute is applied to a &apos;{0}&apos; but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient..
         /// </summary>
         public static string V2ClientAnalyzerMessageFormat {
             get {
@@ -541,7 +666,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.
+        ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient..
         /// </summary>
         public static string V2ClientAnalyzerTitle {
             get {
@@ -550,7 +675,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationTrigger must be used with an IDurableOrchestrationContext.
+        ///   Looks up a localized string similar to OrchestrationTrigger must be used with an IDurableOrchestrationContext..
         /// </summary>
         public static string V2OrchestratorContextAnalyzerDescription {
             get {
@@ -559,7 +684,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationTrigger is applied to a &apos;{0}&apos; but must be used with an IDurableOrchestrationContext instead.
+        ///   Looks up a localized string similar to OrchestrationTrigger is applied to a &apos;{0}&apos; but must be used with an IDurableOrchestrationContext instead..
         /// </summary>
         public static string V2OrchestratorContextAnalyzerMessageFormat {
             get {
@@ -568,7 +693,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OrchestrationTrigger must be used with an IDurableOrchestrationContext.
+        ///   Looks up a localized string similar to OrchestrationTrigger must be used with an IDurableOrchestrationContext..
         /// </summary>
         public static string V2OrchestratorContextAnalyzerTitle {
             get {

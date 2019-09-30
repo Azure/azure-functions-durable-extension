@@ -17,7 +17,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(StaticFunctionCodeFixProvider)), Shared]
     public class StaticFunctionCodeFixProvider: DurableFunctionsCodeFixProvider
     {
-        private const string title = "Static function codeFix";
+        private static readonly LocalizableString FixEntityFunctionStaticModifier = new LocalizableResourceString(nameof(Resources.FixEntityFunctionStaticModifier), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -39,7 +39,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
             var identifierNode = root.FindNode(diagnosticSpan);
             
             context.RegisterCodeFix(
-            CodeAction.Create("Make method static", cancellationToken => AddStaticModifierAsync(context.Document, identifierNode, cancellationToken)),
+            CodeAction.Create(FixEntityFunctionStaticModifier.ToString(), cancellationToken => AddStaticModifierAsync(context.Document, identifierNode, cancellationToken), nameof(StaticFunctionCodeFixProvider)),
             diagnostic);
         }
 

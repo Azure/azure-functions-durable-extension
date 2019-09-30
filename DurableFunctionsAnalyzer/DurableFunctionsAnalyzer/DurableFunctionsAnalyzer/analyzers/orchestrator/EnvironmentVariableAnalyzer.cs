@@ -17,7 +17,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.EnvironmentVariableAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "OrchestratorCodeConstraints";
+        private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
@@ -26,6 +26,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+            context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(AnalyzeIdentifierEnvironmentVariable, SyntaxKind.IdentifierName);
         }
 

@@ -14,7 +14,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassNameCodeFixProvider)), Shared]
     public class DispatchClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
     {
-        private const string title = "EntityContextFix";
+        private static readonly LocalizableString FixDispatchEntityCall = new LocalizableResourceString(nameof(Resources.FixEntityFunctionName), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -40,7 +40,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
                 var className = classSymbol.Name.ToString();
 
                 context.RegisterCodeFix(
-                CodeAction.Create("Replace with Entity Class Name", cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className)),
+                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(DispatchClassNameCodeFixProvider)),
                 diagnostic);
             }
         }

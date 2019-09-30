@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="WebJobs.Extensions.DurableTask.Analyzers.fdb8ffdd-3965-4796-ad72-c4d7b8ac590f" Version="1.0" Language="en-US" Publisher="amdeel"/>
+        <Identity Id="WebJobs.Extensions.DurableTask.Analyzers.fdb8ffdd-3965-4796-ad72-c4d7b8ac590f" Version="1.0" Language="en-US" Publisher="Microsoft"/>
         <DisplayName>WebJobs.Extensions.DurableTask.Analyzers</DisplayName>
         <Description xml:space="preserve">This is a sample diagnostic extension for the .NET Compiler Platform ("Roslyn").</Description>
     </Metadata>

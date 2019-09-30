@@ -14,7 +14,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.EntityInterfaceParameterAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.EntityInterfaceParameterAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityInterfaceParameterAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "Argument";
+        private const string Category = SupportedCategories.EntityInterface;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         public static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);

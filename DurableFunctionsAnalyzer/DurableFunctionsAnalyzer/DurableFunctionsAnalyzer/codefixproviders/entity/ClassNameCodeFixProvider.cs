@@ -14,7 +14,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassNameCodeFixProvider)), Shared]
     public class ClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
     {
-        private const string title = "EntityContextFix";
+        private static readonly LocalizableString FixEntityFunctionName = new LocalizableResourceString(nameof(Resources.FixEntityFunctionName), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -37,10 +37,10 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
             if (SyntaxNodeUtils.TryGetClassSymbol(identifierNode, semanticModel, out INamedTypeSymbol classSymbol))
             {
-                var className = classSymbol.Name.ToString();
+                var className = "nameof(" + classSymbol.Name.ToString() + ")";
 
                 context.RegisterCodeFix(
-                CodeAction.Create("Replace with Entity Class Name", cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className)),
+                CodeAction.Create(FixEntityFunctionName.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(ClassNameCodeFixProvider)),
                 diagnostic);
             }
         }

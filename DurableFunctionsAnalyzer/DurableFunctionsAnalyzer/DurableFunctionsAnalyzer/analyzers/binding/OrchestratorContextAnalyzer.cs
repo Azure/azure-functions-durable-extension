@@ -20,8 +20,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString V1Description = new LocalizableResourceString(nameof(Resources.V1OrchestratorContextAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString V2MessageFormat = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString V2Description = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
-        private const string Category = "OrchestrationContextAnalyzer";
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Error;
+        private const string Category = SupportedCategories.Binding;
+        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         private static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, severity, isEnabledByDefault: true, description: V1Description);
         private static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: V2Description);
@@ -32,6 +32,7 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             context.RegisterSyntaxNodeAction(FindOrchestrationTriggers, SyntaxKind.Attribute);
         }
 

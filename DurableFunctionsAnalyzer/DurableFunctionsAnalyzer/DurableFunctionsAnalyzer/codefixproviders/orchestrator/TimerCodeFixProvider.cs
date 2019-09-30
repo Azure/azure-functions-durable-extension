@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
@@ -15,7 +16,8 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(TimerCodeFixProvider)), Shared]
     public class TimerCodeFixProvider : DurableFunctionsCodeFixProvider
     {
-        private const string title = "Replace with context.CreateTimer";
+        private static readonly LocalizableString FixTimerInOrchestrator = new LocalizableResourceString(nameof(Resources.FixTimerInOrchestrator), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
@@ -36,24 +38,150 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
 
             var expression = root.FindNode(diagnosticSpan, false, true);
 
-            if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
-            {
-                var contextName = GetDurableOrchestrationContextVariableName(expression);
-                var previousParameter = GetPreviousParameterValue(expression)?.ToString();
-                var newExpression = contextName + ".CreateTimer(" + contextName + ".CurrentUtcDateTime.AddMilliseconds(" + previousParameter + "))";
+            SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
+            var durableVersion = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-                context.RegisterCodeFix(
-                CodeAction.Create("Replace with (IDurableOrchestrationContext).CreateTimer()", c => ReplaceWithIdentifierAsync(context.Document, expression, c, newExpression)),
-                diagnostic);
+            if (SyntaxNodeUtils.IsInsideOrchestrator(expression) && durableVersion.Equals(DurableVersion.V2))
+            {
+                if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
+                {
+                    var newExpression = "";
+                    if (TryGetMillisecondsParameter(expression, out string milliseconds))
+                    {
+
+                        if (TryGetCancellationTokenParameter(expression, semanticModel, out string cancellationToken))
+                        {
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), " + cancellationToken + ")";
+                        }
+                        else
+                        {
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), new CancellationToken(true))";
+                        }
+                    }
+                    else if (TryGetTimespanParameter(expression, semanticModel, out string timeSpan))
+                    {
+                        if (TryGetCancellationTokenParameter(expression, semanticModel, out string cancellationToken))
+                        {
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), " + cancellationToken + ")";
+                        }
+                        else
+                        {
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), new CancellationToken(true))";
+                        }
+                    }
+
+                    context.RegisterCodeFix(
+                    CodeAction.Create(FixTimerInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, newExpression), nameof(TimerCodeFixProvider)),
+                    diagnostic);
+                }
             }
             else if (SyntaxNodeUtils.IsMarkedDeterministic(expression))
             {
                 context.RegisterCodeFix(
-                CodeAction.Create("Remove Deterministic Attribute", c => RemoveDeterministicAttributeAsync(context.Document, expression, c)), diagnostic);
+                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(TimerCodeFixProvider)), diagnostic);
             }
         }
 
-        private SyntaxNode GetPreviousParameterValue(SyntaxNode expression)
+        private bool TryGetTimespanParameter(SyntaxNode expression, SemanticModel semanticModel,  out string timeSpan)
+        {
+            if (TryGetArgumentEnumerable(expression, out IEnumerable<SyntaxNode> argumentEnumerable))
+            {
+                foreach (SyntaxNode argument in argumentEnumerable)
+                {
+                    if (TryGetParameterOfType(argument, semanticModel, "TimeSpan", out string timeSpanReference))
+                    {
+                        timeSpan = timeSpanReference;
+                        return true;
+                    }
+                }
+            }
+
+            timeSpan = null;
+            return false;
+        }
+
+        private bool TryGetCancellationTokenParameter(SyntaxNode expression, SemanticModel semanticModel, out string cancellationToken)
+        {
+            if (TryGetArgumentEnumerable(expression, out IEnumerable<SyntaxNode> argumentEnumerable))
+            {
+                foreach (SyntaxNode argument in argumentEnumerable)
+                {
+                    if (TryGetParameterOfType(argument, semanticModel, "CancellationToken", out string cancellationTokenReference))
+                    {
+                        cancellationToken = cancellationTokenReference;
+                        return true;
+                    }
+                }
+            }
+
+            cancellationToken = null;
+            return false;
+        }
+
+        private bool TryGetParameterOfType(SyntaxNode argument, SemanticModel semanticModel, string typeToCompare, out string typeReference)
+        {
+            var objectCreationExpressionEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.ObjectCreationExpression));
+            if (objectCreationExpressionEnumerable.Any())
+            {
+                var identifierNameEnumerable = objectCreationExpressionEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+                if (identifierNameEnumerable.Any())
+                {
+                    var identifierName = identifierNameEnumerable.First();
+                    var typeInfo = semanticModel.GetTypeInfo(identifierName);
+                    if (typeInfo.Type != null)
+                    {
+                        var type = typeInfo.Type.ToString();
+                        if (string.Equals(type, typeToCompare))
+                        {
+                            typeReference = objectCreationExpressionEnumerable.First().ToString();
+                            return true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                var identifierNameEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+                if (identifierNameEnumerable.Any())
+                {
+                    var identifierName = identifierNameEnumerable.First();
+                    var typeInfo = semanticModel.GetTypeInfo(identifierName);
+                    if (typeInfo.Type != null)
+                    {
+                        var type = typeInfo.Type.ToString();
+                        if (string.Equals(type, typeToCompare))
+                        {
+                            typeReference = identifierNameEnumerable.First().ToString();
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            typeReference = null;
+            return false;
+        }
+
+        private bool TryGetMillisecondsParameter(SyntaxNode expression, out string milliseconds)
+        {
+            if (TryGetArgumentEnumerable(expression, out IEnumerable<SyntaxNode> argumentEnumerable))
+            {
+                foreach (SyntaxNode argument in argumentEnumerable)
+                {
+                    var numericLiteralNodeEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.NumericLiteralExpression));
+                    if (numericLiteralNodeEnumerable.Any())
+                    {
+                        milliseconds = numericLiteralNodeEnumerable.First().ToString();
+                        return true;
+                    }
+                }
+            }
+
+            milliseconds = null;
+            return false;
+        }
+
+        private bool TryGetArgumentEnumerable(SyntaxNode expression, out IEnumerable<SyntaxNode> arguments)
         {
             var argumentListEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList));
             if (argumentListEnumerable.Any())
@@ -61,11 +189,13 @@ namespace WebJobs.Extensions.DurableTask.Analyzers
                 var argumentEnumerable = argumentListEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument));
                 if (argumentEnumerable.Any())
                 {
-                    var argumentNode = argumentEnumerable.First().ChildNodes().First();
-                    return argumentNode;
+                    arguments = argumentEnumerable;
+                    return true;
                 }
             }
-            return null;
+
+            arguments = null;
+            return false;
         }
     }
 }
