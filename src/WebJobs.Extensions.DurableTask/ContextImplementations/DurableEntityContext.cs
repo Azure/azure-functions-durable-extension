@@ -391,12 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.outbox)
             {
-                if (message is RequestMessage requestMessage)
-                {
-                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
-                }
-
-                this.outbox.Add(new OperationMessage()
+                this.outbox.Add(new LockMessage()
                 {
                     Target = target,
                     EventName = eventName,
