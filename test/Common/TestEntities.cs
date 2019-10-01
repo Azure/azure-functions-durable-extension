@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (context.OperationName)
             {
                 case "delete":
-                    context.DestructOnExit();
+                    context.DeleteState();
                     break;
 
                 case "set":
@@ -56,9 +56,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "get":
-                    if (context.IsNewlyConstructed)
+                    if (!context.HasState)
                     {
-                        context.DestructOnExit();
                         throw new InvalidOperationException("must not call get on a non-existing entity");
                     }
 
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
 
                 case "delete":
-                    context.DestructOnExit();
+                    context.DeleteState();
                     break;
 
                 default:
@@ -114,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void PhoneBookEntity([EntityTrigger(EntityName = "PhoneBook")] IDurableEntityContext context)
         {
-            if (context.IsNewlyConstructed)
+            if (!context.HasState)
             {
                 context.SetState(new JObject());
             }
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 case "clear":
                     {
-                        context.DestructOnExit();
+                        context.DeleteState();
                         break;
                     }
 
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void LauncherEntity([EntityTrigger(EntityName = "Launcher")] IDurableEntityContext context)
         {
-            var (id, done) = context.IsNewlyConstructed ? (null, false) : context.GetState<(string, bool)>();
+            var (id, done) = context.HasState ? context.GetState<(string, bool)>() : (null, false);
 
             switch (context.OperationName)
             {
@@ -198,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static void PhoneBookEntity2([EntityTrigger(EntityName = "PhoneBook2")] IDurableEntityContext context)
         {
-            if (context.IsNewlyConstructed)
+            if (!context.HasState)
             {
                 context.SetState(new Dictionary<string, decimal>());
             }
@@ -236,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 case "clear":
                     {
-                        context.DestructOnExit();
+                        context.DeleteState();
                         break;
                     }
 
@@ -257,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task BlobBackedTextStoreEntity(
             [EntityTrigger(EntityName = "BlobBackedTextStore")] IDurableEntityContext context)
         {
-            if (context.IsNewlyConstructed)
+            if (!context.HasState)
             {
                 // try to load state from existing blob
                 var currentFileContent = await TestHelpers.LoadStringFromTextBlobAsync(
@@ -287,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         context.EntityKey, state.ToString());
 
                     // then, destruct this entity (and all of its state)
-                    context.DestructOnExit();
+                    context.DeleteState();
                     break;
 
                 default:
@@ -299,7 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             [EntityTrigger(EntityName = "HttpEntity")] IDurableEntityContext context,
             ILogger log)
         {
-            if (context.IsNewlyConstructed)
+            if (!context.HasState)
             {
                 context.SetState(new Dictionary<string, int>());
             }

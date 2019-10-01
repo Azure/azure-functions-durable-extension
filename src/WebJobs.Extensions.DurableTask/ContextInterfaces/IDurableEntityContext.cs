@@ -35,11 +35,6 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         string OperationName { get; }
 
-        /// <summary>
-        /// Whether this entity is freshly constructed, i.e. did not exist prior to this operation being called.
-        /// </summary>
-        bool IsNewlyConstructed { get; }
-
 #if NETSTANDARD2_0
         /// <summary>
         /// Contains function invocation context to assist with dependency injection at Entity construction time.
@@ -48,7 +43,13 @@ namespace Microsoft.Azure.WebJobs
 #endif
 
         /// <summary>
+        /// Whether this entity has a state.
+        /// </summary>
+        bool HasState { get; }
+
+        /// <summary>
         /// Gets the current state of this entity, for reading and/or updating.
+        /// If this entity has no state yet, creates it.
         /// </summary>
         /// <typeparam name="TState">The JSON-serializable type of the entity state.</typeparam>
         /// <param name="initializer">Provides an initial value to use for the state, instead of default(<typeparamref name="TState"/>).</param>
@@ -61,6 +62,11 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="state">The JSON-serializable state of the entity.</param>
         void SetState(object state);
+
+        /// <summary>
+        /// Deletes the state of this entity.
+        /// </summary>
+        void DeleteState();
 
         /// <summary>
         /// Gets the input for this operation, as a deserialized value.
@@ -89,11 +95,6 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="result">the result to return.</param>
         void Return(object result);
-
-        /// <summary>
-        /// Deletes this entity after this operation completes.
-        /// </summary>
-        void DestructOnExit();
 
         /// <summary>
         /// Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).

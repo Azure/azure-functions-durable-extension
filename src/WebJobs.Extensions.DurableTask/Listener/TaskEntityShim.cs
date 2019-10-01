@@ -271,9 +271,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set context for operation
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
-            this.context.IsNewlyConstructed = !this.context.State.EntityExists;
-            this.context.State.EntityExists = true;
-            this.context.DestructOnExit = false;
 
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
@@ -314,7 +311,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // read and clear context
             var response = this.context.CurrentOperationResponse;
-            var destructOnExit = this.context.DestructOnExit;
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
 
@@ -352,15 +348,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var guid = request.Id.ToString();
                 var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
                 this.context.SendResponseMessage(target, guid, jresponse, !response.IsException);
-            }
-
-            // destruct the entity if the application code requested it
-            if (destructOnExit)
-            {
-                this.context.State.EntityExists = false;
-                this.context.State.EntityState = null;
-                this.context.CurrentState = null;
-                this.context.StateWasAccessed = false;
             }
         }
 
