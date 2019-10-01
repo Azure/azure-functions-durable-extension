@@ -113,11 +113,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var receiverId = "B";
 
             var senderSorter = new MessageSorter();
+            var now = DateTime.UtcNow;
 
             // last message is sent after an interval exceeding the reorder window
-            var message1 = Send(senderId, receiverId, "1", senderSorter, DateTime.UtcNow);
-            var message2 = Send(senderId, receiverId, "2", senderSorter, DateTime.UtcNow);
-            var message3 = Send(senderId, receiverId, "3", senderSorter, DateTime.UtcNow + ReorderWindow);
+            var message1 = Send(senderId, receiverId, "1", senderSorter, now);
+            var message2 = Send(senderId, receiverId, "2", senderSorter, now + TimeSpan.FromTicks(1));
+            var message3 = Send(senderId, receiverId, "3", senderSorter, now + TimeSpan.FromTicks(2) + ReorderWindow);
 
             List<RequestMessage> batch;
             MessageSorter receiverSorter = new MessageSorter();
