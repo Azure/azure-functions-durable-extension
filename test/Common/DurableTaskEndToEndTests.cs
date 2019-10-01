@@ -2925,11 +2925,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// TODO: This test is flakey in Functions V1.
         /// </summary>
         [Theory]
-#if NETCOREAPP2_0
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-#else
-        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
-#endif
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_BasicObjects(bool extendedSessions)

@@ -84,8 +84,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // an operation that adds a message to the chat
             public DateTime Post(string content)
             {
-                var timestamp = DateTime.UtcNow;
+                // create a monotonically increasing timestamp
+                var lastPost = this.ChatEntries.LastOrDefault().Key;
+                var timestamp = new DateTime(Math.Max(DateTime.UtcNow.Ticks, lastPost.Ticks + 1));
+
                 this.ChatEntries.Add(timestamp, content);
+
                 return timestamp;
             }
 
