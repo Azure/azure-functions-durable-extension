@@ -34,7 +34,7 @@ namespace RideSharing
         {
             // we initialize the entity explicitly here (instead of relying on the implicit default constructor)
             // so we can set the user id to match the entity key
-            if (context.IsNewlyConstructed)
+            if (!context.HasState)
             {
                 context.SetState(new UserEntity()
                 {

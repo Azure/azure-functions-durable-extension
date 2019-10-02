@@ -45,8 +45,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsNewlyConstructed { get; set; }
 
-        internal bool DestructOnExit { get; set; }
-
         string IDurableEntityContext.EntityName => this.self.EntityName;
 
         string IDurableEntityContext.EntityKey => this.self.EntityKey;
@@ -70,12 +68,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        bool IDurableEntityContext.IsNewlyConstructed
+        bool IDurableEntityContext.HasState
         {
             get
             {
                 this.ThrowIfInvalidAccess();
-                return this.IsNewlyConstructed;
+                return this.State.EntityExists;
             }
         }
 
@@ -145,10 +143,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        void IDurableEntityContext.DestructOnExit()
+        void IDurableEntityContext.DeleteState()
         {
             this.ThrowIfInvalidAccess();
-            this.DestructOnExit = true;
+
+            this.StateWasAccessed = false;
+            this.CurrentState = null;
+            this.State.EntityExists = false;
+            this.State.EntityState = null;
         }
 
         TInput IDurableEntityContext.GetInput<TInput>()
@@ -193,6 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.StateWasAccessed = true;
+                this.State.EntityExists = true;
             }
 
             return (TState)this.CurrentState;
@@ -226,6 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.CurrentState = o;
             this.StateWasAccessed = true;
+            this.State.EntityExists = true;
         }
 
         internal bool TryWriteback(out ResponseMessage serializationErrorMessage)

@@ -130,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public void Delete()
             {
-                Entity.Current.DestructOnExit();
+                Entity.Current.DeleteState();
             }
         }
 
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public void Delete()
             {
-                Entity.Current.DestructOnExit();
+                Entity.Current.DeleteState();
             }
         }
     }
