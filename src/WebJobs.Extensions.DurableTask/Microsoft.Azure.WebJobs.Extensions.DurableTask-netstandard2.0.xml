@@ -249,7 +249,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.TokenSource">
             <summary>
-            Information needed to get a token for a specified service.
+            Mechanism for attaching an OAuth token to the request.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.AsynchronousPatternEnabled">
@@ -670,9 +670,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
-            Provides functionality available to sources of tokens.
-            Custom implementation of this interface must include the use
-            of [DataContract] and [DataMember] for serialization.
+            Implementations of this interface can be used to provide authorization tokens for outbound HTTP requests.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource.GetTokenAsync">
@@ -2646,6 +2644,30 @@
         <member name="M:Microsoft.Azure.WebJobs.EntityId.CompareTo(System.Object)">
             <inheritdoc/>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.EntitySchedulerException">
+            <summary>
+            Exception used to describe various issues encountered by the entity scheduler.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntitySchedulerException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.EntitySchedulerException"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntitySchedulerException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes an new instance of the <see cref="T:Microsoft.Azure.WebJobs.EntitySchedulerException"/> class.
+            </summary>
+            <param name="errorMessage">The message that describes the error.</param>
+            <param name="innerException">The exception that was caught.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.EntitySchedulerException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.EntitySchedulerException"/> class with serialized data.
+            </summary>
+            <param name="info">The System.Runtime.Serialization.SerializationInfo that holds the serialized object data about the exception being thrown.</param>
+            <param name="context">The System.Runtime.Serialization.StreamingContext that contains contextual information about the source or destination.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.EntityStateResponse`1">
             <summary>
             The response returned by <see cref="M:Microsoft.Azure.WebJobs.IDurableEntityClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.EntityId,System.String,System.String)"/>.
@@ -2666,6 +2688,30 @@
             <summary>
             The exception that is thrown when application code violates the locking rules.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.OperationErrorException">
+            <summary>
+            Exception result representing an operation that failed, in case
+            the original exception is not serializable, or out-of-proc.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.OperationErrorException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.OperationErrorException"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.OperationErrorException.#ctor(System.String)">
+            <summary>
+            Initializes an new instance of the <see cref="T:Microsoft.Azure.WebJobs.OperationErrorException"/> class.
+            </summary>
+            <param name="errorMessage">The message that describes the error.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.OperationErrorException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.OperationErrorException"/> class with serialized data.
+            </summary>
+            <param name="info">The System.Runtime.Serialization.SerializationInfo that holds the serialized object data about the exception being thrown.</param>
+            <param name="context">The System.Runtime.Serialization.StreamingContext that contains contextual information about the source or destination.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableEntityProxyExtensions">
             <summary>

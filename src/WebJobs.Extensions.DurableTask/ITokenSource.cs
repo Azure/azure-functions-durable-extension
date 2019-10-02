@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Provides functionality available to sources of tokens.
-    /// Custom implementation of this interface must include the use
-    /// of [DataContract] and [DataMember] for serialization.
+    /// Implementations of this interface can be used to provide authorization tokens for outbound HTTP requests.
     /// </summary>
     public interface ITokenSource
     {
