@@ -171,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.StateWasAccessed)
             {
-                TState defaultValue = default(TState);
+                TState defaultValue = default;
 
                 if (initializer != null)
                 {
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (this.State.EntityState != null)
                 {
-                    this.CurrentState = this.GetPopulatedState<TState>(defaultValue, initializer != null);
+                    this.CurrentState = this.GetPopulatedState(defaultValue, initializer != null);
                 }
                 else
                 {
@@ -205,10 +205,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                if (usedTypeInitializer)
+                if (usedTypeInitializer && typeof(TState).IsClass)
                 {
                     // Only populate serialized state, as some fields may be populated by the initializer
-                    // using dependency injection.
+                    // using dependency injection. Note that we can do this for classes but not for structs.
                     JsonConvert.PopulateObject(this.State.EntityState, initialValue);
                     return initialValue;
                 }
