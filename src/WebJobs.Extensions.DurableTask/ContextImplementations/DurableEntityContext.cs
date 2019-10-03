@@ -169,58 +169,86 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.StateWasAccessed)
+            if (this.StateWasAccessed)
             {
-                TState defaultValue = default;
+                return (TState)this.CurrentState;
+            }
 
+            TState result;
+
+            if (this.State.EntityExists)
+            {
+                try
+                {
+                    result = JsonConvert.DeserializeObject<TState>(this.State.EntityState);
+                }
+                catch (Exception e)
+                {
+                    throw new EntitySchedulerException($"Failed to deserialize entity state: {e.Message}", e);
+                }
+            }
+            else
+            {
                 if (initializer != null)
                 {
                     try
                     {
-                        defaultValue = initializer();
+                        result = initializer();
                     }
                     catch (Exception e)
                     {
                         throw new EntitySchedulerException($"Failed to initialize entity state: {e.Message}", e);
                     }
                 }
-
-                if (this.State.EntityState != null)
-                {
-                    this.CurrentState = this.GetPopulatedState(defaultValue, initializer != null);
-                }
                 else
                 {
-                    this.CurrentState = defaultValue;
+                    result = default(TState);
                 }
-
-                this.StateWasAccessed = true;
-                this.State.EntityExists = true;
             }
 
-            return (TState)this.CurrentState;
+            this.CurrentState = result;
+            this.StateWasAccessed = true;
+            this.State.EntityExists = true;
+            return result;
         }
 
-        private TState GetPopulatedState<TState>(TState initialValue, bool usedTypeInitializer)
+        internal TState GetStateWithInjectedDependencies<TState>(Func<TState> constructor)
+            where TState : class
         {
+            this.ThrowIfInvalidAccess();
+
+            if (this.StateWasAccessed)
+            {
+                return (TState)this.CurrentState;
+            }
+
+            TState result;
+
             try
             {
-                if (usedTypeInitializer && typeof(TState).IsClass)
-                {
-                    // Only populate serialized state, as some fields may be populated by the initializer
-                    // using dependency injection. Note that we can do this for classes but not for structs.
-                    JsonConvert.PopulateObject(this.State.EntityState, initialValue);
-                    return initialValue;
-                }
-                else
-                {
-                    return JsonConvert.DeserializeObject<TState>(this.State.EntityState);
-                }
+                result = constructor();
             }
             catch (Exception e)
             {
-                throw new EntitySchedulerException($"Failed to deserialize entity state: {e.Message}", e);
+                throw new EntitySchedulerException($"Failed to construct entity state object: {e.Message}", e);
             }
+
+            if (this.State.EntityExists)
+            {
+                try
+                {
+                    JsonConvert.PopulateObject(this.State.EntityState, result);
+                }
+                catch (Exception e)
+                {
+                    throw new EntitySchedulerException($"Failed to populate entity state from JSON: {e.Message}", e);
+                }
+            }
+
+            this.CurrentState = result;
+            this.StateWasAccessed = true;
+            this.State.EntityExists = true;
+            return result;
         }
 
         void IDurableEntityContext.SetState(object o)
