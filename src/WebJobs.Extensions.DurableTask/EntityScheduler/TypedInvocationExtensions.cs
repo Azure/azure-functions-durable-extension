@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs
         /// output bindings. Parameters must match the order in the constructor after ignoring parameters populated on
         /// constructor via dependency injection.</param>
         public static async Task DispatchAsync<T>(this IDurableEntityContext context, params object[] constructorParameters)
+            where T : class
         {
             MethodInfo method = FindMethodForContext<T>(context);
 
@@ -60,10 +61,12 @@ namespace Microsoft.Azure.WebJobs
             }
 
 #if NETSTANDARD2_0
-            T state = context.GetState(() => (T)context.FunctionBindingContext.CreateObjectInstance(typeof(T), constructorParameters));
+            T Constructor() => (T)context.FunctionBindingContext.CreateObjectInstance(typeof(T), constructorParameters);
 #else
-            T state = context.GetState(() => (T)Activator.CreateInstance(typeof(T)));
+            T Constructor() => (T)Activator.CreateInstance(typeof(T), constructorParameters);
 #endif
+
+            var state = ((Extensions.DurableTask.DurableEntityContext)context).GetStateWithInjectedDependencies(Constructor);
 
             object result = method.Invoke(state, args);
 
