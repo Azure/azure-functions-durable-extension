@@ -34,6 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TaskHubName = client.TaskHubName,
                 CreationUrls = this.config.HttpApiHandler.GetInstanceCreationLinks(),
                 ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
+                BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
+                RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
             };
             return JsonConvert.SerializeObject(payload);
         }
@@ -86,6 +88,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("managementUrls")]
             public HttpManagementPayload ManagementUrls { get; set; }
+
+            [JsonProperty("baseUrl")]
+            public string BaseUrl { get; set; }
+
+            [JsonProperty("requiredQueryStringParameters")]
+            public string RequiredQueryStringParameters { get; set; }
         }
     }
 }

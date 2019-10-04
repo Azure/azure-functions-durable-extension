@@ -112,11 +112,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void Rehydrate(string serializedInput)
         {
-            if (this.GetFunctionInfo().IsOutOfProc)
-            {
-                throw new NotImplementedException("out-of-proc entity support is not implemented yet");
-            }
-
             if (serializedInput == null)
             {
                 // this instance was automatically started by DTFx

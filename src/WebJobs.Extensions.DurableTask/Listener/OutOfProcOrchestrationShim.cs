@@ -125,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             break;
                         case AsyncActionType.CallEntity:
                             var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(this.context.CallEntityAsync(entityId, action.ExternalEventName, action.Input));
+                            tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
                             break;
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
@@ -196,6 +196,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("httpRequest")]
             internal DurableHttpRequest HttpRequest { get; set; }
+
+            [JsonProperty("operation")]
+            internal string EntityOperation { get; set; }
         }
     }
 }
