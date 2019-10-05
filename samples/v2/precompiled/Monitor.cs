@@ -94,6 +94,7 @@ namespace VSSample
             message.Body = $"The weather's clear outside! Go take a walk!";
         }
 
+        [Deterministic]
         private static void VerifyRequest(MonitorRequest request)
         {
             if (request == null)

@@ -27,15 +27,15 @@ namespace VSSample.Tests
             var loggerMock = new Mock<ILogger>();
 
             // Mock DurableOrchestrationClientBase
-            var durableOrchestrationClientBaseMock = new Mock<IDurableOrchestrationClient>();
+            var clientMock = new Mock<IDurableClient>();
 
             // Mock StartNewAsync method
-            durableOrchestrationClientBaseMock.
-                Setup(x => x.StartNewAsync(functionName, It.IsAny<object>())).
+            clientMock.
+                Setup(x => x.StartNewAsync(functionName, It.IsAny<string>(), It.IsAny<object>())).
                 ReturnsAsync(instanceId);
 
             // Mock CreateCheckStatusResponse method
-            durableOrchestrationClientBaseMock
+            clientMock
                 .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), instanceId))
                 .Returns(new HttpResponseMessage
                 {
@@ -54,7 +54,7 @@ namespace VSSample.Tests
                     Content = new StringContent("{}", Encoding.UTF8, "application/json"),
                     RequestUri = new Uri("http://localhost:7071/orchestrators/E1_HelloSequence"),
                 },
-                durableOrchestrationClientBaseMock.Object,
+                clientMock.Object,
                 functionName,
                 loggerMock.Object);
 

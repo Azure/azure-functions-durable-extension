@@ -15,7 +15,7 @@ module HttpStart =
 
   [<FunctionName("HttpStart")>]
   let Run([<HttpTrigger(AuthorizationLevel.Function, "post", Route = "orchestrators/{functionName}")>] req: HttpRequestMessage,
-          [<OrchestrationClient>] starter: IDurableOrchestrationClient,
+          [<DurableClient>] starter: IDurableOrchestrationClient,
           functionName: string,
           log: ILogger) =
     task {

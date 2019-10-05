@@ -28,23 +28,22 @@ namespace VSSample
             string subscriptionId = vmInfo.SubscriptionId;
             string resourceGroup = vmInfo.ResourceGroup;
 
-            var managedIdentityTokenSource = new ManagedIdentityTokenSource("https://management.core.windows.net");
+            // Implicitly uses the Azure AD identity of the current app to make an HTTP call to Azure Resource Manager
+            var managedIdentity = new ManagedIdentityTokenSource("https://management.core.windows.net");
 
             // List all of the VMs in my subscription and add them to a list.
-            // If running locally, the first call might be very slow because it takes a long time for 
-            // the AppAuthentication library to fetch a non-cached token.
-            DurableHttpRequest listRequest = new DurableHttpRequest(
+            DurableHttpRequest request = new DurableHttpRequest(
                 HttpMethod.Get,
-                new Uri($"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Compute/virtualMachines?api-version={apiVersion}"),
-                tokenSource: managedIdentityTokenSource);
-            DurableHttpResponse listAllResponse = await context.CallHttpAsync(listRequest);
-            if (listAllResponse.StatusCode != HttpStatusCode.OK)
+                new Uri($"https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Compute/virtualMachines?api-version=2018-06-01"),
+                tokenSource: managedIdentity);
+            DurableHttpResponse response = await context.CallHttpAsync(request);
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                throw new ArgumentException($"Failed to list VMs: {listAllResponse.StatusCode}: {listAllResponse.Content}");
+                throw new ArgumentException($"Failed to list VMs: {response.StatusCode}: {response.Content}");
             }
 
             // Deserializes content to just get the names of the VMs in the subscription
-            JObject jObject = JsonConvert.DeserializeObject<JObject>(listAllResponse.Content);
+            JObject jObject = JsonConvert.DeserializeObject<JObject>(response.Content);
             var vmNamesList = new List<string>();
             foreach (JToken value in jObject["value"])
             {
@@ -58,7 +57,7 @@ namespace VSSample
                 var restartRequest = new DurableHttpRequest(
                     HttpMethod.Post, 
                     new Uri($"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Compute/virtualMachines/{vmName}/restart?api-version={apiVersion}"),
-                    tokenSource: managedIdentityTokenSource);
+                    tokenSource: managedIdentity);
                 DurableHttpResponse restartResponse = await context.CallHttpAsync(restartRequest);
                 if (restartResponse.StatusCode != HttpStatusCode.OK)
                 {
