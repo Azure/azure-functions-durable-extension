@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29324.140
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers", "src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj", "{BB8AA94B-0967-424D-BC4A-6912942B9412}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers", "WebJobs.Extensions.DurableTask.Analyzers.csproj", "{BB8AA94B-0967-424D-BC4A-6912942B9412}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebJobs.Extensions.DurableTask.Analyzers.Vsix", "src\WebJobs.Extensions.DurableTask.Analyzers.Vsix\WebJobs.Extensions.DurableTask.Analyzers.Vsix.csproj", "{40044F63-396E-4480-BEEE-B06908579402}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebJobs.Extensions.DurableTask.Analyzers.Vsix", "..\WebJobs.Extensions.DurableTask.Analyzers.Vsix\WebJobs.Extensions.DurableTask.Analyzers.Vsix.csproj", "{40044F63-396E-4480-BEEE-B06908579402}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test", "test\WebJobs.Extensions.DurableTask.Analyzers.Test\WebJobs.Extensions.DurableTask.Analyzers.Test.csproj", "{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test", "..\..\test\WebJobs.Extensions.DurableTask.Analyzers.Test\WebJobs.Extensions.DurableTask.Analyzers.Test.csproj", "{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask", "src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{129FA662-F006-45EA-833D-1F4F01C4B806}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask", "..\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{129FA662-F006-45EA-833D-1F4F01C4B806}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BED112A8-9D92-4B23-8FC7-5DBBD42735FE}"
 EndProject
