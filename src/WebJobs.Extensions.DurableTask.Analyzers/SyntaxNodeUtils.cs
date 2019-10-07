@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetFunctionName(SyntaxNode functionAttribute, out string functionName)
+        internal static bool TryGetFunctionName(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
         {
             var attributeArgumentListSyntax = ((AttributeSyntax)functionAttribute).ArgumentList;
             if (attributeArgumentListSyntax != null)
@@ -73,12 +73,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var attributeArgumentSyntax = attributeArgumentListSyntax.Arguments.FirstOrDefault();
                 if (attributeArgumentSyntax != null)
                 {
-                    functionName = attributeArgumentSyntax.ToString().Trim('"');
+                    attributeArgument = attributeArgumentSyntax;
                     return true;
                 }
             }
 
-            functionName = null;
+            attributeArgument = null;
             return false;
         }
 

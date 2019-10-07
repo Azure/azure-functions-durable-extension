@@ -161,7 +161,7 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>DispatchAsync must be called with the entity class it's used in.</value>
   </data>
   <data name="DispatchClassNameAnalyzerIncorrectTypeMessageFormat" xml:space="preserve">
-    <value>DispatchAsync must be called with the entity class it's used in.</value>
+    <value>DispatchAsync must be called with the entity class it's used in but was instead called with '{0}'</value>
   </data>
   <data name="DispatchClassNameAnalyzerMessageFormat" xml:space="preserve">
     <value>DispatchAsync was used with '{0}' but must be called with the entity class '{1}' it's used in.</value>

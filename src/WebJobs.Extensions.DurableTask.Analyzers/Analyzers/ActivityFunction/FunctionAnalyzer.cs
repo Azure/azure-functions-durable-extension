@@ -135,8 +135,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out string functionName))
+                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out SyntaxNode attributeArgument))
                     {
+                        var functionName = attributeArgument.ToString().Trim('"');
                         if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attributeExpression, context, out SyntaxNode inputTypeNode))
                         {
                             ITypeSymbol inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;

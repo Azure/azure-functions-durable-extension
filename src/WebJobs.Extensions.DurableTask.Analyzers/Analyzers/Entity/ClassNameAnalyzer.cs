@@ -40,8 +40,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out string functionName))
+                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out SyntaxNode attributeArgument))
                     {
+                        var functionName = attributeArgument.ToString().Trim('"');
                         if (SyntaxNodeUtils.TryGetClassSymbol(attributeExpression, context.SemanticModel, out INamedTypeSymbol classSymbol))
                         {
                             var className = classSymbol.Name.ToString();
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                             if (!ClassNameMatchesFunctionName(classSymbol, functionName))
                             {
                                 var diagnosticClassName = Diagnostic.Create(Rule, classSymbol.Locations[0], className, functionName);
-                                var diagnosticAttribute = Diagnostic.Create(Rule, functionAttribute.GetLocation(), className, functionName);
+                                var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), className, functionName);
 
                                 context.ReportDiagnostic(diagnosticClassName);
                                 context.ReportDiagnostic(diagnosticAttribute);
