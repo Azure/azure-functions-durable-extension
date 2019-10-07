@@ -17,15 +17,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString IncorrectTypeMessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerIncorrectTypeMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Entity;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
-        private static DiagnosticDescriptor IncorrectTypeRule = new DiagnosticDescriptor(DiagnosticId, Title, IncorrectTypeMessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, IncorrectTypeRule); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -44,26 +42,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     if (TryGetTypeArgumentList(expression, out SyntaxNode typeArgumentList))
                     {
-                        if(!TryGetIdentifierName(out SyntaxNode identifierName, typeArgumentList))
+                        if (SyntaxNodeUtils.TryGetClassSymbol(expression, context.SemanticModel, out INamedTypeSymbol classSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(IncorrectTypeRule, typeArgumentList.GetLocation(), typeArgumentList);
-
-                            context.ReportDiagnostic(diagnostic);
-
-                            return;
-                        }
-                        else
-                        {
-                            if (SyntaxNodeUtils.TryGetClassSymbol(expression, context.SemanticModel, out INamedTypeSymbol classSymbol))
+                            var className = classSymbol.Name.ToString();
+                            var identifierName = typeArgumentList.ChildNodes().First();
+                            if (!string.Equals(className, identifierName.ToString()))
                             {
-                                var className = classSymbol.Name.ToString();
+                                var diagnostic = Diagnostic.Create(Rule, identifierName.GetLocation(), identifierName, className);
 
-                                if (!string.Equals(className, identifierName.ToString()))
-                                {
-                                    var diagnostic = Diagnostic.Create(Rule, identifierName.GetLocation(), identifierName, className);
-
-                                    context.ReportDiagnostic(diagnostic);
-                                }
+                                context.ReportDiagnostic(diagnostic);
                             }
                         }
                     }
@@ -81,19 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             typeArgumentList = null;
-            return false;
-        }
-
-        private bool TryGetIdentifierName(out SyntaxNode identifierName, SyntaxNode typeArgumentList)
-        {
-            var identifierNameEnumerable = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-            if (identifierNameEnumerable.Any())
-            {
-                identifierName = identifierNameEnumerable.First();
-                return true;
-            }
-
-            identifierName = null;
             return false;
         }
     }

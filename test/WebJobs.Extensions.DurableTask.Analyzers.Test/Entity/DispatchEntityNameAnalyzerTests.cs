@@ -106,7 +106,7 @@ using Microsoft.Extensions.Logging;
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = Resources.DispatchClassNameAnalyzerIncorrectTypeMessageFormat,
+                Message = Resources.DispatchClassNameAnalyzerMessageFormat,
                 Severity = severity,
                 Locations =
                  new[] {

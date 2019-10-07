@@ -4,9 +4,11 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -19,11 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
             get { return ImmutableArray.Create(ClassNameAnalyzer.DiagnosticId); }
-        }
-
-        public sealed override FixAllProvider GetFixAllProvider()
-        {
-            return WellKnownFixAllProviders.BatchFixer;
         }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -40,9 +37,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var className = "nameof(" + classSymbol.Name.ToString() + ")";
 
                 context.RegisterCodeFix(
-                CodeAction.Create(FixEntityFunctionName.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(ClassNameCodeFixProvider)),
+                CodeAction.Create(FixEntityFunctionName.ToString(), cancellationToken => ReplaceAttributeArgumentAsync(context.Document, identifierNode, cancellationToken, className), nameof(ClassNameCodeFixProvider)),
                 diagnostic);
             }
+        }
+
+        protected async Task<Document> ReplaceAttributeArgumentAsync(Document document, SyntaxNode attributeArgumentNode, CancellationToken cancellationToken, string expression)
+        {
+            var root = await document.GetSyntaxRootAsync(cancellationToken);
+            var newRoot = root.ReplaceNode(attributeArgumentNode, SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression(expression)));
+            return document.WithSyntaxRoot(newRoot);
         }
     }
 }
