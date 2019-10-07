@@ -188,15 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in but was instead called with &apos;{0}&apos;.
-        /// </summary>
-        public static string DispatchClassNameAnalyzerIncorrectTypeMessageFormat {
-            get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerIncorrectTypeMessageFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be called with the entity class &apos;{1}&apos; it&apos;s used in..
         /// </summary>
         public static string DispatchClassNameAnalyzerMessageFormat {
