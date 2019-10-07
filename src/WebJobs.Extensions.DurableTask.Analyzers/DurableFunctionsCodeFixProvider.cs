@@ -45,11 +45,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return null;
         }
 
-        protected static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out String variableName)
+        protected static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out string variableName)
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
+                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).FirstOrDefault();
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
@@ -58,13 +58,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         if (attribute.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
                         {
-                            var identifierName = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                            var identifierName = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault()?.ToString();
                             if (string.Equals(identifierName, "IDurableOrchestrationContext") || string.Equals(identifierName, "DurableOrchestrationContext") || string.Equals(identifierName, "DurableOrchestrationContextBase"))
                             {
-                                var identifierToken = parameter.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken));
-                                if (identifierToken.Any())
+                                //A parameter will always have an IdentifierToken
+                                var identifierToken = parameter.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).First().ToString();
+                                if (!string.Equals(identifierToken, ""))
                                 {
-                                    variableName = identifierToken.First().ToString();
+                                    variableName = identifierToken;
                                     return true;
                                 }
                             }

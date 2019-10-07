@@ -9,7 +9,7 @@ using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 {
-    [TestClass]
+    //[TestClass]
     public class EnvironmentVariableAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = EnvironmentVariableAnalyzer.DiagnosticId;

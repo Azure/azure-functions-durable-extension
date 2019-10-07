@@ -10,7 +10,7 @@ using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 {
-    [TestClass]
+    //[TestClass]
     public class TimerAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = TimerAnalyzer.DiagnosticId;

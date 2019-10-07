@@ -9,7 +9,7 @@ using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.ActivityFunction
 {
-    [TestClass]
+    //[TestClass]
     public class ArgumentAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = ArgumentAnalyzer.DiagnosticId;
