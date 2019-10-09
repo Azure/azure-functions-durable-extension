@@ -45,6 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         if (SyntaxNodeUtils.TryGetClassSymbol(expression, context.SemanticModel, out INamedTypeSymbol classSymbol))
                         {
                             var className = classSymbol.Name.ToString();
+                            //TypeArgumentList will always have a child node
                             var identifierName = typeArgumentList.ChildNodes().First();
                             if (!string.Equals(className, identifierName.ToString()))
                             {

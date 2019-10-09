@@ -639,6 +639,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; violates the orchestrator deterministic code constraint. Consider using (DurableOrchestrationContext).CreateTimer&lt;T&gt;(DateTime fireAt, T state, CancellationToken cancelToken).
+        /// </summary>
+        public static string V1TimerAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("V1TimerAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient..
         /// </summary>
         public static string V2ClientAnalyzerDescription {

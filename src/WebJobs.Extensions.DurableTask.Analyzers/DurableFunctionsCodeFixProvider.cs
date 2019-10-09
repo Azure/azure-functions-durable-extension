@@ -4,7 +4,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
-using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;

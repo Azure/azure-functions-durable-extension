@@ -311,6 +311,9 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="V1OrchestratorContextAnalyzerTitle" xml:space="preserve">
     <value>OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase.</value>
   </data>
+  <data name="V1TimerAnalyzerMessageFormat" xml:space="preserve">
+    <value>'{0}' violates the orchestrator deterministic code constraint. Consider using (DurableOrchestrationContext).CreateTimer&lt;T&gt;(DateTime fireAt, T state, CancellationToken cancelToken)</value>
+  </data>
   <data name="V2ClientAnalyzerDescription" xml:space="preserve">
     <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
   </data>

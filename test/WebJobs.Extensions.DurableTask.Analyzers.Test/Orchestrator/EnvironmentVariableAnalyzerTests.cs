@@ -9,6 +9,7 @@ using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 {
+    //Disabled test. Environment class doesn't seem to work correctly with the roslyn test helper.
     //[TestClass]
     public class EnvironmentVariableAnalyzerTests : CodeFixVerifier
     {
@@ -262,10 +263,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     namespace VSSample
     {
         [Deterministic]
-        public int testDeterministicMethod()
+        public void testDeterministicMethod()
         {
-            Environment.GetEnvironmentVariables();
-            return 5;   
+            Environment.GetEnvironmentVariables(); 
         }
     }";
             var expected = new DiagnosticResult

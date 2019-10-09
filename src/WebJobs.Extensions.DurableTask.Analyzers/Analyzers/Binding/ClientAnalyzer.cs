@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, severity, isEnabledByDefault: true, description: V1Description);
         private static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: V2Description);
 
-        private DurableVersion version;
+        private static DurableVersion version;
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(V1Rule, V2Rule); } }
 
