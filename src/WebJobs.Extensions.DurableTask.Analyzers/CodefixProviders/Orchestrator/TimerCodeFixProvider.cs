@@ -51,22 +51,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                         if (TryGetCancellationTokenParameter(expression, semanticModel, out string cancellationToken))
                         {
-                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), " + cancellationToken + ")";
+                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), " + cancellationToken + ")";
                         }
                         else
                         {
-                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), new CancellationToken(true))";
+                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), CancellationToken.None)";
                         }
                     }
                     else if (TryGetTimespanParameter(expression, semanticModel, out string timeSpan))
                     {
                         if (TryGetCancellationTokenParameter(expression, semanticModel, out string cancellationToken))
                         {
-                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), " + cancellationToken + ")";
+                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), " + cancellationToken + ")";
                         }
                         else
                         {
-                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), new CancellationToken(true))";
+                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), CancellationToken.None)";
                         }
                     }
 
