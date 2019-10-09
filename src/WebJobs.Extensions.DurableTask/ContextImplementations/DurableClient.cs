@@ -60,16 +60,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableOrchestrationClient.TaskHubName => this.hubName;
 
         /// <inheritdoc />
-        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool failsIfInstanceFailed)
+        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure)
         {
-            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, failsIfInstanceFailed);
+            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, returnInternalServerErrorOnFailure);
         }
 
         /// <inheritdoc />
-        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool failsIfInstanceFailed)
+        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
-            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, failsIfInstanceFailed);
+            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, returnInternalServerErrorOnFailure);
             return ConvertHttpResponseMessage(responseMessage);
         }
 
@@ -677,9 +677,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             DurableClientAttribute attribute,
-            bool failsIfInstanceFailed = false)
+            bool returnInternalServerErrorOnFailure = false)
         {
-            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, failsIfInstanceFailed);
+            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
         // Get a data structure containing status, terminate and send external event HTTP.

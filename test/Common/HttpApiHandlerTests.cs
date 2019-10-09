@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.InstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey&failsIfInstanceFailed=False",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False",
                 status["statusQueryGetUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey&failsIfInstanceFailed=False",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey&failsIfInstanceFailed=False",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey&failsIfInstanceFailed=False",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey&returnInternalServerErrorOnFailure=False",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey&failsIfInstanceFailed=False",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey&returnInternalServerErrorOnFailure=False",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var status = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal(status["id"], TestConstants.RandomInstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey&failsIfInstanceFailed=False",
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False",
                 status["statusQueryGetUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, HttpStatusCode.InternalServerError)]
         [InlineData(false, HttpStatusCode.OK)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task HandleGetStatusRequestAsync_Failed_Orchestration_Config_Response_Code(bool failsIfInstanceFailed, HttpStatusCode statusCode)
+        public async Task HandleGetStatusRequestAsync_Failed_Orchestration_Config_Response_Code(bool returnInternalServerErrorOnFailure, HttpStatusCode statusCode)
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
             {
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/" + instanceId;
-            getStatusRequestUriBuilder.Query = $"failsIfInstanceFailed={failsIfInstanceFailed}";
+            getStatusRequestUriBuilder.Query = $"returnInternalServerErrorOnFailure={returnInternalServerErrorOnFailure}";
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(
                 new HttpRequestMessage
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     : new StringContent("\"TestContent\""),
             };
 
-            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey&failsIfInstanceFailed=False";
+            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False";
             var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
@@ -768,7 +768,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     : new StringContent("\"TestContent\""),
             };
 
-            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey&failsIfInstanceFailed=False";
+            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False";
             var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
