@@ -49,6 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
         private const string PageSizeParameter = "top";
+        private const string ReturnInternalServerErrorOnFailure = "returnInternalServerErrorOnFailure";
 
         // API Routes
         private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
@@ -68,9 +69,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
-            DurableClientAttribute attribute)
+            DurableClientAttribute attribute,
+            bool returnInternalServerErrorOnFailure = false)
         {
-            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
             return this.CreateCheckStatusResponseMessage(
                 request,
                 httpManagementPayload.Id,
@@ -108,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return routeValueDictionary;
         }
 
-        // /instances/{instanceId}/{operation}
+        // /instances/{instanceId?}/{operation?}
         private static TemplateMatcher GetInstancesRoute()
         {
             return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{{{OperationRouteParameter}?}}"), new RouteValueDictionary());
@@ -423,6 +425,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, defaultValue: false);
 
             bool showInput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, defaultValue: true);
+            bool returnInternalServerErrorOnFailure = GetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, defaultValue: false);
 
             var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
             if (status == null)
@@ -445,7 +448,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // The orchestration has failed - return 500 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
-                    statusCode = HttpStatusCode.InternalServerError;
+                    if (returnInternalServerErrorOnFailure)
+                    {
+                        statusCode = HttpStatusCode.InternalServerError;
+                    }
+                    else
+                    {
+                        statusCode = HttpStatusCode.OK;
+                    }
+
                     location = null;
                     break;
 
@@ -808,7 +819,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             string taskHubName,
-            string connectionName)
+            string connectionName,
+            bool returnInternalServerErrorOnFailure = false)
         {
             this.ThrowIfWebhooksNotConfigured();
 
@@ -834,7 +846,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpManagementPayload httpManagementPayload = new HttpManagementPayload
             {
                 Id = instanceId,
-                StatusQueryGetUri = instancePrefix + "?" + querySuffix,
+                StatusQueryGetUri = instancePrefix + "?" + querySuffix + "&returnInternalServerErrorOnFailure=" + returnInternalServerErrorOnFailure,
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,

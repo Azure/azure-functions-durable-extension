@@ -289,7 +289,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within this timeout, then the HTTP response will be identical to that of the
-        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, string)"/> API.
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, string, bool)"/> API.
         /// </remarks>
         /// <param name="client">The client object.</param>
         /// <param name="request">The HTTP request that triggered the current function.</param>
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within this timeout, then the HTTP response will be identical to that of the
-        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest, string)"/> API.
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest, string, bool)"/> API.
         /// </remarks>
         /// <param name="client">The client object.</param>
         /// <param name="request">The HTTP request that triggered the current function.</param>
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, string)"/> API.
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage, string, bool)"/> API.
         /// </remarks>
         /// <param name="client">The client object.</param>
         /// <param name="request">The HTTP request that triggered the current function.</param>
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest, string)"/> API.
+        /// <see cref="IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest, string, bool)"/> API.
         /// </remarks>
         /// <param name="client">The client object.</param>
         /// <param name="request">The HTTP request that triggered the current function.</param>

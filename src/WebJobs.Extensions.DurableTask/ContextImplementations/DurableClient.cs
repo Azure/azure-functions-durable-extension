@@ -60,16 +60,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableOrchestrationClient.TaskHubName => this.hubName;
 
         /// <inheritdoc />
-        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
+        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure)
         {
-            return this.CreateCheckStatusResponse(request, instanceId, this.attribute);
+            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, returnInternalServerErrorOnFailure);
         }
 
         /// <inheritdoc />
-        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId)
+        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
-            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId);
+            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, returnInternalServerErrorOnFailure);
             return ConvertHttpResponseMessage(responseMessage);
         }
 
@@ -676,9 +676,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal HttpResponseMessage CreateCheckStatusResponse(
             HttpRequestMessage request,
             string instanceId,
-            DurableClientAttribute attribute)
+            DurableClientAttribute attribute,
+            bool returnInternalServerErrorOnFailure = false)
         {
-            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute);
+            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
         // Get a data structure containing status, terminate and send external event HTTP.

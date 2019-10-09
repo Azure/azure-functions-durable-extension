@@ -36,8 +36,11 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current orchestration instance.</param>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+        /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+        /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+        /// return 200.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-        HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId);
+        HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure = false);
 
         /// <summary>
         /// Creates an HTTP response that is useful for checking the status of the specified instance.
@@ -49,8 +52,11 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current orchestration instance.</param>
         /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+        /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+        /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+        /// return 200.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-        IActionResult CreateCheckStatusResponse(HttpRequest request, string instanceId);
+        IActionResult CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure = false);
 
         /// <summary>
         /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
@@ -67,7 +73,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="CreateCheckStatusResponse(HttpRequestMessage, string)"/> API.
+        /// <see cref="CreateCheckStatusResponse(HttpRequestMessage, string, bool)"/> API.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
@@ -88,7 +94,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="CreateCheckStatusResponse(HttpRequest, string)"/> API.
+        /// <see cref="CreateCheckStatusResponse(HttpRequest, string, bool)"/> API.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
