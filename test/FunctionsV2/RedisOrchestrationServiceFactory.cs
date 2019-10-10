@@ -3,6 +3,7 @@
 
 using DurableTask.Core;
 using DurableTask.Redis;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 
@@ -14,9 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string redisConnectionString;
         private readonly string defaultHubName;
 
-        public RedisOrchestrationServiceFactory(IOptions<DurableTaskRedisOptions> options, IConnectionStringResolver connectionStringResolver)
+        public RedisOrchestrationServiceFactory(IOptions<DurableTaskCustomStorageOptions> options, IConnectionStringResolver connectionStringResolver, string connectionStringName)
         {
-            this.redisConnectionString = connectionStringResolver.Resolve(options.Value.RedisStorageProvider.ConnectionStringName);
+            this.redisConnectionString = connectionStringResolver.Resolve(connectionStringName);
             this.defaultHubName = options.Value.HubName;
             this.defaultTaskHubService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
             {
@@ -24,6 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 RedisConnectionString = this.redisConnectionString,
             });
         }
+
+        public bool SupportsEntities => false;
 
         public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
         {
@@ -42,6 +45,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IOrchestrationService GetOrchestrationService()
         {
             return this.defaultTaskHubService;
+        }
+
+        public IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client)
+        {
+            return new DefaultDurableSpecialOperationsClient("Redis");
         }
     }
 }

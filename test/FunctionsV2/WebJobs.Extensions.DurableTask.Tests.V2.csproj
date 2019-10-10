@@ -27,20 +27,25 @@
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.1.3" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.1-alpha" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\Common\*.cs" />
   </ItemGroup>
 
+  <PropertyGroup Condition="true">
+    <DefineConstants>NET_CORE</DefineConstants>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Compile Remove="..\Common\DurableOptionsConfigurationTests.cs" />
   </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.AzureStorage\WebJobs.Extensions.DurableTask.AzureStorage.csproj" />
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Emulator\WebJobs.Extensions.DurableTask.Emulator.csproj" />
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Redis\WebJobs.Extensions.DurableTask.Redis.csproj" />
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.CustomStorage\WebJobs.Extensions.DurableTask.CustomStorage.csproj" />
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
 

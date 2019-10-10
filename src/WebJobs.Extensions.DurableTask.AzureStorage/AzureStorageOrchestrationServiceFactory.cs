@@ -16,6 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure
         private readonly AzureStorageOrchestrationServiceSettings defaultSettings;
         private AzureStorageOrchestrationService defaultService;
 
+        public bool SupportsEntities => true;
+
         public AzureStorageOrchestrationServiceFactory(
             IOptions<DurableTaskAzureStorageOptions> options,
             IConnectionStringResolver connectionStringResolver)
@@ -39,6 +41,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure
         {
             return this.GetAzureStorageOrchestrationService(attribute);
         }
+
+        public IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client)
+        {
+            return new DurableAzureStorageSpecialOperationsClient(client);
+        }
+
+#if !NETSTANDARD2_0
+        public DurableTaskOptions GetDefaultDurableTaskOptions()
+        {
+            return new DurableTaskAzureStorageOptions();
+        }
+#endif
 
         private AzureStorageOrchestrationService GetAzureStorageOrchestrationService(DurableClientAttribute attribute)
         {

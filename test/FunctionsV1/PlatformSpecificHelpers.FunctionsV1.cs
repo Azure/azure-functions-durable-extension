@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static JobHost CreateJobHost(
             DurableTaskOptions options,
+            string storageProvider,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
 
-            RegisterConfigBasedOnStorageProvider(config, options, loggerFactory, nameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
+            RegisterConfigBasedOnStorageProvider(config, options, storageProvider, loggerFactory, nameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
 
             // Mock INameResolver for not setting EnvironmentVariables.
             if (nameResolver != null)
@@ -54,38 +55,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static void RegisterConfigBasedOnStorageProvider(
             JobHostConfiguration config,
             DurableTaskOptions options,
+            string storageProvider,
             LoggerFactory loggerFactory,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper)
         {
-            switch (options)
+            switch (storageProvider)
             {
-                case DurableTaskAzureStorageOptions azureOptions:
+                case TestHelpers.AzureStorageProviderType:
                     {
-                        var wrappedOptions = new OptionsWrapper<DurableTaskAzureStorageOptions>(azureOptions);
+                        var wrappedOptions = new OptionsWrapper<DurableTaskAzureStorageOptions>(options as DurableTaskAzureStorageOptions);
                         var connectionResolver = new WebJobsConnectionStringProvider();
                         var orchestrationServiceFactory = new AzureStorageOrchestrationServiceFactory(wrappedOptions, connectionResolver);
                         var extension = new DurableTaskExtensionAzureStorageConfig(wrappedOptions, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper);
-                        config.Use(extension);
-                    }
-
-                    break;
-                case DurableTaskRedisOptions redisOptions:
-                    {
-                        var wrappedOptions = new OptionsWrapper<DurableTaskRedisOptions>(redisOptions);
-                        var connectionResolver = new WebJobsConnectionStringProvider();
-                        var orchestrationServiceFactory = new RedisOrchestrationServiceFactory(wrappedOptions, connectionResolver);
-                        var extension = new DurableTaskExtensionRedisConfig(wrappedOptions, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper);
-                        config.Use(extension);
-                    }
-
-                    break;
-                case DurableTaskEmulatorOptions emulatorOptions:
-                    {
-                        var wrappedOptions = new OptionsWrapper<DurableTaskEmulatorOptions>(emulatorOptions);
-                        var orchestrationServiceFactory = new EmulatorOrchestrationServiceFactory(wrappedOptions);
-                        var extension = new DurableTaskExtensionEmulatorConfig(wrappedOptions, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper);
                         config.Use(extension);
                     }
 

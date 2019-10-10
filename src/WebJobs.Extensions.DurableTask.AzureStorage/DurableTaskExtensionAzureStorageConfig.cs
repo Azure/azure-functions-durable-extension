@@ -2,16 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
-using System.Net.Http;
 using System.Reflection;
 using DurableTask.AzureStorage;
-using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.Config;
-using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -72,17 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        /// <inheritdoc/>
-        internal override DurableTaskOptions GetDefaultDurableTaskOptions()
-        {
-            return new DurableTaskAzureStorageOptions();
-        }
 
-        /// <inheritdoc/>
-        internal override IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client)
-        {
-            return new DurableAzureStorageSpecialOperationsClient(client);
-        }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.

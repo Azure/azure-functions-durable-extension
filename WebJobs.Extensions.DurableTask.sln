@@ -20,9 +20,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableT
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.AzureStorage", "src\WebJobs.Extensions.DurableTask.AzureStorage\WebJobs.Extensions.DurableTask.AzureStorage.csproj", "{B04A5648-E070-477F-BB84-55C709AA0419}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Emulator", "src\WebJobs.Extensions.DurableTask.Emulator\WebJobs.Extensions.DurableTask.Emulator.csproj", "{3A75BD59-0C88-42F1-81B5-5CE3711596AD}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Redis", "src\WebJobs.Extensions.DurableTask.Redis\WebJobs.Extensions.DurableTask.Redis.csproj", "{2460398D-EE7F-46DB-9133-3EE64BB3813C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.CustomStorage", "src\WebJobs.Extensions.DurableTask.CustomStorage\WebJobs.Extensions.DurableTask.CustomStorage.csproj", "{CF28CFDB-A7B4-420C-AE43-0856E5F2014E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,14 +44,10 @@ Global
 		{B04A5648-E070-477F-BB84-55C709AA0419}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B04A5648-E070-477F-BB84-55C709AA0419}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B04A5648-E070-477F-BB84-55C709AA0419}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3A75BD59-0C88-42F1-81B5-5CE3711596AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3A75BD59-0C88-42F1-81B5-5CE3711596AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3A75BD59-0C88-42F1-81B5-5CE3711596AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3A75BD59-0C88-42F1-81B5-5CE3711596AD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2460398D-EE7F-46DB-9133-3EE64BB3813C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2460398D-EE7F-46DB-9133-3EE64BB3813C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2460398D-EE7F-46DB-9133-3EE64BB3813C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2460398D-EE7F-46DB-9133-3EE64BB3813C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF28CFDB-A7B4-420C-AE43-0856E5F2014E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF28CFDB-A7B4-420C-AE43-0856E5F2014E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF28CFDB-A7B4-420C-AE43-0856E5F2014E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF28CFDB-A7B4-420C-AE43-0856E5F2014E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,8 +57,7 @@ Global
 		{F2A5DABB-36D4-4152-AF49-2570149899E1} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 		{F99CA746-553C-43B4-943B-59A5D190459A} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 		{B04A5648-E070-477F-BB84-55C709AA0419} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
-		{3A75BD59-0C88-42F1-81B5-5CE3711596AD} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
-		{2460398D-EE7F-46DB-9133-3EE64BB3813C} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
+		{CF28CFDB-A7B4-420C-AE43-0856E5F2014E} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}

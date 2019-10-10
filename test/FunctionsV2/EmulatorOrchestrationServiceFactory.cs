@@ -3,6 +3,7 @@
 
 using DurableTask.Core;
 using DurableTask.Emulator;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 
@@ -12,10 +13,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly LocalOrchestrationService service;
 
-        public EmulatorOrchestrationServiceFactory(IOptions<DurableTaskEmulatorOptions> options)
+        public EmulatorOrchestrationServiceFactory()
         {
             this.service = new LocalOrchestrationService();
         }
+
+        public bool SupportsEntities => false;
 
         public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
         {
@@ -25,6 +28,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IOrchestrationService GetOrchestrationService()
         {
             return (IOrchestrationService)this.service;
+        }
+
+        public IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client)
+        {
+            return new DefaultDurableSpecialOperationsClient("Emulator");
         }
     }
 }

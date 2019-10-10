@@ -114,6 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return GetJobHost(
                 loggerProvider,
                 durableTaskOptions,
+                storageProviderType,
                 nameResolver,
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper);
@@ -122,6 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
             DurableTaskOptions durableTaskOptions,
+            string storageProvider = AzureStorageProviderType,
             INameResolver nameResolver = null,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
@@ -132,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
             }
 
-            return PlatformSpecificHelpers.CreateJobHost(durableTaskOptions, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
+            return PlatformSpecificHelpers.CreateJobHost(durableTaskOptions, storageProvider, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
         }
 
         public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)
@@ -141,16 +143,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 case AzureStorageProviderType:
                     return new DurableTaskAzureStorageOptions();
-                case EmulatorProviderType:
-                    return new DurableTaskEmulatorOptions();
+#if NET_CORE
                 case RedisProviderType:
-                    return new DurableTaskRedisOptions()
-                    {
-                        RedisStorageProvider = new RedisStorageOptions()
-                        {
-                            ConnectionStringName = "RedisConnectionString",
-                        },
-                    };
+                case EmulatorProviderType:
+                    return new DurableTaskCustomStorageOptions();
+#endif
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProvider} is not supported for testing infrastructure.");
             }
@@ -170,7 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntities),
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
-#if NETCOREAPP2_0
+#if NET_CORE
                 typeof(TestEntityWithDependencyInjectionHelpers),
 #endif
             };

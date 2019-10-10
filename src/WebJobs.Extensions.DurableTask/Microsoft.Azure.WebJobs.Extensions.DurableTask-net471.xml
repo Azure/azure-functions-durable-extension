@@ -4,45 +4,6 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient">
-            <summary>
-            An implementation of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient"/> that throws user-friendly
-            <see cref="T:System.NotImplementedException"/> messages by default. Storage providers that don't implement all of
-            the special operations can use this, or extend this class and override the methods that can be
-            implemented with that storage provider.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.#ctor(System.String)">
-            <summary>
-            Creates an instance of the special operations client, with a storage provider name specified
-            to make the exceptions thrown more clear.
-            </summary>
-            <param name="storageProviderName">Storage provider name to reference in <see cref="T:System.NotImplementedException"/> error messages.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.GetAllOrchestrationStates(System.Threading.CancellationToken)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.GetAllOrchestrationStatesWithFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.GetOrchestrationStateAsync(System.String,System.Boolean,System.Boolean)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.PurgeHistoryByFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.PurgeInstanceHistoryByInstanceId(System.String)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.RetrieveSerializedEntityState(System.String)">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient.RewindAsync(System.String,System.String)">
-            <inheritdoc/>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
             <summary>
             The default parameter type for activity functions.
@@ -445,12 +406,6 @@
             </remarks>
             <value>The name of the default task hub.</value>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.GetDefaultDurableTaskOptions">
-            <summary>
-            Gets a nonpopulated DurableTaskOptions for Functions V1 runtime to populate.
-            </summary>
-            <returns>An empty DurableTaskOptions of the appropriate type.</returns>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
             Internal initialization call from the WebJobs host.
@@ -495,15 +450,6 @@
             <summary>
             Azure Functions V1 uses this for assembly loading help.
             </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.GetSpecialtyClient(DurableTask.Core.TaskHubClient)">
-            <summary>
-            Storage providers must provide a way to get specialty client for operations not on
-            <see cref="T:DurableTask.Core.IOrchestrationService"/>. Storage providers that don't support this functionality
-            can reference <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DefaultDurableSpecialOperationsClient"/>.
-            </summary>
-            <param name="client">Task hub client used by specialty client.</param>
-            <returns>Client to use special operations.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.GetClient(Microsoft.Azure.WebJobs.DurableClientAttribute)">
             <summary>
@@ -784,6 +730,11 @@
             Interface defining methods to build orchestration services and orchestration service clients.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.SupportsEntities">
+            <summary>
+            Whether or not the orchestration services returned by this factory have support for Durable Entities.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationService">
             <summary>
             Creates or retrieves a cached orchestration service to be used throughout the extension.
@@ -796,6 +747,20 @@
             </summary>
             <param name="attribute">A durable client attribute with parameters for the orchestration client.</param>
             <returns>An orchestration service client to be used by a function.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetSpecialtyClient(DurableTask.Core.TaskHubClient)">
+            <summary>
+            Storage providers must provide a way to get specialty client for operations not on
+            <see cref="T:DurableTask.Core.IOrchestrationService"/>.
+            </summary>
+            <param name="client">Task hub client used by specialty client.</param>
+            <returns>Client to use special operations.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetDefaultDurableTaskOptions">
+            <summary>
+            Gets a nonpopulated DurableTaskOptions for Functions V1 runtime to populate.
+            </summary>
+            <returns>An empty DurableTaskOptions of the appropriate type.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>

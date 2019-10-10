@@ -14,7 +14,6 @@ using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
@@ -53,8 +52,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-
+#if !NETSTANDARD2_0
         private readonly bool isOptionsConfigured;
+#endif
+
         private IOrchestrationServiceFactory orchestrationServiceFactory;
         private INameResolver nameResolver;
         private IOrchestrationService orchestrationService;
@@ -72,7 +73,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public DurableTaskExtensionBase()
         {
             // Options initialization happens later
-            this.Options = this.GetDefaultDurableTaskOptions();
             this.isOptionsConfigured = false;
         }
 #endif
@@ -94,15 +94,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
+#if !NETSTANDARD2_0
             // Options will be null in Functions v1 runtime - populated later.
             if (options == null)
             {
-                options = this.GetDefaultDurableTaskOptions();
+                options = orchestrationServiceFactory.GetDefaultDurableTaskOptions();
             }
             else
             {
                 this.isOptionsConfigured = true;
             }
+#endif
 
             this.Options = options;
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
@@ -118,7 +120,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.orchestrationServiceFactory = orchestrationServiceFactory;
-            this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
             {
@@ -167,19 +168,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
-        internal DurableTaskOptions Options { get; }
+        internal DurableTaskOptions Options { get; private set; }
 
         internal HttpApiHandler HttpApiHandler { get; private set; }
 
         internal ILifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
-
-        /// <summary>
-        /// Gets a nonpopulated DurableTaskOptions for Functions V1 runtime to populate.
-        /// </summary>
-        /// <returns>An empty DurableTaskOptions of the appropriate type.</returns>
-        internal abstract DurableTaskOptions GetDefaultDurableTaskOptions();
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -189,12 +184,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ConfigureLoaderHooks();
 
+#if !NETSTANDARD2_0
             // Functions V1 has it's configuration initialized at startup time (now).
             // For Functions V2 (and for some unit tests) configuration happens earlier in the pipeline.
             if (!this.isOptionsConfigured)
             {
                 this.InitializeForFunctionsV1(context);
             }
+#endif
 
             if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
             {
@@ -224,7 +221,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<IDurableOrchestrationClient, string>(bindings.DurableOrchestrationClientToString);
 
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
+            rule.BindToInput<IDurableClient>(this.GetClient);
             rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
+            rule.BindToInput<IDurableEntityClient>(this.GetClient);
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.TraceHelper));
@@ -245,6 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
 #if !NETSTANDARD2_0
+            this.Options = this.orchestrationServiceFactory.GetDefaultDurableTaskOptions();
             context.ApplyConfig(this.Options, "DurableTask");
 
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
@@ -448,6 +448,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            if (!this.orchestrationServiceFactory.SupportsEntities)
+            {
+                throw new InvalidOperationException("The provided Durable Task backend does not support entities.");
+            }
+
             OrchestrationRuntimeState runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             DurableEntityContext entityContext = (DurableEntityContext)entityShim.Context;
             entityContext.InstanceId = runtimeState.OrchestrationInstance.InstanceId;
@@ -624,15 +629,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Storage providers must provide a way to get specialty client for operations not on
-        /// <see cref="IOrchestrationService"/>. Storage providers that don't support this functionality
-        /// can reference <see cref="DefaultDurableSpecialOperationsClient"/>.
-        /// </summary>
-        /// <param name="client">Task hub client used by specialty client.</param>
-        /// <returns>Client to use special operations.</returns>
-        internal abstract IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client);
-
-        /// <summary>
         /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
         /// </summary>
         /// <param name="attribute">The attribute containing the client configuration parameters.</param>
@@ -644,7 +640,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 attr =>
                 {
                     IOrchestrationServiceClient innerClient = this.orchestrationServiceFactory.GetOrchestrationClient(attribute);
-                    return new DurableClient(innerClient, this, this.HttpApiHandler, attr);
+                    return new DurableClient(innerClient, this.orchestrationServiceFactory, this, this.HttpApiHandler, attr);
                 });
 
             return client;

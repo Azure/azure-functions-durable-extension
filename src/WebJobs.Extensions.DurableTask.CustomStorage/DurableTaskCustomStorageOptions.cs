@@ -1,19 +1,21 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using WebJobs.Extensions.DurableTask.CustomStorage;
+
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
 {
     /// <summary>
-    /// Durable Task options for the Redis flavored Durable Task extension.
+    /// Durable Task options for the in-memory emulator flavored Durable Task extension.
     /// </summary>
-    public class DurableTaskRedisOptions : DurableTaskOptions
+    public class DurableTaskCustomStorageOptions : DurableTaskOptions
     {
         /// <summary>
         /// Section of configuration for the in-memory emulator provider.
         /// </summary>
-        public RedisStorageOptions RedisStorageProvider { get; set; } = new RedisStorageOptions();
+        public CustomStorageOptions Custom { get; } = new CustomStorageOptions();
 
         /// <inheritdoc />
-        public override IStorageOptions StorageOptions => this.RedisStorageProvider;
+        public override IStorageOptions StorageOptions => this.Custom;
     }
 }

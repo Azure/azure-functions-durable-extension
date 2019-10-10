@@ -30,7 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskHubClient client;
         private readonly IDurableSpecialOperationsClient specialtyClient;
-        private readonly string hubName;
         private readonly HttpApiHandler httpApiHandler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtensionBase config;
@@ -38,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal DurableClient(
             IOrchestrationServiceClient serviceClient,
+            IOrchestrationServiceFactory orchestrationServiceFactory,
             DurableTaskExtensionBase config,
             HttpApiHandler httpHandler,
             DurableClientAttribute attribute)
@@ -45,17 +45,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
             this.client = new TaskHubClient(serviceClient);
-            this.specialtyClient = config.GetSpecialtyClient(this.client);
+            this.specialtyClient = orchestrationServiceFactory.GetSpecialtyClient(this.client);
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
-            this.hubName = attribute.TaskHub ?? config.Options.HubName;
+            this.TaskHubName = attribute.TaskHub ?? config.Options.HubName;
             this.attribute = attribute;
         }
 
-        public string TaskHubName => this.hubName;
+        public string TaskHubName { get; private set; }
 
         /// <inheritdoc />
-        string IDurableOrchestrationClient.TaskHubName => this.hubName;
+        string IDurableOrchestrationClient.TaskHubName => this.TaskHubName;
 
         /// <inheritdoc />
         HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId)
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 orchestratorFunctionName, DefaultVersion, instanceId, input);
 
             this.traceHelper.FunctionScheduled(
-                this.hubName,
+                this.TaskHubName,
                 orchestratorFunctionName,
                 instanceId,
                 reason: "NewInstance",
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            return this.RaiseEventInternalAsync(this.client, this.hubName, instanceId, eventName, eventData);
+            return this.RaiseEventInternalAsync(this.client, this.TaskHubName, instanceId, eventName, eventData);
         }
 
         /// <inheritdoc />
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.SignalEntityAsync(this.client, this.hubName, entityId, operationName, operationInput);
+                return this.SignalEntityAsync(this.client, this.TaskHubName, entityId, operationName, operationInput);
             }
             else
             {
@@ -254,12 +254,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
-                this.traceHelper.FunctionTerminated(this.hubName, state.Name, instanceId, reason);
+                this.traceHelper.FunctionTerminated(this.TaskHubName, state.Name, instanceId, reason);
             }
             else
             {
                 this.traceHelper.ExtensionWarningEvent(
-                    hubName: this.hubName,
+                    hubName: this.TaskHubName,
                     functionName: state.Name,
                     instanceId: instanceId,
                     message: $"Cannot terminate orchestration instance in {state.Status} state");
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             await this.specialtyClient.RewindAsync(instanceId, reason);
 
-            this.traceHelper.FunctionRewound(this.hubName, state.Name, instanceId, reason);
+            this.traceHelper.FunctionRewound(this.TaskHubName, state.Name, instanceId, reason);
         }
 
         /// <inheritdoc />
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.ReadEntityStateAsync<T>(this.client, this.hubName, entityId);
+                return this.ReadEntityStateAsync<T>(this.client, this.TaskHubName, entityId);
             }
             else
             {

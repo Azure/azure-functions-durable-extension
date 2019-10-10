@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static JobHost CreateJobHost(
             DurableTaskOptions options,
+            string storageProvider,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddCorrectDurableTaskExtension(options);
+                        webJobsBuilder.AddCorrectDurableTaskExtension(options, storageProvider);
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -57,22 +58,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return (JobHost)host.Services.GetService<IJobHost>();
         }
 
-        private static IWebJobsBuilder AddCorrectDurableTaskExtension(this IWebJobsBuilder builder, DurableTaskOptions options)
+        private static IWebJobsBuilder AddCorrectDurableTaskExtension(this IWebJobsBuilder builder, DurableTaskOptions options, string storageProvider)
         {
-            switch (options)
+            switch (storageProvider)
             {
-                case DurableTaskAzureStorageOptions azureOptions:
-                    builder.AddAzureStorageDurableTask(new OptionsWrapper<DurableTaskAzureStorageOptions>(azureOptions));
+                case TestHelpers.AzureStorageProviderType:
+                    builder.AddAzureStorageDurableTask(new OptionsWrapper<DurableTaskAzureStorageOptions>(options as DurableTaskAzureStorageOptions));
                     return builder;
-                case DurableTaskRedisOptions redisOptions:
-                    builder.AddRedisDurableTask(new OptionsWrapper<DurableTaskRedisOptions>(redisOptions));
+                case TestHelpers.RedisProviderType:
+                    builder.AddRedisDurableTask(options);
                     return builder;
-                case DurableTaskEmulatorOptions emulatorOptions:
-                    builder.AddEmulatorDurableTask(new OptionsWrapper<DurableTaskEmulatorOptions>(emulatorOptions));
+                case TestHelpers.EmulatorProviderType:
+                    builder.AddEmulatorDurableTask(options);
                     return builder;
                 default:
                     throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
             }
+        }
+
+        private static IWebJobsBuilder AddRedisDurableTask(this IWebJobsBuilder builder, DurableTaskOptions options)
+        {
+            return builder;
+        }
+
+        private static IWebJobsBuilder AddEmulatorDurableTask(this IWebJobsBuilder builder, DurableTaskOptions options)
+        {
+            return builder;
         }
     }
 }
