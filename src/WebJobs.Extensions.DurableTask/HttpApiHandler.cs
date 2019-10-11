@@ -79,7 +79,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpManagementPayload.StatusQueryGetUri,
                 httpManagementPayload.SendEventPostUri,
                 httpManagementPayload.TerminatePostUri,
-                httpManagementPayload.RewindPostUri,
                 httpManagementPayload.PurgeHistoryDeleteUri);
         }
 
@@ -179,7 +178,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         httpManagementPayload.StatusQueryGetUri,
                         httpManagementPayload.SendEventPostUri,
                         httpManagementPayload.TerminatePostUri,
-                        httpManagementPayload.RewindPostUri,
                         httpManagementPayload.PurgeHistoryDeleteUri);
                 }
             }
@@ -635,7 +633,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string reason = request.GetQueryNameValuePairs()["reason"];
 
+#pragma warning disable 0618
             await client.RewindAsync(instanceId, reason);
+#pragma warning restore 0618
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
@@ -856,7 +856,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return httpManagementPayload;
         }
 
-        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string rewindPostUri, string purgeHistoryDeleteUri)
+        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string purgeHistoryDeleteUri)
         {
             var response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -866,7 +866,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     statusQueryGetUri,
                     sendEventPostUri,
                     terminatePostUri,
-                    rewindPostUri,
                     purgeHistoryDeleteUri,
                 });
 
