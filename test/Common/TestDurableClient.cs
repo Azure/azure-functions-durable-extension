@@ -100,7 +100,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public async Task RewindAsync(string reason)
         {
+#pragma warning disable 0618
             await this.innerClient.RewindAsync(this.instanceId, reason);
+#pragma warning restore 0618
         }
 
         public async Task<DurableOrchestrationStatus> WaitForStartupAsync(ITestOutputHelper output, TimeSpan? timeout = null)

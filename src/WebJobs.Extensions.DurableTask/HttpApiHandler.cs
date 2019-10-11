@@ -633,7 +633,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string reason = request.GetQueryNameValuePairs()["reason"];
 
+#pragma warning disable 0618
             await client.RewindAsync(instanceId, reason);
+#pragma warning restore 0618
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
