@@ -188,6 +188,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="instanceId">The ID of the orchestration instance to rewind.</param>
         /// <param name="reason">The reason for rewinding the orchestration instance.</param>
         /// <returns>A task that completes when the rewind message is enqueued.</returns>
+        [Obsolete("This feature is in preview.")]
         Task RewindAsync(string instanceId, string reason);
 
         /// <summary>
