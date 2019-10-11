@@ -29,15 +29,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MaxInstanceIdLength = 256;
 
         private readonly TaskHubClient client;
-        private readonly IDurableSpecialOperationsClient specialtyClient;
+        private readonly DurabilityProvider specialtyClient;
         private readonly HttpApiHandler httpApiHandler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtensionBase config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
 
         internal DurableClient(
-            IOrchestrationServiceClient serviceClient,
-            IOrchestrationServiceFactory orchestrationServiceFactory,
+            DurabilityProvider serviceClient,
             DurableTaskExtensionBase config,
             HttpApiHandler httpHandler,
             DurableClientAttribute attribute)
@@ -45,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
             this.client = new TaskHubClient(serviceClient);
-            this.specialtyClient = orchestrationServiceFactory.GetSpecialtyClient(this.client);
+            this.specialtyClient = serviceClient;
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
             this.TaskHubName = attribute.TaskHub ?? config.Options.HubName;

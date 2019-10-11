@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public DurableTaskExtensionCustomStorageConfig(IOptions<DurableTaskCustomStorageOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IOrchestrationServiceFactory orchestrationServiceFactory,
+            IDurabilityProviderFactory orchestrationServiceFactory,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
             : base(options.Value, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandlerFactory, lifeCycleNotificationHelper)

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomStorage</name>
+    </assembly>
+    <members>
+        <member name="M:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageDurableTaskJobHostConfigurationExtensions.AddCustomStorageDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)">
+            <summary>
+            Adds the Azure STorage Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageDurableTaskJobHostConfigurationExtensions.AddCustomStorageDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,Microsoft.Extensions.Options.IOptions{WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="options">The configuration options for this extension.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="T:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions">
+            <summary>
+            Storage Options for the Custom Storage version of the extension.
+            </summary>
+        </member>
+        <member name="P:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions.ConnectionDetails">
+            <inheritdoc/>
+        </member>
+        <member name="P:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions.StorageTypeName">
+            <inheritdoc/>
+        </member>
+        <member name="M:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions.GetValues">
+            <inheritdoc/>
+        </member>
+        <member name="M:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions.Validate">
+            <inheritdoc/>
+        </member>
+        <member name="M:WebJobs.Extensions.DurableTask.CustomStorage.CustomStorageOptions.ValidateHubName(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableTaskCustomStorageOptions">
+            <summary>
+            Durable Task options for the in-memory emulator flavored Durable Task extension.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableTaskCustomStorageOptions.Custom">
+            <summary>
+            Section of configuration for the in-memory emulator provider.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableTaskCustomStorageOptions.StorageOptions">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionCustomStorageConfig">
+            <summary>
+            Configuration for the Durable Functions extension.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionCustomStorageConfig.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableTaskCustomStorageOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

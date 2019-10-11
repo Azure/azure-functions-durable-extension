@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             builder.AddExtension<DurableTaskExtensionAzureStorageConfig>()
                 .BindOptions<DurableTaskAzureStorageOptions>()
-                .Services.AddSingleton<IOrchestrationServiceFactory, AzureStorageOrchestrationServiceFactory>()
+                .Services.AddSingleton<IDurabilityProviderFactory, AzureStorageOrchestrationServiceFactory>()
                          .AddCoreDurableTaskServices();
 
             return builder;

@@ -4,11 +4,11 @@
     <TargetFrameworks>netstandard2.0;net471</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorage</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorage</RootNamespace>
-    <DocumentationFile>Microsoft.Azure.WebJobs.Extensions.DurableTask.xml</DocumentationFile>
+    <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-beta1</Version>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-beta3</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>

@@ -3,20 +3,17 @@
 
 using System;
 using DurableTask.AzureStorage;
-using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure
 {
-    internal class AzureStorageOrchestrationServiceFactory : IOrchestrationServiceFactory
+    internal class AzureStorageOrchestrationServiceFactory : IDurabilityProviderFactory
     {
         private readonly DurableTaskAzureStorageOptions options;
         private readonly IConnectionStringResolver connectionStringResolver;
         private readonly AzureStorageOrchestrationServiceSettings defaultSettings;
-        private AzureStorageOrchestrationService defaultService;
-
-        public bool SupportsEntities => true;
+        private AzureStorageDurabilityProvider defaultStorageProvider;
 
         public AzureStorageOrchestrationServiceFactory(
             IOptions<DurableTaskAzureStorageOptions> options,
@@ -27,49 +24,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure
             this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings(this.options);
         }
 
-        public IOrchestrationService GetOrchestrationService()
+        public DurabilityProvider GetDurabilityProvider()
         {
-            if (this.defaultService == null)
+            if (this.defaultStorageProvider == null)
             {
-                this.defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
+                var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
+                this.defaultStorageProvider = new AzureStorageDurabilityProvider(defaultService);
             }
 
-            return this.defaultService;
+            return this.defaultStorageProvider;
         }
 
-        public IOrchestrationServiceClient GetOrchestrationClient(DurableClientAttribute attribute)
+        public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            return this.GetAzureStorageOrchestrationService(attribute);
+            return this.GetAzureStorageStorageProvider(attribute);
         }
 
-        public IDurableSpecialOperationsClient GetSpecialtyClient(TaskHubClient client)
-        {
-            return new DurableAzureStorageSpecialOperationsClient(client);
-        }
-
-#if !NETSTANDARD2_0
-        public DurableTaskOptions GetDefaultDurableTaskOptions()
-        {
-            return new DurableTaskAzureStorageOptions();
-        }
-#endif
-
-        private AzureStorageOrchestrationService GetAzureStorageOrchestrationService(DurableClientAttribute attribute)
+        private AzureStorageDurabilityProvider GetAzureStorageStorageProvider(DurableClientAttribute attribute)
         {
             AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attribute);
 
-            AzureStorageOrchestrationService innerClient;
+            AzureStorageDurabilityProvider innerClient;
             if (string.Equals(this.defaultSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(this.defaultSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
                 // as the host when possible to ensure we any send operations can be picked up
                 // immediately instead of waiting for the next queue polling interval.
-                innerClient = this.defaultService;
+                innerClient = this.defaultStorageProvider;
             }
             else
             {
-                innerClient = new AzureStorageOrchestrationService(settings);
+                innerClient = new AzureStorageDurabilityProvider(new AzureStorageOrchestrationService(settings));
             }
 
             return innerClient;

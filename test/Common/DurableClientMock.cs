@@ -9,8 +9,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal class DurableClientMock : DurableClient, IDurableOrchestrationClient
     {
-        internal DurableClientMock(IOrchestrationServiceClient serviceClient, IOrchestrationServiceFactory serviceFactory, DurableTaskExtensionBase config, DurableClientAttribute attribute)
-            : base(serviceClient, serviceFactory, config, config.HttpApiHandler, attribute)
+        internal DurableClientMock(DurabilityProvider serviceClient, DurableTaskExtensionBase config, DurableClientAttribute attribute)
+            : base(serviceClient, config, config.HttpApiHandler, attribute)
         {
         }
 

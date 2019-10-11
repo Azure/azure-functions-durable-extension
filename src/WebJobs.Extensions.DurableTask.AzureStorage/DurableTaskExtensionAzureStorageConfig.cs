@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskAzureStorageOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IOrchestrationServiceFactory orchestrationServiceFactory,
+            IDurabilityProviderFactory orchestrationServiceFactory,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
             : base(options.Value, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandlerFactory, lifeCycleNotificationHelper)
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskAzureStorageOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IOrchestrationServiceFactory orchestrationServiceFactory,
+            IDurabilityProviderFactory orchestrationServiceFactory,
             IConnectionStringResolver connectionStringResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
             : base(options.Value, loggerFactory, nameResolver, orchestrationServiceFactory, connectionStringResolver, durableHttpMessageHandlerFactory)
@@ -56,6 +56,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
             base.ConfigureLoaderHooks();
         }
+
+#if !NETSTANDARD2_0
+        /// <inheritdoc/>
+        internal override DurableTaskOptions GetDefaultDurableTaskOptions()
+        {
+            return new DurableTaskAzureStorageOptions();
+        }
+#endif
 
         private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
         {

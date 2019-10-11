@@ -12,11 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Azure;
-#if NETSTANDARD2_0
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -1020,14 +1015,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
             }
 
+#if !NET_CORE
+            internal override DurableTaskOptions GetDefaultDurableTaskOptions()
+            {
+                return new DurableTaskAzureStorageOptions();
+            }
+#endif
+
             protected internal override IDurableClient GetClient(DurableClientAttribute attribute)
             {
                 var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-                var orchestrationServiceFactoryMock = new Mock<IOrchestrationServiceFactory>();
-                var specialtyClientMock = new Mock<IDurableSpecialOperationsClient>();
-                orchestrationServiceFactoryMock.Setup(factory => factory.GetSpecialtyClient(It.IsAny<TaskHubClient>()))
-                    .Returns(specialtyClientMock.Object);
-                return new DurableClientMock(orchestrationServiceClientMock.Object, orchestrationServiceFactoryMock.Object, this, attribute);
+                var orchestrationServiceMock = new Mock<IOrchestrationService>();
+                var storageProvider = new DurabilityProvider("Mock", orchestrationServiceMock.Object, orchestrationServiceClientMock.Object);
+                var orchestrationServiceFactoryMock = new Mock<IDurabilityProviderFactory>();
+
+                return new DurableClientMock(storageProvider, this, attribute);
             }
         }
     }

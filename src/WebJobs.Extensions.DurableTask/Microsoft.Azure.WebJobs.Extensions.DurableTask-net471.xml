@@ -211,36 +211,113 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#IDurableOrchestrationContext#LockAsync(Microsoft.Azure.WebJobs.EntityId[])">
             <inheritdoc/>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider">
             <summary>
-            An interface for methods that are not required to be implemented by standard Durable Task storage providers.
+            The backend storage provider that provides the actual durability of Durable Functions.
+            This is functionally a superset of <see cref="T:DurableTask.Core.IOrchestrationService"/> and <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/>.
+            If the storage provider does not any of the Durable Functions specific operations, they can use this class
+            directly with the expectation that only those interfaces will be implemented. All of the Durable Functions specific
+            methods/operations are virtual and can be overwritten by creating a subclass.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.RewindAsync(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.#ctor(System.String,DurableTask.Core.IOrchestrationService,DurableTask.Core.IOrchestrationServiceClient)">
             <summary>
-            Rewinds the specified failed orchestration instance with a reason.
+            Creates the default <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider"/>.
             </summary>
-            <param name="instanceId">The ID of the orchestration instance to rewind.</param>
-            <param name="reason">The reason for rewinding the orchestration instance.</param>
-            <returns>A task that completes when the rewind message is enqueued.</returns>
+            <param name="storageProviderName">The name of the storage backend providing the durability.</param>
+            <param name="service">The internal <see cref="T:DurableTask.Core.IOrchestrationService"/> that provides functionality
+            for this classes implementions of <see cref="T:DurableTask.Core.IOrchestrationService"/>.</param>
+            <param name="serviceClient">The internal <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/> that provides functionality
+            for this classes implementions of <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/>.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.GetOrchestrationStateAsync(System.String,System.Boolean,System.Boolean)">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SupportsEntities">
             <summary>
-            Gets the state of the specified orchestration instance.
+            Specifies whether the durability provider supports Durable Entities.
             </summary>
-            <param name="instanceId">The ID of the orchestration instance to query.</param>
-            <param name="showHistory">Boolean marker for including execution history in the response.</param>
-            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
-            <returns>Returns a task which completes when the state has been fetched.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.GetAllOrchestrationStates(System.Threading.CancellationToken)">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.MaxConcurrentTaskOrchestrationWorkItems">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.EventBehaviourForContinueAsNew">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskActivityDispatcherCount">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.MaxConcurrentTaskActivityWorkItems">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.AbandonTaskActivityWorkItemAsync(DurableTask.Core.TaskActivityWorkItem)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.AbandonTaskOrchestrationWorkItemAsync(DurableTask.Core.TaskOrchestrationWorkItem)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CompleteTaskActivityWorkItemAsync(DurableTask.Core.TaskActivityWorkItem,DurableTask.Core.TaskMessage)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CompleteTaskOrchestrationWorkItemAsync(DurableTask.Core.TaskOrchestrationWorkItem,DurableTask.Core.OrchestrationRuntimeState,System.Collections.Generic.IList{DurableTask.Core.TaskMessage},System.Collections.Generic.IList{DurableTask.Core.TaskMessage},System.Collections.Generic.IList{DurableTask.Core.TaskMessage},DurableTask.Core.TaskMessage,DurableTask.Core.OrchestrationState)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CreateAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CreateAsync(System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CreateIfNotExistsAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DeleteAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DeleteAsync(System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetDelayInSecondsAfterOnFetchException(System.Exception)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetDelayInSecondsAfterOnProcessException(System.Exception)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.IsMaxMessageCountExceeded(System.Int32,DurableTask.Core.OrchestrationRuntimeState)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LockNextTaskActivityWorkItem(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LockNextTaskOrchestrationWorkItemAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ReleaseTaskOrchestrationWorkItemAsync(DurableTask.Core.TaskOrchestrationWorkItem)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RenewTaskActivityWorkItemLockAsync(DurableTask.Core.TaskActivityWorkItem)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RenewTaskOrchestrationWorkItemLockAsync(DurableTask.Core.TaskOrchestrationWorkItem)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.StartAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.StopAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.StopAsync(System.Boolean)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetAllOrchestrationStates(System.Threading.CancellationToken)">
             <summary>
             Gets the status of all orchestration instances.
             </summary>
             <param name="cancellationToken">A token to cancel the request.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.GetAllOrchestrationStatesWithFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetAllOrchestrationStatesWithFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <summary>
             Gets the status of all orchestration instances within the specified parameters.
             </summary>
@@ -250,21 +327,24 @@
             <param name="cancellationToken">A token to cancel the request.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.RetrieveSerializedEntityState(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateAsync(System.String,System.Boolean,System.Boolean)">
             <summary>
-            Retrieves the state for a serialized entity.
+            Gets the state of the specified orchestration instance.
             </summary>
-            <param name="inputState">In memory representation of state.</param>
-            <returns>Serialized state for the entity.</returns>
+            <param name="instanceId">The ID of the orchestration instance to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
+            <returns>Returns a task which completes when the state has been fetched.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.PurgeInstanceHistoryByInstanceId(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <summary>
-            Purges the instance history for the provided instance id.
+            Gets paginated result of all orchestration instances that match query status parameters.
             </summary>
-            <param name="instanceId">The instance id for the instance history to purge.</param>
-            <returns>The number of instances purged.</returns>
+            <param name="condition">The filtering conditions of the query.</param>
+            <param name="cancellationToken">A token to cancel the request.</param>
+            <returns>Paginated result of orchestration state.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.PurgeHistoryByFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.PurgeHistoryByFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <summary>
             Purges history that meet the required parameters.
             </summary>
@@ -273,13 +353,57 @@
             <param name="runtimeStatus">Purge the history of orchestration instances which matches the runtimeStatus.</param>
             <returns>The number of instances purged.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableSpecialOperationsClient.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.PurgeInstanceHistoryByInstanceId(System.String)">
             <summary>
-            Gets paginated result of all orchestration instances that match query status parameters.
+            Purges the instance history for the provided instance id.
             </summary>
-            <param name="condition">The filtering conditions of the query.</param>
-            <param name="cancellationToken">A token to cancel the request.</param>
-            <returns>Paginated result of orchestration state.</returns>
+            <param name="instanceId">The instance id for the instance history to purge.</param>
+            <returns>The number of instances purged.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(System.String)">
+            <summary>
+            Retrieves the state for a serialized entity.
+            </summary>
+            <param name="inputState">In memory representation of state.</param>
+            <returns>Serialized state for the entity.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RewindAsync(System.String,System.String)">
+            <summary>
+            Rewinds the specified failed orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to rewind.</param>
+            <param name="reason">The reason for rewinding the orchestration instance.</param>
+            <returns>A task that completes when the rewind message is enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CreateTaskOrchestrationAsync(DurableTask.Core.TaskMessage)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CreateTaskOrchestrationAsync(DurableTask.Core.TaskMessage,DurableTask.Core.OrchestrationStatus[])">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SendTaskOrchestrationMessageAsync(DurableTask.Core.TaskMessage)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SendTaskOrchestrationMessageBatchAsync(DurableTask.Core.TaskMessage[])">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.WaitForOrchestrationAsync(System.String,System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ForceTerminateTaskOrchestrationAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateAsync(System.String,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationHistoryAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.PurgeOrchestrationHistoryAsync(System.DateTime,DurableTask.Core.OrchestrationStateTimeRangeFilterType)">
+            <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest">
             <summary>
@@ -373,7 +497,7 @@
             Obsolete. Please use an alternate constructor overload.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions,Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions,Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase"/>.
             </summary>
@@ -384,7 +508,7 @@
             <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions,Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions,Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase"/>.
             </summary>
@@ -411,6 +535,12 @@
             Internal initialization call from the WebJobs host.
             </summary>
             <param name="context">Extension context provided by WebJobs.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.GetDefaultDurableTaskOptions">
+            <summary>
+            Gets a nonpopulated DurableTaskOptions for Functions V1 runtime to populate.
+            </summary>
+            <returns>An empty DurableTaskOptions of the appropriate type.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtensionBase.DeleteTaskHubAsync">
             <summary>
@@ -667,6 +797,24 @@
             <param name="connectionStringName">The name of the connection string.</param>
             <returns>Returns the resolved connection string value.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory">
+            <summary>
+            Interface defining methods to build orchestration services and orchestration service clients.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory.GetDurabilityProvider">
+            <summary>
+            Creates or retrieves a durability provider to be used throughout the extension.
+            </summary>
+            <returns>An durability provider to be used by the Durable Task Extension.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory.GetDurabilityProvider(Microsoft.Azure.WebJobs.DurableClientAttribute)">
+            <summary>
+            Creates or retrieves a cached durability provider to be used in a given function execution.
+            </summary>
+            <param name="attribute">A durable client attribute with parameters for the durability provider.</param>
+            <returns>A durability provider to be used by a client function.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory">
             <summary>
             Interface used for testing Durable HTTP.
@@ -724,43 +872,6 @@
             <param name="instanceId">The ID to use for the orchestration instance.</param>
             <param name="reason">Additional data associated with the tracking event.</param>
             <returns>A task that completes when the lifecycle notification message has been sent.</returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory">
-            <summary>
-            Interface defining methods to build orchestration services and orchestration service clients.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.SupportsEntities">
-            <summary>
-            Whether or not the orchestration services returned by this factory have support for Durable Entities.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationService">
-            <summary>
-            Creates or retrieves a cached orchestration service to be used throughout the extension.
-            </summary>
-            <returns>An orchestration service to be used by the Durable Task Extension.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetOrchestrationClient(Microsoft.Azure.WebJobs.DurableClientAttribute)">
-            <summary>
-            Creates or retrieves a cached orchestration service client to be used in a given function execution.
-            </summary>
-            <param name="attribute">A durable client attribute with parameters for the orchestration client.</param>
-            <returns>An orchestration service client to be used by a function.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetSpecialtyClient(DurableTask.Core.TaskHubClient)">
-            <summary>
-            Storage providers must provide a way to get specialty client for operations not on
-            <see cref="T:DurableTask.Core.IOrchestrationService"/>.
-            </summary>
-            <param name="client">Task hub client used by specialty client.</param>
-            <returns>Client to use special operations.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory.GetDefaultDurableTaskOptions">
-            <summary>
-            Gets a nonpopulated DurableTaskOptions for Functions V1 runtime to populate.
-            </summary>
-            <returns>An empty DurableTaskOptions of the appropriate type.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>

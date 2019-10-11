@@ -2,6 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomStorage</AssemblyName>
+    <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.CustomStorage</RootNamespace>
+    <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
+    <MajorVersion>2</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-beta3</Version>
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
+    <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
+    <Company>Microsoft Corporation</Company>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
 
   <ItemGroup>

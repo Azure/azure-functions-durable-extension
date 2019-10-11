@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         }
 
         /// <inheritdoc/>
-        public IOrchestrationServiceFactory GetOrchestrationServiceFactory()
+        public IDurabilityProviderFactory GetOrchestrationServiceFactory()
         {
             throw new NotImplementedException();
         }
