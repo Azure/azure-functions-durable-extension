@@ -174,7 +174,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void AppendStorageProviderValuesToDebugString(StringBuilder sb)
         {
-            sb.Append(nameof(this.Storage)).Append(this.Storage).Append(",");
+            sb.Append(nameof(this.Storage)).Append(": { ");
+            foreach (var value in this.Storage)
+            {
+                sb.Append(value.Key).Append(": ").Append(value.Value).Append(", ");
+            }
+
+            sb.Append(" }, ");
         }
 
         /// <summary>
