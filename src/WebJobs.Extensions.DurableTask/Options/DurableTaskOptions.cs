@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// The section of configuration related to storage providers. If using Azure Storage provider, the schema should match
-        /// <see cref="AzureStorageOptions"./>
+        /// <see cref="AzureStorageOptions"/>.
         /// </summary>
         public IDictionary<string, object> StorageProvider { get; set; } = new Dictionary<string, object>();
 
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(" }, ");
         }
 
-        internal virtual void Validate()
+        internal void Validate()
         {
             if (string.IsNullOrEmpty(this.HubName))
             {

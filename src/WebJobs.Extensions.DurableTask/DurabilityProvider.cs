@@ -33,6 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// for this classes implementions of <see cref="IOrchestrationService"/>.</param>
         /// <param name="serviceClient">The internal <see cref="IOrchestrationServiceClient"/> that provides functionality
         /// for this classes implementions of <see cref="IOrchestrationServiceClient"/>.</param>
+        /// <param name="connectionName">The name of the app setting that stores connection details for the storage provider.</param>
         public DurabilityProvider(string storageProviderName, IOrchestrationService service, IOrchestrationServiceClient serviceClient, string connectionName)
         {
             this.name = storageProviderName;

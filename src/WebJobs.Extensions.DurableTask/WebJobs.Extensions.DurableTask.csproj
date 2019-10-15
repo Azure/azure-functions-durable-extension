@@ -57,15 +57,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.1.3" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.6.4" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.6.3" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
-    <Title>Azure Functions Durable Task Extension Core</Title>
+    <Title>Azure Functions Durable Task Extension</Title>
     <Authors>Microsoft</Authors>
-    <Description>Shared logic for the Azure WebJobs SDK Extensions for the Durable Task Framework</Description>
+    <Description>Azure WebJobs SDK Extension for the Durable Task Framework</Description>
     <PackageReleaseNotes>https://github.com/Azure/azure-functions-durable-extension/releases/</PackageReleaseNotes>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageTags>Microsoft;Azure;WebJobs;Durable;Extension;Orchestration;Workflow;Functions</PackageTags>

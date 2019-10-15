@@ -44,11 +44,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string[] eventGridPublishEventTypes = null,
             string storageProviderType = AzureStorageProviderType,
             bool autoFetchLargeMessages = true,
-            int httpAsyncSleepTime = 5000,
+            int httpAsyncSleepTime = 500,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
-            DurableTaskOptions durableTaskOptions = TestHelpers.GetDurableTaskOptionsForStorageProvider(storageProviderType);
+            switch (storageProviderType)
+            {
+                case AzureStorageProviderType:
+#if NET_CORE
+                case RedisProviderType:
+                case EmulatorProviderType:
+#endif
+                    break;
+                default:
+                    throw new InvalidOperationException($"Storage provider {storageProviderType} is not supported for testing infrastructure.");
+            }
+
+            var durableTaskOptions = new DurableTaskOptions
+            {
+                HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
+                Tracing = new TraceOptions()
+                {
+                    TraceInputsAndOutputs = true,
+                    TraceReplayEvents = traceReplayEvents,
+                },
+                Notifications = new NotificationOptions()
+                {
+                    EventGrid = new EventGridNotificationOptions()
+                    {
+                        KeySettingName = eventGridKeySettingName,
+                        TopicEndpoint = eventGridTopicEndpoint,
+                        PublishEventTypes = eventGridPublishEventTypes,
+                    },
+                },
+                HttpSettings = new HttpOptions()
+                {
+                    DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
+                },
+                NotificationUrl = notificationUrl,
+                ExtendedSessionsEnabled = enableExtendedSessions,
+                MaxConcurrentOrchestratorFunctions = 200,
+                MaxConcurrentActivityFunctions = 200,
+                NotificationHandler = eventGridNotificationHandler,
+            };
             durableTaskOptions.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             durableTaskOptions.Tracing = new TraceOptions()
             {
