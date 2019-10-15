@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The section of configuration related to storage providers.
         /// </summary>
-        public IDictionary<string, object> Storage { get; set; } = new Dictionary<string, object>();
+        public IDictionary<string, object> StorageProvider { get; set; } = new Dictionary<string, object>();
 
         /// <summary>
         /// The section of configuration related to tracing.
@@ -174,27 +174,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void AppendStorageProviderValuesToDebugString(StringBuilder sb)
         {
-            sb.Append(nameof(this.Storage)).Append(": { ");
-            foreach (var value in this.Storage)
+            sb.Append(nameof(this.StorageProvider)).Append(": { ");
+            foreach (var value in this.StorageProvider)
             {
                 sb.Append(value.Key).Append(": ").Append(value.Value).Append(", ");
             }
 
             sb.Append(" }, ");
-        }
-
-        /// <summary>
-        /// A helper method to help retrieve the connection string name for the configured storage provider.
-        /// </summary>
-        /// <returns>The connection string name for the configured storage provider.</returns>
-        public string GetConnectionStringName()
-        {
-            if (this.Storage.ContainsKey("connectionStringName"))
-            {
-                return this.Storage["connectionStringName"].ToString();
-            }
-
-            return ConnectionStringNames.Storage;
         }
 
         internal virtual void Validate()

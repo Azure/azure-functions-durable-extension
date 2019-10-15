@@ -77,10 +77,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
-                durableTaskOptions.Storage["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
+                durableTaskOptions.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
                 if (maxQueuePollingInterval != null)
                 {
-                    durableTaskOptions.Storage["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
+                    durableTaskOptions.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
                 }
             }
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             if (maxQueuePollingInterval != null)
             {
-                durableTaskOptions.Storage["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
+                durableTaskOptions.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
             }
 
             return GetJobHost(

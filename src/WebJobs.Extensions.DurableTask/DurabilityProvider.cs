@@ -18,6 +18,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurabilityProvider : IOrchestrationService, IOrchestrationServiceClient
     {
+        internal const string NoConnectionDetails = "default";
+
         private readonly string name;
         private readonly IOrchestrationService innerService;
         private readonly IOrchestrationServiceClient innerServiceClient;
@@ -36,6 +38,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.innerService = service;
             this.innerServiceClient = serviceClient;
         }
+
+        /// <summary>
+        /// The name of the environment variable that contains connection details for how to connect to storage providers.
+        /// If this is not possible for the storage provider in question this method does not have to be overwritten.
+        /// Corresponds to the <see cref="DurableClientAttribute.ConnectionName"/> for binding data.
+        /// </summary>
+        public virtual string ConnectionName => NoConnectionDetails;
 
         /// <summary>
         /// Specifies whether the durability provider supports Durable Entities.

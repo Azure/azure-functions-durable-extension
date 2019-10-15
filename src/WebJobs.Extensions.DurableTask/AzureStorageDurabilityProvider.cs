@@ -19,14 +19,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProvider : DurabilityProvider
     {
         private readonly AzureStorageOrchestrationService serviceClient;
+        private readonly string connectionName;
 
-        public AzureStorageDurabilityProvider(AzureStorageOrchestrationService service)
+        public AzureStorageDurabilityProvider(AzureStorageOrchestrationService service, string connectionName)
             : base("Azure Storage", service, service)
         {
             this.serviceClient = service;
+            this.connectionName = connectionName;
         }
 
         public override bool SupportsEntities => true;
+
+        /// <summary>
+        /// The app setting containing the Azure Storage connection string.
+        /// </summary>
+        public override string ConnectionName => this.connectionName;
 
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)

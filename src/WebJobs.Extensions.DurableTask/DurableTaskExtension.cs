@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
-        private IOrchestrationService orchestrationService;
+        private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
@@ -111,9 +111,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = orchestrationServiceFactory;
+            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
@@ -218,9 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
 
-            this.orchestrationService = this.durabilityProviderFactory.GetDurabilityProvider();
-
-            this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
@@ -229,15 +228,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
 #if !NETSTANDARD2_0
             context.ApplyConfig(this.Options, "DurableTask");
-
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
-
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
+            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.nameResolver = context.Config.NameResolver;
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
 
@@ -270,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
-            return this.orchestrationService.DeleteAsync();
+            return this.defaultDurabilityProvider.DeleteAsync();
         }
 
         /// <summary>
@@ -571,6 +569,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             entityContext.ThrowInternalExceptionIfAny();
         }
 
+        internal string GetDefaultConnectionName()
+        {
+            return this.defaultDurabilityProvider.ConnectionName;
+        }
+
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
         {
             this.knownOrchestrators.TryGetValue(orchestratorFunction, out var info);
@@ -827,7 +830,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             message: "Starting task hub worker",
                             writeToUserLogs: true);
 
-                        await this.orchestrationService.CreateIfNotExistsAsync();
+                        await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
                         // Enable flowing exception information from activities

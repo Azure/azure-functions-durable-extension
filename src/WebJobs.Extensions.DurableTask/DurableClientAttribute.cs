@@ -30,11 +30,12 @@ namespace Microsoft.Azure.WebJobs
         public string TaskHub { get; set; }
 
         /// <summary>
-        /// Optional. Gets or sets the name of the Azure Storage connection string used by this binding.
+        /// Optional. Gets or sets the setting name of the connection details used by this binding to connect
+        /// to instances of the storage provider other than the default one this application communicates with.
         /// </summary>
         /// <value>The name of a connection string that exists in the app's application settings.</value>
         /// <remarks>
-        /// The default behavior is to use the value ConnectionStringName in <see cref="DurableTaskOptions.Storage"/>.
+        /// For Azure Storage the default behavior is to use the value ConnectionStringName in <see cref="DurableTaskOptions.StorageProvider"/>.
         /// If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         public string ConnectionName { get; set; }

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IConnectionStringResolver connectionStringResolver;
         private readonly AzureStorageOrchestrationServiceSettings defaultSettings;
         private AzureStorageDurabilityProvider defaultStorageProvider;
+        private readonly string defaultConnectionName;
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
@@ -23,12 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.options = options.Value;
             this.azureStorageOptions = new AzureStorageOptions();
-            JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.Storage), this.azureStorageOptions);
+            JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();
             this.azureStorageOptions.ValidateHubName(this.options.HubName);
 
             this.connectionStringResolver = connectionStringResolver;
+            this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
             this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
         }
 
@@ -37,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
-                this.defaultStorageProvider = new AzureStorageDurabilityProvider(defaultService);
+                this.defaultStorageProvider = new AzureStorageDurabilityProvider(defaultService, this.defaultConnectionName);
             }
 
             return this.defaultStorageProvider;
@@ -50,7 +52,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private AzureStorageDurabilityProvider GetAzureStorageStorageProvider(DurableClientAttribute attribute)
         {
-            AzureStorageOrchestrationServiceSettings settings = this.GetOrchestrationServiceSettings(attribute);
+            string connectionName = attribute.ConnectionName ?? this.defaultConnectionName;
+            AzureStorageOrchestrationServiceSettings settings = this.GetAzureStorageOrchestrationServiceSettings(connectionName, attribute.TaskHub);
 
             AzureStorageDurabilityProvider innerClient;
             if (string.Equals(this.defaultSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
@@ -63,24 +66,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                innerClient = new AzureStorageDurabilityProvider(new AzureStorageOrchestrationService(settings));
+                innerClient = new AzureStorageDurabilityProvider(new AzureStorageOrchestrationService(settings), connectionName);
             }
 
             return innerClient;
         }
 
-        internal AzureStorageOrchestrationServiceSettings GetOrchestrationServiceSettings(DurableClientAttribute attribute)
-        {
-            return this.GetAzureStorageOrchestrationServiceSettings(
-                connectionNameOverride: attribute.ConnectionName,
-                taskHubNameOverride: attribute.TaskHub);
-        }
-
         internal AzureStorageOrchestrationServiceSettings GetAzureStorageOrchestrationServiceSettings(
-            string connectionNameOverride = null,
+            string connectionName = null,
             string taskHubNameOverride = null)
         {
-            string connectionName = connectionNameOverride ?? this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
+            connectionName = connectionName ?? this.defaultConnectionName;
+
             string resolvedStorageConnectionString = this.connectionStringResolver.Resolve(connectionName);
 
             if (string.IsNullOrEmpty(resolvedStorageConnectionString))

@@ -9,6 +9,11 @@
             The Azure Storage implementation of additional methods not required by IOrchestrationService.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.ConnectionName">
+            <summary>
+            The app setting containing the Azure Storage connection string.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetAllOrchestrationStates(System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
@@ -258,6 +263,13 @@
             for this classes implementions of <see cref="T:DurableTask.Core.IOrchestrationService"/>.</param>
             <param name="serviceClient">The internal <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/> that provides functionality
             for this classes implementions of <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/>.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConnectionName">
+            <summary>
+            The name of the environment variable that contains connection details for how to connect to storage providers.
+            If this is not possible for the storage provider in question this method does not have to be overwritten.
+            Corresponds to the <see cref="P:Microsoft.Azure.WebJobs.DurableClientAttribute.ConnectionName"/> for binding data.
+            </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SupportsEntities">
             <summary>
@@ -1229,7 +1241,7 @@
             </remarks>
             <value>The name of the default task hub.</value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.Storage">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StorageProvider">
             <summary>
             The section of configuration related to storage providers.
             </summary>
@@ -1309,12 +1321,6 @@
             <summary>
             Gets or sets the time window within which entity messages get deduplicated and reordered.
             </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.GetConnectionStringName">
-            <summary>
-            A helper method to help retrieve the connection string name for the configured storage provider.
-            </summary>
-            <returns>The connection string name for the configured storage provider.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition">
             <summary>
@@ -2571,11 +2577,12 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.DurableClientAttribute.ConnectionName">
             <summary>
-            Optional. Gets or sets the name of the Azure Storage connection string used by this binding.
+            Optional. Gets or sets the setting name of the connection details used by this binding to connect
+            to instances of the storage provider other than the default one this application communicates with.
             </summary>
             <value>The name of a connection string that exists in the app's application settings.</value>
             <remarks>
-            The default behavior is to use the value ConnectionStringName in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.Storage"/>.
+            For Azure Storage the default behavior is to use the value ConnectionStringName in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StorageProvider"/>.
             If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
             </remarks>
         </member>
