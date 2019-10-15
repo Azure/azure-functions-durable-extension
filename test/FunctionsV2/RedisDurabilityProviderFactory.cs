@@ -2,46 +2,55 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using DurableTask.Redis;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class RedisDurabilityProviderFactory : IDurabilityProviderFactory
     {
-        private readonly DurabilityProvider defaultProvider;
-        private readonly string redisConnectionString;
-        private readonly string defaultHubName;
+        private readonly string defaultConnectionName;
 
-        public RedisDurabilityProviderFactory(IOptions<DurableTaskOptions> options, IConnectionStringResolver connectionStringResolver, string connectionStringName)
+        private readonly DurabilityProvider defaultProvider;
+        private readonly string defaultHubName;
+        private readonly IConnectionStringResolver connectionResolver;
+
+        public RedisDurabilityProviderFactory(IOptions<DurableTaskOptions> options, IConnectionStringResolver connectionStringResolver)
         {
-            this.redisConnectionString = connectionStringResolver.Resolve(connectionStringName);
+            this.defaultConnectionName = options.Value.StorageProvider["connectionName"] as string;
+            string redisConnectionString = connectionStringResolver.Resolve(this.defaultConnectionName);
             this.defaultHubName = options.Value.HubName;
+            this.connectionResolver = connectionStringResolver;
             var defaultTaskHubService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
             {
                 TaskHubName = this.defaultHubName,
-                RedisConnectionString = this.redisConnectionString,
+                RedisConnectionString = redisConnectionString,
             });
 
-            this.defaultProvider = new DurabilityProvider("Redis", defaultTaskHubService, defaultTaskHubService);
+            this.defaultProvider = new DurabilityProvider("Redis", defaultTaskHubService, defaultTaskHubService, this.defaultConnectionName);
         }
 
         public bool SupportsEntities => false;
 
         public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            if (string.IsNullOrEmpty(attribute.TaskHub) || string.Equals(attribute.TaskHub, this.defaultHubName))
+            if (string.IsNullOrEmpty(attribute.TaskHub) && string.IsNullOrEmpty(attribute.ConnectionName))
             {
                 return this.defaultProvider;
             }
 
+            if (string.Equals(attribute.TaskHub, this.defaultHubName) && string.Equals(attribute.ConnectionName, this.defaultConnectionName))
+            {
+                return this.defaultProvider;
+            }
+
+            string redisConnectionString = this.connectionResolver.Resolve(attribute.ConnectionName);
             var redisOrchestartionService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
             {
                 TaskHubName = attribute.TaskHub,
-                RedisConnectionString = this.redisConnectionString,
+                RedisConnectionString = redisConnectionString,
             });
 
-            return new DurabilityProvider("Redis", redisOrchestartionService, redisOrchestartionService);
+            return new DurabilityProvider("Redis", redisOrchestartionService, redisOrchestartionService, attribute.ConnectionName);
         }
 
         public DurabilityProvider GetDurabilityProvider()

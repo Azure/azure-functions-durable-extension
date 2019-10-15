@@ -15,8 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly IConnectionStringResolver connectionStringResolver;
         private readonly AzureStorageOrchestrationServiceSettings defaultSettings;
-        private AzureStorageDurabilityProvider defaultStorageProvider;
         private readonly string defaultConnectionName;
+        private AzureStorageDurabilityProvider defaultStorageProvider;
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,

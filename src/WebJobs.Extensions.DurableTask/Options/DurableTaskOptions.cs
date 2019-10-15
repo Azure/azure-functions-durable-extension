@@ -55,7 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// The section of configuration related to storage providers.
+        /// The section of configuration related to storage providers. If using Azure Storage provider, the schema should match
+        /// <see cref="AzureStorageOptions"./>
         /// </summary>
         public IDictionary<string, object> StorageProvider { get; set; } = new Dictionary<string, object>();
 

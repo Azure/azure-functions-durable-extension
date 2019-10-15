@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string connectionName;
 
         public AzureStorageDurabilityProvider(AzureStorageOrchestrationService service, string connectionName)
-            : base("Azure Storage", service, service)
+            : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
             this.connectionName = connectionName;
