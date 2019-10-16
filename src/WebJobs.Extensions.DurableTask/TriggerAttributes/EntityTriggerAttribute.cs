@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{EntityName} ({Version})")]
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]
 #pragma warning restore CS0618 // Type or member is obsolete

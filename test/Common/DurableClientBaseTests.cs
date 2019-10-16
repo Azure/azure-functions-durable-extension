@@ -3,11 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+#if !FUNCTIONS_V1
+using System.Linq;
+#endif
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 #endif
@@ -133,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task HttpRequest_HttpRequestMessage_ClientMethods_Identical()
@@ -142,11 +145,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Completed));
-            var durableExtension = GetDurableTaskExtension();
-            var httpHandler = new ExtendedHttpApiHandler(new Mock<IDurableOrchestrationClient>(MockBehavior.Strict).Object);
-            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableOrchestrationClient(orchestrationServiceClientMock.Object, durableExtension, httpHandler, new OrchestrationClientAttribute { });
+            var storageProvider = new DurabilityProvider("test", null, orchestrationServiceClientMock.Object, "test");
+            var durableExtension = GetDurableTaskConfig();
+            var durableOrchestrationClient = (IDurableClient)new DurableClient(storageProvider, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
+            var httpHandler = new ExtendedHttpApiHandler(new Mock<IDurableClient>(MockBehavior.Strict).Object);
 
-            // This is super hacky, but required due to the circular dependency of ExtendedHttpApiHandler requiring IDurableOrchestrationClient and DurableOrchestrationClient requiring ExtendedHttpApiHandler
+            // This is super hacky, but required due to the circular dependency of ExtendedHttpApiHandler requiring IDurableClient and DurableClient requiring ExtendedHttpApiHandler
             httpHandler.InnerClient = durableOrchestrationClient;
 
             string sampleUrl = "https://samplesite.azurewebsites.net";
@@ -218,6 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions();
             options.HubName = "DurableTaskHub";
+            options.NotificationUrl = new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var connectionStringResolver = new TestConnectionStringResolver();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver);

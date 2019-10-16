@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (storageProviderType)
             {
                 case AzureStorageProviderType:
-#if NET_CORE
+#if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
 #endif
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (storageProvider)
             {
                 case AzureStorageProviderType:
-#if NET_CORE
+#if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
 #endif
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntities),
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
-#if NET_CORE
+#if !FUNCTIONS_V1
                 typeof(TestEntityWithDependencyInjectionHelpers),
 #endif
             };

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
     [Extension("DurableTask", "DurableTask")]
 #endif
     public class DurableTaskExtension :
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
 
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
         }
 
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
         internal DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
@@ -589,7 +589,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
 #endif
         }

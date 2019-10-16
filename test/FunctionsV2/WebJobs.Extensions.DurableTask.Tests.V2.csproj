@@ -35,10 +35,6 @@
     <Compile Include="..\Common\*.cs" />
   </ItemGroup>
 
-  <PropertyGroup Condition="true">
-    <DefineConstants>NET_CORE</DefineConstants>
-  </PropertyGroup>
-  
   <ItemGroup>
     <Compile Remove="..\Common\DurableOptionsConfigurationTests.cs" />
   </ItemGroup>

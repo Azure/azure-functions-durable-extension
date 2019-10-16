@@ -3,7 +3,7 @@
 
 using System;
 using System.Net.Http;
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public static class DurableTaskJobHostConfigurationExtensions
     {
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
         /// </summary>

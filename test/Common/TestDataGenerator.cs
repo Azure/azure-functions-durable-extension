@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private static readonly object[] BoolOptions = new object[] { true, false };
         private static readonly object[] FullFeaturedStorageProviders = new object[] { TestHelpers.AzureStorageProviderType };
-#if NET_CORE
+#if !FUNCTIONS_V1
         private static readonly object[] AllStorageProviders = new object[] { TestHelpers.AzureStorageProviderType, TestHelpers.RedisProviderType };
 #else
         private static readonly object[] AllStorageProviders = new object[] { TestHelpers.AzureStorageProviderType };

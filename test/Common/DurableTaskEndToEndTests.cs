@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, TestHelpers.AzureStorageProviderType)]
         [InlineData(false, TestHelpers.AzureStorageProviderType)]
-#if NET_CORE
+#if !FUNCTIONS_V1
         [InlineData(true, TestHelpers.EmulatorProviderType)]
         [InlineData(false, TestHelpers.EmulatorProviderType)]
 #endif
