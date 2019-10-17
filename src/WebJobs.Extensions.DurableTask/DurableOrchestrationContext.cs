@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs
     public sealed class DurableOrchestrationContext : DurableOrchestrationContextBase
     {
         private const string DefaultVersion = "";
-        private const int MaxTimerDurationInDays = 6;
+        internal const int MaxTimerDurationInDays = 6;
 
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
@@ -421,6 +421,18 @@ namespace Microsoft.Azure.WebJobs
             object input)
         {
             this.ThrowIfInvalidAccess();
+
+            // These check can be removed once the storage provider supports extended timers.
+            // https://github.com/Azure/azure-functions-durable-extension/issues/14
+            if (retryOptions.FirstRetryInterval > TimeSpan.FromDays(MaxTimerDurationInDays))
+            {
+                throw new ArgumentException($"Retry intervals must not exceed {MaxTimerDurationInDays} days.", nameof(retryOptions.FirstRetryInterval));
+            }
+
+            if (retryOptions.MaxRetryInterval > TimeSpan.FromDays(MaxTimerDurationInDays))
+            {
+                throw new ArgumentException($"Retry intervals must not exceed {MaxTimerDurationInDays} days.", nameof(retryOptions.MaxRetryInterval));
+            }
 
             // TODO: Support for versioning
             string version = DefaultVersion;

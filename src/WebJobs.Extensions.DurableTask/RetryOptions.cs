@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs
         public RetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
         {
             this.retryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
+            this.MaxRetryInterval = TimeSpan.FromDays(DurableOrchestrationContext.MaxTimerDurationInDays);
         }
 
         /// <summary>
