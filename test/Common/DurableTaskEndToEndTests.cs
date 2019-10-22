@@ -3350,6 +3350,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MaxOrchestrationAction_MaxReached_Throws_InvalidOperationException()
+        {
+            DurableTaskOptions options = new DurableTaskOptions();
+            var maxActions = 1;
+            options.MaxOrchestrationActions = maxActions;
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                options))
+            {
+                await host.StartAsync();
+
+                InvalidOperationException invalidOperationException =
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TwoOrchestratorActivityActions), "", this.output);
+                    await client.WaitForCompletionAsync(this.output);
+                });
+
+                Assert.NotNull(invalidOperationException);
+                Assert.Equal(
+                    $"Maximum amount of orchestration actions ({maxActions}) has been reached. This value can be configured in local.settings.json file as MaxOrchestrationActions.",
+                    invalidOperationException.Message);
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>

@@ -129,6 +129,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
 
         /// <summary>
+        /// Gets or sets the maximum number of orchestration actions. The default value is 100,000.
+        /// </summary>
+        public int MaxOrchestrationActions { get; set; } = 100000;
+
+        /// <summary>
         /// Gets or sets the time window within which entity messages get deduplicated and reordered.
         /// </summary>
         public int EntityMessageReorderWindowInMinutes { get; set; } = 30;

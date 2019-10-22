@@ -40,6 +40,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
         }
 
+        public static async Task<string> TwoOrchestratorActivityActions([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            string input = ctx.GetInput<string>();
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            string outputTwo = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            return output;
+        }
+
         public static bool VerifyUniqueGuids([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             HashSet<Guid> guids = new HashSet<Guid>();
