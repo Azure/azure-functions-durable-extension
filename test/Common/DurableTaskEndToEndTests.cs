@@ -3354,8 +3354,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task MaxOrchestrationAction_MaxReached_OrchestrationFails()
         {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.AllOrchestratorActivityActions),
+            };
+
             DurableTaskOptions options = new DurableTaskOptions();
-            var maxActions = 1;
+            var maxActions = 7;
             options.MaxOrchestrationActions = maxActions;
 
             using (var host = TestHelpers.GetJobHost(
@@ -3364,7 +3369,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TwoOrchestratorActivityActions), "", this.output);
+                var counterEntityId = new EntityId("Counter", Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counterEntityId, this.output);
                 DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
