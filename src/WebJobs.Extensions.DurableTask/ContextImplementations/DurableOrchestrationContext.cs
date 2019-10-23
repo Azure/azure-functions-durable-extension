@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly int maxActionCount;
 
-        private static int actionCount;
+        private int actionCount;
 
         private string serializedOutput;
         private string serializedCustomStatus;
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
             : base(config, functionName)
         {
-            actionCount = 0;
+            this.actionCount = 0;
             this.maxActionCount = config.Options.MaxOrchestrationActions;
         }
 
@@ -821,7 +821,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Need to round-trip serialization since SendEvent always tries to serialize.
                     string rawInput = events.Dequeue();
                     JToken jsonData = JToken.Parse(rawInput);
-                    this.IncrementActionsOrThrowException();
                     this.InnerContext.SendEvent(instance, eventName, jsonData);
                 }
             }
@@ -1022,13 +1021,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void IncrementActionsOrThrowException()
         {
-            if (actionCount >= this.maxActionCount)
+            if (this.actionCount >= this.maxActionCount)
             {
-                throw new InvalidOperationException("Maximum amount of orchestration actions (" + this.maxActionCount + ") has been reached. This value can be configured in local.settings.json file as MaxOrchestrationActions.");
+                throw new InvalidOperationException("Maximum amount of orchestration actions (" + this.maxActionCount + ") has been reached. This value can be configured in host.json file as MaxOrchestrationActions.");
             }
             else
             {
-                actionCount++;
+                this.actionCount++;
             }
         }
 
