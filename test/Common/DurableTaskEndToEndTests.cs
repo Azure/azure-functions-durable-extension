@@ -3353,7 +3353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task MaxOrchestrationAction_MaxReached_Throws_InvalidOperationException()
+        public async Task MaxOrchestrationAction_MaxReached_OrchestrationFails()
         {
             DurableTaskOptions options = new DurableTaskOptions();
             var maxActions = 1;
@@ -3365,17 +3365,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                InvalidOperationException invalidOperationException =
-                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                {
-                    var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TwoOrchestratorActivityActions), "", this.output);
-                    await client.WaitForCompletionAsync(this.output);
-                });
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TwoOrchestratorActivityActions), "", this.output);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.NotNull(invalidOperationException);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
                 Assert.Equal(
-                    $"Maximum amount of orchestration actions ({maxActions}) has been reached. This value can be configured in local.settings.json file as MaxOrchestrationActions.",
-                    invalidOperationException.Message);
+                    $"Orchestrator function 'TwoOrchestratorActivityActions' failed: Maximum amount of orchestration actions ({maxActions}) has been reached. " +
+                    $"This value can be configured in local.settings.json file as MaxOrchestrationActions.", 
+                    status.Output.ToString());
             }
         }
 
