@@ -3371,7 +3371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
                 Assert.Equal(
                     $"Orchestrator function 'TwoOrchestratorActivityActions' failed: Maximum amount of orchestration actions ({maxActions}) has been reached. " +
-                    $"This value can be configured in local.settings.json file as MaxOrchestrationActions.",
+                    $"This value can be configured in host.json file as MaxOrchestrationActions.",
                     status.Output.ToString());
             }
         }
