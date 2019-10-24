@@ -422,18 +422,6 @@ namespace Microsoft.Azure.WebJobs
         {
             this.ThrowIfInvalidAccess();
 
-            // These check can be removed once the storage provider supports extended timers.
-            // https://github.com/Azure/azure-functions-durable-extension/issues/14
-            if (retryOptions.FirstRetryInterval > TimeSpan.FromDays(MaxTimerDurationInDays))
-            {
-                throw new ArgumentException($"Retry intervals must not exceed {MaxTimerDurationInDays} days.", nameof(retryOptions.FirstRetryInterval));
-            }
-
-            if (retryOptions.MaxRetryInterval > TimeSpan.FromDays(MaxTimerDurationInDays))
-            {
-                throw new ArgumentException($"Retry intervals must not exceed {MaxTimerDurationInDays} days.", nameof(retryOptions.MaxRetryInterval));
-            }
-
             // TODO: Support for versioning
             string version = DefaultVersion;
             this.config.ThrowIfFunctionDoesNotExist(functionName, functionType);

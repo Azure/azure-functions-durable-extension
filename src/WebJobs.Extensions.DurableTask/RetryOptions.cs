@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs
     public class RetryOptions
     {
         private readonly DurableTaskCore.RetryOptions retryOptions;
+        private readonly TimeSpan maxStorageTimeSpan = TimeSpan.FromDays(DurableOrchestrationContext.MaxTimerDurationInDays);
 
         /// <summary>
         /// Creates a new instance RetryOptions with the supplied first retry and max attempts.
@@ -35,8 +36,22 @@ namespace Microsoft.Azure.WebJobs
         /// </value>
         public TimeSpan FirstRetryInterval
         {
-            get { return this.retryOptions.FirstRetryInterval; }
-            set { this.retryOptions.FirstRetryInterval = value; }
+            get
+            {
+                return this.retryOptions.FirstRetryInterval;
+            }
+
+            set
+            {
+                if (value < this.maxStorageTimeSpan)
+                {
+                    this.retryOptions.FirstRetryInterval = value;
+                }
+                else
+                {
+                    this.retryOptions.FirstRetryInterval = this.maxStorageTimeSpan;
+                }
+            }
         }
 
         /// <summary>
@@ -47,8 +62,22 @@ namespace Microsoft.Azure.WebJobs
         /// </value>
         public TimeSpan MaxRetryInterval
         {
-            get { return this.retryOptions.MaxRetryInterval; }
-            set { this.retryOptions.MaxRetryInterval = value; }
+            get
+            {
+                return this.retryOptions.MaxRetryInterval;
+            }
+
+            set
+            {
+                if (value < this.maxStorageTimeSpan)
+                {
+                    this.retryOptions.MaxRetryInterval = value;
+                }
+                else
+                {
+                    this.retryOptions.MaxRetryInterval = this.maxStorageTimeSpan;
+                }
+            }
         }
 
         /// <summary>
