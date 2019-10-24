@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-#if !FUNCTIONS_V1
 using System.Linq;
-#endif
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -14,7 +12,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 #endif
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -33,9 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var instanceId = Guid.NewGuid().ToString();
             const string functionName = "sampleFunction";
             var durableOrchestrationClientBaseMock = new Mock<IDurableOrchestrationClient> { CallBase = true };
-            durableOrchestrationClientBaseMock.Setup(x => x.StartNewAsync(functionName, string.Empty, null)).ReturnsAsync(instanceId);
+            durableOrchestrationClientBaseMock.Setup(x => x.StartNewAsync<object>(functionName, string.Empty, null)).ReturnsAsync(instanceId);
 
-            var result = await durableOrchestrationClientBaseMock.Object.StartNewAsync(functionName, null);
+            var result = await durableOrchestrationClientBaseMock.Object.StartNewAsync(functionName);
+            result.Should().Be(instanceId);
+
+            result = await durableOrchestrationClientBaseMock.Object.StartNewAsync<object>(functionName, null);
             result.Should().Be(instanceId);
         }
 
