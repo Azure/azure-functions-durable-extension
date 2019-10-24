@@ -37,6 +37,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             result.Should().Be(instanceId);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_is_calling_overload_method_with_specific_instance_id()
+        {
+            var instanceId = "testInstance";
+            const string functionName = "sampleFunction";
+            var durableOrchestrationClientBaseMock = new Mock<IDurableOrchestrationClient> { CallBase = true };
+            durableOrchestrationClientBaseMock.Setup(x => x.StartNewAsync<object>(functionName, instanceId, null)).ReturnsAsync(instanceId);
+
+            var result = await durableOrchestrationClientBaseMock.Object.StartNewAsync(functionName, instanceId);
+            result.Should().Be(instanceId);
+
+            result = await durableOrchestrationClientBaseMock.Object.StartNewAsync<object>(functionName, instanceId, null);
+            result.Should().Be(instanceId);
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("")]
