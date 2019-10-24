@@ -129,6 +129,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
 
         /// <summary>
+        ///  States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
+        /// </summary>
+        public OverridableStates OverridableExistingInstanceStates { get; set; } = OverridableStates.AnyState;
+
+        /// <summary>
         /// Gets or sets the time window within which entity messages get deduplicated and reordered.
         /// </summary>
         public int EntityMessageReorderWindowInMinutes { get; set; } = 30;

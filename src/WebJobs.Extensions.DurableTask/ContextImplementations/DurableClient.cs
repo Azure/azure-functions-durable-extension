@@ -121,8 +121,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Instance ID lengths must not exceed {MaxInstanceIdLength} characters.");
             }
 
+            this.TryGetStatusesNotToOverride(out OrchestrationStatus[] dedupeStatuses);
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                orchestratorFunctionName, DefaultVersion, instanceId, input);
+                orchestratorFunctionName, DefaultVersion, instanceId, input, null, dedupeStatuses);
 
             this.traceHelper.FunctionScheduled(
                 this.hubName,
@@ -134,6 +135,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationInstance instance = await createTask;
             return instance.InstanceId;
+        }
+
+        private bool TryGetStatusesNotToOverride(out OrchestrationStatus[] dedupeStatuses)
+        {
+            var overridableStates = this.config.Options.OverridableExistingInstanceStates;
+            if (overridableStates == OverridableStates.IfTerminatedFailedOrCompleted)
+            {
+                dedupeStatuses = new OrchestrationStatus[] { OrchestrationStatus.Running, OrchestrationStatus.ContinuedAsNew, OrchestrationStatus.Canceled, OrchestrationStatus.Pending };
+                return true;
+            }
+
+            dedupeStatuses = null;
+            return false;
         }
 
         private static bool IsInvalidCharacter(char c)
