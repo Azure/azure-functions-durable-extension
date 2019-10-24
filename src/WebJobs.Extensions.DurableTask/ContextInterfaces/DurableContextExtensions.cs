@@ -397,6 +397,26 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="client">The client object.</param>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+        /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
+        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        public static Task<string> StartNewAsync(
+            this IDurableOrchestrationClient client,
+            string orchestratorFunctionName,
+            string instanceId)
+        {
+            return client.StartNewAsync<object>(orchestratorFunctionName, instanceId, null);
+        }
+
+        /// <summary>
+        /// Starts a new execution of the specified orchestrator function.
+        /// </summary>
+        /// <param name="client">The client object.</param>
+        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
         /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
