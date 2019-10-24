@@ -3375,7 +3375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+                Assert.Equal("AllAPICallsUsed", status.CustomStatus);
                 Assert.Equal(
                     $"Orchestrator function 'AllOrchestratorActivityActions' failed: Maximum amount of orchestration actions ({maxActions}) has been reached. " +
                     $"This value can be configured in host.json file as MaxOrchestrationActions.",

@@ -53,7 +53,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.CallSubOrchestratorWithRetryAsync<string>(nameof(TestOrchestrations.SayHelloWithActivity), options, stringInput);
             ctx.StartNewOrchestration(nameof(TestOrchestrations.SayHelloWithActivityWithDeterministicGuid), stringInput);
             ctx.SignalEntity(input, "count");
+
+            ctx.SetCustomStatus("AllAPICallsUsed");
             await ctx.CallHttpAsync(null);
+
             return "TestCompleted";
         }
 
