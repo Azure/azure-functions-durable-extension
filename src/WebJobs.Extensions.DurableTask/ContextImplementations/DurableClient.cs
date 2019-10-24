@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<string> IDurableOrchestrationClient.StartNewAsync(string orchestratorFunctionName, string instanceId, object input)
+        async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
             this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
 
@@ -540,7 +540,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         JObject historyItem = (JObject)historyArray[i];
                         if (Enum.TryParse(historyItem["EventType"].Value<string>(), out EventType eventType))
                         {
-                           // Changing the value of EventType from integer to string for better understanding in the history output
+                            // Changing the value of EventType from integer to string for better understanding in the history output
                             historyItem["EventType"] = eventType.ToString();
                             switch (eventType)
                             {
