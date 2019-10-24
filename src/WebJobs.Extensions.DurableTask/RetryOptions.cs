@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs
     public class RetryOptions
     {
         private readonly DurableTaskCore.RetryOptions retryOptions;
-        private readonly TimeSpan maxStorageTimeSpan = TimeSpan.FromDays(DurableOrchestrationContext.MaxTimerDurationInDays);
+        private static readonly TimeSpan MaxStorageTimeSpan = TimeSpan.FromDays(DurableOrchestrationContext.MaxTimerDurationInDays);
 
         /// <summary>
         /// Creates a new instance RetryOptions with the supplied first retry and max attempts.
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs
         public RetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
         {
             this.retryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
-            this.MaxRetryInterval = TimeSpan.FromDays(DurableOrchestrationContext.MaxTimerDurationInDays);
+            this.MaxRetryInterval = MaxStorageTimeSpan;
         }
 
         /// <summary>
@@ -43,13 +43,13 @@ namespace Microsoft.Azure.WebJobs
 
             set
             {
-                if (value < this.maxStorageTimeSpan)
+                if (value < MaxStorageTimeSpan)
                 {
                     this.retryOptions.FirstRetryInterval = value;
                 }
                 else
                 {
-                    this.retryOptions.FirstRetryInterval = this.maxStorageTimeSpan;
+                    this.retryOptions.FirstRetryInterval = MaxStorageTimeSpan;
                 }
             }
         }
@@ -69,13 +69,13 @@ namespace Microsoft.Azure.WebJobs
 
             set
             {
-                if (value < this.maxStorageTimeSpan)
+                if (value < MaxStorageTimeSpan)
                 {
                     this.retryOptions.MaxRetryInterval = value;
                 }
                 else
                 {
-                    this.retryOptions.MaxRetryInterval = this.maxStorageTimeSpan;
+                    this.retryOptions.MaxRetryInterval = MaxStorageTimeSpan;
                 }
             }
         }
