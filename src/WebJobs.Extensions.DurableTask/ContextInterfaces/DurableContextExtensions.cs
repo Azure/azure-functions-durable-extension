@@ -397,7 +397,6 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="client">The client object.</param>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
-        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestratation instance.</returns>
         /// <exception cref="ArgumentException">
