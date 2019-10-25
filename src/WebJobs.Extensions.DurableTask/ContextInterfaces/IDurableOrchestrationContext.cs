@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs
 {
@@ -339,5 +340,13 @@ namespace Microsoft.Azure.WebJobs
         /// </exception>
         /// <returns>The instance id of the new orchestration.</returns>
         string StartNewOrchestration(string functionName, object input, string instanceId = null);
+
+        /// <summary>
+        /// Returns an instance of ILogger that is replay safe, ensuring the logger logs only when the orchestrator
+        /// is not replaying that line of code.
+        /// </summary>
+        /// <param name="logger">An instance of ILogger.</param>
+        /// <returns>An instance of a replay safe ILogger.</returns>
+        ILogger CreateReplaySafeLogger(ILogger logger);
     }
 }

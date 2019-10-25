@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -1018,6 +1019,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.newGuidCounter++;
 
             return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
+        }
+
+        public ILogger CreateReplaySafeLogger(ILogger logger)
+        {
+            return new ReplaySafeLogger(this, logger);
         }
 
         private class LockReleaser : IDisposable
