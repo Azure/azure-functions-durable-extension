@@ -17,8 +17,8 @@ namespace Microsoft.Azure.WebJobs
 
         /// <summary>
         /// Option to only start a new orchestrator instance with an existing instance Id when the existing
-        /// instance is in a termincated, failed, or completed state.
+        /// instance is in a terminated, failed, or completed state.
         /// </summary>
-        IfTerminatedFailedOrCompleted,
+        NonRunningStates,
     }
 }
