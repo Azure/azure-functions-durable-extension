@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Interface defining methods to build orchestration services and orchestration service clients.
+    /// Interface defining methods to build instances of <see cref="DurabilityProvider"/>.
     /// </summary>
     public interface IDurabilityProviderFactory
     {

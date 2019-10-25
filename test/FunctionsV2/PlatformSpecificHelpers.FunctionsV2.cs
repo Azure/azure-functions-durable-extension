@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddCorrectDurableTaskExtension(options, storageProvider);
+                        webJobsBuilder.AddDurableTask(options, storageProvider);
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return (JobHost)host.Services.GetService<IJobHost>();
         }
 
-        private static IWebJobsBuilder AddCorrectDurableTaskExtension(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider)
+        private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider)
         {
             switch (storageProvider)
             {
@@ -67,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     builder.AddEmulatorDurableTask();
                     break;
                 case TestHelpers.AzureStorageProviderType:
+                    // This provider is built into the default AddDurableTask() call below.
                     break;
                 default:
                     throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
