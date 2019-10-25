@@ -36,10 +36,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="connectionName">The name of the app setting that stores connection details for the storage provider.</param>
         public DurabilityProvider(string storageProviderName, IOrchestrationService service, IOrchestrationServiceClient serviceClient, string connectionName)
         {
-            this.name = storageProviderName;
-            this.innerService = service;
-            this.innerServiceClient = serviceClient;
-            this.connectionName = connectionName;
+            this.name = storageProviderName ?? throw new ArgumentNullException(nameof(storageProviderName));
+            this.innerService = service ?? throw new ArgumentNullException(nameof(service));
+            this.innerServiceClient = serviceClient ?? throw new ArgumentNullException(nameof(serviceClient));
+            this.connectionName = connectionName ?? throw new ArgumentNullException(connectionName);
         }
 
         /// <summary>
@@ -298,9 +298,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Retrieves the state for a serialized entity.
         /// </summary>
-        /// <param name="inputState">In memory representation of state.</param>
-        /// <returns>Serialized state for the entity.</returns>
-        public virtual Task<string> RetrieveSerializedEntityState(string inputState)
+        /// <param name="hubName">Name of the taskhub to retrieve entity from</param>
+        /// <param name="entityId">Entity id to fetch state for.</param>
+        /// <returns>State for the entity.</returns>
+        public virtual Task<string> RetrieveSerializedEntityState(string hubName, EntityId entityId)
         {
             throw this.GetNotImplementedException(nameof(this.RetrieveSerializedEntityState));
         }

@@ -293,9 +293,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 stateList = await this.durableFunctionsClient.GetOrchestrationStateAsync(instanceId, showHistory, showInput);
             }
-            catch
+            catch (NotImplementedException)
             {
-                // TODO: Going to ignore the show input flag for now. Will probably want to log a warning or even through an error if
+                // TODO: Going to ignore the show input flag for now. Will probably want to log a warning or even throw an error if
                 // value does not match default behavior for IOrchestrationServiceClient
                 stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false);
             }
@@ -362,43 +362,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(TaskHubClient client, string hubName, EntityId entityId)
         {
-            this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
-
-            var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
-            IList<OrchestrationState> stateList = await client.ServiceClient.GetOrchestrationStateAsync(instanceId, false);
-
-            OrchestrationState state = stateList?.FirstOrDefault();
-            if (state != null
-                && state.OrchestrationInstance != null
-                && state.Input != null)
-            {
-                string serializedState;
-
-                if (state.Input.StartsWith("http"))
-                {
-                    serializedState = await this.durableFunctionsClient.RetrieveSerializedEntityState(state.Input);
-                }
-                else
-                {
-                    serializedState = state.Input;
-                }
-
-                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(serializedState, MessagePayloadDataConverter.MessageSettings);
-
-                if (schedulerState.EntityExists)
-                {
-                    return new EntityStateResponse<T>()
-                    {
-                        EntityExists = true,
-                        EntityState = MessagePayloadDataConverter.Default.Deserialize<T>(schedulerState.EntityState),
-                    };
-                }
-            }
+            this.config.ThrowIfFunctionDoesNotExist(nameof(EntityId.EntityName), FunctionType.Entity);
+            string entityState = await this.durableFunctionsClient.RetrieveSerializedEntityState(hubName, entityId);
 
             return new EntityStateResponse<T>()
             {
-                EntityExists = false,
-                EntityState = default(T),
+                EntityExists = entityState != null,
+                EntityState = MessagePayloadDataConverter.Default.Deserialize<T>(entityState),
             };
         }
 

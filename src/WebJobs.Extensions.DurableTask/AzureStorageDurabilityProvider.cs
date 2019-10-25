@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using Newtonsoft.Json;
 using AzureStorage = DurableTask.AzureStorage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -60,10 +61,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public async override Task<string> RetrieveSerializedEntityState(string inputState)
+        public async override Task<string> RetrieveSerializedEntityState(string hubName, EntityId entityId)
         {
-            // the input was compressed... read it back from blob
-            return await this.serviceClient.DownloadBlobAsync(inputState);
+            var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
+            IList<OrchestrationState> stateList = await this.serviceClient.GetOrchestrationStateAsync(instanceId, false);
+
+            OrchestrationState state = stateList?.FirstOrDefault();
+            if (state != null
+                && state.OrchestrationInstance != null
+                && state.Input != null)
+            {
+                string serializedState;
+
+                if (state.Input.StartsWith("http"))
+                {
+                    serializedState = await this.serviceClient.DownloadBlobAsync(state.Input);
+                }
+                else
+                {
+                    serializedState = state.Input;
+                }
+
+                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(serializedState, MessagePayloadDataConverter.MessageSettings);
+
+                if (schedulerState.EntityExists)
+                {
+                    return schedulerState.EntityState;
+                }
+            }
+
+            return null;
         }
 
         /// <inheritdoc/>
