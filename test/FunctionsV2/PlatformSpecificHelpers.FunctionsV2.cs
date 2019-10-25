@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     /// <summary>
     /// These helpers are specific to Functions v2.
-    /// IMPORTANT: Method signatures must be kept source compatible with the Functions v1 version.
     /// </summary>
     public static class PlatformSpecificHelpers
     {
@@ -21,7 +21,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static JobHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
             ILoggerProvider loggerProvider,
-            INameResolver nameResolver)
+            INameResolver nameResolver,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper)
         {
             IHost host = new HostBuilder()
                 .ConfigureLogging(
@@ -41,6 +43,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         ITypeLocator typeLocator = TestHelpers.GetTypeLocator();
                         serviceCollection.AddSingleton(typeLocator);
                         serviceCollection.AddSingleton(nameResolver);
+                        serviceCollection.AddSingleton(durableHttpMessageHandler);
+
+                        if (lifeCycleNotificationHelper != null)
+                        {
+                            serviceCollection.AddSingleton(lifeCycleNotificationHelper);
+                        }
                     })
                 .Build();
 

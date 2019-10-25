@@ -1,0 +1,17 @@
+{
+  "bindings": [
+    {
+      "name": "phoneNumber",
+      "type": "activityTrigger",
+      "direction": "in"
+    },
+    {
+      "type": "twilioSms",
+      "name": "message",
+      "from": "%TwilioPhoneNumber%",
+      "accountSidSetting": "TwilioAccountSid",
+      "authTokenSetting": "TwilioAuthToken",
+      "direction": "out"
+    }
+  ]
+}

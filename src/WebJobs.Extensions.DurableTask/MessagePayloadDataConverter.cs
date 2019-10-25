@@ -25,11 +25,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             ContractResolver = new ExceptionResolver(),
             TypeNameHandling = TypeNameHandling.Objects,
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
         };
 
         // Default singleton instances
         public static readonly MessagePayloadDataConverter Default = new MessagePayloadDataConverter(MessageSettings);
         public static readonly MessagePayloadDataConverter ErrorConverter = new MessagePayloadDataConverter(ErrorSettings);
+        public static readonly JsonSerializer DefaultSerializer = JsonSerializer.Create(MessageSettings);
 
         public MessagePayloadDataConverter(JsonSerializerSettings settings)
             : base(settings)

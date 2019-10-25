@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs
         /// <returns>A 32-bit hash code value.</returns>
         public override int GetHashCode()
         {
-            return this.Name.GetHashCode();
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(this.Name);
         }
 
         /// <summary>

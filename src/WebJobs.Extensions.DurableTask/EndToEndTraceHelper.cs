@@ -16,14 +16,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static string slotName;
 
         private readonly ILogger logger;
-        private readonly bool logReplayEvents;
+        private readonly bool traceReplayEvents;
 
         private long sequenceNumber;
 
-        public EndToEndTraceHelper(ILogger logger, bool logReplayEvents)
+        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.logReplayEvents = logReplayEvents;
+            this.traceReplayEvents = traceReplayEvents;
         }
 
         public static string LocalAppName
@@ -153,11 +153,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void FunctionAwaited(
             string hubName,
             string functionName,
+            FunctionType functionType,
             string instanceId,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Orchestrator;
-
             EtwEventSource.Instance.FunctionAwaited(
                 hubName,
                 LocalAppName,
@@ -311,6 +310,76 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void OperationCompleted(
+           string hubName,
+           string functionName,
+           string instanceId,
+           string operationId,
+           string operationName,
+           string input,
+           string output,
+           double duration,
+           bool isReplay)
+        {
+            EtwEventSource.Instance.OperationCompleted(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                operationName,
+                input,
+                output,
+                duration,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                isReplay);
+
+            if (this.ShouldLogEvent(isReplay))
+            {
+                this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})' completed '{operationName}' operation {operationId} in {duration}ms. IsReplay: {isReplay}. Input: {input}. Output: {output}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, isReplay, input, output,
+                hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void OperationFailed(
+           string hubName,
+           string functionName,
+           string instanceId,
+           string operationId,
+           string operationName,
+           string input,
+           string exception,
+           double duration,
+           bool isReplay)
+        {
+            EtwEventSource.Instance.OperationFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                operationName,
+                input,
+                exception,
+                duration,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                isReplay);
+
+            if (this.ShouldLogEvent(isReplay))
+            {
+                this.logger.LogError(
+                    "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, exception, input, isReplay, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
         public void ExternalEventRaised(
             string hubName,
             string functionName,
@@ -345,12 +414,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void ExternalEventSaved(
             string hubName,
             string functionName,
+            FunctionType functionType,
             string instanceId,
             string eventName,
             bool isReplay)
         {
-            FunctionType functionType = FunctionType.Orchestrator;
-
             EtwEventSource.Instance.ExternalEventSaved(
                 hubName,
                 LocalAppName,
@@ -367,6 +435,155 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' saved a '{eventName}' event to an in-memory queue. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                     instanceId, functionName, functionType, eventName, FunctionState.ExternalEventDropped, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void DeliveringEntityMessage(
+            string instanceId,
+            string executionId,
+            int eventId,
+            string eventName,
+            object eventContent)
+        {
+            this.logger.LogDebug(
+                              "{instanceId}: delivering message: {eventName} {eventContent} EventId: {eventId} ExecutionId: {executionId} SequenceNumber: {sequenceNumber}.",
+                              instanceId, eventName, eventContent, eventId, executionId, this.sequenceNumber++);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void SendingEntityMessage(
+            string instanceId,
+            string executionId,
+            string targetInstanceId,
+            string eventName,
+            object eventContent)
+        {
+            this.logger.LogDebug(
+                              "{instanceId}: sending message: {eventName} {eventContent}  TargetInstanceId: {targetInstanceId} ExecutionId: {executionId} SequenceNumber: {sequenceNumber}.",
+                              instanceId, eventName, eventContent, targetInstanceId, executionId, this.sequenceNumber++);
+        }
+
+        public void EntityOperationQueued(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string operationId,
+            string operationName,
+            bool isReplay)
+        {
+            FunctionType functionType = FunctionType.Entity;
+
+            EtwEventSource.Instance.EntityOperationQueued(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                operationName,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: isReplay);
+
+            if (this.ShouldLogEvent(isReplay: isReplay))
+            {
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' queued '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, operationName, operationId, FunctionState.ExternalEventRaised, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void EntityResponseReceived(
+            string hubName,
+            string functionName,
+            FunctionType functionType,
+            string instanceId,
+            string operationId,
+            string result,
+            bool isReplay)
+        {
+            EtwEventSource.Instance.EntityResponseReceived(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                result,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: isReplay);
+
+            if (this.ShouldLogEvent(isReplay: isReplay))
+            {
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' received an entity response. OperationId: {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, operationId, FunctionState.ExternalEventRaised, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void EntityLockAcquired(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string requestingInstance,
+            string requestId,
+            bool isReplay)
+        {
+            FunctionType functionType = FunctionType.Entity;
+
+            EtwEventSource.Instance.EntityLockAcquired(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                requestingInstance,
+                requestId,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                IsReplay: isReplay);
+
+            if (this.ShouldLogEvent(isReplay: isReplay))
+            {
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' granted lock to request {requestId} by instance {requestingInstance}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, requestId, requestingInstance, FunctionState.LockAcquired, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void EntityLockReleased(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string requestingInstance,
+            string requestId,
+            bool isReplay)
+        {
+            FunctionType functionType = FunctionType.Entity;
+
+            EtwEventSource.Instance.EntityLockReleased(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                requestingInstance,
+                requestId,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                IsReplay: isReplay);
+
+            if (this.ShouldLogEvent(isReplay: isReplay))
+            {
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' released lock held by request {requestId} by instance {requestingInstance}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, requestId, requestingInstance, FunctionState.LockReleased, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
@@ -511,7 +728,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ShouldLogEvent(bool isReplay)
         {
-            return this.logReplayEvents || !isReplay;
+            return this.traceReplayEvents || !isReplay;
         }
 #pragma warning restore SA1117 // Parameters should be on same line or separate lines
     }

@@ -7,9 +7,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,7 +19,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestHelpers
     {
+        // Friendly strings for provider types so easier to read in enumerated test output
+        public const string AzureStorageProviderType = "azure_storage";
+        public const string EmulatorProviderType = "emulator";
+        public const string RedisProviderType = "redis";
+
         public const string LogCategory = "Host.Triggers.DurableTask";
+        public const string EmptyStorageProviderType = "empty";
 
         public static JobHost GetJobHost(
             ILoggerProvider loggerProvider,
@@ -29,52 +37,110 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int? eventGridRetryCount = null,
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
-            bool logReplayEvents = true,
+            bool traceReplayEvents = true,
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
             string[] eventGridPublishEventTypes = null,
-            bool autoFetchLargeMessages = true)
+            string storageProviderType = AzureStorageProviderType,
+            bool autoFetchLargeMessages = true,
+            int httpAsyncSleepTime = 5000,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
                 HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
-                TraceInputsAndOutputs = true,
-                EventGridKeySettingName = eventGridKeySettingName,
-                EventGridTopicEndpoint = eventGridTopicEndpoint,
+                Tracing = new TraceOptions()
+                {
+                    TraceInputsAndOutputs = true,
+                    TraceReplayEvents = traceReplayEvents,
+                },
+                Notifications = new NotificationOptions()
+                {
+                    EventGrid = new EventGridNotificationOptions()
+                    {
+                        KeySettingName = eventGridKeySettingName,
+                        TopicEndpoint = eventGridTopicEndpoint,
+                        PublishEventTypes = eventGridPublishEventTypes,
+                    },
+                },
+                HttpSettings = new HttpOptions()
+                {
+                    DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
+                },
+                NotificationUrl = notificationUrl,
                 ExtendedSessionsEnabled = enableExtendedSessions,
                 MaxConcurrentOrchestratorFunctions = 200,
                 MaxConcurrentActivityFunctions = 200,
-                LogReplayEvents = logReplayEvents,
-                NotificationUrl = notificationUrl,
                 NotificationHandler = eventGridNotificationHandler,
-                EventGridPublishEventTypes = eventGridPublishEventTypes,
-                FetchLargeMessagesAutomatically = autoFetchLargeMessages,
             };
+
+            if (storageProviderType != null)
+            {
+                durableTaskOptions.StorageProvider = new StorageProviderOptions();
+            }
+
+            if (string.Equals(storageProviderType, AzureStorageProviderType))
+            {
+                durableTaskOptions.StorageProvider.AzureStorage = new AzureStorageOptions();
+                durableTaskOptions.StorageProvider.AzureStorage.FetchLargeMessagesAutomatically = autoFetchLargeMessages;
+            }
+            else if (string.Equals(storageProviderType, EmulatorProviderType))
+            {
+                durableTaskOptions.StorageProvider.Emulator = new EmulatorStorageOptions();
+            }
+            else if (string.Equals(storageProviderType, RedisProviderType))
+            {
+                durableTaskOptions.StorageProvider.Redis = new RedisStorageOptions()
+                {
+                    ConnectionStringName = "RedisConnectionString",
+                };
+            }
 
             if (eventGridRetryCount.HasValue)
             {
-                durableTaskOptions.EventGridPublishRetryCount = eventGridRetryCount.Value;
+                durableTaskOptions.Notifications.EventGrid.PublishRetryCount = eventGridRetryCount.Value;
             }
 
             if (eventGridRetryInterval.HasValue)
             {
-                durableTaskOptions.EventGridPublishRetryInterval = eventGridRetryInterval.Value;
+                durableTaskOptions.Notifications.EventGrid.PublishRetryInterval = eventGridRetryInterval.Value;
             }
 
             if (eventGridRetryHttpStatus != null)
             {
-                durableTaskOptions.EventGridPublishRetryHttpStatus = eventGridRetryHttpStatus;
+                durableTaskOptions.Notifications.EventGrid.PublishRetryHttpStatus = eventGridRetryHttpStatus;
             }
 
             if (maxQueuePollingInterval != null)
             {
-                durableTaskOptions.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
+                durableTaskOptions.StorageProvider.AzureStorage.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
             }
 
+            return GetJobHost(
+                loggerProvider,
+                durableTaskOptions,
+                nameResolver,
+                durableHttpMessageHandler,
+                lifeCycleNotificationHelper);
+        }
+
+        public static JobHost GetJobHost(
+            ILoggerProvider loggerProvider,
+            DurableTaskOptions durableTaskOptions,
+            INameResolver nameResolver = null,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
+        {
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
-            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver);
+            if (durableHttpMessageHandler == null)
+            {
+                durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
+            }
+
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
         }
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
@@ -88,7 +154,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 typeof(TestOrchestrations),
                 typeof(TestActivities),
+                typeof(TestEntities),
+                typeof(TestEntityClasses),
                 typeof(ClientFunctions),
+#if NETCOREAPP2_0
+                typeof(TestEntityWithDependencyInjectionHelpers),
+#endif
             };
 
             ITypeLocator typeLocator = new ExplicitTypeLocator(types);
@@ -621,6 +692,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         internal static INameResolver GetTestNameResolver()
         {
             return new TestNameResolver(null);
+        }
+
+        public static async Task<string> LoadStringFromTextBlobAsync(string blobName)
+        {
+            string connectionString = GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            try
+            {
+                return await blob.DownloadTextAsync();
+            }
+            catch (StorageException e)
+                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
+            {
+                // if the blob does not exist, just return null.
+                return null;
+            }
+        }
+
+        public static async Task WriteStringToTextBlob(string blobName, string content)
+        {
+            string connectionString = GetStorageConnectionString();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobClient = account.CreateCloudBlobClient();
+            var testcontainer = blobClient.GetContainerReference("test");
+            var blob = testcontainer.GetBlockBlobReference(blobName);
+            await blob.UploadTextAsync(content);
         }
 
         private class ExplicitTypeLocator : ITypeLocator

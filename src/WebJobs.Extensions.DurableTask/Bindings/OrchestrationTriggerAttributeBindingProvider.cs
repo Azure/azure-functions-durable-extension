@@ -52,8 +52,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 name = method.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? method.Name;
             }
 
-            // The orchestration name defaults to the method name.
             var orchestratorName = new FunctionName(name);
+            if (name.StartsWith("@"))
+            {
+                throw new ArgumentException("Orchestration names must not start with @.");
+            }
+
             this.config.RegisterOrchestrator(orchestratorName, null);
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
             return Task.FromResult<ITriggerBinding>(binding);
@@ -76,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(DurableOrchestrationContext);
+            public Type TriggerValueType => typeof(IDurableOrchestrationContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract { get; }
 
@@ -100,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object convertedValue = null;
-                if (destinationType == typeof(DurableOrchestrationContext))
+                if (destinationType == typeof(IDurableOrchestrationContext))
                 {
                     convertedValue = orchestrationContext;
                 }
@@ -113,8 +117,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue ?? value,
                     this.parameterInfo.ParameterType);
 
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                bindingData[this.parameterInfo.Name] = convertedValue;
+                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [this.parameterInfo.Name] = convertedValue,
+                };
 
                 // We don't specify any return value binding because we process the return value
                 // earlier in the pipeline via the InvokeHandler extensibility.
@@ -140,14 +146,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // which cannot use these types are therefore assumed to be "out-of-proc".
                 // We may need to revisit this assumption when Functions v2 adds support
                 // for "out-of-proc" .NET.
-                var isOutOfProc = !typeof(DurableOrchestrationContextBase).IsAssignableFrom(this.parameterInfo.ParameterType);
+                var isOutOfProc = !typeof(IDurableOrchestrationContext).IsAssignableFrom(this.parameterInfo.ParameterType);
                 this.config.RegisterOrchestrator(this.orchestratorName, new RegisteredFunctionInfo(context.Executor, isOutOfProc));
 
                 var listener = new DurableTaskListener(
                     this.config,
                     this.orchestratorName,
                     context.Executor,
-                    isOrchestrator: true);
+                    FunctionType.Orchestrator);
                 return Task.FromResult<IListener>(listener);
             }
 

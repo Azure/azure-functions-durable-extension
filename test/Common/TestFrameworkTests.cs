@@ -16,12 +16,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void AllTestsHaveContinuousIntegrationFriendlyCategories()
         {
             Assembly currentAssembly = Assembly.GetExecutingAssembly();
-            List<MethodInfo> testsMissingCategoryTrait = currentAssembly.GetTypes()
+            List<string> testsMissingCategoryTrait = currentAssembly.GetTypes()
                 .SelectMany(type => type.GetMethods())
                 .Where(MethodIsTest)
                 .Where(MethodMissingCorrectCategoryTrait)
+                .Select(method => $"{method.DeclaringType.Name}.{method.Name}")
                 .ToList();
-            Assert.False(testsMissingCategoryTrait.Any());
+            Assert.Empty(testsMissingCategoryTrait);
         }
 
         private static bool MethodIsTest(MethodInfo method)
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return trait.Key.Equals("Category") &&
                 (trait.Value.Equals(PlatformSpecificHelpers.TestCategory) ||
                 trait.Value.Equals(PlatformSpecificHelpers.TestCategory + "_BVT") ||
+                trait.Value.Equals(PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies") ||
                 trait.Value.Equals(PlatformSpecificHelpers.FlakeyTestCategory));
         }
     }
