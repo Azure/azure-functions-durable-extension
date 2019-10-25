@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs
     public sealed class DurableOrchestrationContext : DurableOrchestrationContextBase
     {
         private const string DefaultVersion = "";
-        private const int MaxTimerDurationInDays = 6;
+        internal const int MaxTimerDurationInDays = 6;
 
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
