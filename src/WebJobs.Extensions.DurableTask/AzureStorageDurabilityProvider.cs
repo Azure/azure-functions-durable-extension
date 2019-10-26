@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public async override Task<string> RetrieveSerializedEntityState(string hubName, EntityId entityId)
+        public async override Task<string> RetrieveSerializedEntityState(EntityId entityId)
         {
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             IList<OrchestrationState> stateList = await this.serviceClient.GetOrchestrationStateAsync(instanceId, false);

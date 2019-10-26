@@ -26,7 +26,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetAllOrchestrationStatesWithFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.RetrieveSerializedEntityState(System.String,Microsoft.Azure.WebJobs.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.EntityId)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.PurgeInstanceHistoryByInstanceId(System.String)">
@@ -401,11 +401,10 @@
             <param name="instanceId">The instance id for the instance history to purge.</param>
             <returns>The number of instances purged.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(System.String,Microsoft.Azure.WebJobs.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.EntityId)">
             <summary>
             Retrieves the state for a serialized entity.
             </summary>
-            <param name="hubName">Name of the taskhub to retrieve entity from</param>
             <param name="entityId">Entity id to fetch state for.</param>
             <returns>State for the entity.</returns>
         </member>
@@ -778,7 +777,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory">
             <summary>
-            Interface defining methods to build orchestration services and orchestration service clients.
+            Interface defining methods to build instances of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider"/>.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory.GetDurabilityProvider">

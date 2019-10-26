@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskHubClient client;
         private readonly string hubName;
-        private readonly DurabilityProvider durableFunctionsClient;
+        private readonly DurabilityProvider durabilityProvider;
         private readonly HttpApiHandler httpApiHandler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
             this.client = new TaskHubClient(serviceClient);
-            this.durableFunctionsClient = serviceClient;
+            this.durabilityProvider = serviceClient;
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
             this.hubName = attribute.TaskHub ?? config.Options.HubName;
@@ -55,6 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         public string TaskHubName => this.hubName;
+
+        internal DurabilityProvider DurabilityProvider => this.durabilityProvider;
 
         /// <inheritdoc />
         string IDurableOrchestrationClient.TaskHubName => this.TaskHubName;
@@ -278,7 +280,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("The rewind operation is only supported on failed orchestration instances.");
             }
 
-            await this.durableFunctionsClient.RewindAsync(instanceId, reason);
+            await this.DurabilityProvider.RewindAsync(instanceId, reason);
 
             this.traceHelper.FunctionRewound(this.TaskHubName, state.Name, instanceId, reason);
         }
@@ -291,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IList<OrchestrationState> stateList;
             try
             {
-                stateList = await this.durableFunctionsClient.GetOrchestrationStateAsync(instanceId, showHistory, showInput);
+                stateList = await this.DurabilityProvider.GetOrchestrationStateAsync(instanceId, showHistory, showInput);
             }
             catch (NotImplementedException)
             {
@@ -312,7 +314,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken)
         {
-            IList<OrchestrationState> states = await this.durableFunctionsClient.GetAllOrchestrationStates(cancellationToken);
+            IList<OrchestrationState> states = await this.DurabilityProvider.GetAllOrchestrationStates(cancellationToken);
 
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
@@ -326,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
-            IList<OrchestrationState> states = await this.durableFunctionsClient.GetAllOrchestrationStatesWithFilters(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
+            IList<OrchestrationState> states = await this.DurabilityProvider.GetAllOrchestrationStatesWithFilters(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
             var results = new List<DurableOrchestrationStatus>();
             foreach (OrchestrationState state in states)
             {
@@ -340,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.ReadEntityStateAsync<T>(this.client, this.TaskHubName, entityId);
+                return this.ReadEntityStateAsync<T>(this.DurabilityProvider, entityId);
             }
             else
             {
@@ -355,15 +357,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ConnectionName = connectionName,
                 };
 
-                TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
-                return this.ReadEntityStateAsync<T>(taskHubClient, taskHubName, entityId);
+                DurabilityProvider durabilityProvider = ((DurableClient)this.config.GetClient(attribute)).DurabilityProvider;
+                return this.ReadEntityStateAsync<T>(durabilityProvider, entityId);
             }
         }
 
-        private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(TaskHubClient client, string hubName, EntityId entityId)
+        private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
             this.config.ThrowIfFunctionDoesNotExist(nameof(EntityId.EntityName), FunctionType.Entity);
-            string entityState = await this.durableFunctionsClient.RetrieveSerializedEntityState(hubName, entityId);
+            string entityState = await provider.RetrieveSerializedEntityState(entityId);
 
             return new EntityStateResponse<T>()
             {
@@ -375,14 +377,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId)
         {
-            int numInstancesDeleted = await this.durableFunctionsClient.PurgeInstanceHistoryByInstanceId(instanceId);
+            int numInstancesDeleted = await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
             return new PurgeHistoryResult(numInstancesDeleted);
         }
 
         /// <inheritdoc />
         async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
         {
-            int numInstancesDeleted = await this.durableFunctionsClient.PurgeHistoryByFilters(createdTimeFrom, createdTimeTo, runtimeStatus);
+            int numInstancesDeleted = await this.DurabilityProvider.PurgeHistoryByFilters(createdTimeFrom, createdTimeTo, runtimeStatus);
             return new PurgeHistoryResult(numInstancesDeleted);
         }
 
@@ -391,7 +393,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken)
         {
-            return this.durableFunctionsClient.GetOrchestrationStateWithPagination(condition, cancellationToken);
+            return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
         }
 
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)

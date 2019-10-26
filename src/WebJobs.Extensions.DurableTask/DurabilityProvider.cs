@@ -298,10 +298,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Retrieves the state for a serialized entity.
         /// </summary>
-        /// <param name="hubName">Name of the taskhub to retrieve entity from</param>
         /// <param name="entityId">Entity id to fetch state for.</param>
         /// <returns>State for the entity.</returns>
-        public virtual Task<string> RetrieveSerializedEntityState(string hubName, EntityId entityId)
+        public virtual Task<string> RetrieveSerializedEntityState(EntityId entityId)
         {
             throw this.GetNotImplementedException(nameof(this.RetrieveSerializedEntityState));
         }
