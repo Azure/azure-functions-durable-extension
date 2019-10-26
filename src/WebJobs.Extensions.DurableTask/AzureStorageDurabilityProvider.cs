@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public async override Task<IList<OrchestrationState>> GetOrchestrationStateAsync(string instanceId, bool showHistory, bool showInput = true)
+        public async override Task<IList<OrchestrationState>> GetOrchestrationStateConfigureInputsAsync(string instanceId, bool showInput)
         {
             return await this.serviceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false, fetchInput: showInput);
         }
@@ -94,11 +94,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public async override Task<int> PurgeInstanceHistoryByInstanceId(string instanceId)
+        public async override Task<PurgeHistoryResult> PurgeInstanceHistoryByInstanceId(string instanceId)
         {
             AzureStorage.PurgeHistoryResult purgeHistoryResult =
                 await this.serviceClient.PurgeInstanceHistoryAsync(instanceId);
-            return purgeHistoryResult.InstancesDeleted;
+            return new PurgeHistoryResult(purgeHistoryResult.InstancesDeleted);
         }
 
         /// <inheritdoc/>

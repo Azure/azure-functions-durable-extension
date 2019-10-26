@@ -254,10 +254,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets the state of the specified orchestration instance.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
-        /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the state has been fetched.</returns>
-        public virtual Task<IList<OrchestrationState>> GetOrchestrationStateAsync(string instanceId, bool showHistory, bool showInput = true)
+        public virtual Task<IList<OrchestrationState>> GetOrchestrationStateConfigureInputsAsync(string instanceId, bool showInput)
         {
             throw this.GetNotImplementedException(nameof(this.GetOrchestrationStateAsync));
         }
@@ -290,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="instanceId">The instance id for the instance history to purge.</param>
         /// <returns>The number of instances purged.</returns>
-        public virtual Task<int> PurgeInstanceHistoryByInstanceId(string instanceId)
+        public virtual Task<PurgeHistoryResult> PurgeInstanceHistoryByInstanceId(string instanceId)
         {
             throw this.GetNotImplementedException(nameof(this.PurgeInstanceHistoryByInstanceId));
         }

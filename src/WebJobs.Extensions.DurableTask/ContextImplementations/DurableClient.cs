@@ -286,21 +286,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput)
+        {
+            IList<OrchestrationState> stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false);
+
+            OrchestrationState state = stateList?.FirstOrDefault();
+            if (state == null || state.OrchestrationInstance == null)
+            {
+                return null;
+            }
+
+            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+        }
+
+        /// <inheritdoc />
         async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
         {
-            // TODO this cast is to avoid to adding methods to the core IOrchestrationService/Client interface in DurableTask.Core. Eventually we will need
-            // a better way of handling this
-            IList<OrchestrationState> stateList;
-            try
-            {
-                stateList = await this.DurabilityProvider.GetOrchestrationStateAsync(instanceId, showHistory, showInput);
-            }
-            catch (NotImplementedException)
-            {
-                // TODO: Going to ignore the show input flag for now. Will probably want to log a warning or even throw an error if
-                // value does not match default behavior for IOrchestrationServiceClient
-                stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false);
-            }
+            IList<OrchestrationState> stateList = await this.DurabilityProvider.GetOrchestrationStateConfigureInputsAsync(instanceId, showInput);
 
             OrchestrationState state = stateList?.FirstOrDefault();
             if (state == null || state.OrchestrationInstance == null)
@@ -377,8 +379,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId)
         {
-            int numInstancesDeleted = await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
-            return new PurgeHistoryResult(numInstancesDeleted);
+            return await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
         }
 
         /// <inheritdoc />
