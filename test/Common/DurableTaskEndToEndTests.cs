@@ -3350,6 +3350,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MaxOrchestrationAction_MaxReached_OrchestrationFails()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.AllOrchestratorActivityActions),
+            };
+
+            DurableTaskOptions options = new DurableTaskOptions();
+            var maxActions = 7;
+            options.MaxOrchestrationActions = maxActions;
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                options))
+            {
+                await host.StartAsync();
+
+                var counterEntityId = new EntityId("Counter", Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counterEntityId, this.output);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal("AllAPICallsUsed", status.CustomStatus);
+                Assert.Equal(
+                    $"Orchestrator function 'AllOrchestratorActivityActions' failed: Maximum amount of orchestration actions ({maxActions}) has been reached. " +
+                    $"This value can be configured in host.json file as MaxOrchestrationActions.",
+                    status.Output.ToString());
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>

@@ -129,6 +129,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ExtendedSessionIdleTimeoutInSeconds { get; set; } = 30;
 
         /// <summary>
+        /// Gets or sets the maximum number of orchestration actions. The default value is 100,000.
+        /// </summary>
+        public int MaxOrchestrationActions { get; set; } = 100000;
+
+        /// <summary>
         ///  States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
         /// </summary>
         public OverridableStates OverridableExistingInstanceStates { get; set; } = OverridableStates.NonRunningStates;

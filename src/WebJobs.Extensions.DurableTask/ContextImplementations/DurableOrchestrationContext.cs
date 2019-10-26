@@ -38,6 +38,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
             new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly int maxActionCount;
+
+        private int actionCount;
+
         private string serializedOutput;
         private string serializedCustomStatus;
 
@@ -52,6 +56,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
             : base(config, functionName)
         {
+            this.actionCount = 0;
+            this.maxActionCount = config.Options.MaxOrchestrationActions;
         }
 
         internal string ParentInstanceId { get; set; }
@@ -243,6 +249,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     fireAt = this.InnerContext.CurrentUtcDateTime.AddMilliseconds(this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds);
                 }
 
+                this.IncrementActionsOrThrowException();
                 await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateHttpRequestMessageCopy(req, durableHttpResponse.Headers["Location"]);
@@ -291,6 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Timer durations must not exceed {MaxTimerDurationInDays} days.", nameof(fireAt));
             }
 
+            this.IncrementActionsOrThrowException();
             Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
 
             this.Config.TraceHelper.FunctionListening(
@@ -418,10 +426,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
                     if (retryOptions == null)
                     {
+                        this.IncrementActionsOrThrowException();
                         callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
                     }
                     else
                     {
+                        this.IncrementActionsOrThrowException();
                         callTask = this.InnerContext.ScheduleWithRetry<TResult>(
                             functionName,
                             version,
@@ -449,6 +459,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     if (oneWay)
                     {
+                        this.IncrementActionsOrThrowException();
                         var dummyTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
                                 functionName,
                                 version,
@@ -467,6 +478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         if (retryOptions == null)
                         {
+                            this.IncrementActionsOrThrowException();
                             callTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
                                 functionName,
                                 version,
@@ -475,6 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                         else
                         {
+                            this.IncrementActionsOrThrowException();
                             callTask = this.InnerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(
                                 functionName,
                                 version,
@@ -1002,7 +1015,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     eventContent);
             }
 
+            this.IncrementActionsOrThrowException();
             this.InnerContext.SendEvent(target, eventName, eventContent);
+        }
+
+        private void IncrementActionsOrThrowException()
+        {
+            if (this.actionCount >= this.maxActionCount)
+            {
+                throw new InvalidOperationException("Maximum amount of orchestration actions (" + this.maxActionCount + ") has been reached. This value can be configured in host.json file as MaxOrchestrationActions.");
+            }
+            else
+            {
+                this.actionCount++;
+            }
         }
 
         private Guid NewGuid()
