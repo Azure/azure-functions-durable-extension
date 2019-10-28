@@ -1,5 +1,7 @@
 ## Durable Functions
 
+Azure Pipelines Test
+
 Durable Functions (an extension of [Azure Functions](https://functions.azure.com) and [Azure WebJobs](https://docs.microsoft.com/en-us/azure/app-service/web-sites-create-web-jobs)) enables writing *long-running*, *stateful* function orchestrations in code in a serverless environment (PaaS options and self-hosting are also supported).
 
 [![Build status](https://ci.appveyor.com/api/projects/status/rsoa2rrjxmd9h8i1?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-durable-extension)
