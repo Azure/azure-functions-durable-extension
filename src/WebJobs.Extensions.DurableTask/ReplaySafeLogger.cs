@@ -4,16 +4,12 @@
 using System;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
+namespace Microsoft.Azure.WebJobs
 {
     internal class ReplaySafeLogger : ILogger
     {
         private IDurableOrchestrationContext context;
         private ILogger logger;
-
-        private ReplaySafeLogger()
-        {
-        }
 
         internal ReplaySafeLogger(IDurableOrchestrationContext context, ILogger logger)
         {

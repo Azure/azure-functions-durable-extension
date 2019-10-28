@@ -1021,11 +1021,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
-        public ILogger CreateReplaySafeLogger(ILogger logger)
-        {
-            return new ReplaySafeLogger(this, logger);
-        }
-
         private class LockReleaser : IDisposable
         {
             private readonly DurableOrchestrationContext context;
