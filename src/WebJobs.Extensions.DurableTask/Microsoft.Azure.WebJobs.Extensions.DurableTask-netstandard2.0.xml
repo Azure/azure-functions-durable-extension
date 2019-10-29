@@ -528,59 +528,6 @@
             The HTTP URL for creating a new orchestration instance and waiting on its completion.
             </value>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload">
-            <summary>
-            Data structure containing status, terminate and send external event HTTP endpoints.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.Id">
-            <summary>
-            Gets the ID of the orchestration instance.
-            </summary>
-            <value>
-            The ID of the orchestration instance.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.StatusQueryGetUri">
-            <summary>
-            Gets the HTTP GET status query endpoint URL.
-            </summary>
-            <value>
-            The HTTP URL for fetching the instance status.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SendEventPostUri">
-            <summary>
-            Gets the HTTP POST external event sending endpoint URL.
-            </summary>
-            <value>
-            The HTTP URL for posting external event notifications.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.TerminatePostUri">
-            <summary>
-            Gets the HTTP POST instance termination endpoint.
-            </summary>
-            <value>
-            The HTTP URL for posting instance termination commands.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RewindPostUri">
-            <summary>
-            Gets the HTTP POST instance rewind endpoint.
-            </summary>
-            <value>
-            The HTTP URL for rewinding orchestration instances.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.PurgeHistoryDeleteUri">
-            <summary>
-            Gets the HTTP DELETE purge instance history by instance ID endpoint.
-            </summary>
-            <value>
-            The HTTP URL for purging instance history by instance ID.
-            </value>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
             Interface defining methods to resolve connection strings.
@@ -1690,6 +1637,15 @@
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CreateReplaySafeLogger(Microsoft.Azure.WebJobs.IDurableOrchestrationContext,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Returns an instance of ILogger that is replay safe, ensuring the logger logs only when the orchestrator
+            is not replaying that line of code.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="logger">An instance of ILogger.</param>
+            <returns>An instance of a replay safe ILogger.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.IDurableActivityContext">
             <summary>
             Provides functionality available to durable activities.
@@ -1918,10 +1874,10 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.CreateHttpManagementPayload(System.String)">
             <summary>
-            Creates a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
+            Creates a <see cref="T:Microsoft.Azure.WebJobs.HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
             </summary>
             <param name="instanceId">The ID of the orchestration instance to check.</param>
-            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> class.</returns>
+            <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.HttpManagementPayload"/> class.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.TimeSpan,System.TimeSpan)">
             <summary>
@@ -2954,6 +2910,59 @@
             Gets the string value of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.
             </summary>
             <returns>The name and optional version of the current <see cref="T:Microsoft.Azure.WebJobs.FunctionName"/> instance.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.HttpManagementPayload">
+            <summary>
+            Data structure containing status, terminate and send external event HTTP endpoints.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.Id">
+            <summary>
+            Gets the ID of the orchestration instance.
+            </summary>
+            <value>
+            The ID of the orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.StatusQueryGetUri">
+            <summary>
+            Gets the HTTP GET status query endpoint URL.
+            </summary>
+            <value>
+            The HTTP URL for fetching the instance status.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.SendEventPostUri">
+            <summary>
+            Gets the HTTP POST external event sending endpoint URL.
+            </summary>
+            <value>
+            The HTTP URL for posting external event notifications.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.TerminatePostUri">
+            <summary>
+            Gets the HTTP POST instance termination endpoint.
+            </summary>
+            <value>
+            The HTTP URL for posting instance termination commands.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.RewindPostUri">
+            <summary>
+            Gets the HTTP POST instance rewind endpoint.
+            </summary>
+            <value>
+            The HTTP URL for rewinding orchestration instances.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.HttpManagementPayload.PurgeHistoryDeleteUri">
+            <summary>
+            Gets the HTTP DELETE purge instance history by instance ID endpoint.
+            </summary>
+            <value>
+            The HTTP URL for purging instance history by instance ID.
+            </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus">
             <summary>

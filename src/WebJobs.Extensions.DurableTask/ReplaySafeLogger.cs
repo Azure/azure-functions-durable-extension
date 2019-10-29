@@ -8,8 +8,8 @@ namespace Microsoft.Azure.WebJobs
 {
     internal class ReplaySafeLogger : ILogger
     {
-        private IDurableOrchestrationContext context;
-        private ILogger logger;
+        private readonly IDurableOrchestrationContext context;
+        private readonly ILogger logger;
 
         internal ReplaySafeLogger(IDurableOrchestrationContext context, ILogger logger)
         {
