@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -989,6 +991,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             entityProxy.Delete();
 
             return result == 16;
+        }
+
+        public static async Task<string> ReplaySafeLogger_OneLogMessage([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
+        {
+            log = ctx.CreateReplaySafeLogger(log);
+            string input = ctx.GetInput<string>();
+
+            log.LogInformation("ReplaySafeLogger Test: About to say Hello");
+
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            return output;
         }
     }
 }

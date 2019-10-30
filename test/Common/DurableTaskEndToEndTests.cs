@@ -3496,6 +3496,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ReplaySafeLogger_LogsOnlyOnce()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ReplaySafeLogger_OneLogMessage),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ReplaySafeLogger_LogsOnlyOnce),
+                false))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
+                var logMessages = logger.LogMessages.Where(
+                    msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();
+                Assert.Single(logMessages);
+
+                await host.StopAsync();
+            }
+        }
+
         private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload
