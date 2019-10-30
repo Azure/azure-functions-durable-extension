@@ -256,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the state has been fetched.</returns>
-        public virtual Task<IList<OrchestrationState>> GetOrchestrationStateConfigureInputsAsync(string instanceId, bool showInput)
+        public virtual Task<IList<OrchestrationState>> GetOrchestrationStateWithInputsAsync(string instanceId, bool showInput = true)
         {
             throw this.GetNotImplementedException(nameof(this.GetOrchestrationStateAsync));
         }

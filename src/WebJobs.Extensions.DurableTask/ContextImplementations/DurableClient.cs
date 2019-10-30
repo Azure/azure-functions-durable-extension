@@ -286,23 +286,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput)
-        {
-            IList<OrchestrationState> stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false);
-
-            OrchestrationState state = stateList?.FirstOrDefault();
-            if (state == null || state.OrchestrationInstance == null)
-            {
-                return null;
-            }
-
-            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
-        }
-
-        /// <inheritdoc />
         async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
         {
-            IList<OrchestrationState> stateList = await this.DurabilityProvider.GetOrchestrationStateConfigureInputsAsync(instanceId, showInput);
+            IList<OrchestrationState> stateList;
+            try
+            {
+                stateList = await this.DurabilityProvider.GetOrchestrationStateWithInputsAsync(instanceId, showInput);
+            }
+            catch (NotImplementedException)
+            {
+                // TODO: Ignore the show input flag. Should consider logging a warning.
+                stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false);
+            }
 
             OrchestrationState state = stateList?.FirstOrDefault();
             if (state == null || state.OrchestrationInstance == null)
