@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Trigger attribute used for durable orchestrator functions.

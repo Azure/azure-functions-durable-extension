@@ -4,7 +4,6 @@
 using System;
 using System.Net.Http;
 using System.Text;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {

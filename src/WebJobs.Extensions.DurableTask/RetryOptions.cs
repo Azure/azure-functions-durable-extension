@@ -4,7 +4,7 @@
 using System;
 using DurableTaskCore = DurableTask.Core;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Defines retry policies that can be passed as parameters to various operations.

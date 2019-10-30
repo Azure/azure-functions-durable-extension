@@ -3,7 +3,7 @@
 using System;
 using System.Text;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Configuration options for the Redis storage provider.

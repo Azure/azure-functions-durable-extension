@@ -3,7 +3,7 @@
 
 using System.Text;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// A common set of properties that all storage providers share, as well as validation methods that

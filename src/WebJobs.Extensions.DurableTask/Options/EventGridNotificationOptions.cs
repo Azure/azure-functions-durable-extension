@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Configuration of the Event Grid notification options

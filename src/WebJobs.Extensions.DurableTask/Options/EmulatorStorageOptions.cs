@@ -3,7 +3,7 @@
 
 using System.Text;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Configuration options for the Emulator storage provider.

@@ -6,7 +6,6 @@ using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Emulator;
 using DurableTask.Redis;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask

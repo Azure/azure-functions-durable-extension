@@ -5,7 +5,7 @@ using System;
 using System.Text;
 using Microsoft.WindowsAzure.Storage;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Configuration options for the Azure Storage storage provider.
