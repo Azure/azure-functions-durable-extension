@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 #if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -456,6 +457,18 @@ namespace Microsoft.Azure.WebJobs
         public static Task<DurableOrchestrationStatus> GetStatusAsync(this IDurableOrchestrationClient client,  string instanceId, bool showHistory)
         {
             return client.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false, showInput: true);
+        }
+
+        /// <summary>
+        /// Returns an instance of ILogger that is replay safe, ensuring the logger logs only when the orchestrator
+        /// is not replaying that line of code.
+        /// </summary>
+        /// <param name="context">The context object.</param>
+        /// <param name="logger">An instance of ILogger.</param>
+        /// <returns>An instance of a replay safe ILogger.</returns>
+        public static ILogger CreateReplaySafeLogger(this IDurableOrchestrationContext context, ILogger logger)
+        {
+            return new ReplaySafeLogger(context, logger);
         }
     }
 }
