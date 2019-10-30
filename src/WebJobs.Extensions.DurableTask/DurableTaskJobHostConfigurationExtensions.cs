@@ -36,8 +36,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
                 .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>()
-                         .AddSingleton<IOrchestrationServiceFactory, OrchestrationServiceFactory>()
-                         .TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+                         .AddSingleton<IOrchestrationServiceFactory, OrchestrationServiceFactory>();
+
+            builder.Services.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+            builder.Services.TryAddSingleton<ISerializerSettingsFactory, SerializerSettingsFactory>();
 
             return builder;
         }

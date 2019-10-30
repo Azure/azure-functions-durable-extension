@@ -19,10 +19,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableOrchestrationContext context;
         private readonly OutOfProcOrchestrationShim outOfProcShim;
+        private readonly DurableTaskExtension config;
 
         public TaskOrchestrationShim(DurableTaskExtension config, string name)
             : base(config)
         {
+            this.config = config;
             this.context = new DurableOrchestrationContext(config, name);
             this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var orchestrationException = new OrchestrationFailureException(
                     $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
-                    Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+                    Utils.SerializeCause(e, this.config.DataConverter.ErrorConverter));
 
                 this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
 

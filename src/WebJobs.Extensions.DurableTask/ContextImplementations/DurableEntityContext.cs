@@ -22,11 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskEntityShim shim;
 
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
         public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
+            this.dataConverter = config.DataConverter;
             this.self = entity;
             this.shim = shim;
         }
@@ -268,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    this.State.EntityState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
+                    this.State.EntityState = this.dataConverter.MessageConverter.Serialize(this.CurrentState);
                 }
                 catch (Exception e)
                 {
@@ -282,10 +285,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // is lost, we don't want the calling orchestrations to think everything is o.k.
                     // They should be notified, so we replace all non-error operation results
                     // with an exception result.
-                    serializationErrorMessage = new ResponseMessage()
+                    serializationErrorMessage = new ResponseMessage(this.dataConverter)
                     {
                         ExceptionType = serializationException.GetType().AssemblyQualifiedName,
-                        Result = MessagePayloadDataConverter.ErrorConverter.Serialize(serializationException),
+                        Result = this.dataConverter.ErrorConverter.Serialize(serializationException),
                     };
                 }
 
@@ -311,7 +314,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
-            var request = new RequestMessage()
+            var request = new RequestMessage(this.dataConverter)
             {
                 ParentInstanceId = this.InstanceId,
                 Id = Guid.NewGuid(),

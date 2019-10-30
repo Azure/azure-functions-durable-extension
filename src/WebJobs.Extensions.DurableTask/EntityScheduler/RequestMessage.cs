@@ -17,6 +17,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class RequestMessage
     {
+        private MessagePayloadDataConverter dataConverter;
+
+        public RequestMessage(MessagePayloadDataConverter dataConverter)
+        {
+            this.dataConverter = dataConverter;
+        }
+
         /// <summary>
         /// The name of the operation being called (if this is an operation message) or <c>null</c>
         /// (if this is a lock request).
@@ -86,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = MessagePayloadDataConverter.Default.Serialize(obj);
+                    this.Input = this.dataConverter.MessageConverter.Serialize(obj);
                 }
             }
             catch (Exception e)

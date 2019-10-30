@@ -23,6 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableEntityContext context;
 
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private readonly TaskCompletionSource<object> doneProcessingMessages
             = new TaskCompletionSource<object>();
 
@@ -34,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TaskEntityShim(DurableTaskExtension config, string schedulerId)
             : base(config)
         {
+            this.dataConverter = config.DataConverter;
             this.SchedulerId = schedulerId;
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
             this.context = new DurableEntityContext(config, this.EntityId, this);
@@ -90,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return MessagePayloadDataConverter.Default.Serialize(new EntityStatus()
+                return this.dataConverter.MessageConverter.Serialize(new EntityStatus()
                 {
                     EntityExists = this.context.State.EntityExists,
                     QueueSize = this.context.State.Queue?.Count ?? 0,
@@ -122,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     // a previous incarnation of this instance called continueAsNew
-                    this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
+                    this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, this.dataConverter.MessageSettings);
                 }
                 catch (Exception e)
                 {
@@ -253,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // send lock acquisition completed response back to originating orchestration instance
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
-                var message = new ResponseMessage()
+                var message = new ResponseMessage(this.dataConverter)
                 {
                     Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                 };
@@ -265,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // set context for operation
             this.context.CurrentOperation = request;
-            this.context.CurrentOperationResponse = new ResponseMessage();
+            this.context.CurrentOperationResponse = new ResponseMessage(this.dataConverter);
 
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
@@ -341,7 +344,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
                 var guid = request.Id.ToString();
-                var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
+                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
                 this.context.SendResponseMessage(target, guid, jresponse, !response.IsException);
             }
         }
@@ -414,7 +417,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         InstanceId = request.ParentInstanceId,
                     };
-                    var responseMessage = new ResponseMessage()
+                    var responseMessage = new ResponseMessage(this.dataConverter)
                     {
                         Result = result.Result,
                         ExceptionType = result.IsError ? "Error" : null,
@@ -427,7 +430,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // send signal messages
             foreach (var signal in outOfProcResult.Signals)
             {
-                var request = new RequestMessage()
+                var request = new RequestMessage(this.dataConverter)
                 {
                     ParentInstanceId = this.context.InstanceId,
                     Id = Guid.NewGuid(),

@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
+        private readonly MessagePayloadDataConverter dataConverter;
 
         internal DurableClient(
             IOrchestrationServiceClient serviceClient,
@@ -46,6 +47,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableClientAttribute attribute)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
+
+            this.dataConverter = config.DataConverter;
 
             this.client = new TaskHubClient(serviceClient);
             this.traceHelper = config.TraceHelper;
@@ -237,7 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
-            var request = new RequestMessage()
+            var request = new RequestMessage(this.dataConverter)
             {
                 ParentInstanceId = null,
                 Id = guid,
@@ -249,7 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 request.SetInput(operationInput);
             }
 
-            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
+            var jrequest = JToken.FromObject(request, this.dataConverter.MessageSerializer);
             await client.RaiseEventAsync(instance, "op", jrequest);
 
             this.traceHelper.FunctionScheduled(
@@ -424,14 +427,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     serializedState = state.Input;
                 }
 
-                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(serializedState, MessagePayloadDataConverter.MessageSettings);
+                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(serializedState, this.dataConverter.MessageSettings);
 
                 if (schedulerState.EntityExists)
                 {
                     return new EntityStateResponse<T>()
                     {
                         EntityExists = true,
-                        EntityState = MessagePayloadDataConverter.Default.Deserialize<T>(schedulerState.EntityState),
+                        EntityState = this.dataConverter.MessageConverter.Deserialize<T>(schedulerState.EntityState),
                     };
                 }
             }

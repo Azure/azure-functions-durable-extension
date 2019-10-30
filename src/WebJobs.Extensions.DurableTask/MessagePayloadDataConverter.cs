@@ -13,14 +13,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class MessagePayloadDataConverter : JsonDataConverter
     {
-        // The default JsonDataConverter for DTFx includes type information in JSON objects. This causes issues
-        // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
-        // configure the JsonDataConverter to not include CLR type information. This is also safer from a security perspective.
-        internal static readonly JsonSerializerSettings MessageSettings = new JsonSerializerSettings
-        {
-            TypeNameHandling = TypeNameHandling.None,
-        };
-
         private static readonly JsonSerializerSettings ErrorSettings = new JsonSerializerSettings
         {
             ContractResolver = new ExceptionResolver(),
@@ -28,14 +20,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
         };
 
-        // Default singleton instances
-        public static readonly MessagePayloadDataConverter Default = new MessagePayloadDataConverter(MessageSettings);
-        public static readonly MessagePayloadDataConverter ErrorConverter = new MessagePayloadDataConverter(ErrorSettings);
-        public static readonly JsonSerializer DefaultSerializer = JsonSerializer.Create(MessageSettings);
+        private MessagePayloadDataConverter messageConverter;
+        private MessagePayloadDataConverter errorConverter;
+        private JsonSerializer messageSerializer;
 
-        public MessagePayloadDataConverter(JsonSerializerSettings settings)
+        public MessagePayloadDataConverter(ISerializerSettingsFactory serializerSettingsFactory)
+        {
+            this.MessageSettings = serializerSettingsFactory.CreateJsonSerializerSettings();
+        }
+
+        private MessagePayloadDataConverter(JsonSerializerSettings settings)
             : base(settings)
         {
+        }
+
+        internal JsonSerializerSettings MessageSettings { get; private set; }
+
+        internal MessagePayloadDataConverter MessageConverter
+        {
+            get
+            {
+                if (this.messageConverter == null)
+                {
+                    this.messageConverter = new MessagePayloadDataConverter(this.MessageSettings);
+                }
+
+                return this.messageConverter;
+            }
+        }
+
+        internal MessagePayloadDataConverter ErrorConverter
+        {
+            get
+            {
+                if (this.errorConverter == null)
+                {
+                    this.errorConverter = new MessagePayloadDataConverter(ErrorSettings);
+                }
+
+                return this.errorConverter;
+            }
+        }
+
+        internal JsonSerializer MessageSerializer
+        {
+            get
+            {
+                if (this.messageSerializer == null)
+                {
+                    this.messageSerializer = JsonSerializer.Create(this.MessageSettings);
+                }
+
+                return this.messageSerializer;
+            }
         }
 
         /// <summary>

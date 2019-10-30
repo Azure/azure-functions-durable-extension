@@ -13,6 +13,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ResponseMessage
     {
+        private MessagePayloadDataConverter dataConverter;
+
+        public ResponseMessage(MessagePayloadDataConverter dataConverter)
+        {
+            this.dataConverter = dataConverter;
+        }
+
         [JsonProperty(PropertyName = "result")]
         public string Result { get; set; }
 
@@ -31,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                this.Result = MessagePayloadDataConverter.Default.Serialize(result);
+                this.Result = this.dataConverter.MessageConverter.Serialize(result);
             }
         }
 
@@ -41,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             try
             {
-                this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(exception);
+                this.Result = this.dataConverter.ErrorConverter.Serialize(exception);
             }
             catch (Exception)
             {
@@ -50,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var wrapper = new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
                 this.ExceptionType = wrapper.GetType().AssemblyQualifiedName;
-                this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(wrapper);
+                this.Result = this.dataConverter.ErrorConverter.Serialize(wrapper);
             }
         }
 
@@ -64,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     var type = Type.GetType(this.ExceptionType, true);
-                    e = (Exception)MessagePayloadDataConverter.ErrorConverter.Deserialize(this.Result, type);
+                    e = (Exception)this.dataConverter.ErrorConverter.Deserialize(this.Result, type);
                 }
                 catch
                 {
@@ -85,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return MessagePayloadDataConverter.Default.Deserialize<T>(this.Result);
+                return this.dataConverter.MessageConverter.Deserialize<T>(this.Result);
             }
         }
 

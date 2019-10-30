@@ -40,6 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly int maxActionCount;
 
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private int actionCount;
 
         private string serializedOutput;
@@ -56,6 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
             : base(config, functionName)
         {
+            this.dataConverter = config.DataConverter;
             this.actionCount = 0;
             this.maxActionCount = config.Options.MaxOrchestrationActions;
         }
@@ -145,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return default(T);
             }
 
-            return MessagePayloadDataConverter.Default.Deserialize<T>(this.RawInput);
+            return this.dataConverter.MessageConverter.Deserialize<T>(this.RawInput);
         }
 
         /// <summary>
@@ -173,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.serializedOutput = MessagePayloadDataConverter.Default.Serialize(output);
+                    this.serializedOutput = this.dataConverter.MessageConverter.Serialize(output);
                 }
             }
             else
@@ -194,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Limit the custom status payload to 16 KB
             const int MaxCustomStatusPayloadSizeInKB = 16;
-            this.serializedCustomStatus = MessagePayloadDataConverter.Default.Serialize(
+            this.serializedCustomStatus = this.dataConverter.MessageConverter.Serialize(
                 customStatusObject,
                 MaxCustomStatusPayloadSizeInKB);
         }
@@ -527,7 +530,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
                     operationId = guid.ToString();
                     operationName = operation;
-                    var request = new RequestMessage()
+                    var request = new RequestMessage(this.dataConverter)
                     {
                         ParentInstanceId = this.InstanceId,
                         Id = guid,
@@ -758,7 +761,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.pendingExternalEvents.Remove(name);
                     }
 
-                    object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
+                    object deserializedObject = this.dataConverter.MessageConverter.Deserialize(input, genericTypeArgument);
 
                     if (deserializedObject is ResponseMessage responseMessage)
                     {
@@ -936,7 +939,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // send lock request to first entity in the lock set
             var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(entities[0]) };
-            var request = new RequestMessage()
+            var request = new RequestMessage(this.dataConverter)
             {
                 Id = lockRequestId,
                 ParentInstanceId = this.InstanceId,

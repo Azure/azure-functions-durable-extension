@@ -59,10 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
+        private readonly MessagePayloadDataConverter dataConverter;
 
         public HttpApiHandler(DurableTaskExtension config, ILogger logger)
         {
             this.config = config;
+            this.dataConverter = this.config.DataConverter;
             this.logger = logger;
         }
 
@@ -586,7 +588,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     using (StreamReader sr = new StreamReader(s))
                     using (JsonReader reader = new JsonTextReader(sr))
                     {
-                        JsonSerializer serializer = JsonSerializer.Create(MessagePayloadDataConverter.MessageSettings);
+                        JsonSerializer serializer = JsonSerializer.Create(this.dataConverter.MessageSettings);
                         input = serializer.Deserialize<object>(reader);
                     }
                 }
