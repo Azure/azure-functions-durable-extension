@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static JobHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
+            string storageProvider,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
 
-            IOrchestrationServiceFactory orchestrationServiceFactory = new OrchestrationServiceFactory(options, connectionResolver);
+            IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(options, connectionResolver);
 
             var extension = new DurableTaskExtension(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper);
             config.UseDurableTask(extension);

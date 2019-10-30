@@ -11,10 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-#if NETSTANDARD2_0
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -36,10 +32,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             options.NotificationUrl = null;
             options.HubName = "DurableTaskHub";
-            options.StorageProvider = new StorageProviderOptions()
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
             var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
@@ -1010,10 +1002,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions();
             options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
-            options.StorageProvider = new StorageProviderOptions
-            {
-                AzureStorage = new AzureStorageOptions(),
-            };
             options.HubName = "DurableFunctionsHub";
 
             return GetTestExtension(options);
@@ -1048,7 +1036,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new OrchestrationServiceFactory(new OptionsWrapper<DurableTaskOptions>(options), new TestConnectionStringResolver()),
+                    new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(options), new TestConnectionStringResolver()),
                     new DurableHttpMessageHandlerFactory())
             {
             }
@@ -1056,7 +1044,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             protected internal override IDurableClient GetClient(DurableClientAttribute attribute)
             {
                 var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-                return new DurableClientMock(orchestrationServiceClientMock.Object, this, attribute);
+                var orchestrationServiceMock = new Mock<IOrchestrationService>();
+                var storageProvider = new DurabilityProvider("Mock", orchestrationServiceMock.Object, orchestrationServiceClientMock.Object, "mock");
+                var orchestrationServiceFactoryMock = new Mock<IDurabilityProviderFactory>();
+
+                return new DurableClientMock(storageProvider, this, attribute);
             }
         }
     }

@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (destinationType == typeof(IDurableEntityContext))
                 {
                     convertedValue = entityContext;
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
                     ((IDurableEntityContext)value).FunctionBindingContext = context.FunctionContext;
 #endif
                 }

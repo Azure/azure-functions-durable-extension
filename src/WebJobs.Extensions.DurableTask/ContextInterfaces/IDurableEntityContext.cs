@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         string OperationName { get; }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         /// <summary>
         /// Contains function invocation context to assist with dependency injection at Entity construction time.
         /// </summary>

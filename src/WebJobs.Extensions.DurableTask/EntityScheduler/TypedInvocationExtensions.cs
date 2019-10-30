@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 args = Array.Empty<object>();
             }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
             T Constructor() => (T)context.FunctionBindingContext.CreateObjectInstance(typeof(T), constructorParameters);
 #else
             T Constructor() => (T)Activator.CreateInstance(typeof(T), constructorParameters);
