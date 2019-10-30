@@ -5,7 +5,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 #endif
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.WebJobs
                 timeout: TimeSpan.FromSeconds(10));
         }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
         /// or contains the payload containing the output of the completed orchestration.
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.WebJobs
                 retryInterval: TimeSpan.FromSeconds(1));
         }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
         /// or contains the payload containing the output of the completed orchestration.

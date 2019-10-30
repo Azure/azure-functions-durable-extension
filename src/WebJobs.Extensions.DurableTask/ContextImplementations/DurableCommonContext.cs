@@ -2,16 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
-using DurableTask.Core;
-using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {

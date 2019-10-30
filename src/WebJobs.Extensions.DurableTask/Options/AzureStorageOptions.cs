@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Text;
+using System.Runtime.Serialization;
 using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
@@ -10,8 +10,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
     /// <summary>
     /// Configuration options for the Azure Storage storage provider.
     /// </summary>
-    public class AzureStorageOptions : CommonStorageProviderOptions
+    public class AzureStorageOptions
     {
+        /// <summary>
+        /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
+        /// </summary>
+        /// <remarks>
+        /// If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+        /// </remarks>
+        /// <value>The name of a connection string that exists in the app's application settings.</value>
+        public string ConnectionStringName { get; set; }
+
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
         /// </summary>
@@ -56,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// durable tracking store (History and Instances tables).
         /// </summary>
         /// <remarks><para>
-        /// If not specified, the <see cref="CommonStorageProviderOptions.ConnectionStringName"/> connection string
+        /// If not specified, the <see cref="AzureStorageOptions.ConnectionStringName"/> connection string
         /// is used for the durable tracking store.
         /// </para><para>
         /// This property is primarily useful when deploying multiple apps that need to share the same
@@ -90,7 +99,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// <value>Maximum interval for polling control and work-item queues.</value>
         public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
 
-        internal override void ValidateHubName(string hubName)
+        /// <summary>
+        /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
+        /// </summary>
+        public void ValidateHubName(string hubName)
         {
             try
             {
@@ -106,7 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             }
         }
 
-        internal override void Validate()
+        /// <summary>
+        /// Throws an exception if any of the settings of the storage provider are invalid.
+        /// </summary>
+        public void Validate()
         {
             if (this.ControlQueueBatchSize <= 0)
             {
@@ -128,23 +143,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             {
                 throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
             }
-        }
-
-        internal override void AddToDebugString(StringBuilder builder)
-        {
-            builder.Append(nameof(this.ConnectionStringName)).Append(": ").Append(this.ConnectionStringName).Append(", ");
-            builder.Append(nameof(this.PartitionCount)).Append(": ").Append(this.PartitionCount).Append(", ");
-            builder.Append(nameof(this.ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
-            builder.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
-            builder.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
-            builder.Append(nameof(this.TrackingStoreConnectionStringName)).Append(": ").Append(this.TrackingStoreConnectionStringName).Append(", ");
-            builder.Append(nameof(this.FetchLargeMessagesAutomatically)).Append(": ").Append(this.FetchLargeMessagesAutomatically).Append(", ");
-            if (!string.IsNullOrEmpty(this.TrackingStoreConnectionStringName))
-            {
-                builder.Append(nameof(this.TrackingStoreNamePrefix)).Append(": ").Append(this.TrackingStoreNamePrefix).Append(", ");
-            }
-
-            builder.Append(nameof(this.MaxQueuePollingInterval)).Append(": ").Append(this.MaxQueuePollingInterval).Append(", ");
         }
     }
 }

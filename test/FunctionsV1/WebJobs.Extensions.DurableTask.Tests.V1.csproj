@@ -32,7 +32,11 @@
   <ItemGroup>
     <Compile Include="..\Common\*.cs" />
   </ItemGroup>
-  
+
+  <PropertyGroup>
+    <DefineConstants>FUNCTIONS_V1</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
