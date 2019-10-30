@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
@@ -83,8 +84,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, TestHelpers.AzureStorageProviderType)]
         [InlineData(false, TestHelpers.AzureStorageProviderType)]
+#if !FUNCTIONS_V1
         [InlineData(true, TestHelpers.EmulatorProviderType)]
         [InlineData(false, TestHelpers.EmulatorProviderType)]
+#endif
         public async Task HelloWorldOrchestration_Inline(bool extendedSessions, string storageProviderType)
         {
             string[] orchestratorFunctionNames =

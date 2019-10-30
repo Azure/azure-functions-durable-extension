@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class WebJobsConnectionStringProvider : IConnectionStringResolver
     {
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         private readonly IConfiguration hostConfiguration;
 
         /// <summary>
