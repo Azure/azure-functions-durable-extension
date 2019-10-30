@@ -6,7 +6,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Moq;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.Tests.V2
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class EntityMethodDiscoveryTests
     {
