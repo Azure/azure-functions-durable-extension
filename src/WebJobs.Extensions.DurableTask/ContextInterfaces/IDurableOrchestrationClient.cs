@@ -199,7 +199,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput = true);
+        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput);
 
         /// <summary>
         /// Gets all the status of the orchestration instances.

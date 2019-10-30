@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHubNames = taskHubNames,
             };
 
-            var result = condition.Parse();
+            var result = AzureStorageDurabilityProvider.ConvertWebjobsDurableConditionToAzureStorageCondition(condition);
 
             Assert.Equal(OrchestrationStatus.Failed, result.RuntimeStatus.First());
             Assert.Equal(OrchestrationStatus.Terminated, result.RuntimeStatus.Last());
