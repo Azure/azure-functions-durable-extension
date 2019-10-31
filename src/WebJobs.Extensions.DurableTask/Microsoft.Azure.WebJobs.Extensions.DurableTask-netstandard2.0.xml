@@ -1326,6 +1326,16 @@
             The number of seconds before an idle session times out.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxOrchestrationActions">
+            <summary>
+            Gets or sets the maximum number of orchestration actions. The default value is 100,000.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.OverridableExistingInstanceStates">
+            <summary>
+             States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EntityMessageReorderWindowInMinutes">
             <summary>
             Gets or sets the time window within which entity messages get deduplicated and reordered.
@@ -1834,6 +1844,15 @@
             <param name="instanceId">The ID of the orchestration instance to query.</param>
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.CreateReplaySafeLogger(Microsoft.Azure.WebJobs.IDurableOrchestrationContext,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Returns an instance of ILogger that is replay safe, ensuring the logger logs only when the orchestrator
+            is not replaying that line of code.
+            </summary>
+            <param name="context">The context object.</param>
+            <param name="logger">An instance of ILogger.</param>
+            <returns>An instance of a replay safe ILogger.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.IDurableActivityContext">
             <summary>
@@ -3196,6 +3215,24 @@
         <member name="F:Microsoft.Azure.WebJobs.OrchestrationRuntimeStatus.Pending">
             <summary>
             The orchestration was scheduled but has not yet started.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.OverridableStates">
+            <summary>
+            Represents options for different states that an existing orchestrator can be in to be able to be overwritten by
+            an attempt to start a new instance with the same instance Id.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.AnyState">
+            <summary>
+            Option to start a new orchestrator instance with an existing instnace Id when the existing
+            instance is in any state.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.NonRunningStates">
+            <summary>
+            Option to only start a new orchestrator instance with an existing instance Id when the existing
+            instance is in a terminated, failed, or completed state.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.PurgeHistoryResult">

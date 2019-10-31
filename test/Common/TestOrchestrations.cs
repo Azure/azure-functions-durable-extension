@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
@@ -38,6 +40,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             Guid thirdGuid = ctx.NewGuid();
             return firstGuid != secondGuid && firstGuid != thirdGuid && secondGuid != thirdGuid;
+        }
+
+        public static async Task<string> AllOrchestratorActivityActions([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            EntityId input = ctx.GetInput<EntityId>();
+            var stringInput = input.ToString();
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+
+            await ctx.CreateTimer(ctx.CurrentUtcDateTime, CancellationToken.None);
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), stringInput);
+            await ctx.CallActivityWithRetryAsync<string>(nameof(TestActivities.Hello), options, stringInput);
+            await ctx.CallSubOrchestratorAsync<string>(nameof(TestOrchestrations.SayHelloInline), stringInput);
+            await ctx.CallSubOrchestratorWithRetryAsync<string>(nameof(TestOrchestrations.SayHelloWithActivity), options, stringInput);
+            ctx.StartNewOrchestration(nameof(TestOrchestrations.SayHelloWithActivityWithDeterministicGuid), stringInput);
+            ctx.SignalEntity(input, "count");
+
+            ctx.SetCustomStatus("AllAPICallsUsed");
+            await ctx.CallHttpAsync(null);
+
+            return "TestCompleted";
         }
 
         public static bool VerifyUniqueGuids([OrchestrationTrigger] IDurableOrchestrationContext ctx)
@@ -998,6 +1020,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             entityProxy.Delete();
 
             return result == 16;
+        }
+
+        public static async Task<string> ReplaySafeLogger_OneLogMessage([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
+        {
+            log = ctx.CreateReplaySafeLogger(log);
+            string input = ctx.GetInput<string>();
+
+            log.LogInformation("ReplaySafeLogger Test: About to say Hello");
+
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            return output;
         }
     }
 }
