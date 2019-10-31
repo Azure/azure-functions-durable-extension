@@ -374,5 +374,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.GetOrchestrationServiceClient().PurgeOrchestrationHistoryAsync(thresholdDateTimeUtc, timeRangeFilterType);
         }
+
+        /// <summary>
+        /// Uses durability provider specific logic to verify whether a timespan for a timer, timeout
+        /// or retry interval is allowed by the provider.
+        /// </summary>
+        /// <param name="timespan">The timespan that the code will have to wait for.</param>
+        /// <param name="errorMessage">The error message if the timespan is invalid.</param>
+        /// <returns>A boolean indicating whether the time interval is valid.</returns>
+        public virtual bool ValidateDelayTime(TimeSpan timespan, out string errorMessage)
+        {
+            errorMessage = null;
+            return true;
+        }
     }
 }

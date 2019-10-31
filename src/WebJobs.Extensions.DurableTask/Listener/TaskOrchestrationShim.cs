@@ -20,10 +20,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableOrchestrationContext context;
         private readonly OutOfProcOrchestrationShim outOfProcShim;
 
-        public TaskOrchestrationShim(DurableTaskExtension config, string name)
+        public TaskOrchestrationShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string name)
             : base(config)
         {
-            this.context = new DurableOrchestrationContext(config, name);
+            this.context = new DurableOrchestrationContext(config, durabilityProvider, name);
             this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
 
