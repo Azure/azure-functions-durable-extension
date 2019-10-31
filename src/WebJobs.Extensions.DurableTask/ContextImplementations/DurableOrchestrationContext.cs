@@ -407,14 +407,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
+            if (retryOptions != null)
             {
-                throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
-            }
+                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
+                {
+                    throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
+                }
 
-            if (!this.durabilityProvider.ValidateDelayTime(retryOptions.FirstRetryInterval, out errorMessage))
-            {
-                throw new ArgumentException(errorMessage, nameof(retryOptions.FirstRetryInterval));
+                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.FirstRetryInterval, out errorMessage))
+                {
+                    throw new ArgumentException(errorMessage, nameof(retryOptions.FirstRetryInterval));
+                }
             }
 
             // TODO: Support for versioning
