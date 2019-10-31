@@ -13,6 +13,10 @@ namespace Microsoft.Azure.WebJobs
     {
         private readonly DurableTaskCore.RetryOptions retryOptions;
 
+        // Would like to make this durability provider specific, but since this is a customer
+        // facing type, that is difficult.
+        private static readonly TimeSpan defaultMaxRetryinterval = TimeSpan.FromDays(6);
+
         /// <summary>
         /// Creates a new instance RetryOptions with the supplied first retry and max attempts.
         /// </summary>
@@ -24,6 +28,7 @@ namespace Microsoft.Azure.WebJobs
         public RetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
         {
             this.retryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
+            this.MaxRetryInterval = defaultMaxRetryinterval;
         }
 
         /// <summary>
