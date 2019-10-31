@@ -294,7 +294,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return new TaskOrchestrationShim(this, name);
+                return new TaskOrchestrationShim(this, this.defaultDurabilityProvider, name);
             }
         }
 

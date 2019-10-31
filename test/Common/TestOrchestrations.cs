@@ -255,6 +255,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return eventValue;
         }
 
+        public static async Task<bool> SimpleEventWithTimeoutSucceeds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            TimeSpan timeout = ctx.GetInput<TimeSpan>();
+
+            try
+            {
+                await ctx.WaitForExternalEvent<string>("approval", timeout);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static async Task<bool> SimpleActivityRetrySuccceds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            (TimeSpan firstRetry, TimeSpan maxRetry) = ctx.GetInput<(TimeSpan, TimeSpan)>();
+
+            RetryOptions retry = new RetryOptions(firstRetry, 5)
+            {
+                MaxRetryInterval = maxRetry,
+            };
+            try
+            {
+                await ctx.CallActivityWithRetryAsync<Guid>(nameof(TestActivities.NewGuid), retry, null);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static async Task<bool> SimpleTimerSucceeds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            DateTime fireAt = ctx.GetInput<DateTime>();
+            try
+            {
+                await ctx.CreateTimer(fireAt, CancellationToken.None);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public static async Task ThrowOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string message = ctx.GetInput<string>();

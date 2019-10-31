@@ -19,6 +19,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class AzureStorageDurabilityProvider : DurabilityProvider
     {
+        private static readonly TimeSpan MaxTimerDuration = TimeSpan.FromDays(6);
+
         private readonly AzureStorageOrchestrationService serviceClient;
         private readonly string connectionName;
 
@@ -114,6 +116,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var statusContext = await this.serviceClient.GetOrchestrationStateAsync(ConvertWebjobsDurableConditionToAzureStorageCondition(condition), condition.PageSize, condition.ContinuationToken, cancellationToken);
             return this.ConvertFrom(statusContext);
+        }
+
+        public override (bool, string) CheckTimeInterval(TimeSpan timespan)
+        {
+            if (timespan > MaxTimerDuration)
+            {
+                return (false, $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays");
+            }
+
+            return base.CheckTimeInterval(timespan);
         }
 
         private OrchestrationStatusQueryResult ConvertFrom(DurableStatusQueryResult statusContext)

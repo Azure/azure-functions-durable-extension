@@ -2923,6 +2923,110 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_TimerLimitExceeded_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleTimerSucceeds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.AzureStorage_TimerLimitExceeded_ThrowsException),
+                false))
+            {
+                await host.StartAsync();
+
+                var invalidFireAtTime = DateTime.UtcNow.AddDays(7);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, invalidFireAtTime, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+
+                Assert.False((bool)status.Output);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_FirstRetryIntervalLimitHit_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleActivityRetrySuccceds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                // Need custom name so don't exceed 50 chars
+                "AzureStorageFirstRetryIntervalException",
+                false))
+            {
+                await host.StartAsync();
+
+                var firstRetryInterval = TimeSpan.FromDays(7);
+                var maxRetryInterval = TimeSpan.FromDays(1);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, (firstRetryInterval, maxRetryInterval), this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+
+                Assert.False((bool)status.Output);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_MaxRetryIntervalLimitHit_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleActivityRetrySuccceds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                // Need custom name so don't exceed 50 chars
+                "AzureStorageMaxRetryIntervalException",
+                false))
+            {
+                await host.StartAsync();
+
+                var firstRetryInterval = TimeSpan.FromDays(1); 
+                var maxRetryInterval = TimeSpan.FromDays(7);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, (firstRetryInterval, maxRetryInterval), this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+
+                Assert.False((bool)status.Output);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_EventTimeoutLimitHit_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleEventWithTimeoutSucceeds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.AzureStorage_EventTimeoutLimitHit_ThrowsException),
+                false))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromDays(7);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, timeout, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+
+                Assert.False((bool)status.Output);
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates basic use of the object dispatch feature.
         /// TODO: This test is flakey in Functions V1.
