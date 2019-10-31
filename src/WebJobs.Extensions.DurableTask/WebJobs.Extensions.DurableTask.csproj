@@ -4,7 +4,6 @@
     <TargetFrameworks>netstandard2.0;net471</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
-    <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
@@ -21,6 +20,18 @@
     <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
 
+  <!-- 
+    The docs.microsoft.com infrastructure requires our published API docs to have an
+    xml file that matches the assembly name. This doesn't work for multi-targeting so
+    we have to choose the most important target, which is currently netstandard2.0.
+  -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <DocumentationFile>$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
+  </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
