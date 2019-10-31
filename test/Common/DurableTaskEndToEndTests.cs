@@ -3519,8 +3519,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(argumentException);
             Assert.Equal(
                 argumentException.Message.Contains($"{taskHubName}V1")
-                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
-                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 45."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 45.",
                 argumentException.Message);
         }
 
@@ -3665,7 +3665,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var options = new DurableTaskOptions();
 
-                var expectedHubName = "bba";
+                var expectedHubName = "bbHub";
 
                 var host = TestHelpers.GetJobHost(this.loggerProvider, options);
                 Assert.Equal(expectedHubName, options.HubName);

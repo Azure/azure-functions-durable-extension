@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         // 45 alphanumeric characters gives us a buffer in our table/queue/blob container names.
         private const int MaxTaskHubNameSize = 45;
         private const int MinTaskHubNameSize = 3;
-        private const char TaskHubPadding = 'a';
+        private const string TaskHubPadding = "Hub";
 
         /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
                                 .ToArray());
             if (sanitizedHubName.Length < MinTaskHubNameSize)
             {
-                sanitizedHubName = sanitizedHubName + new string(TaskHubPadding, MinTaskHubNameSize - sanitizedHubName.Length);
+                sanitizedHubName = sanitizedHubName + TaskHubPadding;
             }
 
             if (string.Equals(hubName, sanitizedHubName))
