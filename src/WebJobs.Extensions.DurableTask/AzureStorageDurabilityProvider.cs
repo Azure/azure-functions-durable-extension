@@ -118,14 +118,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.ConvertFrom(statusContext);
         }
 
-        public override (bool, string) CheckTimeInterval(TimeSpan timespan)
+        public override bool ValidateDelayTime(TimeSpan timespan, out string errorMessage)
         {
             if (timespan > MaxTimerDuration)
             {
-                return (false, $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays");
+                errorMessage = $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays";
+                return false;
             }
 
-            return base.CheckTimeInterval(timespan);
+            return base.ValidateDelayTime(timespan, out errorMessage);
         }
 
         private OrchestrationStatusQueryResult ConvertFrom(DurableStatusQueryResult statusContext)

@@ -258,16 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<bool> SimpleEventWithTimeoutSucceeds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             TimeSpan timeout = ctx.GetInput<TimeSpan>();
-
-            try
-            {
-                await ctx.WaitForExternalEvent<string>("approval", timeout);
-            }
-            catch (ArgumentException)
-            {
-                return false;
-            }
-
+            await ctx.WaitForExternalEvent<string>("approval", timeout);
             return true;
         }
 
@@ -279,14 +270,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 MaxRetryInterval = maxRetry,
             };
-            try
-            {
-                await ctx.CallActivityWithRetryAsync<Guid>(nameof(TestActivities.NewGuid), retry, null);
-            }
-            catch (ArgumentException)
-            {
-                return false;
-            }
+
+            await ctx.CallActivityWithRetryAsync<Guid>(nameof(TestActivities.NewGuid), retry, null);
 
             return true;
         }
@@ -294,15 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<bool> SimpleTimerSucceeds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             DateTime fireAt = ctx.GetInput<DateTime>();
-            try
-            {
-                await ctx.CreateTimer(fireAt, CancellationToken.None);
-            }
-            catch (ArgumentException)
-            {
-                return false;
-            }
-
+            await ctx.CreateTimer(fireAt, CancellationToken.None);
             return true;
         }
 

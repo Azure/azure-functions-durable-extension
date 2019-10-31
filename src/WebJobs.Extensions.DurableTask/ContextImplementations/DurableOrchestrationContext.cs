@@ -285,11 +285,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            (bool isValidTimespan, string errorMessage) = this.durabilityProvider.CheckTimeInterval(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime));
-
-            if (!isValidTimespan)
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
             {
-                throw new ArgumentException($"Invalid timer duration: {errorMessage}");
+                throw new ArgumentException(errorMessage, nameof(fireAt));
             }
 
             Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
@@ -402,17 +400,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            (bool isValidTimespan, string errorMessage) = this.durabilityProvider.CheckTimeInterval(retryOptions.MaxRetryInterval);
-
-            if (!isValidTimespan)
+            if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
             {
-                throw new ArgumentException($"Invalid max retry interval duration: {errorMessage}");
+                throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
             }
 
-            (isValidTimespan, errorMessage) = this.durabilityProvider.CheckTimeInterval(retryOptions.FirstRetryInterval);
-            if (!isValidTimespan)
+            if (!this.durabilityProvider.ValidateDelayTime(retryOptions.FirstRetryInterval, out errorMessage))
             {
-                throw new ArgumentException($"Invalid first retry interval duration: {errorMessage}");
+                throw new ArgumentException(errorMessage, nameof(retryOptions.FirstRetryInterval));
             }
 
             // TODO: Support for versioning
@@ -829,11 +824,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction)
         {
-            (bool isValidTimespan, string errorMessage) = this.durabilityProvider.CheckTimeInterval(timeout);
-
-            if (!isValidTimespan)
+            if (!this.durabilityProvider.ValidateDelayTime(timeout, out string errorMessage))
             {
-                throw new ArgumentException($"Invalid wait for event timeout duration: {errorMessage}");
+                throw new ArgumentException(errorMessage, nameof(timeout));
             }
 
             var tcs = new TaskCompletionSource<T>();

@@ -376,15 +376,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Uses durability provider specific logic to verify whether a timespan for a timer
-        /// or a retry interval is allowed by the provider.
+        /// Uses durability provider specific logic to verify whether a timespan for a timer, timeout
+        /// or retry interval is allowed by the provider.
         /// </summary>
-        /// <param name="timespan">The timespan for a timer or retry interval.</param>
-        /// <returns>A boolean indicating whether the time interval is valid and an error message if it is invalid.</returns>
-        public virtual (bool, string) CheckTimeInterval(TimeSpan timespan)
+        /// <param name="timespan">The timespan that the code will have to wait for.</param>
+        /// <param name="errorMessage">The error message if the timespan is invalid.</param>
+        /// <returns>A boolean indicating whether the time interval is valid.</returns>
+        public virtual bool ValidateDelayTime(TimeSpan timespan, out string errorMessage)
         {
-            // No operation by default
-            return (true, string.Empty);
+            errorMessage = null;
+            return true;
         }
     }
 }

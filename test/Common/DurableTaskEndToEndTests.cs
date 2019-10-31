@@ -2941,10 +2941,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestrationFunctionName, invalidFireAtTime, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-
-                Assert.False((bool)status.Output);
+                string output = status.Output.ToString();
+                Assert.Contains("fireAt", output);
             }
         }
 
@@ -2956,8 +2956,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                // Need custom name so don't exceed 50 chars
-                "AzureStorageFirstRetryIntervalException",
+                "AzureStorageFirstRetryIntervalException", // Need custom name so don't exceed 50 chars
                 false))
             {
                 await host.StartAsync();
@@ -2969,9 +2968,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                Assert.False((bool)status.Output);
+                string output = status.Output.ToString();
+                Assert.Contains("FirstRetryInterval", output);
             }
         }
 
@@ -2983,22 +2983,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                // Need custom name so don't exceed 50 chars
-                "AzureStorageMaxRetryIntervalException",
+                "AzureStorageMaxRetryIntervalException", // Need custom name so don't exceed 50 chars
                 false))
             {
                 await host.StartAsync();
 
-                var firstRetryInterval = TimeSpan.FromDays(1); 
+                var firstRetryInterval = TimeSpan.FromDays(1);
                 var maxRetryInterval = TimeSpan.FromDays(7);
 
                 var client = await host.StartOrchestratorAsync(orchestrationFunctionName, (firstRetryInterval, maxRetryInterval), this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                Assert.False((bool)status.Output);
+                string output = status.Output.ToString();
+                Assert.Contains("MaxRetryInterval", output);
             }
         }
 
@@ -3021,9 +3021,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                Assert.False((bool)status.Output);
+                string output = status.Output.ToString();
+                Assert.Contains("timeout", output);
             }
         }
 
