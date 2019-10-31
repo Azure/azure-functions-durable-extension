@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.WindowsAzure.Storage;
 
@@ -12,6 +13,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
     /// </summary>
     public class AzureStorageOptions
     {
+        // 45 alphanumeric characters gives us a buffer in our table/queue/blob container names.
+        private const int MaxTaskHubNameSize = 45;
+        private const int MinTaskHubNameSize = 3;
+        private const char TaskHubPadding = 'a';
+
         /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
         /// </summary>
@@ -113,9 +119,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             }
             catch (ArgumentException e)
             {
-                throw new ArgumentException(
-                    $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.", e);
+                throw new ArgumentException(GetTaskHubErrorString(hubName), e);
             }
+
+            if (hubName.Length > 50)
+            {
+                throw new ArgumentException(GetTaskHubErrorString(hubName));
+            }
+        }
+
+        private static string GetTaskHubErrorString(string hubName)
+        {
+            return $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to {MaxTaskHubNameSize}.";
+        }
+
+        internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
+        {
+            sanitizedHubName = new string(hubName.ToCharArray()
+                                .Where(char.IsLetterOrDigit)
+                                .Take(MaxTaskHubNameSize)
+                                .ToArray());
+            if (sanitizedHubName.Length < MinTaskHubNameSize)
+            {
+                sanitizedHubName = sanitizedHubName + new string(TaskHubPadding, MinTaskHubNameSize - sanitizedHubName.Length);
+            }
+
+            if (string.Equals(hubName, sanitizedHubName))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

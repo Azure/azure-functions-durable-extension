@@ -27,7 +27,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();
-            this.azureStorageOptions.ValidateHubName(this.options.HubName);
+            if (this.options.HubName != null // Need to access HubName once to populate IsDefaultHubName
+                && !this.options.IsDefaultHubName)
+            {
+                this.azureStorageOptions.ValidateHubName(this.options.HubName);
+            }
+            else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
+            {
+                this.options.HubName = sanitizedHubName;
+            }
 
             this.connectionStringResolver = connectionStringResolver;
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;

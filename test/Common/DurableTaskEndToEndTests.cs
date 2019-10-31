@@ -3603,6 +3603,81 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        public void TaskHubName_DefaultNameSiteWithDashes_UsesSanitizedHubName()
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "Test-Site-Name");
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", null);
+
+                var options = new DurableTaskOptions();
+
+                var expectedHubName = "TestSiteName";
+
+                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                Assert.Equal(expectedHubName, options.HubName);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
+        [Fact]
+        public void TaskHubName_DefaultNameSiteTooLong_UsesSanitizedHubName()
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", new string('a', 100));
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", null);
+
+                var options = new DurableTaskOptions();
+
+                var expectedHubName = new string('a', 45);
+
+                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                Assert.Equal(expectedHubName, options.HubName);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
+        [Fact]
+        public void TaskHubName_DefaultNameSiteTooShort_UsesSanitizedHubName()
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", new string('b', 2));
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", null);
+
+                var options = new DurableTaskOptions();
+
+                var expectedHubName = "bba";
+
+                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                Assert.Equal(expectedHubName, options.HubName);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task ReplaySafeLogger_LogsOnlyOnce()
         {
