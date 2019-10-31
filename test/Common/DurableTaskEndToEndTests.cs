@@ -3603,6 +3603,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TaskHubName_DefaultNameSiteWithDashes_UsesSanitizedHubName()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
@@ -3628,6 +3629,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TaskHubName_DefaultNameSiteTooLong_UsesSanitizedHubName()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
@@ -3653,6 +3655,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TaskHubName_DefaultNameSiteTooShort_UsesSanitizedHubName()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
