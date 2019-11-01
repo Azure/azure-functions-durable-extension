@@ -22,7 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper)
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper,
+            ISerializerSettingsFactory serializerSettings)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             IOrchestrationServiceFactory orchestrationServiceFactory = new OrchestrationServiceFactory(options, connectionResolver);
 
-            var extension = new DurableTaskExtension(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper);
+            var extension = new DurableTaskExtension(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper, serializerSettings);
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.

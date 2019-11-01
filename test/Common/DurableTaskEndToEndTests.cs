@@ -17,6 +17,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -3494,6 +3495,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CustomISerializerSettingsFactory()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.OutputInputOrchestrator),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.CustomISerializerSettingsFactory),
+                true,
+                serializerSettings: new CustomEnumSettings()))
+            {
+                await host.StartAsync();
+
+                var inputWithEnum = new ComplexType
+                {
+                    A = -42,
+                    B = new List<DateTime> { DateTime.UtcNow, DateTime.UtcNow.AddYears(1) },
+                    C = ComplexType.CustomEnum.Value2,
+                    D = new ComplexType.ComplexInnerType
+                    {
+                        E = Guid.NewGuid().ToString(),
+                        F = TimeSpan.FromHours(1.5),
+                    },
+                };
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEnum, this.output);
+                //var status = client.GetStatusAsync();
+                await client.WaitForCompletionAsync(this.output);
+                var status = client.GetStatusAsync();
+
+                Assert.NotNull(status);
+
+                var expectedResult = "Value2";
+                Assert.Contains(expectedResult, status.Result.Output.ToString());
+            }
+        }
+
         private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload
@@ -3591,7 +3633,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [DataContract]
-        private class ComplexType
+        internal class ComplexType
         {
             [DataContract]
             public enum CustomEnum
@@ -3623,6 +3665,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 [DataMember]
                 public TimeSpan F { get; set; }
+            }
+        }
+
+        private class CustomEnumSettings : ISerializerSettingsFactory
+        {
+            public JsonSerializerSettings CreateJsonSerializerSettings()
+            {
+                var serializer = new JsonSerializerSettings()
+                {
+                    TypeNameHandling = TypeNameHandling.None,
+                };
+
+                serializer.Converters.Add(new StringEnumConverter());
+
+                return serializer;
             }
         }
     }

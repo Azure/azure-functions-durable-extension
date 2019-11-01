@@ -46,7 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool autoFetchLargeMessages = true,
             int httpAsyncSleepTime = 5000,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            ISerializerSettingsFactory serializerSettings = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -123,7 +124,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableTaskOptions,
                 nameResolver,
                 durableHttpMessageHandler,
-                lifeCycleNotificationHelper);
+                lifeCycleNotificationHelper,
+                serializerSettings);
         }
 
         public static JobHost GetJobHost(
@@ -131,8 +133,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions durableTaskOptions,
             INameResolver nameResolver = null,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            ISerializerSettingsFactory serializerSettings = null)
         {
+            if (serializerSettings == null)
+            {
+                serializerSettings = new SerializerSettingsFactory();
+            }
+
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
             if (durableHttpMessageHandler == null)
@@ -140,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
             }
 
-            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper, serializerSettings);
         }
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)

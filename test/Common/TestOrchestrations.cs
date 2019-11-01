@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -580,6 +581,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return sum;
+        }
+
+        public static ComplexType OutputInputOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var input = context.GetInput<ComplexType>();
+            return input;
         }
 
 #pragma warning disable 618
