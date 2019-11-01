@@ -3492,21 +3492,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DedupeStates_NotRunningStates_ThrowsException(bool extendedSessions, string storageProvider)
+        public async Task Dedupe_Default_NotRunning_ThrowsException(bool extendedSessions, string storageProvider)
         {
-            DurableTaskOptions options = new DurableTaskOptions();
-            options.OverridableExistingInstanceStates = OverridableStates.NonRunningStates;
-
-            var instanceId = "OverridableStatesTest";
+           var instanceId = "OverridableStatesTest";
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DedupeStates_NotRunningStates_ThrowsException),
+                nameof(this.Dedupe_Default_NotRunning_ThrowsException),
                 extendedSessions,
-                storageProviderType: storageProvider,
-                options: options))
+                storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 
@@ -3544,7 +3540,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DedupeStates_AnyState(bool extendedSessions, string storageProvider)
         {
