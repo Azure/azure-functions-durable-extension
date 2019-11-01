@@ -1051,6 +1051,15 @@
             </remarks>
             <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.ControlQueueBufferThreshold">
+            <summary>
+            Gets or set the number of control queue messages that can be buffered in memory
+            at a time, at which point the dispatcher will wait before dequeuing any additional
+            messages. The default is 64.
+            </summary>
+            <remarks>This has historically always been fixed to 64, but increasing it may increase
+            throughput.</remarks>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.AzureStorageOptions.ControlQueueVisibilityTimeout">
             <summary>
             Gets or sets the visibility timeout of dequeued control queue messages.
