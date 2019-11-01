@@ -3496,7 +3496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Dedupe_Default_NotRunning_ThrowsException(bool extendedSessions, string storageProvider)
         {
-           var instanceId = "OverridableStatesTest";
+           var instanceId = "OverridableStatesDefaultTest";
 
            using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -3547,7 +3547,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions options = new DurableTaskOptions();
             options.OverridableExistingInstanceStates = OverridableStates.AnyState;
 
-            var instanceId = "OverridableStatesTest";
+            var instanceId = "OverridableStatesAnyStateTest";
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
