@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.WindowsAzure.Storage;
 
@@ -12,6 +13,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class AzureStorageOptions
     {
+        // 45 alphanumeric characters gives us a buffer in our table/queue/blob container names.
+        private const int MaxTaskHubNameSize = 45;
+        private const int MinTaskHubNameSize = 3;
+        private const string TaskHubPadding = "Hub";
+
         /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
         /// </summary>
@@ -43,6 +49,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         /// <value>A positive integer between 1 and 16. The default value is <c>4</c>.</value>
         public int PartitionCount { get; set; } = 4;
+
+        /// <summary>
+        /// Gets or set the number of control queue messages that can be buffered in memory
+        /// at a time, at which point the dispatcher will wait before dequeuing any additional
+        /// messages. The default is 64.
+        /// </summary>
+        /// <remarks>This has historically always been fixed to 64, but increasing it may increase
+        /// throughput.</remarks>
+        public int ControlQueueBufferThreshold { get; set; } = 64;
 
         /// <summary>
         /// Gets or sets the visibility timeout of dequeued control queue messages.
@@ -113,9 +128,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (ArgumentException e)
             {
-                throw new ArgumentException(
-                    $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.", e);
+                throw new ArgumentException(GetTaskHubErrorString(hubName), e);
             }
+
+            if (hubName.Length > 50)
+            {
+                throw new ArgumentException(GetTaskHubErrorString(hubName));
+            }
+        }
+
+        private static string GetTaskHubErrorString(string hubName)
+        {
+            return $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to {MaxTaskHubNameSize}.";
+        }
+
+        internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
+        {
+            sanitizedHubName = new string(hubName.ToCharArray()
+                                .Where(char.IsLetterOrDigit)
+                                .Take(MaxTaskHubNameSize)
+                                .ToArray());
+            if (sanitizedHubName.Length < MinTaskHubNameSize)
+            {
+                sanitizedHubName = sanitizedHubName + TaskHubPadding;
+            }
+
+            if (string.Equals(hubName, sanitizedHubName))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -142,6 +185,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxQueuePollingInterval <= TimeSpan.Zero)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
+            }
+
+            if (this.ControlQueueBufferThreshold < 1 || this.ControlQueueBufferThreshold > 1000)
+            {
+                throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
             }
         }
     }
