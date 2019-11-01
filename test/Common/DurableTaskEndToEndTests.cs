@@ -3494,16 +3494,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task OverridableStates_NotRunningStates_ThrowsException(bool extendedSessions, string storageProvider)
+        public async Task DedupeStates_NotRunningStates_ThrowsException(bool extendedSessions, string storageProvider)
         {
             DurableTaskOptions options = new DurableTaskOptions();
             options.OverridableExistingInstanceStates = OverridableStates.NonRunningStates;
 
-            var instanceId = "OverridableStatesDeDupeTest";
+            var instanceId = "OverridableStatesTest";
 
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.OverridableStates_NotRunningStates_ThrowsException),
+                nameof(this.DedupeStates_NotRunningStates_ThrowsException),
                 extendedSessions,
                 storageProviderType: storageProvider,
                 options: options))
@@ -3514,8 +3514,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
 
-                Assert.Equal(instanceId, client.InstanceId);
-
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
                 await client.WaitForStartupAsync(this.output);
 
@@ -3531,11 +3529,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
-                InvalidOperationException exception =
-                    await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                FunctionInvocationException exception =
+                    await Assert.ThrowsAsync<FunctionInvocationException>(async () =>
                     {
                         await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
                     });
+
+                Assert.Equal(
+                    "An Orchestration instance with the status Running already exists.",
+                    exception.InnerException.Message);
 
                 await host.StopAsync();
             }
@@ -3544,20 +3546,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task OverridableStates_AnyState_ThrowsException(bool extendedSessions, string storageProvider)
+        public async Task DedupeStates_AnyState(bool extendedSessions, string storageProvider)
         {
-            string instanceId;
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.OverridableExistingInstanceStates = OverridableStates.AnyState;
+
+            var instanceId = "OverridableStatesTest";
+
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ActorOrchestration),
+                nameof(this.DedupeStates_AnyState),
                 extendedSessions,
-                storageProviderType: storageProvider))
+                storageProviderType: storageProvider,
+                options: options))
             {
                 await host.StartAsync();
 
                 int initialValue = 0;
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
-                instanceId = client.InstanceId;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
 
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
                 await client.WaitForStartupAsync(this.output);
@@ -3567,14 +3574,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
-                await client.RaiseEventAsync("operation", "incr", this.output);
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
-                await client.RaiseEventAsync("operation", "incr", this.output);
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
-                await client.RaiseEventAsync("operation", "decr", this.output);
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
-                await client.RaiseEventAsync("operation", "incr", this.output);
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
@@ -3582,29 +3581,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
-                // The end message will cause the actor to complete itself.
-                await client.RaiseEventAsync("operation", "end", this.output);
-
-                status = await client.WaitForCompletionAsync(this.output, timeout: waitTimeout);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(3, (int?)status?.Output);
-
-                // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
-                Assert.Equal(3, (int)status.Input);
+                await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
 
                 await host.StopAsync();
-
-                if (this.useTestLogger)
-                {
-                    TestHelpers.AssertLogMessageSequence(
-                        this.output,
-                        this.loggerProvider,
-                        nameof(this.ActorOrchestration),
-                        client.InstanceId,
-                        extendedSessions,
-                        new[] { nameof(TestOrchestrations.Counter) });
-                }
             }
         }
 
@@ -3735,7 +3714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var expectedHubName = "TestSiteName";
 
-                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options);
                 Assert.Equal(expectedHubName, options.HubName);
             }
             finally
@@ -3761,7 +3740,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var expectedHubName = new string('a', 45);
 
-                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options);
                 Assert.Equal(expectedHubName, options.HubName);
             }
             finally
@@ -3787,7 +3766,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var expectedHubName = "bbHub";
 
-                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options);
                 Assert.Equal(expectedHubName, options.HubName);
             }
             finally
