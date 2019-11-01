@@ -45,6 +45,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public int PartitionCount { get; set; } = 4;
 
         /// <summary>
+        /// Gets or set the number of control queue messages that can be buffered in memory
+        /// at a time, at which point the dispatcher will wait before dequeuing any additional
+        /// messages. The default is 64.
+        /// </summary>
+        /// <remarks>This has historically always been fixed to 64, but increasing it may increase
+        /// throughput.</remarks>
+        public int ControlQueueBufferThreshold { get; set; } = 64;
+
+        /// <summary>
         /// Gets or sets the visibility timeout of dequeued control queue messages.
         /// </summary>
         /// <value>
@@ -142,6 +151,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             if (this.MaxQueuePollingInterval <= TimeSpan.Zero)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
+            }
+
+            if (this.ControlQueueBufferThreshold < 1 || this.ControlQueueBufferThreshold > 1000)
+            {
+                throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
             }
         }
     }
