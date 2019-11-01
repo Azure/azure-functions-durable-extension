@@ -3366,7 +3366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var maxActions = 7;
             options.MaxOrchestrationActions = maxActions;
 
-            using (var host = TestHelpers.GetJobHost(
+            using (var host = TestHelpers.GetJobHostWithOptions(
                 this.loggerProvider,
                 options))
             {
@@ -3383,6 +3383,123 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     $"Orchestrator function 'AllOrchestratorActivityActions' failed: Maximum amount of orchestration actions ({maxActions}) has been reached. " +
                     $"This value can be configured in host.json file as MaxOrchestrationActions.",
                     status.Output.ToString());
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task OverridableStates_NotRunningStates_ThrowsException(bool extendedSessions, string storageProvider)
+        {
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.OverridableExistingInstanceStates = OverridableStates.NonRunningStates;
+
+            var instanceId = "OverridableStatesDeDupeTest";
+
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.OverridableStates_NotRunningStates_ThrowsException),
+                extendedSessions,
+                storageProviderType: storageProvider,
+                options: options))
+            {
+                await host.StartAsync();
+
+                int initialValue = 0;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+
+                Assert.Equal(instanceId, client.InstanceId);
+
+                // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(this.output);
+
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+
+                // Perform some operations
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
+
+                // Make sure it's still running and didn't complete early (or fail).
+                var status = await client.GetStatusAsync();
+                Assert.True(
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
+
+                InvalidOperationException exception =
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                    {
+                        await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+                    });
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task OverridableStates_AnyState_ThrowsException(bool extendedSessions, string storageProvider)
+        {
+            string instanceId;
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ActorOrchestration),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                int initialValue = 0;
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
+                instanceId = client.InstanceId;
+
+                // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(this.output);
+
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+
+                // Perform some operations
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
+                await client.RaiseEventAsync("operation", "decr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 3);
+
+                // Make sure it's still running and didn't complete early (or fail).
+                var status = await client.GetStatusAsync();
+                Assert.True(
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
+
+                // The end message will cause the actor to complete itself.
+                await client.RaiseEventAsync("operation", "end", this.output);
+
+                status = await client.WaitForCompletionAsync(this.output, timeout: waitTimeout);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(3, (int?)status?.Output);
+
+                // When using ContinueAsNew, the original input is discarded and replaced with the most recent state.
+                Assert.Equal(3, (int)status.Input);
+
+                await host.StopAsync();
+
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        nameof(this.ActorOrchestration),
+                        client.InstanceId,
+                        extendedSessions,
+                        new[] { nameof(TestOrchestrations.Counter) });
+                }
             }
         }
 
@@ -3450,7 +3567,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     options.HubName = customHubName;
                 }
 
-                var host = TestHelpers.GetJobHost(this.loggerProvider, options);
+                var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options);
                 Assert.Equal(expectedHubName, options.HubName);
             }
             finally
@@ -3479,7 +3596,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 InvalidOperationException exception =
                     await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
-                    using (var host = TestHelpers.GetJobHost(
+                    using (var host = TestHelpers.GetJobHostWithOptions(
                         this.loggerProvider,
                         durableTaskOptions))
                     {
