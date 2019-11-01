@@ -27,7 +27,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();
-            this.azureStorageOptions.ValidateHubName(this.options.HubName);
+            if (!this.options.IsDefaultHubName())
+            {
+                this.azureStorageOptions.ValidateHubName(this.options.HubName);
+            }
+            else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
+            {
+                this.options.HubName = sanitizedHubName;
+            }
 
             this.connectionStringResolver = connectionStringResolver;
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
@@ -94,6 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TaskHubName = taskHubNameOverride ?? this.options.HubName,
                 PartitionCount = this.azureStorageOptions.PartitionCount,
                 ControlQueueBatchSize = this.azureStorageOptions.ControlQueueBatchSize,
+                ControlQueueBufferThreshold = this.azureStorageOptions.ControlQueueBufferThreshold,
                 ControlQueueVisibilityTimeout = this.azureStorageOptions.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.azureStorageOptions.WorkItemQueueVisibilityTimeout,
                 MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions,

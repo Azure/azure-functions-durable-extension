@@ -30,14 +30,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         public const string DefaultVersion = "";
 
-        private const int MaxTimerDurationInDays = 6;
-
         private readonly Dictionary<string, Stack> pendingExternalEvents =
             new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
             new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly DurabilityProvider durabilityProvider;
         private readonly int maxActionCount;
 
         private int actionCount;
@@ -53,9 +52,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
-        internal DurableOrchestrationContext(DurableTaskExtension config, string functionName)
+        internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
+            this.durabilityProvider = durabilityProvider;
             this.actionCount = 0;
             this.maxActionCount = config.Options.MaxOrchestrationActions;
         }
@@ -291,11 +291,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            // This check can be removed once the storage provider supports extended timers.
-            // https://github.com/Azure/azure-functions-durable-extension/issues/14
-            if (fireAt.Subtract(this.InnerContext.CurrentUtcDateTime) > TimeSpan.FromDays(MaxTimerDurationInDays))
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
             {
-                throw new ArgumentException($"Timer durations must not exceed {MaxTimerDurationInDays} days.", nameof(fireAt));
+                throw new ArgumentException(errorMessage, nameof(fireAt));
             }
 
             this.IncrementActionsOrThrowException();
@@ -408,6 +406,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             object input)
         {
             this.ThrowIfInvalidAccess();
+
+            if (retryOptions != null)
+            {
+                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
+                {
+                    throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
+                }
+
+                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.FirstRetryInterval, out errorMessage))
+                {
+                    throw new ArgumentException(errorMessage, nameof(retryOptions.FirstRetryInterval));
+                }
+            }
 
             // TODO: Support for versioning
             string version = DefaultVersion;
@@ -828,6 +839,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction)
         {
+            if (!this.durabilityProvider.ValidateDelayTime(timeout, out string errorMessage))
+            {
+                throw new ArgumentException(errorMessage, nameof(timeout));
+            }
+
             var tcs = new TaskCompletionSource<T>();
             var cts = new CancellationTokenSource();
 
