@@ -397,7 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="client">The client object.</param>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-        /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+        /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestratation instance.</returns>
         /// <exception cref="ArgumentException">
@@ -406,9 +406,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public static Task<string> StartNewAsync(
             this IDurableOrchestrationClient client,
             string orchestratorFunctionName,
-            object input)
+            string instanceId)
+        {
+            return client.StartNewAsync<object>(orchestratorFunctionName, instanceId, null);
+        }
+
+        /// <summary>
+        /// Starts a new execution of the specified orchestrator function.
+        /// </summary>
+        /// <param name="client">The client object.</param>
+        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+        /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        public static Task<string> StartNewAsync<T>(
+            this IDurableOrchestrationClient client,
+            string orchestratorFunctionName,
+            T input)
+            where T : class
         {
             return client.StartNewAsync(orchestratorFunctionName, string.Empty, input);
+        }
+
+        /// <summary>
+        /// Starts a new execution of the specified orchestrator function.
+        /// </summary>
+        /// <param name="client">The client object.</param>
+        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        public static Task<string> StartNewAsync(
+            this IDurableOrchestrationClient client,
+            string orchestratorFunctionName)
+        {
+            return client.StartNewAsync<object>(orchestratorFunctionName, null);
         }
 
         /// <summary>
@@ -442,7 +480,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="client">The client object.</param>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public static Task<DurableOrchestrationStatus> GetStatusAsync(this IDurableOrchestrationClient client,  string instanceId)
+        public static Task<DurableOrchestrationStatus> GetStatusAsync(this IDurableOrchestrationClient client, string instanceId)
         {
             return client.GetStatusAsync(instanceId, showHistory: false);
         }
@@ -454,7 +492,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        public static Task<DurableOrchestrationStatus> GetStatusAsync(this IDurableOrchestrationClient client,  string instanceId, bool showHistory)
+        public static Task<DurableOrchestrationStatus> GetStatusAsync(this IDurableOrchestrationClient client, string instanceId, bool showHistory)
         {
             return client.GetStatusAsync(instanceId, showHistory, showHistoryOutput: false, showInput: true);
         }
