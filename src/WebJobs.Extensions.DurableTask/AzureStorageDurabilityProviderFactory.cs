@@ -113,6 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.connectionStringResolver,
                     this.azureStorageOptions.TrackingStoreConnectionStringName),
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
+                ThrowExceptionOnInvalidDedupeStatus = true,
             };
 
             if (!string.IsNullOrEmpty(this.azureStorageOptions.TrackingStoreNamePrefix))

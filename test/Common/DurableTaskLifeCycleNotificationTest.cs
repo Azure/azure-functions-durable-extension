@@ -1298,7 +1298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int callCount = 0;
             Action<string> handler = eventName => { callCount++; };
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (JobHost host = TestHelpers.GetJobHostWithOptions(
                 this.loggerProvider,
                 wrappedOptions.Value,
                 lifeCycleNotificationHelper: new MockLifeCycleNotificationHelper(handler)))
