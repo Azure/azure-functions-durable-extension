@@ -3498,7 +3498,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
            var instanceId = "OverridableStatesTest";
 
-            using (JobHost host = TestHelpers.GetJobHost(
+           using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.Dedupe_Default_NotRunning_ThrowsException),
                 extendedSessions,
