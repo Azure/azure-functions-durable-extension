@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Provides functionality for application code implementing an entity operation.

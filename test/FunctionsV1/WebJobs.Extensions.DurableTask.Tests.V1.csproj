@@ -38,6 +38,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="..\Common\DurableOptionsConfigurationTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
 

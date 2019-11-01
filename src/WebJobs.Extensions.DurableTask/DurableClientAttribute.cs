@@ -4,10 +4,8 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Attribute used to bind a function parameter to a <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, or <see cref="IDurableOrchestrationClient"/> instance.

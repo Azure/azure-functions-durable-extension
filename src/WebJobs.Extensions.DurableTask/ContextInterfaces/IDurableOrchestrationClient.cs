@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Provides functionality available to durable orchestration clients.

@@ -3,7 +3,6 @@
 
 using System;
 using DurableTask.AzureStorage;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 

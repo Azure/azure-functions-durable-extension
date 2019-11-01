@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
