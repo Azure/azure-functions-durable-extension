@@ -4,6 +4,7 @@
 namespace VSSample
 
 open Microsoft.Azure.WebJobs
+open Microsoft.Azure.WebJobs.Extensions.DurableTask
 open FSharp.Control.Tasks
 
 module HelloSequence =

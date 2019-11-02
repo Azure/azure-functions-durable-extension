@@ -1,6 +1,7 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 
 using System.Threading;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 public static async Task<bool> Run(IDurableOrchestrationContext context)
 {

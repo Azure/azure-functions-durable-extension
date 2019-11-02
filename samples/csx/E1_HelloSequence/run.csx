@@ -1,5 +1,7 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
 public static async Task<List<string>> Run(IDurableOrchestrationContext context)
 {
     var outputs = new List<string>();
