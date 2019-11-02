@@ -2,25 +2,42 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Host.Scale;
+#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
+#if !FUNCTIONS_V1
+    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider
+#else
     internal sealed class DurableTaskListener : IListener
+#endif
     {
         private readonly DurableTaskExtension config;
+        private readonly string functionId;
         private readonly FunctionName functionName;
         private readonly ITriggeredFunctionExecutor executor;
         private readonly FunctionType functionType;
+        private readonly string storageConnectionString;
+#if !FUNCTIONS_V1
+        private readonly Lazy<DurableTaskScaleMonitor> scaleMonitor;
+#endif
 
         public DurableTaskListener(
             DurableTaskExtension config,
+            string functionId,
             FunctionName functionName,
             ITriggeredFunctionExecutor executor,
-            FunctionType functionType)
+            FunctionType functionType,
+            string storageConnectionString)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -30,8 +47,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(functionName));
             }
 
+            this.functionId = functionId;
             this.functionName = functionName;
             this.functionType = functionType;
+            this.storageConnectionString = storageConnectionString;
+#if !FUNCTIONS_V1
+            this.scaleMonitor = new Lazy<DurableTaskScaleMonitor>(() => new DurableTaskScaleMonitor(
+                                                                                        this.functionId,
+                                                                                        this.functionName,
+                                                                                        this.config.Options.HubName,
+                                                                                        this.storageConnectionString,
+                                                                                        this.config.TraceHelper));
+#endif
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -68,5 +95,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void Dispose()
         {
         }
+
+#if !FUNCTIONS_V1
+        public IScaleMonitor GetMonitor()
+        {
+            return this.scaleMonitor.Value;
+        }
+#endif
     }
 }

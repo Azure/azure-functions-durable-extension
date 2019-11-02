@@ -40,6 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
         }
 
+        internal string GetDefaultStorageConnectionString()
+        {
+            return this.connectionStringResolver.Resolve(this.defaultConnectionName);
+        }
+
         public DurabilityProvider GetDurabilityProvider()
         {
             if (this.defaultStorageProvider == null)

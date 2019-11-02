@@ -18,15 +18,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension config;
         private readonly ExtensionConfigContext extensionContext;
+        private readonly string storageConnectionString;
         private readonly EndToEndTraceHelper traceHelper;
 
         public OrchestrationTriggerAttributeBindingProvider(
             DurableTaskExtension config,
             ExtensionConfigContext extensionContext,
+            string storageConnectionString,
             EndToEndTraceHelper traceHelper)
         {
             this.config = config;
             this.extensionContext = extensionContext;
+            this.storageConnectionString = storageConnectionString;
             this.traceHelper = traceHelper;
         }
 
@@ -59,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.config.RegisterOrchestrator(orchestratorName, null);
-            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName);
+            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.storageConnectionString);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
@@ -68,15 +71,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
+            private readonly string storageConnectionString;
 
             public OrchestrationTriggerBinding(
                 DurableTaskExtension config,
                 ParameterInfo parameterInfo,
-                FunctionName orchestratorName)
+                FunctionName orchestratorName,
+                string storageConnectionString)
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
                 this.orchestratorName = orchestratorName;
+                this.storageConnectionString = storageConnectionString;
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
@@ -151,9 +157,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var listener = new DurableTaskListener(
                     this.config,
+                    context.Descriptor.Id,
                     this.orchestratorName,
                     context.Executor,
-                    FunctionType.Orchestrator);
+                    FunctionType.Orchestrator,
+                    this.storageConnectionString);
                 return Task.FromResult<IListener>(listener);
             }
 
