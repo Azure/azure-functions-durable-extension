@@ -4,7 +4,7 @@
 using System;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Represents the status of a durable orchestration instance.

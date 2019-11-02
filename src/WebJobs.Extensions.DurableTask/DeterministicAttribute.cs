@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Attribute used with the Durable Functions Analyzer to label a method as Deterministic. This allows the method to be called in an Orchestration function without causing a compiler warning.

@@ -8,7 +8,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -1298,7 +1297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int callCount = 0;
             Action<string> handler = eventName => { callCount++; };
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (JobHost host = TestHelpers.GetJobHostWithOptions(
                 this.loggerProvider,
                 wrappedOptions.Value,
                 lifeCycleNotificationHelper: new MockLifeCycleNotificationHelper(handler)))

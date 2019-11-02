@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -46,7 +45,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool autoFetchLargeMessages = true,
             int httpAsyncSleepTime = 500,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            DurableTaskOptions options = null)
         {
             switch (storageProviderType)
             {
@@ -60,40 +60,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new InvalidOperationException($"Storage provider {storageProviderType} is not supported for testing infrastructure.");
             }
 
-            var durableTaskOptions = new DurableTaskOptions
+            if (options == null)
             {
-                HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
-                Tracing = new TraceOptions()
-                {
-                    TraceInputsAndOutputs = true,
-                    TraceReplayEvents = traceReplayEvents,
-                },
-                Notifications = new NotificationOptions()
-                {
-                    EventGrid = new EventGridNotificationOptions()
-                    {
-                        KeySettingName = eventGridKeySettingName,
-                        TopicEndpoint = eventGridTopicEndpoint,
-                        PublishEventTypes = eventGridPublishEventTypes,
-                    },
-                },
-                HttpSettings = new HttpOptions()
-                {
-                    DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
-                },
-                NotificationUrl = notificationUrl,
-                ExtendedSessionsEnabled = enableExtendedSessions,
-                MaxConcurrentOrchestratorFunctions = 200,
-                MaxConcurrentActivityFunctions = 200,
-                NotificationHandler = eventGridNotificationHandler,
-            };
-            durableTaskOptions.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
-            durableTaskOptions.Tracing = new TraceOptions()
+                options = new DurableTaskOptions();
+            }
+
+            options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            options.Tracing = new TraceOptions()
             {
                 TraceInputsAndOutputs = true,
                 TraceReplayEvents = traceReplayEvents,
             };
-            durableTaskOptions.Notifications = new NotificationOptions()
+            options.Notifications = new NotificationOptions()
             {
                 EventGrid = new EventGridNotificationOptions()
                 {
@@ -102,56 +80,81 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     PublishEventTypes = eventGridPublishEventTypes,
                 },
             };
-            durableTaskOptions.HttpSettings = new HttpOptions()
+            options.HttpSettings = new HttpOptions()
             {
                 DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
             };
-            durableTaskOptions.NotificationUrl = notificationUrl;
-            durableTaskOptions.ExtendedSessionsEnabled = enableExtendedSessions;
-            durableTaskOptions.MaxConcurrentOrchestratorFunctions = 200;
-            durableTaskOptions.MaxConcurrentActivityFunctions = 200;
-            durableTaskOptions.NotificationHandler = eventGridNotificationHandler;
+            options.NotificationUrl = notificationUrl;
+            options.ExtendedSessionsEnabled = enableExtendedSessions;
+            options.MaxConcurrentOrchestratorFunctions = 200;
+            options.MaxConcurrentActivityFunctions = 200;
+            options.NotificationHandler = eventGridNotificationHandler;
+
+            options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            options.Tracing = new TraceOptions()
+            {
+                TraceInputsAndOutputs = true,
+                TraceReplayEvents = traceReplayEvents,
+            };
+            options.Notifications = new NotificationOptions()
+            {
+                EventGrid = new EventGridNotificationOptions()
+                {
+                    KeySettingName = eventGridKeySettingName,
+                    TopicEndpoint = eventGridTopicEndpoint,
+                    PublishEventTypes = eventGridPublishEventTypes,
+                },
+            };
+            options.HttpSettings = new HttpOptions()
+            {
+                DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
+            };
+            options.NotificationUrl = notificationUrl;
+            options.ExtendedSessionsEnabled = enableExtendedSessions;
+            options.MaxConcurrentOrchestratorFunctions = 200;
+            options.MaxConcurrentActivityFunctions = 200;
+            options.NotificationHandler = eventGridNotificationHandler;
 
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
-                durableTaskOptions.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
+                options.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
                 if (maxQueuePollingInterval != null)
                 {
-                    durableTaskOptions.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
+                    options.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
                 }
             }
 
             if (eventGridRetryCount.HasValue)
             {
-                durableTaskOptions.Notifications.EventGrid.PublishRetryCount = eventGridRetryCount.Value;
+                options.Notifications.EventGrid.PublishRetryCount = eventGridRetryCount.Value;
             }
 
             if (eventGridRetryInterval.HasValue)
             {
-                durableTaskOptions.Notifications.EventGrid.PublishRetryInterval = eventGridRetryInterval.Value;
+                options.Notifications.EventGrid.PublishRetryInterval = eventGridRetryInterval.Value;
             }
 
             if (eventGridRetryHttpStatus != null)
             {
-                durableTaskOptions.Notifications.EventGrid.PublishRetryHttpStatus = eventGridRetryHttpStatus;
+                options.Notifications.EventGrid.PublishRetryHttpStatus = eventGridRetryHttpStatus;
             }
 
             if (maxQueuePollingInterval != null)
             {
-                durableTaskOptions.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
+                options.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
             }
 
-            return GetJobHost(
+            return GetJobHostWithOptions(
                 loggerProvider,
-                durableTaskOptions,
+                options,
                 storageProviderType,
                 nameResolver,
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper);
         }
 
-        public static JobHost GetJobHost(
+        public static JobHost GetJobHostWithOptions(
             ILoggerProvider loggerProvider,
             DurableTaskOptions durableTaskOptions,
             string storageProviderType = AzureStorageProviderType,
@@ -523,7 +526,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ThrowOrchestrator. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
             };
 
             return list;
@@ -560,7 +563,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
                 $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
                 $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
+                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
             };
 
             return list;
