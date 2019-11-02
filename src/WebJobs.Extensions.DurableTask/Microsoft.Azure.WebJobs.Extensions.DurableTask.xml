@@ -99,7 +99,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.TimeSpan,System.TimeSpan)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#IDurableOrchestrationClient#StartNewAsync``1(System.String,System.String,``0)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#StartNewAsync``1(System.String,System.String,``0)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#RaiseEventAsync(System.String,System.String,System.Object)">
@@ -541,13 +541,39 @@
             <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.StartNewAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.StartNewAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient,System.String,System.String)">
+            <summary>
+            Starts a new execution of the specified orchestrator function.
+            </summary>
+            <param name="client">The client object.</param>
+            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+            <param name="instanceId">The ID to use for the new orchestration instance.</param>
+            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+            orchestratation instance.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.StartNewAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient,System.String,``0)">
             <summary>
             Starts a new execution of the specified orchestrator function.
             </summary>
             <param name="client">The client object.</param>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
+            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+            orchestratation instance.</returns>
+            <exception cref="T:System.ArgumentException">
+            The specified function does not exist, is disabled, or is not an orchestrator function.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.StartNewAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient,System.String)">
+            <summary>
+            Starts a new execution of the specified orchestrator function.
+            </summary>
+            <param name="client">The client object.</param>
+            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
             orchestratation instance.</returns>
             <exception cref="T:System.ArgumentException">
@@ -865,7 +891,7 @@
             <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.StartNewAsync(System.String,System.String,System.Object)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.StartNewAsync``1(System.String,System.String,``0)">
             <summary>
             Starts a new instance of the specified orchestrator function.
             </summary>
@@ -876,6 +902,7 @@
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="instanceId">The ID to use for the new orchestration instance.</param>
             <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
             <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
             orchestratation instance.</returns>
             <exception cref="T:System.ArgumentException">
@@ -1967,46 +1994,12 @@
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntitySchedulerException"/> class.
             </summary>
         </member>
-
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.StartNewAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,System.String)">
-            <summary>
-            Starts a new execution of the specified orchestrator function.
-            </summary>
-            <param name="client">The client object.</param>
-            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <param name="instanceId">The ID to use for the new orchestration instance.</param>
-            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-            orchestratation instance.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.StartNewAsync``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String,``0)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntitySchedulerException.#ctor(System.String,System.Exception)">
             <summary>
             Initializes an new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntitySchedulerException"/> class.
             </summary>
-
-            <param name="client">The client object.</param>
-            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
-            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-            orchestratation instance.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.DurableContextExtensions.StartNewAsync(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,System.String)">
-            <summary>
-            Starts a new execution of the specified orchestrator function.
-            </summary>
-            <param name="client">The client object.</param>
-            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-            orchestratation instance.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
+            <param name="errorMessage">The message that describes the error.</param>
+            <param name="innerException">The exception that was caught.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntitySchedulerException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -2257,25 +2250,10 @@
             The operation input.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.IDurableOrchestrationClient.StartNewAsync``1(System.String,System.String,``0)">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Id">
             <summary>
             A unique identifier for this operation.
             </summary>
-
-            <remarks>
-            If an orchestration instance with the specified ID already exists, the existing instance
-            will be silently replaced by this new instance.
-            </remarks>
-            <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-            <param name="instanceId">The ID to use for the new orchestration instance.</param>
-            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
-            <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
-            <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-            orchestratation instance.</returns>
-            <exception cref="T:System.ArgumentException">
-            The specified function does not exist, is disabled, or is not an orchestrator function.
-            </exception>
-
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentInstanceId">
             <summary>
@@ -2633,6 +2611,35 @@
             Gets a token for a resource.
             </summary>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.PartitionCount">
+            <summary>
+            The number of partitions in the task hub.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.ControlQueueLengths">
+            <summary>
+            The number of messages across control queues. This will
+            be in the form of a serialized array of ints, e.g. "[1,2,3,4]".
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.ControlQueueLatencies">
+            <summary>
+            The latency of messages across control queues. This will
+            be in the form of a serialized array of TimeSpans in string
+            format, e.g. "["00:00:00.0010000","00:00:00.0020000","00:00:00.0030000","00:00:00.0040000"]".
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.WorkItemQueueLength">
+            <summary>
+            The number of messages in the work-item queue.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.WorkItemQueueLatency">
+            <summary>
+            The approximate age of the first work-item queue message. This
+            will be a TimeSpan in string format, e.g. "00:00:00.0010000".
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim">
             <summary>
