@@ -4,6 +4,7 @@
 #load "..\shared\MonitorRequest.csx"
 
 using System.Threading;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 public static async Task Run(IDurableOrchestrationContext monitorContext, ILogger log)
 {

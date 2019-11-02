@@ -3887,7 +3887,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             taskHubName += PlatformSpecificHelpers.VersionSuffix;
 
             Assert.Equal(
-                $"{notificationUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False",
+                $"{notificationUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 $"{notificationUrl}/instances/{instanceId}/raiseEvent/{{eventName}}?taskHub={taskHubName}&connection=Storage&code=mykey",

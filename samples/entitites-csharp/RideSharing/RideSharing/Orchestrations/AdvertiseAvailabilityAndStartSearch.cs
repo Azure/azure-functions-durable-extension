@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace RideSharing
 {

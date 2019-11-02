@@ -511,9 +511,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             where T : struct
         {
             var results = new List<T>();
-            var parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
+            string[] parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
 
-            foreach (var value in parameters.SelectMany(x => x.Split(',')))
+            foreach (string value in parameters.SelectMany(x => x.Split(',')))
             {
                 if (Enum.TryParse(value, out T result))
                 {
@@ -526,20 +526,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
         {
-            var value = queryStringNameValueCollection[queryParameterName];
+            string value = queryStringNameValueCollection[queryParameterName];
             return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
         }
 
         private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, bool defaultValue)
         {
-            var value = queryStringNameValueCollection[queryParameterName];
+            string value = queryStringNameValueCollection[queryParameterName];
             return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
         }
 
         private static int GetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
         {
-            var value = queryStringNameValueCollection[queryParameterName];
-            return int.TryParse(value, out var intValue) ? intValue : 0;
+            string value = queryStringNameValueCollection[queryParameterName];
+            return int.TryParse(value, out int intValue) ? intValue : 0;
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
-            var status = await client.GetStatusAsync(instanceId);
+            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -617,7 +617,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
-            var status = await client.GetStatusAsync(instanceId);
+            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -647,7 +647,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
-            var status = await client.GetStatusAsync(instanceId);
+            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -690,7 +690,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableEntityClient client = this.GetClient(request);
 
-            var response = await client.ReadEntityStateAsync<JToken>(entityId);
+            EntityStateResponse<JToken> response = await client.ReadEntityStateAsync<JToken>(entityId);
 
             if (!response.EntityExists)
             {
@@ -717,7 +717,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                var requestContent = await request.Content.ReadAsStringAsync();
+                string requestContent = await request.Content.ReadAsStringAsync();
                 string mediaType = request.Content.Headers.ContentType?.MediaType;
                 object operationInput;
                 if (string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
@@ -746,8 +746,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHub = null;
             string connectionName = null;
 
-            var pairs = request.GetQueryNameValuePairs();
-            foreach (var key in pairs.AllKeys)
+            NameValueCollection pairs = request.GetQueryNameValuePairs();
+            foreach (string key in pairs.AllKeys)
             {
                 if (taskHub == null
                     && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
@@ -843,22 +843,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 querySuffix += "&" + notificationUri.Query.TrimStart('?');
             }
 
-            HttpManagementPayload httpManagementPayload = new HttpManagementPayload
+            var httpManagementPayload = new HttpManagementPayload
             {
                 Id = instanceId,
-                StatusQueryGetUri = instancePrefix + "?" + querySuffix + "&returnInternalServerErrorOnFailure=" + returnInternalServerErrorOnFailure,
+                StatusQueryGetUri = instancePrefix + "?" + querySuffix,
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
                 PurgeHistoryDeleteUri = instancePrefix + "?" + querySuffix,
             };
 
+            if (returnInternalServerErrorOnFailure)
+            {
+                httpManagementPayload.StatusQueryGetUri += "&returnInternalServerErrorOnFailure=true";
+            }
+
             return httpManagementPayload;
         }
 
-        private HttpResponseMessage CreateCheckStatusResponseMessage(HttpRequestMessage request, string instanceId, string statusQueryGetUri, string sendEventPostUri, string terminatePostUri, string purgeHistoryDeleteUri)
+        private HttpResponseMessage CreateCheckStatusResponseMessage(
+            HttpRequestMessage request,
+            string instanceId,
+            string statusQueryGetUri,
+            string sendEventPostUri,
+            string terminatePostUri,
+            string purgeHistoryDeleteUri)
         {
-            var response = request.CreateResponse(
+            HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
                 {

@@ -9,7 +9,7 @@ namespace VSSample.Tests
     using System.Text;
     using System.Threading.Tasks;
     using System.Net.Http.Headers;
-    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     using Microsoft.Extensions.Logging;
     using Moq;
     using Xunit;
@@ -36,7 +36,7 @@ namespace VSSample.Tests
 
             // Mock CreateCheckStatusResponse method
             clientMock
-                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), instanceId))
+                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), instanceId, false))
                 .Returns(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.OK,

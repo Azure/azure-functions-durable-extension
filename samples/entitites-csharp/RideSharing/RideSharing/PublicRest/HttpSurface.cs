@@ -2,14 +2,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using System.Net.Http;
-using System.Net;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace RideSharing
 {
@@ -39,11 +38,13 @@ namespace RideSharing
         {
             Authenticate(req, userId);
             string locationString = req.RequestUri.ParseQueryString().Get("location");
-            if (string.IsNullOrEmpty(locationString) || !int.TryParse(locationString, out var location))
+            if (string.IsNullOrEmpty(locationString) || !int.TryParse(locationString, out int location))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "query must include integer location");
             }
-            var instanceId = await client.StartNewAsync(nameof(AdvertiseAvailabilityAndStartSearch), (userId, location));
+            var instanceId = await client.StartNewAsync<object>(
+                nameof(AdvertiseAvailabilityAndStartSearch),
+                (userId, location));
             return client.CreateCheckStatusResponse(req, instanceId);
         }
 
@@ -100,7 +101,5 @@ namespace RideSharing
         {
             // Stub: validate that the request is coming from this userId
         }
-
-         
     }
 }

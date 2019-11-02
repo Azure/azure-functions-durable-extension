@@ -3,7 +3,7 @@
 
 namespace VSSample.Tests
 {
-    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     using Xunit;
     using Moq;
 
