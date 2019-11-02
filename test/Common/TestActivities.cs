@@ -12,48 +12,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const char BigValueChar = '*';
 
-        public static string Hello([ActivityTrigger] DurableActivityContextBase ctx)
+        public static string Hello([ActivityTrigger] IDurableActivityContext ctx)
         {
             string input = ctx.GetInput<string>();
             return $"Hello, {input}!";
         }
 
-        public static object Echo([ActivityTrigger] DurableActivityContext ctx)
+        public static object Echo([ActivityTrigger] IDurableActivityContext ctx)
         {
             object obj = ctx.GetInput<object>();
             return obj;
         }
 
-        public static long Multiply([ActivityTrigger] DurableActivityContext ctx)
+        public static long Multiply([ActivityTrigger] IDurableActivityContext ctx)
         {
             (long a, long b) = ctx.GetInput<(long, long)>();
             return a * b;
         }
 
-        public static long Add([ActivityTrigger] DurableActivityContext ctx)
+        public static long Add([ActivityTrigger] IDurableActivityContext ctx)
         {
             (long a, long b) = ctx.GetInput<(long, long)>();
             return a + b;
         }
 
-        public static string[] GetFileList([ActivityTrigger] DurableActivityContext ctx)
+        public static string[] GetFileList([ActivityTrigger] IDurableActivityContext ctx)
         {
             string directory = ctx.GetInput<string>();
             string[] files = Directory.GetFiles(directory, "*", SearchOption.TopDirectoryOnly);
             return files;
         }
 
-        public static long GetFileSize([ActivityTrigger] DurableActivityContext ctx)
+        public static long GetFileSize([ActivityTrigger] IDurableActivityContext ctx)
         {
             string fileName = ctx.GetInput<string>();
             var info = new FileInfo(fileName);
             return info.Length;
         }
 
-        public static void ThrowActivity([ActivityTrigger] DurableActivityContext ctx)
+        public static void ThrowActivity([ActivityTrigger] IDurableActivityContext ctx)
         {
             string message = ctx.GetInput<string>();
             throw new InvalidOperationException(message);
+        }
+
+        public static Task<string> LoadStringFromTextBlob(
+            [ActivityTrigger] string blobName)
+        {
+            return TestHelpers.LoadStringFromTextBlobAsync(blobName);
+        }
+
+        public static Task WriteStringToTextBlob(
+           [ActivityTrigger](string blobName, string content) input)
+        {
+            return TestHelpers.WriteStringToTextBlob(input.blobName, input.content);
+        }
+
+        public static void DeleteTextFile([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            var filename = ctx.GetInput<string>();
+            var info = new FileInfo(filename);
+            info.Delete(); // would prefer async but it does not seem to exist
         }
 
         public static string BigReturnValue([ActivityTrigger] int stringLength)
@@ -93,14 +112,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static HttpManagementPayload GetAndReturnHttpManagementPayload(
-            [ActivityTrigger] DurableActivityContext ctx,
-            [OrchestrationClient] DurableOrchestrationClient client)
+            [ActivityTrigger] IDurableActivityContext ctx,
+            [DurableClient] IDurableOrchestrationClient client)
         {
             HttpManagementPayload httpManagementPayload = client.CreateHttpManagementPayload(ctx.InstanceId);
             return httpManagementPayload;
         }
 
-        public static DurableOrchestrationStatus UpdateDurableOrchestrationStatus([ActivityTrigger] DurableActivityContext ctx)
+        public static DurableOrchestrationStatus UpdateDurableOrchestrationStatus([ActivityTrigger] IDurableActivityContext ctx)
         {
             DurableOrchestrationStatus durableOrchestrationStatus = ctx.GetInput<DurableOrchestrationStatus>();
             durableOrchestrationStatus.RuntimeStatus = OrchestrationRuntimeStatus.Completed;
@@ -109,10 +128,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return durableOrchestrationStatus;
         }
 
-        public static Guid NewGuid([ActivityTrigger] DurableActivityContext ctx)
+        public static Guid NewGuid([ActivityTrigger] IDurableActivityContext ctx)
         {
             return Guid.NewGuid();
         }
+
+#pragma warning disable 618
+        public static Task<string> LegacyActivity([ActivityTrigger] DurableActivityContextBase ctx)
+        {
+            return Task.FromResult("ok");
+        }
+#pragma warning restore 618
 
         public class PlainOldClrObject
         {

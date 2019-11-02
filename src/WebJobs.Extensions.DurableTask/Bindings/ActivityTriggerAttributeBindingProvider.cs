@@ -19,15 +19,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension durableTaskConfig;
         private readonly ExtensionConfigContext extensionContext;
+        private readonly string storageConnectionString;
         private readonly EndToEndTraceHelper traceHelper;
 
         public ActivityTriggerAttributeBindingProvider(
             DurableTaskExtension durableTaskConfig,
             ExtensionConfigContext extensionContext,
+            string storageConnectionString,
             EndToEndTraceHelper traceHelper)
         {
             this.durableTaskConfig = durableTaskConfig;
             this.extensionContext = extensionContext;
+            this.storageConnectionString = storageConnectionString;
             this.traceHelper = traceHelper;
         }
 
@@ -84,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.contract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(DurableActivityContext);
+            public Type TriggerValueType => typeof(IDurableActivityContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract => this.contract;
 
@@ -116,8 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     convertedValue = value;
                 }
-                else if (destinationType == typeof(DurableActivityContext) ||
-                    destinationType == typeof(DurableActivityContextBase))
+                else if (destinationType == typeof(IDurableActivityContext))
                 {
                     convertedValue = activityContext;
                 }
@@ -137,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Note that there could be conflicts in thiese dictionary keys, in which case
                 // the order here determines which binding rule will win.
                 var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                bindingData[InstanceIdBindingPropertyName] = activityContext.InstanceId;
+                bindingData[InstanceIdBindingPropertyName] = ((IDurableActivityContext)activityContext).InstanceId;
                 bindingData[this.parameterInfo.Name] = convertedValue;
                 bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
 
@@ -165,15 +167,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var listener = new DurableTaskListener(
                     this.parent.durableTaskConfig,
+                    context.Descriptor.Id,
                     this.activityName,
                     context.Executor,
-                    isOrchestrator: false);
+                    FunctionType.Activity,
+                    this.parent.storageConnectionString);
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static JObject ActivityContextToJObject(DurableActivityContext arg)
+            private static JObject ActivityContextToJObject(IDurableActivityContext arg)
             {
-                JToken token = arg.GetInputAsJson();
+                JToken token = ((DurableActivityContext)arg).GetInputAsJson();
                 if (token == null)
                 {
                     return null;

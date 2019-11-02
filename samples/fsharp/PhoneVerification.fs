@@ -7,6 +7,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Azure.WebJobs
+open Microsoft.Azure.WebJobs.Extensions.DurableTask
 open Microsoft.Extensions.Logging
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
@@ -15,7 +16,7 @@ open FSharp.Control.Tasks
 module PhoneVerification =
 
   [<FunctionName("E4_SmsPhoneVerification")>]
-  let Run([<OrchestrationTrigger>] context: DurableOrchestrationContext) = task {
+  let Run([<OrchestrationTrigger>] context: IDurableOrchestrationContext) = task {
     let phoneNumber = context.GetInput<string>()
     if String.IsNullOrEmpty(phoneNumber)
     then raise (ArgumentNullException("phoneNumber", "A phone number input is required."))

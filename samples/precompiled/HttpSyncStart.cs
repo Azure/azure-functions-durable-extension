@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
@@ -19,12 +20,12 @@ namespace VSSample
         public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}/wait")]
             HttpRequestMessage req,
-            [OrchestrationClient] DurableOrchestrationClientBase starter,
+            [DurableClient] IDurableOrchestrationClient starter,
             string functionName,
             ILogger log)
         {
             // Function input comes from the request content.
-            dynamic eventData = await req.Content.ReadAsAsync<object>();
+            object eventData = await req.Content.ReadAsAsync<object>();
             string instanceId = await starter.StartNewAsync(functionName, eventData);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");

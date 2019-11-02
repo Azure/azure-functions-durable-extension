@@ -4,14 +4,14 @@
 using System;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Represents the status of a durable orchestration instance.
     /// </summary>
     /// <remarks>
     /// An external client can fetch the status of an orchestration instance using
-    /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
+    /// <see cref="IDurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
     /// </remarks>
     public class DurableOrchestrationStatus
     {
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs
         /// Gets the custom status payload (if any) that was set by the orchestrator function.
         /// </summary>
         /// <remarks>
-        /// Orchestrator functions can set a custom status using <see cref="DurableOrchestrationContext.SetCustomStatus"/>.
+        /// Orchestrator functions can set a custom status using <see cref="IDurableOrchestrationContext.SetCustomStatus(object)"/>.
         /// </remarks>
         /// <value>
         /// The custom status as either a <c>JToken</c> object or <c>null</c> if no custom status has been set.
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs
         /// <remarks>
         /// The history log can be large and is therefore <c>null</c> by default.
         /// It is populated only when explicitly requested in the call to
-        /// <see cref="DurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
+        /// <see cref="IDurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool)"/>.
         /// </remarks>
         /// <value>
         /// The output as a <c>JArray</c> object or <c>null</c>.

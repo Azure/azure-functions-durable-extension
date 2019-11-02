@@ -1,8 +1,9 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 
 using System.Threading;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-public static async Task<bool> Run(DurableOrchestrationContext context)
+public static async Task<bool> Run(IDurableOrchestrationContext context)
 {
     string phoneNumber = context.GetInput<string>();
     if (string.IsNullOrEmpty(phoneNumber))

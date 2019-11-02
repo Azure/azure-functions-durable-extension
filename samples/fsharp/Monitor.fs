@@ -7,6 +7,7 @@ open System
 open System.Net.Http
 open System.Threading
 open Microsoft.Azure.WebJobs
+open Microsoft.Azure.WebJobs.Extensions.DurableTask
 open Microsoft.Extensions.Logging
 open Newtonsoft.Json.Linq
 open Twilio.Rest.Api.V2010.Account
@@ -75,7 +76,7 @@ module WeatherUnderground =
 module Monitor =
 
     [<FunctionName("E3_Monitor")>]
-    let Run([<OrchestrationTrigger>] monitorContext: DurableOrchestrationContext, log: ILogger) = task {
+    let Run([<OrchestrationTrigger>] monitorContext: IDurableOrchestrationContext, log: ILogger) = task {
         let logOnce s = if (not monitorContext.IsReplaying) then log.LogInformation s
 
         let input = monitorContext.GetInput<MonitorRequest>()

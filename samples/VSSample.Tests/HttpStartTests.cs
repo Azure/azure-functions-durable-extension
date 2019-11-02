@@ -9,7 +9,7 @@ namespace VSSample.Tests
     using System.Text;
     using System.Threading.Tasks;
     using System.Net.Http.Headers;
-    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     using Microsoft.Extensions.Logging;
     using Moq;
     using Xunit;
@@ -27,16 +27,16 @@ namespace VSSample.Tests
             var loggerMock = new Mock<ILogger>();
 
             // Mock DurableOrchestrationClientBase
-            var durableOrchestrationClientBaseMock = new Mock<DurableOrchestrationClientBase>();
+            var clientMock = new Mock<IDurableClient>();
 
             // Mock StartNewAsync method
-            durableOrchestrationClientBaseMock.
-                Setup(x => x.StartNewAsync(functionName, It.IsAny<object>())).
+            clientMock.
+                Setup(x => x.StartNewAsync(functionName, It.IsAny<string>(), It.IsAny<object>())).
                 ReturnsAsync(instanceId);
 
             // Mock CreateCheckStatusResponse method
-            durableOrchestrationClientBaseMock
-                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), instanceId))
+            clientMock
+                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), instanceId, false))
                 .Returns(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -54,7 +54,7 @@ namespace VSSample.Tests
                     Content = new StringContent("{}", Encoding.UTF8, "application/json"),
                     RequestUri = new Uri("http://localhost:7071/orchestrators/E1_HelloSequence"),
                 },
-                durableOrchestrationClientBaseMock.Object,
+                clientMock.Object,
                 functionName,
                 loggerMock.Object);
 

@@ -1,6 +1,8 @@
 #r "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 
-public static async Task<long> Run(DurableOrchestrationContext backupContext)
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+public static async Task<long> Run(IDurableOrchestrationContext backupContext)
 {
     string rootDirectory = Environment.ExpandEnvironmentVariables(backupContext.GetInput<string>() ?? "");
     if (string.IsNullOrEmpty(rootDirectory))

@@ -21,38 +21,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.traceHelper = traceHelper;
         }
 
-        public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(OrchestrationClientAttribute clientAttribute)
+        public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(DurableClientAttribute clientAttribute)
         {
-            DurableOrchestrationClientBase client = this.config.GetClient(clientAttribute);
+            IDurableOrchestrationClient client = this.config.GetClient(clientAttribute);
             return new OrchestrationClientAsyncCollector(client);
         }
 
-        public string DurableOrchestrationClientToString(DurableOrchestrationClient client, OrchestrationClientAttribute attr)
+        public string DurableOrchestrationClientToString(IDurableOrchestrationClient client, DurableClientAttribute attr)
         {
             var payload = new OrchestrationClientInputData
             {
                 TaskHubName = client.TaskHubName,
                 CreationUrls = this.config.HttpApiHandler.GetInstanceCreationLinks(),
                 ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
+                BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
+                RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
             };
             return JsonConvert.SerializeObject(payload);
         }
 
-        public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, OrchestrationClientAttribute attr)
+        public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, DurableClientAttribute attr)
         {
             return input?.ToObject<StartOrchestrationArgs>();
         }
 
-        public StartOrchestrationArgs StringToStartOrchestrationArgs(string input, OrchestrationClientAttribute attr)
+        public StartOrchestrationArgs StringToStartOrchestrationArgs(string input, DurableClientAttribute attr)
         {
             return !string.IsNullOrEmpty(input) ? JsonConvert.DeserializeObject<StartOrchestrationArgs>(input) : null;
         }
 
         private class OrchestrationClientAsyncCollector : IAsyncCollector<StartOrchestrationArgs>
         {
-            private readonly DurableOrchestrationClientBase client;
+            private readonly IDurableOrchestrationClient client;
 
-            public OrchestrationClientAsyncCollector(DurableOrchestrationClientBase client)
+            public OrchestrationClientAsyncCollector(IDurableOrchestrationClient client)
             {
                 this.client = client;
             }
@@ -86,6 +88,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("managementUrls")]
             public HttpManagementPayload ManagementUrls { get; set; }
+
+            [JsonProperty("baseUrl")]
+            public string BaseUrl { get; set; }
+
+            [JsonProperty("requiredQueryStringParameters")]
+            public string RequiredQueryStringParameters { get; set; }
         }
     }
 }

@@ -4,8 +4,9 @@
 #load "..\shared\MonitorRequest.csx"
 
 using System.Threading;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-public static async Task Run(DurableOrchestrationContext monitorContext, ILogger log)
+public static async Task Run(IDurableOrchestrationContext monitorContext, ILogger log)
 {
     MonitorRequest input = monitorContext.GetInput<MonitorRequest>();
     if (!monitorContext.IsReplaying) { log.LogInformation($"Received monitor request. Location: {input?.Location}. Phone: {input?.Phone}."); }

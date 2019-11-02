@@ -4,16 +4,17 @@
 
 using System.Net;
 using System.Net.Http.Headers;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 public static async Task<HttpResponseMessage> Run(
     HttpRequestMessage req,
-    DurableOrchestrationClient starter,
+    IDurableOrchestrationClient starter,
     string functionName,
     ILogger log)
 {
     // Function input comes from the request content.
-    dynamic eventData = await req.Content.ReadAsAsync<object>();
-    string instanceId = await starter.StartNewAsync(functionName, eventData);
+    object eventData = await req.Content.ReadAsAsync<object>();
+    string instanceId = await starter.StartNewAsync(functionName,  eventData);
     
     log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
     

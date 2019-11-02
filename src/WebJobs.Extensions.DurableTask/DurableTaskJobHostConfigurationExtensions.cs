@@ -2,9 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-#if NETSTANDARD2_0
-using Microsoft.Extensions.Configuration;
+using System.Net.Http;
+#if !FUNCTIONS_V1
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 #else
 using Microsoft.Azure.WebJobs.Host;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public static class DurableTaskJobHostConfigurationExtensions
     {
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
         /// </summary>
@@ -31,9 +32,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder.AddExtension<DurableTaskExtension>()
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
                 .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
 
             return builder;
         }
@@ -84,6 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return builder;
         }
+
 #else
         /// <summary>
         /// Enable running durable orchestrations implemented as functions.

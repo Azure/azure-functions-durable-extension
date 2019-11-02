@@ -4,7 +4,7 @@
 namespace VSSample.Tests
 {
     using System.Threading.Tasks;
-    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     using Moq;
     using Xunit;
 
@@ -13,12 +13,12 @@ namespace VSSample.Tests
         [Fact]
         public async Task Run_returns_multiple_greetings()
         {
-            var durableOrchestrationContextMock = new Mock<DurableOrchestrationContextBase>();
-            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo!");
-            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Seattle")).ReturnsAsync("Hello Seattle!");
-            durableOrchestrationContextMock.Setup(x => x.CallActivityAsync<string>("E1_SayHello_DirectInput", "London")).ReturnsAsync("Hello London!");
+            var mockContext = new Mock<IDurableOrchestrationContext>();
+            mockContext.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Tokyo")).ReturnsAsync("Hello Tokyo!");
+            mockContext.Setup(x => x.CallActivityAsync<string>("E1_SayHello", "Seattle")).ReturnsAsync("Hello Seattle!");
+            mockContext.Setup(x => x.CallActivityAsync<string>("E1_SayHello_DirectInput", "London")).ReturnsAsync("Hello London!");
 
-            var result = await HelloSequence.Run(durableOrchestrationContextMock.Object);
+            var result = await HelloSequence.Run(mockContext.Object);
 
             Assert.Equal(3, result.Count);
             Assert.Equal("Hello Tokyo!", result[0]);

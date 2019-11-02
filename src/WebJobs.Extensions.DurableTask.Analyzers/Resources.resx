@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ActivityArgumentAnalyzerDescription" xml:space="preserve">
+    <value>Activity function call specifies a parameter that doesn't match the function definition parameter.</value>
+  </data>
+  <data name="ActivityArgumentAnalyzerMessageFormat" xml:space="preserve">
+    <value>Activity function named '{0}' takes a '{1}' but was given a '{2}'.</value>
+  </data>
+  <data name="ActivityArgumentAnalyzerTitle" xml:space="preserve">
+    <value>Activity function call is using the wrong argument type.</value>
+  </data>
+  <data name="ActivityNameAnalyzerCloseMessageFormat" xml:space="preserve">
+    <value>Activity function named '{0}' does not exist. Did you mean '{1}'?</value>
+  </data>
+  <data name="ActivityNameAnalyzerDescription" xml:space="preserve">
+    <value>Activity function call references unknown activity function.</value>
+  </data>
+  <data name="ActivityNameAnalyzerMissingMessageFormat" xml:space="preserve">
+    <value>Activity function named '{0}' does not exist. Could not find any function references.</value>
+  </data>
+  <data name="ActivityNameAnalyzerTitle" xml:space="preserve">
+    <value>Activity function call references unknown Activity function.</value>
+  </data>
+  <data name="ActivityReturnTypeAnalyzerDescription" xml:space="preserve">
+    <value>Activity function call return type doesn't match function definition return type.</value>
+  </data>
+  <data name="ActivityReturnTypeAnalyzerMessageFormat" xml:space="preserve">
+    <value>Activity function named '{0}' returns '{1}' but '{2}' is expected.</value>
+  </data>
+  <data name="ActivityReturnTypeAnalyzerTitle" xml:space="preserve">
+    <value>Activity function call return type doesn't match function definition return type.</value>
+  </data>
+  <data name="DateTimeAnalyzerTitle" xml:space="preserve">
+    <value>DateTime calls must be deterministic inside an orchestrator function.</value>
+  </data>
+  <data name="DeterministicAnalyzerDescription" xml:space="preserve">
+    <value>An orchestrator function must be deterministic. For more information on orchestrator code constraints, see:
+https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-checkpointing-and-replay#orchestrator-code-constraints</value>
+  </data>
+  <data name="DeterministicAnalyzerMessageFormat" xml:space="preserve">
+    <value>'{0}' violates the orchestrator deterministic code constraint.</value>
+  </data>
+  <data name="DispatchClassNameAnalyzerDescription" xml:space="preserve">
+    <value>DispatchAsync must be called with the entity class it's used in.</value>
+  </data>
+  <data name="DispatchClassNameAnalyzerMessageFormat" xml:space="preserve">
+    <value>DispatchAsync was used with '{0}' but must be called with the entity class '{1}' it's used in.</value>
+  </data>
+  <data name="DispatchClassNameAnalyzerTitle" xml:space="preserve">
+    <value>DispatchAsync must be called with the entity class it's used in.</value>
+  </data>
+  <data name="EntityClassNameAnalyzerDescription" xml:space="preserve">
+    <value>Entity class name and entity function name must match.</value>
+  </data>
+  <data name="EntityClassNameAnalyzerMessageFormat" xml:space="preserve">
+    <value>Class name '{0}' and entity function name '{1}' do not match.</value>
+  </data>
+  <data name="EntityClassNameAnalyzerTitle" xml:space="preserve">
+    <value>Entity class name and entity function name must match.</value>
+  </data>
+  <data name="EntityContextAnalyzerDescription" xml:space="preserve">
+    <value>EntityTrigger attribute must be used with an IDurableEntityContext.</value>
+  </data>
+  <data name="EntityContextAnalyzerMessageFormat" xml:space="preserve">
+    <value>EntityTrigger attribute is applied to a '{0}' but must be used with an IDurableEntityContext instead.</value>
+  </data>
+  <data name="EntityContextAnalyzerTitle" xml:space="preserve">
+    <value>EntityTrigger attribute must be used with an IDurableEntityContext.</value>
+  </data>
+  <data name="EntityInterfaceContentAnalyzerDescription" xml:space="preserve">
+    <value>An entity interface must only contain methods and must contain at least one method.</value>
+  </data>
+  <data name="EntityInterfaceContentAnalyzerMessageFormat" xml:space="preserve">
+    <value>Entity interface contains members other than methods:
+ '{0}'.</value>
+  </data>
+  <data name="EntityInterfaceContentAnalyzerNoMethodsMessageFormat" xml:space="preserve">
+    <value>Entity interface doesn't contain any methods and must contain at least one.</value>
+  </data>
+  <data name="EntityInterfaceContentAnalyzerTitle" xml:space="preserve">
+    <value>An entity interface must only contain methods and must contain at least one method.</value>
+  </data>
+  <data name="EntityInterfaceParameterAnalyzerDescription" xml:space="preserve">
+    <value>An entity interface must only have methods with at most one parameter.</value>
+  </data>
+  <data name="EntityInterfaceParameterAnalyzerMessageFormat" xml:space="preserve">
+    <value>Method in entity interface has more than one parameter: '{0}'.</value>
+  </data>
+  <data name="EntityInterfaceParameterAnalyzerTitle" xml:space="preserve">
+    <value>An entity interface must only have methods with at most one parameter.</value>
+  </data>
+  <data name="EntityInterfaceReturnTypeAnalyzerDescription" xml:space="preserve">
+    <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;.</value>
+  </data>
+  <data name="EntityInterfaceReturnTypeAnalyzerMessageFormat" xml:space="preserve">
+    <value>Method has a return type '{0}'; return type should only be void, Task, or Task&lt;T&gt;.</value>
+  </data>
+  <data name="EntityInterfaceReturnTypeAnalyzerTitle" xml:space="preserve">
+    <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;.</value>
+  </data>
+  <data name="EntityStaticAnalyzerDescription" xml:space="preserve">
+    <value>Entity functions must be static.</value>
+  </data>
+  <data name="EntityStaticAnalyzerMessageFormat" xml:space="preserve">
+    <value>Entity function '{0}' is not marked static.</value>
+  </data>
+  <data name="EntityStaticAnalyzerTitle" xml:space="preserve">
+    <value>Entity functions must be static.</value>
+  </data>
+  <data name="EnvironmentVariableAnalyzerTitle" xml:space="preserve">
+    <value>Environment variables must be accessed in a deterministic way inside an orchestrator function.</value>
+  </data>
+  <data name="FixDateTimeInOrchestrator" xml:space="preserve">
+    <value>Replace with (DurableOrchestrationContext).CurrentUtcDateTime</value>
+  </data>
+  <data name="FixDeterministicAttribute" xml:space="preserve">
+    <value>Remove Deterministic Attribute</value>
+  </data>
+  <data name="FixDurableOrchestrationClient" xml:space="preserve">
+    <value>Replace with DurableOrchestrationClient</value>
+  </data>
+  <data name="FixDurableOrchestrationContext" xml:space="preserve">
+    <value>Replace with DurableOrchestrationContext</value>
+  </data>
+  <data name="FixDurableOrchestrationContextBase" xml:space="preserve">
+    <value>Replace with DurableOrchestrationContextBase</value>
+  </data>
+  <data name="FixEntityFunctionName" xml:space="preserve">
+    <value>Replace entity function name with class name</value>
+  </data>
+  <data name="FixEntityFunctionStaticModifier" xml:space="preserve">
+    <value>Add keyword static to the entity function method signature</value>
+  </data>
+  <data name="FixGuidInOrchestrator" xml:space="preserve">
+    <value>Replace with (DurableOrchestrationContext).NewGuid()</value>
+  </data>
+  <data name="FixIDurableClient" xml:space="preserve">
+    <value>Replace with IDurableClient</value>
+  </data>
+  <data name="FixIDurableEntityClient" xml:space="preserve">
+    <value>Replace with IDurableEntityClient</value>
+  </data>
+  <data name="FixIDurableEntityContext" xml:space="preserve">
+    <value>Replace with IDurableEntityContext</value>
+  </data>
+  <data name="FixIDurableOrchestrationClient" xml:space="preserve">
+    <value>Replace with IDurableOrchestrationClient</value>
+  </data>
+  <data name="FixIDurableOrchestrationContext" xml:space="preserve">
+    <value>Replace with IDurableOrchestrationContext</value>
+  </data>
+  <data name="FixTimerInOrchestrator" xml:space="preserve">
+    <value>Replace with (DurableOrchestrationContext).CreateTimer(DateTime, CancellationToken)</value>
+  </data>
+  <data name="GuidAnalyzerTitle" xml:space="preserve">
+    <value>Guid calls must be deterministic inside an orchestrator function.</value>
+  </data>
+  <data name="IOTypesAnalyzerTitle" xml:space="preserve">
+    <value>I/O operations are not allowed inside an orchestrator function.</value>
+  </data>
+  <data name="MethodAttributeAnalyzerTitle" xml:space="preserve">
+    <value>Method calls in an orchestrator must be marked [Deterministic] on the method declaration.</value>
+  </data>
+  <data name="SignalEntityAnalyzerDescription" xml:space="preserve">
+    <value>SignalEntityAsync must use an Entity Interface.</value>
+  </data>
+  <data name="SignalEntityAnalyzerMessageFormat" xml:space="preserve">
+    <value>An entity interface must be used instead of '{0}'.</value>
+  </data>
+  <data name="SignalEntityAnalyzerTitle" xml:space="preserve">
+    <value>SignalEntityAsync must use an entity interface.</value>
+  </data>
+  <data name="ThreadTaskAnalyzerTitle" xml:space="preserve">
+    <value>Thread and Task calls must be deterministic inside an orchestrator function.</value>
+  </data>
+  <data name="TimerAnalyzerTitle" xml:space="preserve">
+    <value>Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator function.</value>
+  </data>
+  <data name="V1ClientAnalyzerDescription" xml:space="preserve">
+    <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient.</value>
+  </data>
+  <data name="V1ClientAnalyzerMessageFormat" xml:space="preserve">
+    <value>OrchestrationClient attribute is applied to a '{0}' but must be used with a DurableOrchestrationClient.</value>
+  </data>
+  <data name="V1ClientAnalyzerTitle" xml:space="preserve">
+    <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient.</value>
+  </data>
+  <data name="V1OrchestratorContextAnalyzerDescription" xml:space="preserve">
+    <value>OrchestrationTrigger must be used with an DurableOrchestrationContext or DurableOrchestrationContextBase.</value>
+  </data>
+  <data name="V1OrchestratorContextAnalyzerMessageFormat" xml:space="preserve">
+    <value>OrchestrationTrigger is applied to a '{0}' but must be used with a DurableOrchestrationContext or a DurableOrchestrationContextBase instead.</value>
+  </data>
+  <data name="V1OrchestratorContextAnalyzerTitle" xml:space="preserve">
+    <value>OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase.</value>
+  </data>
+  <data name="V1TimerAnalyzerMessageFormat" xml:space="preserve">
+    <value>'{0}' violates the orchestrator deterministic code constraint. Consider using (DurableOrchestrationContext).CreateTimer&lt;T&gt;(DateTime fireAt, T state, CancellationToken cancelToken)</value>
+  </data>
+  <data name="V2ClientAnalyzerDescription" xml:space="preserve">
+    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
+  </data>
+  <data name="V2ClientAnalyzerMessageFormat" xml:space="preserve">
+    <value>DurableClient attribute is applied to a '{0}' but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
+  </data>
+  <data name="V2ClientAnalyzerTitle" xml:space="preserve">
+    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
+  </data>
+  <data name="V2OrchestratorContextAnalyzerDescription" xml:space="preserve">
+    <value>OrchestrationTrigger must be used with an IDurableOrchestrationContext.</value>
+  </data>
+  <data name="V2OrchestratorContextAnalyzerMessageFormat" xml:space="preserve">
+    <value>OrchestrationTrigger is applied to a '{0}' but must be used with an IDurableOrchestrationContext instead.</value>
+  </data>
+  <data name="V2OrchestratorContextAnalyzerTitle" xml:space="preserve">
+    <value>OrchestrationTrigger must be used with an IDurableOrchestrationContext.</value>
+  </data>
+</root>

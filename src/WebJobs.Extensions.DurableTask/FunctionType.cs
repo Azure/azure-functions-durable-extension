@@ -10,5 +10,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         Activity,
         Orchestrator,
+        Entity,
     }
 }

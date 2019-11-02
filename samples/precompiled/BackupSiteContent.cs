@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 
@@ -14,7 +15,7 @@ namespace VSSample
     {
         [FunctionName("E2_BackupSiteContent")]
         public static async Task<long> Run(
-            [OrchestrationTrigger] DurableOrchestrationContext backupContext)
+            [OrchestrationTrigger] IDurableOrchestrationContext backupContext)
         {
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
