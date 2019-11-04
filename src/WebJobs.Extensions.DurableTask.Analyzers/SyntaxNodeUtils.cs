@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return (DurableVersion)version;
             }
 
-            var versionTwoInterface = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.Azure.WebJobs.IDurableOrchestrationContext");
+            var versionTwoInterface = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext");
             version = versionTwoInterface != null ? DurableVersion.V2 : DurableVersion.V1;
             return (DurableVersion)version;
         }
