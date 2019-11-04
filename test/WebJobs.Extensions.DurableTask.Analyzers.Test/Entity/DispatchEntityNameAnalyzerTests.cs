@@ -106,11 +106,11 @@ using Microsoft.Extensions.Logging;
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = Resources.DispatchClassNameAnalyzerMessageFormat,
+                Message = String.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "string", "MyEmptyEntity"),
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 95)
+                            new DiagnosticResultLocation("Test0.cs", 14, 96)
                      }
             };
 

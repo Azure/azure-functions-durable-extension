@@ -130,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "httpClient"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "sqlConnection"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "cloudBlobClient"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "cloudQueueClient"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -458,7 +458,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "cloudTableClient"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -540,7 +540,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "documentClient"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -622,7 +622,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "webRequest"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
                 Severity = severity,
                 Locations =
                     new[] {

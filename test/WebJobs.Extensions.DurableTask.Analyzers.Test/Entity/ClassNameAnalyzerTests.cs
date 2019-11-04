@@ -161,7 +161,7 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 10)
+                            new DiagnosticResultLocation("Test0.cs", 15, 23)
                      }
             };
             
