@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
 
                     if (functionDefinition.ReturnType != node.ExpectedReturnType &&
-                        !(functionDefinition.ReturnType == "System.Void" && node.ExpectedReturnType == "System.Threading.Tasks.Task"))
+                        (node.ExpectedReturnType != "System.Threading.Tasks.Task"))
                     {
                         if ($"System.Threading.Tasks.Task<{functionDefinition.ReturnType}>" != node.ExpectedReturnType)
                             cac.ReportDiagnostic(Diagnostic.Create(Rule, node.ExpectedReturnTypeNode.GetLocation(), node.Name, functionDefinition.ReturnType, node.ExpectedReturnType));
