@@ -34,8 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         
         private static void AnalyzeAttributeClassName(SyntaxNodeAnalysisContext context)
         {
-            var attributeExpression = context.Node as AttributeSyntax;
-            if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "EntityTrigger")
+            if (SyntaxNodeUtils.TryGetEntityTriggerAttributeExpression(context, out AttributeSyntax attributeExpression))
             {
                 if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
                 {

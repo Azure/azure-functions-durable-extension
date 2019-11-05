@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -64,8 +65,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
             return true;
         }
+        internal static bool TryGetFunctionNameNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
+        {
+            if (TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+            {
+                return TryGetFunctionName(functionAttribute, out attributeArgument);
+            }
 
-        internal static bool TryGetFunctionName(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
+            attributeArgument = null;
+            return false;
+        }
+
+        private static bool TryGetFunctionName(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
         {
             var attributeArgumentListSyntax = ((AttributeSyntax)functionAttribute).ArgumentList;
             if (attributeArgumentListSyntax != null)
@@ -82,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute)
+        private static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute)
         {
             if (TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {
@@ -137,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static bool TryGetParameterNodeNextToAttribute(AttributeSyntax attributeExpression, SyntaxNodeAnalysisContext context, out SyntaxNode inputType)
+        internal static bool TryGetParameterNodeNextToAttribute(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
             var parameterTypeNamesEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType));
@@ -151,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static bool TryGetReturnType(AttributeSyntax attributeExpression, SyntaxNodeAnalysisContext context, out ITypeSymbol returnType)
+        internal static bool TryGetReturnType(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol returnType)
         {
             if (TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {
@@ -160,6 +171,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             returnType = null;
+            return false;
+        }
+
+        internal static bool TryGetActivityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
+        {
+            return TryGetAttributeExpression(context, "ActivityTrigger", out attributeExpression);
+        }
+
+        internal static bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        {
+            var genericNameEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
+            if (genericNameEnumerable.Any())
+            {
+                //GenericName will always have a TypeArgumentList
+                var typeArgumentList = genericNameEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
+
+                //TypeArgumentList will always have a child node
+                identifierNode = typeArgumentList.ChildNodes().First();
+                return true;
+            }
+
+            identifierNode = null;
+            return false;
+        }
+
+        internal static bool TryGetEntityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
+        {
+            return TryGetAttributeExpression(context, "EntityTrigger", out attributeExpression);
+        }
+
+        private static bool TryGetAttributeExpression(SyntaxNodeAnalysisContext context, string attributeName, out AttributeSyntax attributeExpression)
+        {
+            attributeExpression = context.Node as AttributeSyntax;
+            if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == attributeName)
+            {
+                return true;
+            }
+
+            attributeExpression = null;
             return false;
         }
 

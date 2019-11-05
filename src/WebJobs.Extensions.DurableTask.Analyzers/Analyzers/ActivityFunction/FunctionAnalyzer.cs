@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -56,55 +57,103 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindActivityCalls(SyntaxNodeAnalysisContext context)
         {
-            var invocationExpression = context.Node as InvocationExpressionSyntax;
+            if (TryGetCallActivityInvocation(context, out InvocationExpressionSyntax invocationExpression))
+            {
+                if (!TryGetFunctionNameFromCallActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
+                {
+                    return;
+                }
+
+                if (!TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode))
+                {
+                    return;
+                }
+
+                var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
+
+                string returnTypeName;
+                if (!TryGetReturnTypeFromCallActivityInvocation(context, invocationExpression, out ITypeSymbol returnType))
+                {
+                    returnTypeName = "System.Threading.Tasks.Task";
+                }
+                else
+                {
+                    returnTypeName = GetQualifiedTypeName(returnType);
+                    returnTypeName = "System.Threading.Tasks.Task<" + returnTypeName + ">";
+                }
+
+                calledFunctions.Add(new ActivityFunctionCall
+                {
+                    Name = functionNameNode.ToString().Trim('"'),
+                    NameNode = functionNameNode,
+                    ParameterNode = inputNode,
+                    ParameterType = GetQualifiedTypeName(inputType),
+                    ExpectedReturnType = returnTypeName,
+                    InvocationExpression = invocationExpression
+                });
+            }
+        }
+
+        private bool TryGetReturnTypeFromCallActivityInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpression, out ITypeSymbol returnType)
+        {
+            if (SyntaxNodeUtils.TryGetTypeArgumentList((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
+            {
+                returnType = context.SemanticModel.GetTypeInfo(identifierNode).Type;
+                return true;
+            }
+
+            returnType = null;
+            return false;
+        }
+
+        private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
+        {
+            inputNode = invocationExpression.ArgumentList.Arguments.LastOrDefault();
+            if (inputNode != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryGetFunctionNameFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode)
+        {
+            functionNameNode = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
+            if (functionNameNode != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryGetCallActivityInvocation(SyntaxNodeAnalysisContext context, out InvocationExpressionSyntax invocationExpression)
+        {
+            invocationExpression = context.Node as InvocationExpressionSyntax;
             if (invocationExpression != null)
             {
-
                 var expression = invocationExpression.Expression as MemberAccessExpressionSyntax;
                 if (expression != null)
                 {
                     var name = expression.Name;
                     if (name.ToString().StartsWith("CallActivityAsync") || name.ToString().StartsWith("CallActivityWithRetryAsync"))
                     {
-                        var functionName = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
-                        var argumentType = invocationExpression.ArgumentList.Arguments.Last();
-                        var returnType = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression))
-                            .FirstOrDefault()?
-                            .ChildNodes()
-                            .Where(x => x.IsKind(SyntaxKind.GenericName))
-                            .FirstOrDefault()?
-                            .ChildNodes()
-                            .Where(x => x.IsKind(SyntaxKind.TypeArgumentList))?
-                            .FirstOrDefault();
-                        var returnTypeName = "System.Threading.Tasks.Task";
-                        if (returnType != null)
-                        {
-                            returnTypeName = GetQualifiedTypeName(context.SemanticModel.GetTypeInfo(returnType.ChildNodes().FirstOrDefault()).Type);
-                            returnTypeName = "System.Threading.Tasks.Task<" + returnTypeName + ">";
-
-                        }
-                        var typeInfo = context.SemanticModel.GetTypeInfo(argumentType.ChildNodes().First());
-                        var typeName = "";
-                        if (typeInfo.Type == null)
-                            return;
-                        typeName = GetQualifiedTypeName(typeInfo.Type);
-                        if (functionName != null && functionName.ToString().StartsWith("\""))
-                            calledFunctions.Add(new ActivityFunctionCall
-                            {
-                                Name = functionName.ToString().Trim('"'),
-                                NameNode = functionName,
-                                ParameterNode = argumentType,
-                                ParameterType = typeName,
-                                ExpectedReturnType = returnTypeName,
-                                ExpectedReturnTypeNode = invocationExpression
-                            });
+                        return true;
                     }
                 }
             }
+
+            invocationExpression = null;
+            return false;
         }
 
         private string GetQualifiedTypeName(ITypeSymbol typeInfo)
         {
+            if (typeInfo == null)
+            {
+                return "";
+            }
             var tupleunderlyingtype = (typeInfo as INamedTypeSymbol).TupleUnderlyingType;
             if (tupleunderlyingtype != null)
             {
@@ -128,40 +177,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return returnType;
         }
 
+        private bool TryGetQualifiedTypeName(ITypeSymbol typeInfo, out string qualifiedTypeName)
+        {
+            if (typeInfo != null)
+            {
+                qualifiedTypeName = typeInfo.ContainingNamespace.ToString() + "." + typeInfo.Name.ToString();
+                return true;
+            }
+
+            qualifiedTypeName = null;
+            return false;
+        }
+
         public void FindActivities(SyntaxNodeAnalysisContext context)
         {
-            var attributeExpression = context.Node as AttributeSyntax;
-            if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "ActivityTrigger")
+            if (SyntaxNodeUtils.TryGetActivityTriggerAttributeExpression(context, out AttributeSyntax attributeExpression))
             {
-                if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+                if (!TryGetFunctionName(attributeExpression, out string functionName))
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out SyntaxNode attributeArgument))
-                    {
-                        var functionName = attributeArgument.ToString().Trim('"');
-                        if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attributeExpression, context, out SyntaxNode inputTypeNode))
-                        {
-                            ITypeSymbol inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
-                            if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
-                            {
-                                if (!TryGetInputTypeFromDurableContextCall(out inputType, context, attributeExpression))
-                                {
-                                    return;
-                                }
-                            }
+                    return;
+                }
 
-                            if (SyntaxNodeUtils.TryGetReturnType(attributeExpression, context, out ITypeSymbol returnType))
-                            {
-                                availableFunctions.Add(new ActivityFunctionDefinition
-                                {
-                                    FunctionName = functionName,
-                                    InputType = GetQualifiedTypeName(inputType),
-                                    ReturnType = GetQualifiedTypeName(returnType)
-                                });
-                            }
-                        }
+                if (!TryGetActivityFunctionInputType(context, attributeExpression, out ITypeSymbol inputType))
+                {
+                    return;
+                }
+
+                if (!SyntaxNodeUtils.TryGetReturnType(context, attributeExpression, out ITypeSymbol returnType))
+                {
+                    return;
+                }
+
+                availableFunctions.Add(new ActivityFunctionDefinition
+                {
+                    FunctionName = functionName,
+                    InputType = GetQualifiedTypeName(inputType),
+                    ReturnType = GetQualifiedTypeName(returnType)
+                });
+            }
+        }
+
+        private bool TryGetActivityFunctionInputType(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol inputType)
+        {
+            if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
+            {
+                inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
+                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
+                {
+                    if (!TryGetInputTypeFromDurableContextCall(out inputType, context, attributeExpression))
+                    {
+                        return true;
                     }
                 }
             }
+
+            inputType = null;
+            return false;
+        }
+
+        private bool TryGetFunctionName(AttributeSyntax attributeExpression, out string functionName)
+        {
+            if (SyntaxNodeUtils.TryGetFunctionNameNode(attributeExpression, out SyntaxNode attributeArgument))
+            {
+                functionName = attributeArgument.ToString().Trim('"');
+                return true;
+            }
+
+            functionName = null;
+            return false;
         }
 
         private static bool TryGetInputTypeFromDurableContextCall(out ITypeSymbol inputTypeNode, SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)

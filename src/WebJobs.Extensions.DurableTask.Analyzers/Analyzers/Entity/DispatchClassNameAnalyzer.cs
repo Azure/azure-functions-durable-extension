@@ -40,17 +40,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
                 {
-                    if (TryGetTypeArgumentList(expression, out SyntaxNode typeArgumentList))
+                    if (SyntaxNodeUtils.TryGetTypeArgumentList(expression, out SyntaxNode identifierNode))
                     {
                         if (SyntaxNodeUtils.TryGetClassSymbol(expression, context.SemanticModel, out INamedTypeSymbol classSymbol))
                         {
                             var className = classSymbol.Name.ToString();
-
-                            //TypeArgumentList will always have a child node
-                            var identifierName = typeArgumentList.ChildNodes().First();
-                            if (!string.Equals(className, identifierName.ToString()))
+                            
+                            if (!string.Equals(className, identifierNode.ToString()))
                             {
-                                var diagnostic = Diagnostic.Create(Rule, identifierName.GetLocation(), identifierName, className);
+                                var diagnostic = Diagnostic.Create(Rule, identifierNode.GetLocation(), identifierNode, className);
 
                                 context.ReportDiagnostic(diagnostic);
                             }
@@ -58,19 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
-        }
-
-        private bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode typeArgumentList)
-        {
-            var genericNameEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
-            if (genericNameEnumerable.Any())
-            {
-                typeArgumentList = genericNameEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
-                return true;
-            }
-
-            typeArgumentList = null;
-            return false;
         }
     }
 }
