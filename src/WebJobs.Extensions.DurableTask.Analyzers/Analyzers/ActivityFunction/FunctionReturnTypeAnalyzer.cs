@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var functionDefinition = availableFunctions.Where(x => x.FunctionName == node.Name).SingleOrDefault();
                 if (functionDefinition != null)
                 {
-
+                    // Functions can always return Task, regardless of function definition return type
                     if (functionDefinition.ReturnType != node.ExpectedReturnType &&
                         (node.ExpectedReturnType != "System.Threading.Tasks.Task"))
                     {
