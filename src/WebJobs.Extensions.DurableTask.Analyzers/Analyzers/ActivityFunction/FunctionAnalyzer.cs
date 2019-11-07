@@ -145,23 +145,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (typeInfo != null)
             {
-                var genericType = "";
                 if (typeInfo is INamedTypeSymbol)
                 {
-                    var namedTypeSymbol = typeInfo as INamedTypeSymbol;
-                    var tupleUnderlyingType = namedTypeSymbol.TupleUnderlyingType;
+                    var tupleUnderlyingType = ((INamedTypeSymbol)typeInfo).TupleUnderlyingType;
                     if (tupleUnderlyingType != null)
                     {
-                        return $"Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => GetQualifiedTypeName(x)))}>";
+                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
                     }
-                    else if (namedTypeSymbol.TypeArguments.Any())
-                    {
-                        genericType = "<" + GetQualifiedTypeName(namedTypeSymbol.TypeArguments.First()) + ">";
-                    }
+                    return typeInfo.ToString();
                 }
 
-                var qualifiedTypeName = typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name?.ToString() + genericType;
-                return qualifiedTypeName;
+                return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name?.ToString();
             }
 
             return "";
@@ -185,7 +179,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
 
                 var returnTypeName = GetQualifiedTypeName(returnType);
-                var inputTypeName = GetActivityFunctionInputTypeName(context, attribute);
+                var inputType = GetActivityFunctionInputTypeName(context, attribute);
+                var inputTypeName = GetQualifiedTypeName(inputType);
 
                 availableFunctions.Add(new ActivityFunctionDefinition
                 {
@@ -220,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private string GetActivityFunctionInputTypeName(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
+        private ITypeSymbol GetActivityFunctionInputTypeName(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
         {
             if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
             {
@@ -230,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
                 }
 
-                return GetQualifiedTypeName(inputType);
+                return inputType;
             }
 
             return null;
