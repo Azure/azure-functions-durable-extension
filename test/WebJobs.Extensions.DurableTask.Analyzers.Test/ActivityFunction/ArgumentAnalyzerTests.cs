@@ -80,7 +80,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void Argument_IncorrectInput()
+        public void Argument_CallInputsIntFunctionTakesString_Context()
         {
             var test = @"
 using System;
@@ -129,6 +129,58 @@ namespace VSSample
             };
             VerifyCSharpDiagnostic(test, expected);
         }
+
+        [TestMethod]
+        public void Argument_CallInputsIntFunctionTakesString()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(""E1_HelloSequence"")]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", 4));
+            
+                return outputs;
+            }
+
+        [FunctionName(""E1_SayHello"")]
+        public static string SayHello([ActivityTrigger] string name)
+        {
+            return $""Hello {name}!"";
+        }
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "System.String", "System.Int32"),
+                Severity = severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 23, 84)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
+
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {

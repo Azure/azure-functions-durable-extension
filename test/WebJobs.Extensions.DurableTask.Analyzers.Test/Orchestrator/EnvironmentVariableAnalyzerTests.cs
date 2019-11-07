@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Enviornment.GetEnvironmentVariables"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.GetEnvironmentVariables"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Enviornment.GetEnvironmentVariables"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Environment.GetEnvironmentVariables"),
                 Severity = severity,
                 Locations =
                     new[] {

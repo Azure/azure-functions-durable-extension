@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep"),
+                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Thread.Sleep"),
                 Severity = severity,
                 Locations =
                     new[] {
