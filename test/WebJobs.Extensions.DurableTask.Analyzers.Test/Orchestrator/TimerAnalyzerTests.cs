@@ -132,8 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             //VerifyCSharpFix(test, fixtest);
         }
 
-        //Disabled test. Thread class doesn't seem to work correctly with the roslyn test helper.
-        //[TestMethod]
+        [TestMethod]
         public void ThreadInOrchestrator_Sleep_Namespace()
         {
             var test = @"
@@ -170,8 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             //VerifyCSharpFix(test, fixtest);
         }
 
-        //Disabled test. Thread class doesn't seem to work correctly with the roslyn test helper.
-        //[TestMethod]
+        [TestMethod]
         public void ThreadInOrchestrator_Sleep()
         {
             var test = @"
@@ -242,8 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             // Test fix
         }
 
-        //Disabled test. Thread class doesn't seem to work correctly with the roslyn test helper.
-        //[TestMethod]
+        [TestMethod]
         public void ThreadInMethod_DeterministicAttribute_Sleep()
         {
             var test = @"

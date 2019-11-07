@@ -10,7 +10,7 @@ using TestHelper;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 {
     //Disabled test. Environment class doesn't seem to work correctly with the roslyn test helper.
-    //[TestClass]
+    [TestClass]
     public class EnvironmentVariableAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = EnvironmentVariableAnalyzer.DiagnosticId;
