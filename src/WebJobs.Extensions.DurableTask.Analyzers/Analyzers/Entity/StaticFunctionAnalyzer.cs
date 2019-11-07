@@ -34,9 +34,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         
         private static void AnalyzeAttributeClassName(SyntaxNodeAnalysisContext context)
         {
-            if (SyntaxNodeUtils.TryGetEntityTriggerAttributeExpression(context, out AttributeSyntax attributeExpression))
+            var attribute = context.Node as AttributeSyntax;
+            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
             {
-                if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
+                if (SyntaxNodeUtils.TryGetMethodDeclaration(attribute, out SyntaxNode methodDeclaration))
                 {
                     var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword));
                     if (!staticKeyword.Any())

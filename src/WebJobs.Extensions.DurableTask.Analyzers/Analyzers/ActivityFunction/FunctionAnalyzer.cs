@@ -169,22 +169,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindActivities(SyntaxNodeAnalysisContext context)
         {
-            if (SyntaxNodeUtils.TryGetActivityTriggerAttributeExpression(context, out AttributeSyntax attributeExpression))
+            var attribute = context.Node as AttributeSyntax;
+            if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
-                if (!TryGetFunctionName(attributeExpression, out string functionName))
+                if (!TryGetFunctionName(attribute, out string functionName))
                 {
                     //Do not store ActivityFunctionDefinition if there is no function name
                     return;
                 }
 
-                if (!TryGetReturnType(context, attributeExpression, out ITypeSymbol returnType))
+                if (!TryGetReturnType(context, attribute, out ITypeSymbol returnType))
                 {
                     //Do not store ActivityFunctionDefinition if there is no return type
                     return;
                 }
 
                 var returnTypeName = GetQualifiedTypeName(returnType);
-                var inputTypeName = GetActivityFunctionInputTypeName(context, attributeExpression);
+                var inputTypeName = GetActivityFunctionInputTypeName(context, attribute);
 
                 availableFunctions.Add(new ActivityFunctionDefinition
                 {
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetFunctionName(AttributeSyntax attributeExpression, out string functionName)
         {
-            if (SyntaxNodeUtils.TryGetFunctionNameNode(attributeExpression, out SyntaxNode attributeArgument))
+            if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(attributeExpression, out SyntaxNode attributeArgument))
             {
                 functionName = attributeArgument.ToString().Trim('"');
                 return true;

@@ -35,12 +35,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static void AnalyzeAttributeClassName(SyntaxNodeAnalysisContext context)
         {
-            if(SyntaxNodeUtils.TryGetEntityTriggerAttributeExpression(context, out AttributeSyntax attributeExpression))
+            var attribute = context.Node as AttributeSyntax;
+            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
             {
-                if (SyntaxNodeUtils.TryGetFunctionNameNode(attributeExpression, out SyntaxNode attributeArgument))
+                if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(attribute, out SyntaxNode attributeArgument))
                 {
                     var functionName = attributeArgument.ToString().Trim('"');
-                    if (SyntaxNodeUtils.TryGetClassSymbol(attributeExpression, context.SemanticModel, out INamedTypeSymbol classSymbol))
+                    if (SyntaxNodeUtils.TryGetClassSymbol(attribute, context.SemanticModel, out INamedTypeSymbol classSymbol))
                     {
                         var className = classSymbol.Name.ToString();
 

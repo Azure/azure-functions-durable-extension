@@ -47,38 +47,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return false;
         }
-        
-        public static bool IsMarkedDeterministic(SyntaxNode node)
-        {
-            if (TryGetDeterministicAttribute(node, out SyntaxNode deterministicAttribute))
-            {
-                return true;
-            }
-            return false;
-        }
+
+        public static bool IsMarkedDeterministic(SyntaxNode node) => TryGetDeterministicAttribute(node, out _);
 
 
-        public static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute)
+        public static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute) => TryGetAttribute(node, "Deterministic", out deterministicAttribute);
+
+        private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var IEnumeratorAttributeList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                if (IEnumeratorAttributeList.Any())
+                var attributeLists = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
+                foreach (var attributeList in attributeLists)
                 {
-                    foreach (SyntaxNode attributeList in IEnumeratorAttributeList)
+                    attribute = attributeList.ChildNodes().First();
+                    if (attribute.ChildNodes().First().ToString().Equals(attributeName))
                     {
-                        if (attributeList.ToString().Equals("[Deterministic]"))
-                        {
-                            deterministicAttribute = attributeList;
-                            return true;
-                        }
+                        return true;
                     }
                 }
-
             }
 
-            deterministicAttribute = null;
+            attribute = null;
             return false;
+
         }
 
         internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration)
@@ -116,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetFunctionNameNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
+        internal static bool TryGetFunctionNameParameterNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
         {
             if (TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
             {
@@ -144,36 +136,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute)
-        {
-            if (TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
-            {
-                var attributeLists = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                if (attributeLists.Any())
-                {
-                    foreach (var attributeList in attributeLists)
-                    {
-                        var attribute = attributeList.ChildNodes().First();
-                        if (attribute.ChildNodes().First().ToString().Equals("FunctionName"))
-                        {
-                            functionAttribute = attribute;
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            functionAttribute = null;
-            return false;
-        }
+        private static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute) => TryGetAttribute(attributeExpression, "FunctionName", out functionAttribute);
 
         internal static bool TryGetParameterNodeNextToAttribute(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
-            var parameterTypeNamesEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName));
-            if (parameterTypeNamesEnumerable.Any())
+            inputType = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+            if (inputType != null)
             {
-                inputType = parameterTypeNamesEnumerable.First();
                 return true;
             }
 
@@ -183,11 +153,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         internal static bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
-            var genericNameEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
-            if (genericNameEnumerable.Any())
+            var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+            if (genericName != null)
             {
                 //GenericName will always have a TypeArgumentList
-                var typeArgumentList = genericNameEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
+                var typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
 
                 //TypeArgumentList will always have a child node
                 identifierNode = typeArgumentList.ChildNodes().First();
@@ -198,25 +168,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static bool TryGetActivityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
-        {
-            return TryGetAttributeExpression(context, "ActivityTrigger", out attributeExpression);
-        }
+        internal static bool IsActivityTriggerAttribute(AttributeSyntax attribute) => IsSpecifiedAttribute(attribute, "ActivityTrigger");
 
-        internal static bool TryGetEntityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
-        {
-            return TryGetAttributeExpression(context, "EntityTrigger", out attributeExpression);
-        }
+        internal static bool IsEntityTriggerAttribute(AttributeSyntax attribute) => IsSpecifiedAttribute(attribute, "EntityTrigger");
 
-        private static bool TryGetAttributeExpression(SyntaxNodeAnalysisContext context, string attributeName, out AttributeSyntax attributeExpression)
+        private static bool IsSpecifiedAttribute(AttributeSyntax attribute, string attributeName)
         {
-            attributeExpression = context.Node as AttributeSyntax;
-            if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == attributeName)
+            if (attribute != null && attribute.ChildNodes().First().ToString() == attributeName)
             {
                 return true;
             }
 
-            attributeExpression = null;
             return false;
         }
     }
