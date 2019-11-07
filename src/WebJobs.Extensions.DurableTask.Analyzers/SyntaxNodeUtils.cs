@@ -47,6 +47,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return false;
         }
+        
+        public static bool IsMarkedDeterministic(SyntaxNode node)
+        {
+            if (TryGetDeterministicAttribute(node, out SyntaxNode deterministicAttribute))
+            {
+                return true;
+            }
+            return false;
+        }
+
+
+        public static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute)
+        {
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                var IEnumeratorAttributeList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
+                if (IEnumeratorAttributeList.Any())
+                {
+                    foreach (SyntaxNode attributeList in IEnumeratorAttributeList)
+                    {
+                        if (attributeList.ToString().Equals("[Deterministic]"))
+                        {
+                            deterministicAttribute = attributeList;
+                            return true;
+                        }
+                    }
+                }
+
+            }
+
+            deterministicAttribute = null;
+            return false;
+        }
+
+        internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration)
+        {
+            var currNode = node.IsKind(SyntaxKind.MethodDeclaration) ? node : node.Parent;
+            while (!currNode.IsKind(SyntaxKind.MethodDeclaration))
+            {
+                if (currNode.IsKind(SyntaxKind.CompilationUnit))
+                {
+                    methodDeclaration = null;
+                    return false;
+                }
+                currNode = currNode.Parent;
+            }
+
+            methodDeclaration = currNode;
+            return true;
+        }
 
         internal static bool TryGetClassSymbol(SyntaxNode node, SemanticModel semanticModel, out INamedTypeSymbol classSymbol)
         {
@@ -65,6 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
             return true;
         }
+
         internal static bool TryGetFunctionNameNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
         {
             if (TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
@@ -115,43 +166,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             functionAttribute = null;
             return false;
         }
-        
-        public static bool IsMarkedDeterministic(SyntaxNode node)
-        {
-            if (TryGetDeterministicAttribute(node, out SyntaxNode deterministicAttribute))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        public static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute)
-        {
-            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
-            {
-                var IEnumeratorAttributeList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                if (IEnumeratorAttributeList.Any())
-                {
-                    foreach (SyntaxNode attributeList in IEnumeratorAttributeList)
-                    {
-                        if (attributeList.ToString().Equals("[Deterministic]"))
-                        {
-                            deterministicAttribute = attributeList;
-                            return true;
-                        }
-                    }
-                }
-                
-            }
-
-            deterministicAttribute = null;
-            return false;
-        }
 
         internal static bool TryGetParameterNodeNextToAttribute(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
-            var parameterTypeNamesEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType));
+            var parameterTypeNamesEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName));
             if (parameterTypeNamesEnumerable.Any())
             {
                 inputType = parameterTypeNamesEnumerable.First();
@@ -160,23 +179,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             inputType = null;
             return false;
-        }
-
-        internal static bool TryGetReturnType(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol returnType)
-        {
-            if (TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
-            {
-                returnType = context.SemanticModel.GetTypeInfo((methodDeclaration as MethodDeclarationSyntax).ReturnType).Type;
-                return true;
-            }
-
-            returnType = null;
-            return false;
-        }
-
-        internal static bool TryGetActivityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
-        {
-            return TryGetAttributeExpression(context, "ActivityTrigger", out attributeExpression);
         }
 
         internal static bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
@@ -196,6 +198,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
+        internal static bool TryGetActivityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
+        {
+            return TryGetAttributeExpression(context, "ActivityTrigger", out attributeExpression);
+        }
+
         internal static bool TryGetEntityTriggerAttributeExpression(SyntaxNodeAnalysisContext context, out AttributeSyntax attributeExpression)
         {
             return TryGetAttributeExpression(context, "EntityTrigger", out attributeExpression);
@@ -211,23 +218,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             attributeExpression = null;
             return false;
-        }
-
-        internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration)
-        {
-            var currNode = node.IsKind(SyntaxKind.MethodDeclaration) ? node : node.Parent;
-            while (!currNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                if (currNode.IsKind(SyntaxKind.CompilationUnit))
-                {
-                    methodDeclaration = null;
-                    return false;
-                }
-                currNode = currNode.Parent;
-            }
-
-            methodDeclaration = currNode;
-            return true;
         }
     }
 }
