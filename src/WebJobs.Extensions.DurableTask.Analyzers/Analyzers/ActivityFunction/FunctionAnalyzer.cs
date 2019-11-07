@@ -226,7 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
                 if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
                 {
-                    TryGetInputTypeFromDurableContextCall(out inputType, context, attributeExpression);
+                    TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
                 }
 
                 return GetQualifiedTypeName(inputType);
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return null;
         }
 
-        private static bool TryGetInputTypeFromDurableContextCall(out ITypeSymbol inputTypeNode, SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
+        private static bool TryGetInputTypeFromDurableContextCall(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol inputTypeNode)
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {
