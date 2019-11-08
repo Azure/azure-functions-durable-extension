@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     return typeInfo.ToString();
                 }
 
-                if (string.IsNullOrEmpty(typeInfo.Name))
+                if (!string.IsNullOrEmpty(typeInfo.Name))
                 {
                     return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString();
                 }
