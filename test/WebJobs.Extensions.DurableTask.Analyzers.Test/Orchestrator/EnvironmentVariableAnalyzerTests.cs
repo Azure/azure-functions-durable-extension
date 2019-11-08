@@ -9,7 +9,6 @@ using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
 {
-    //Disabled test. Environment class doesn't seem to work correctly with the roslyn test helper.
     [TestClass]
     public class EnvironmentVariableAnalyzerTests : CodeFixVerifier
     {
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                Environment.ExpandEnvironmentVariables('test');
+                Environment.ExpandEnvironmentVariables(""test"");
             }
         }
     }";
@@ -235,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                System.Environment.ExpandEnvironmentVariables('test');
+                System.Environment.ExpandEnvironmentVariables(""test"");
             }
         }
     }";
