@@ -143,13 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             var parameter = attributeExpression.Parent.Parent;
             inputType = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
-            if (inputType != null)
-            {
-                return true;
-            }
-
-            inputType = null;
-            return false;
+            return inputType != null;
         }
 
         internal static bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
