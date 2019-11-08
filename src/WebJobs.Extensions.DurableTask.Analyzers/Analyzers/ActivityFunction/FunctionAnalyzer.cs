@@ -36,8 +36,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             FunctionAnalyzer functionAnalyzer = new FunctionAnalyzer();
             context.RegisterCompilationStartAction(compilation =>
             {
-                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivityCalls, SyntaxKind.InvocationExpression);
-                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivities, SyntaxKind.Attribute);
+                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivityCall, SyntaxKind.InvocationExpression);
+                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivity, SyntaxKind.Attribute);
 
                 compilation.RegisterCompilationEndAction(functionAnalyzer.RegisterAnalyzers);
             });
@@ -55,9 +55,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             returnTypeAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
         }
 
-        public void FindActivityCalls(SyntaxNodeAnalysisContext context)
+        public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
-            if (TryGetCallActivityInvocation(context, out InvocationExpressionSyntax invocationExpression))
+            var invocationExpression = context.Node as InvocationExpressionSyntax;
+            if (IsCallActivityInvocation(invocationExpression))
             {
                 if (!TryGetFunctionNameFromCallActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
                 {
@@ -83,9 +84,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private bool TryGetCallActivityInvocation(SyntaxNodeAnalysisContext context, out InvocationExpressionSyntax invocationExpression)
+        private bool IsCallActivityInvocation(InvocationExpressionSyntax invocationExpression)
         {
-            invocationExpression = context.Node as InvocationExpressionSyntax;
             if (invocationExpression != null)
             {
                 var expression = invocationExpression.Expression as MemberAccessExpressionSyntax;
@@ -98,20 +98,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
-
-            invocationExpression = null;
+            
             return false;
         }
 
         private bool TryGetFunctionNameFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode)
         {
             functionNameNode = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
-            if (functionNameNode != null)
-            {
-                return true;
-            }
-
-            return false;
+            return functionNameNode != null;
         }
 
         private string GetReturnTypeNameFromCallActivityInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpression)
@@ -119,11 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (SyntaxNodeUtils.TryGetTypeArgumentList((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
             {
                 var returnType = context.SemanticModel.GetTypeInfo(identifierNode).Type;
-                var returnTypeName = GetQualifiedTypeName(returnType);
-                if (returnTypeName != null)
-                {
-                    return "System.Threading.Tasks.Task<" + returnTypeName + ">";
-                }
+                return "System.Threading.Tasks.Task<" + GetQualifiedTypeName(returnType) + ">";
             }
 
             return "System.Threading.Tasks.Task";
@@ -134,6 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var argumentNode = invocationExpression.ArgumentList.Arguments.LastOrDefault();
             if (argumentNode != null)
             {
+                //An Argument node will always have a child node
                 var inputNode = argumentNode.ChildNodes().First();
                 return inputNode;
             }
@@ -152,16 +143,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
                     }
+
                     return typeInfo.ToString();
                 }
 
-                return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name?.ToString();
+                if (!typeInfo.Name.Equals(""))
+                {
+                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name?.ToString();
+                }
             }
 
-            return "";
+            return "Unknown Type";
         }
 
-        public void FindActivities(SyntaxNodeAnalysisContext context)
+        public void FindActivity(SyntaxNodeAnalysisContext context)
         {
             var attribute = context.Node as AttributeSyntax;
             if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))

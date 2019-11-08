@@ -10,11 +10,11 @@ using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    public static class SyntaxNodeUtils
+    internal static class SyntaxNodeUtils
     {
-        public static DurableVersion? version;
+        internal static DurableVersion? version;
 
-        public static DurableVersion GetDurableVersion(SemanticModel semanticModel)
+        internal static DurableVersion GetDurableVersion(SemanticModel semanticModel)
         {
             if (version != null)
             {
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
         
-        public static bool IsInsideOrchestrator(SyntaxNode node)
+        internal static bool IsInsideOrchestrator(SyntaxNode node)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
@@ -48,10 +48,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        public static bool IsMarkedDeterministic(SyntaxNode node) => TryGetDeterministicAttribute(node, out _);
+        internal static bool IsMarkedDeterministic(SyntaxNode node) => TryGetDeterministicAttribute(node, out _);
 
 
-        public static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute) => TryGetAttribute(node, "Deterministic", out deterministicAttribute);
+        internal static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute) => TryGetAttribute(node, "Deterministic", out deterministicAttribute);
 
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
@@ -60,6 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var attributeLists = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
                 foreach (var attributeList in attributeLists)
                 {
+                    //An AttributeList will always have a child node Attribute
                     attribute = attributeList.ChildNodes().First();
                     if (attribute.ChildNodes().First().ToString().Equals(attributeName))
                     {
