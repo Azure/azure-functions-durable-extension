@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (AttributeMatchesVersionClientBinding(attribute))
             {
-                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attribute, context, out SyntaxNode parameterNode))
+                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode))
                 {
                     var paramTypeName = parameterNode.ToString();
                     if (!ParameterTypeIsCorrectDurableType(parameterNode))
