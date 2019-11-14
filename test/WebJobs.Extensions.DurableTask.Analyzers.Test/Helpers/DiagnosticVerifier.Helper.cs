@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -26,6 +27,7 @@ namespace TestHelper
         private static readonly MetadataReference ThreadReference = MetadataReference.CreateFromFile(typeof(Thread).Assembly.Location);
         private static readonly MetadataReference TaskReference = MetadataReference.CreateFromFile(typeof(Task).Assembly.Location);
         private static readonly MetadataReference DurableFunctionsReference = MetadataReference.CreateFromFile(typeof(IDurableActivityContext).Assembly.Location);
+        private static readonly MetadataReference ILoggerReference = MetadataReference.CreateFromFile(typeof(ILogger).Assembly.Location);
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
@@ -163,7 +165,8 @@ namespace TestHelper
                 .AddMetadataReference(projectId, EnvironmentReference)
                 .AddMetadataReference(projectId, ThreadReference)
                 .AddMetadataReference(projectId, TaskReference)
-                .AddMetadataReference(projectId, DurableFunctionsReference);
+                .AddMetadataReference(projectId, DurableFunctionsReference)
+                .AddMetadataReference(projectId, ILoggerReference);
 
             int count = 0;
             foreach (var source in sources)

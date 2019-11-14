@@ -10,11 +10,11 @@ using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    internal static class SyntaxNodeUtils
+    public static class SyntaxNodeUtils
     {
-        internal static DurableVersion? version;
+        public static DurableVersion? version;
 
-        internal static DurableVersion GetDurableVersion(SemanticModel semanticModel)
+        public static DurableVersion GetDurableVersion(SemanticModel semanticModel)
         {
             if (version != null)
             {
@@ -74,20 +74,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         }
 
-        internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration)
+        internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration) => TryGetContainingSyntaxNode(node, SyntaxKind.MethodDeclaration, out methodDeclaration);
+
+        internal static bool TryGetInvocationExpression(SyntaxNode node, out SyntaxNode invocationExpression) => TryGetContainingSyntaxNode(node, SyntaxKind.InvocationExpression, out invocationExpression);
+
+        private static bool TryGetContainingSyntaxNode(SyntaxNode node, SyntaxKind kind, out SyntaxNode kindNode)
         {
-            var currNode = node.IsKind(SyntaxKind.MethodDeclaration) ? node : node.Parent;
-            while (!currNode.IsKind(SyntaxKind.MethodDeclaration))
+            var currNode = node.IsKind(kind) ? node : node.Parent;
+            while (!currNode.IsKind(kind))
             {
                 if (currNode.IsKind(SyntaxKind.CompilationUnit))
                 {
-                    methodDeclaration = null;
+                    kindNode = null;
                     return false;
                 }
                 currNode = currNode.Parent;
             }
 
-            methodDeclaration = currNode;
+            kindNode = currNode;
             return true;
         }
 
@@ -146,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return inputType != null;
         }
 
-        internal static bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        internal static bool TryGetTypeArgumentIdentifierNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
             var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
             if (genericName != null)

@@ -42,6 +42,8 @@ namespace VSSample
 
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
             
@@ -59,6 +61,19 @@ namespace VSSample
         public static string SayHelloDirectInput([ActivityTrigger] string name)
         {
             return $""Hello {name}!"";
+        }
+
+        [FunctionName(""E1_SayHello_Object"")]
+        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<Object>();
+            return $""Hello Ben!"";
+        }
+
+        [FunctionName(""E1_SayHello_Object_DirectInput"")]
+        public static string SayHelloDirectInput([ActivityTrigger] Object name)
+        {
+            return $""Hello Ben!"";
         }
 
         [FunctionName(""E1_SayHello_Tuple"")]
@@ -120,7 +135,7 @@ namespace VSSample
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "System.String", "System.Int32"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -170,7 +185,7 @@ namespace VSSample
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "System.String", "System.Int32"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
                 Severity = severity,
                 Locations =
                  new[] {

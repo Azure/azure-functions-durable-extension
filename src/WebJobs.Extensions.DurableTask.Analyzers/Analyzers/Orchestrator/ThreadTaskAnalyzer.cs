@@ -30,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(AnalyzeIdentifierTask, SyntaxKind.IdentifierName);
+            context.RegisterSyntaxNodeAction(AnalyzeIdentifierTaskFactory, SyntaxKind.IdentifierName);
             context.RegisterSyntaxNodeAction(AnalyzeIdentifierThread, SyntaxKind.IdentifierName);
             context.RegisterSyntaxNodeAction(AnalyzeIdentifierTaskContinueWith, SyntaxKind.IdentifierName);
         }
@@ -46,6 +47,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
 
                     if (!memberSymbol?.ToString().StartsWith("System.Threading.Tasks.Task") ?? true)
+                    {
+                        return;
+                    }
+                    else if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                }
+            }
+        }
+
+        private static void AnalyzeIdentifierTaskFactory(SyntaxNodeAnalysisContext context)
+        {
+            var identifierName = context.Node as IdentifierNameSyntax;
+            if (identifierName != null)
+            {
+                var identifierText = identifierName.Identifier.ValueText;
+                if (identifierText == "StartNew")
+                {
+                    var memberAccessExpression = identifierName.Parent;
+                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+
+                    if (!memberSymbol?.ToString().StartsWith("System.Threading.Tasks.TaskFactory") ?? true)
                     {
                         return;
                     }
@@ -127,41 +157,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool HasExecuteSynchronously(SyntaxNode node)
         {
-            var invocationExpression = GetInvocationExpression(node);
-            if (invocationExpression == null)
-            {
+            if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out SyntaxNode invocationExpression)){
                 return false;
             }
 
-            var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).First();
+            var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
 
             foreach (SyntaxNode argument in argumentList.ChildNodes())
             {
-                var simpleMemberAccessExpression = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).First();
-                var identifierNameList = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-                foreach (SyntaxNode identifierName in identifierNameList)
+                var simpleMemberAccessExpression = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
+
+                if (simpleMemberAccessExpression != null)
                 {
-                    if (identifierName.ToString().Equals("ExecuteSynchronously"))
+                    var identifierNames = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+
+                    foreach (SyntaxNode identifier in identifierNames)
                     {
-                        return true;
+                        if (identifier.ToString().Equals("ExecuteSynchronously"))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
-            return false;
-        }
 
-        private SyntaxNode GetInvocationExpression(SyntaxNode node)
-        {
-            var currNode = node.IsKind(SyntaxKind.InvocationExpression) ? node : node.Parent;
-            while (!currNode.IsKind(SyntaxKind.InvocationExpression))
-            {
-                if (currNode.IsKind(SyntaxKind.CompilationUnit))
-                {
-                    return null;
-                }
-                currNode = currNode.Parent;
-            }
-            return currNode;
+            return false;
         }
     }
 }

@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -110,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private string GetReturnTypeNameFromCallActivityInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpression)
         {
-            if (SyntaxNodeUtils.TryGetTypeArgumentList((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
+            if (SyntaxNodeUtils.TryGetTypeArgumentIdentifierNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
             {
                 var returnType = context.SemanticModel.GetTypeInfo(identifierNode).Type;
                 return "System.Threading.Tasks.Task<" + GetQualifiedTypeName(returnType) + ">";
@@ -215,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
             {
                 var inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
-                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
+                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
                 {
                     TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
                 }

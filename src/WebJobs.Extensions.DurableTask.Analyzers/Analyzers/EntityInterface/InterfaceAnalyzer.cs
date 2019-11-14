@@ -119,15 +119,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetIdentifierName(SyntaxNode typeArgumentList, out SyntaxNode identifierName)
         {
-            var identifierNameEnumerable = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-            if (identifierNameEnumerable.Any())
-            {
-                identifierName = identifierNameEnumerable.First();
-                return true;
-            }
-
-            identifierName = null;
-            return false;
+            identifierName = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+            return identifierName != null;
         }
 
         private bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode typeArgumentList)

@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
@@ -16,24 +15,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         private readonly string diagnosticId = DateTimeAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = DateTimeAnalyzer.severity;
-        private readonly string fixtest = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.WebJobs;
 
-    namespace VSSample
-    {
-        public static class HelloSequence
+        private readonly string allTests = @"
+        public void dateTimeNow()
         {
-            [FunctionName('E1_HelloSequence')]
-            public static async Task<List<string>> Run(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-context.CurrentUtcDateTime;
-            }
+            System.DateTime.Now;
+            System.DateTime.UtcNow;
+			DateTime.Now;
+			DateTime.UtcNow;
         }
-    }";
+    }
+}";
 
         [TestMethod]
         public void DateTimeInMethod_NonIssueCalls()
@@ -45,15 +37,7 @@ context.CurrentUtcDateTime;
     {
         public static class DateTimeNowExample
         {
-            public void dateTimeNow()
-            {
-			    System.DateTime.Now;
-			    System.DateTime.UtcNow;
-			    DateTime.Now;
-			    DateTime.UtcNow;
-            }
-        }
-    }";
+            " + allTests;
 
             VerifyCSharpDiagnostic(test);
         }
@@ -82,7 +66,7 @@ context.CurrentUtcDateTime;
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -91,8 +75,6 @@ context.CurrentUtcDateTime;
             };
 
             VerifyCSharpDiagnostic(test, expected);
-            
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -119,7 +101,7 @@ context.CurrentUtcDateTime;
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -128,8 +110,6 @@ context.CurrentUtcDateTime;
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -156,7 +136,7 @@ context.CurrentUtcDateTime;
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -165,8 +145,6 @@ context.CurrentUtcDateTime;
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -193,7 +171,7 @@ context.CurrentUtcDateTime;
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -202,54 +180,69 @@ context.CurrentUtcDateTime;
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
-        public void DateTimeInMethod_DeterministicAttribute_Now()
+        public void DateTimeInMethod_DeterministicAttribute_All()
         {
             var test = @"
     using System;
     using Microsoft.Azure.WebJobs;
 
-    namespace VSSample
+     namespace VSSample
     {
-        [Deterministic]
-        public int testDeterministicMethod()
+        public static class DateTimeNowExample
         {
-            DateTime.Now;
-            return 5;
-        }
-    }";
-            var expected = new DiagnosticResult
+            [Deterministic]
+            " + allTests;
+
+
+            var expectedResults = new DiagnosticResult[4];
+            expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 10, 13)
+                            new DiagnosticResultLocation("Test0.cs", 13, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            expectedResults[1] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 14, 13)
+                        }
+            };
 
-            var fixtestAttribute = @"
-    using System;
-    using Microsoft.Azure.WebJobs;
+            expectedResults[2] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 15, 4)
+                        }
+            };
 
-    namespace VSSample
-    {
-        
-        public int testDeterministicMethod()
-        {
-            DateTime.Now;
-            return 5;
-        }
-    }";
+            expectedResults[3] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 16, 4)
+                        }
+            };
 
-            //VerifyCSharpFix(test, fixtestAttribute);
+            VerifyCSharpDiagnostic(test, expectedResults);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

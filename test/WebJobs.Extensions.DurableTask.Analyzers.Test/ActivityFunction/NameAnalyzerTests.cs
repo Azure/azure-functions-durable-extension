@@ -42,6 +42,8 @@ namespace VSSample
 
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
             
@@ -59,6 +61,19 @@ namespace VSSample
         public static string SayHelloDirectInput([ActivityTrigger] string name)
         {
             return $""Hello {name}!"";
+        }
+
+        [FunctionName(""E1_SayHello_Object"")]
+        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<Object>();
+            return $""Hello Ben!"";
+        }
+
+        [FunctionName(""E1_SayHello_Object_DirectInput"")]
+        public static string SayHelloDirectInput([ActivityTrigger] Object name)
+        {
+            return $""Hello Ben!"";
         }
 
         [FunctionName(""E1_SayHello_Tuple"")]
@@ -123,7 +138,7 @@ namespace VSSample
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 84)
+                            new DiagnosticResultLocation("Test0.cs", 23, 69)
                      }
             };
             VerifyCSharpDiagnostic(test, expected);
@@ -167,7 +182,7 @@ namespace VSSample
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 84)
+                            new DiagnosticResultLocation("Test0.cs", 23, 69)
                      }
             };
             VerifyCSharpDiagnostic(test, expected);
