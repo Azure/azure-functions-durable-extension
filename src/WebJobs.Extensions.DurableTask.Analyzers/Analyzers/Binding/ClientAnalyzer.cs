@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (version.Equals(DurableVersion.V1))
             {
-                if (string.Equals(paramTypeName, "DurableOrchestrationClient"))
+                if (string.Equals(paramTypeName, "DurableOrchestrationClient") || string.Equals(paramTypeName, "DurableOrchestrationClientBase"))
                 {
                     return true;
                 }
