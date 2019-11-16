@@ -214,7 +214,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
             {
                 var inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
-                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
+                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext") 
+                    || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext") 
+                    || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"))
                 {
                     TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
                 }

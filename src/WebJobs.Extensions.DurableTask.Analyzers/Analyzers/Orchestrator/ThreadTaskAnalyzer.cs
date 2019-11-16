@@ -157,25 +157,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool HasExecuteSynchronously(SyntaxNode node)
         {
-            if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out SyntaxNode invocationExpression)){
+            if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out SyntaxNode invocationExpression))
+            {
                 return false;
             }
 
             var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
 
-            foreach (SyntaxNode argument in argumentList.ChildNodes())
+            if (argumentList != null)
             {
-                var simpleMemberAccessExpression = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
-
-                if (simpleMemberAccessExpression != null)
+                foreach (SyntaxNode argument in argumentList.ChildNodes())
                 {
-                    var identifierNames = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+                    var simpleMemberAccessExpression = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
 
-                    foreach (SyntaxNode identifier in identifierNames)
+                    if (simpleMemberAccessExpression != null)
                     {
-                        if (identifier.ToString().Equals("ExecuteSynchronously"))
+                        var identifierNames = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+
+                        foreach (SyntaxNode identifier in identifierNames)
                         {
-                            return true;
+                            if (identifier.ToString().Equals("ExecuteSynchronously"))
+                            {
+                                return true;
+                            }
                         }
                     }
                 }

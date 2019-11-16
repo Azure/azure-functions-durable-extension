@@ -34,9 +34,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
-                    var attributeListEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                    foreach (SyntaxNode attribute in attributeListEnumerable)
+                    var attributeLists = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
+                    foreach (SyntaxNode attribute in attributeLists)
                     {
+                        //An AttributeList will always have a child node Attribute
                         if (attribute.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
                         {
                             return true;

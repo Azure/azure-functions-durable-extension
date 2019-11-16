@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).FirstOrDefault();
+                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
