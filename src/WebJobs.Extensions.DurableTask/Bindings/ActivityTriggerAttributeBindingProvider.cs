@@ -108,7 +108,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                var activityContext = (DurableActivityContext)value;
+                if (!(value is DurableActivityContext activityContext))
+                {
+                    if (!(value is string serializedInput))
+                    {
+                        throw new InvalidOperationException($"Cannot execute an Activity Trigger without a {nameof(DurableActivityContext)} or a {nameof(String)} that represents the serialized input.");
+                    }
+
+                    // Durable functions expects input as a JArray with one element.
+                    serializedInput = $"[{serializedInput}]";
+
+                    activityContext = new DurableActivityContext($"azure-portal-execution-{Guid.NewGuid().ToString()}", serializedInput);
+                }
+
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object convertedValue;
