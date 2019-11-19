@@ -48,12 +48,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         {
                             return;
                         }
-                        else
-                        {
-                            var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                        var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }

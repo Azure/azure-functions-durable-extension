@@ -24,9 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
 
-        public List<EntityInterface> entityInterfacesList = new List<EntityInterface>();
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, InterfaceContentAnalyzer.NoMethodsRule, InterfaceContentAnalyzer.NotAMethodRule, ParameterAnalyzer.Rule, EntityInterfaceReturnTypeAnalyzer.Rule); } }
+        private List<EntityInterface> entityInterfacesList = new List<EntityInterface>();
+        
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule, InterfaceContentAnalyzer.NoMethodsRule, InterfaceContentAnalyzer.NotAMethodRule, ParameterAnalyzer.Rule, EntityInterfaceReturnTypeAnalyzer.Rule);
 
         public override void Initialize(AnalysisContext context)
         {

@@ -14,8 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class FunctionAnalyzer : DiagnosticAnalyzer
     {
-        public List<ActivityFunctionDefinition> availableFunctions = new List<ActivityFunctionDefinition>();
-        public List<ActivityFunctionCall> calledFunctions = new List<ActivityFunctionCall>();
+        private List<ActivityFunctionDefinition> availableFunctions = new List<ActivityFunctionDefinition>();
+        private List<ActivityFunctionCall> calledFunctions = new List<ActivityFunctionCall>();
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
@@ -41,7 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 compilation.RegisterCompilationEndAction(functionAnalyzer.RegisterAnalyzers);
             });
         }
-
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
@@ -120,11 +119,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private SyntaxNode GetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression)
         {
-            var argumentNode = invocationExpression.ArgumentList.Arguments.LastOrDefault();
-            if (argumentNode != null)
+            var arguments = invocationExpression.ArgumentList.Arguments;
+            if (arguments != null && arguments.Count > 1)
             {
+                var lastArgumentNode = arguments.Last();
+
                 //An Argument node will always have a child node
-                var inputNode = argumentNode.ChildNodes().First();
+                var inputNode = lastArgumentNode.ChildNodes().First();
                 return inputNode;
             }
             
@@ -243,10 +244,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                             var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
                             if (genericName.Any())
                             {
-                                var typeArgumentListEnumerable = genericName.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList));
-                                if (typeArgumentListEnumerable.Any())
+                                var typeArgumentList = genericName.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).FirstOrDefault();
+                                if (typeArgumentList != null)
                                 {
-                                    inputTypeNode = context.SemanticModel.GetTypeInfo(typeArgumentListEnumerable.First().ChildNodes().First()).Type;
+                                    inputTypeNode = context.SemanticModel.GetTypeInfo(typeArgumentList.ChildNodes().First()).Type;
                                     return true;
                                 }
                             }

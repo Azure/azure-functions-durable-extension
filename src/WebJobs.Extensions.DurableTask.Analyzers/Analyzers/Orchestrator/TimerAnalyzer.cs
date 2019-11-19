@@ -55,18 +55,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         return;
                     }
-                    else if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+
+                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
                     {
                         return;
                     }
-                    else
-                    {
-                        if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                        {
-                            var diagnostic = Diagnostic.Create(rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                    {
+                        var diagnostic = Diagnostic.Create(rule, invocationExpression.GetLocation(), memberAccessExpression);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
@@ -91,18 +90,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         return;
                     }
-                    else if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+
+                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
                     {
                         return;
                     }
-                    else
-                    {
-                        if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                        {
-                            var diagnostic = Diagnostic.Create(rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                    {
+                        var diagnostic = Diagnostic.Create(rule, invocationExpression.GetLocation(), memberAccessExpression);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }

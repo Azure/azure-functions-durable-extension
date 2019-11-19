@@ -47,16 +47,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         return;
                     }
-                    else if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+
+                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
                     {
                         return;
                     }
-                    else
-                    {
-                        var diagnostic = Diagnostic.Create(Rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                        context.ReportDiagnostic(diagnostic);
-                    }
+                    var diagnostic = Diagnostic.Create(Rule, invocationExpression.GetLocation(), memberAccessExpression);
+
+                    context.ReportDiagnostic(diagnostic);
                 }
             }
         }
