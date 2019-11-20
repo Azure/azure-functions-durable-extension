@@ -3582,6 +3582,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivity_Like_From_Azure_Portal()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.CallActivity_Like_From_Azure_Portal),
+                false))
+            {
+                string foo = "return_result";
+                await host.StartAsync();
+                string functionName = nameof(TestActivities.BindToPOCOWithOutParameter);
+                var startFunction = typeof(TestActivities).GetMethod(functionName);
+                string[] output = new string[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "poco", $"{{ \"Foo\": \"{foo}\" }}" },
+                    { "outputWrapper", output },
+                };
+
+                await host.CallAsync(startFunction, args);
+                this.output.WriteLine($"Started {functionName}");
+
+                Assert.Equal(foo, output[0]);
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>
