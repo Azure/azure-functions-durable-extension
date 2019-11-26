@@ -3,24 +3,25 @@ const moment = require('moment');
 
 module.exports = df.orchestrator(function*(context) {
     const input = context.df.getInput();
-    context.log("Received monitor request. location: " + (input ? input.location : undefined)
+    const log = createReplaySafeLogger(context);
+    log("Received monitor request. location: " + (input ? input.location : undefined)
         + ". phone: " + (input ? input.phone : undefined) + ".");
 
     verifyRequest(input);
 
     const endTime = moment.utc(context.df.currentUtcDateTime).add(6, 'h');
-    context.log("Instantiating monitor for " + input.location.city + ", " + input.location.state
+    log("Instantiating monitor for " + input.location.city + ", " + input.location.state
         + ". Expires: " + (endTime) + ".");
 
     while (moment.utc(context.df.currentUtcDateTime).isBefore(endTime)) {
         // Check the weather
-        context.log("Checking current weather conditions for " + input.location.city + ", "
+        log("Checking current weather conditions for " + input.location.city + ", "
             + input.location.state + " at " + context.df.currentUtcDateTime + ".");
         const isClear = yield context.df.callActivity("E3_GetIsClear", input.location);
 
         if (isClear) {
             // It's not raining! Or snowing. Or misting. Tell our user to take advantage of it.
-            context.log("Detected clear weather for " + input.location.city + ", "
+            log("Detected clear weather for " + input.location.city + ", "
                 + input.location.state + ". Notifying " + input.phone + ".");
 
             yield context.df.callActivity("E3_SendGoodWeatherAlert", input.phone);
@@ -28,14 +29,14 @@ module.exports = df.orchestrator(function*(context) {
         } else {
             // Wait for the next checkpoint
             var nextCheckpoint = moment.utc(context.df.currentUtcDateTime).add(30, 's');
-            context.log("Next check for " + input.location.city + ", " + input.location.state
+            log("Next check for " + input.location.city + ", " + input.location.state
                 + " at " + nextCheckpoint.toString());
 
             yield context.df.createTimer(nextCheckpoint.toDate());   // accomodate cancellation tokens
         }
     }
 
-    context.log("Monitor expiring.");
+    log("Monitor expiring.");
 });
 
 function verifyRequest(request) {
@@ -48,4 +49,12 @@ function verifyRequest(request) {
     if (!request.phone) {
         throw new Error("A phone number input is required.");
     }
+}
+
+function createReplaySafeLogger(context) {
+    return function() {
+        if (!context.df.isReplaying) {
+            context.log.apply(context, arguments);
+        }
+    };
 }
