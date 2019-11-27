@@ -40,5 +40,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// ContinuationToken of the pager.
         /// </summary>
         public string ContinuationToken { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string InstanceIdPrefix { get; set; }
     }
 }

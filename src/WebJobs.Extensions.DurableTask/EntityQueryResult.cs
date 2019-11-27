@@ -12,11 +12,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// 
         /// </summary>
-        public IReadOnlyCollection<EntityStatus> Entities { get; }
+        public IReadOnlyCollection<EntityStatus> Entities { get; set; }
 
         /// <summary>
         /// 
         /// </summary>
-        public string ContinuationToken { get; }
+        public string ContinuationToken { get; set; }
     }
 }

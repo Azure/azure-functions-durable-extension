@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -39,5 +40,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
         /// <returns>a response containing the current state of the entity.</returns>
         Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(EntityId entityId, string taskHubName = null, string connectionName = null);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<EntityQueryResult> ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
     }
 }
