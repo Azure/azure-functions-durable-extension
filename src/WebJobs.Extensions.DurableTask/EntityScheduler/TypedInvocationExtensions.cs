@@ -98,42 +98,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Only a single interface can be implemented on an entity");
             }
 
-            var method = GetMethodByName(context.OperationName);
+            const BindingFlags bindingFlags = BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
+            var method = type.GetMethod(context.OperationName, bindingFlags);
             if (interfaces.Length == 0 || method != null)
             {
                 return method;
             }
 
             var entityInterface = interfaces[0];
-            var operationName = $"{entityInterface.Namespace}.{TypeNameHierarchy(entityInterface)}.{context.OperationName}";
-
-            return GetMethodByName(operationName);
-
-            MethodInfo GetMethodByName(string name)
-            {
-                // find the method corresponding to the operation
-                // (may throw an AmbiguousMatchException)
-                return typeof(T).GetMethod(
-                    name,
-                    System.Reflection.BindingFlags.IgnoreCase
-                    | System.Reflection.BindingFlags.Public
-                    | System.Reflection.BindingFlags.NonPublic
-                    | System.Reflection.BindingFlags.Instance);
-            }
-
-            // Nested types are separated by `+` in `type.FullName`, but `.` in the name used
-            // for the explicit interface implementation, so we walk to the top of the
-            // hierarchy and generate the name.
-            string TypeNameHierarchy(Type t)
-            {
-                if (t.IsNested)
-                {
-                    return TypeNameHierarchy(t.DeclaringType) + "." + t.Name;
-                }
-
-                return t.Name;
-            }
+            return entityInterface.GetMethod(context.OperationName, bindingFlags);
         }
     }
 }
