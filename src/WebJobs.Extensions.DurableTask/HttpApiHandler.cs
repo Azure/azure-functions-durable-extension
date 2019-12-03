@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -580,15 +579,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IDurableOrchestrationClient client = this.GetClient(request);
 
                 object input = null;
-                if (request.Content != null)
+                if (request.Content?.Headers?.ContentLength != 0)
                 {
-                    using (Stream s = await request.Content.ReadAsStreamAsync())
-                    using (StreamReader sr = new StreamReader(s))
-                    using (JsonReader reader = new JsonTextReader(sr))
-                    {
-                        JsonSerializer serializer = JsonSerializer.Create(MessagePayloadDataConverter.MessageSettings);
-                        input = serializer.Deserialize<object>(reader);
-                    }
+                    string json = await request.Content.ReadAsStringAsync();
+                    input = JsonConvert.DeserializeObject(json, MessagePayloadDataConverter.MessageSettings);
                 }
 
                 string id = await client.StartNewAsync(functionName, instanceId, input);
