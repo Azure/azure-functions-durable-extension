@@ -582,7 +582,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 object input = null;
                 if (request.Content?.Headers?.ContentLength > 0)
                 {
-                    var json = await request.Content.ReadAsStringAsync();
+                    string json = await request.Content.ReadAsStringAsync();
                     input = JsonConvert.DeserializeObject(json, MessagePayloadDataConverter.MessageSettings);
                 }
 
