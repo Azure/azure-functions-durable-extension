@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public int GetDelayInSecondsAfterOnProcessException(Exception exception)
         {
-            return this.GetDelayInSecondsAfterOnProcessException(exception);
+            return this.GetOrchestrationService().GetDelayInSecondsAfterOnProcessException(exception);
         }
 
         /// <inheritdoc/>
