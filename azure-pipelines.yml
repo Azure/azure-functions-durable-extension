@@ -1,0 +1,116 @@
+trigger:
+- v1
+
+jobs:
+
+  - job: FunctionsV1Tests
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Debug'
+
+    steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **/*tests.v1.dll
+        testFiltercriteria: 'Category=FunctionsV1_BVT'
+        diagnosticsEnabled: true
+        rerunFailedTests: true
+        rerunFailedThreshold: 10
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
+
+  - job: FunctionsV2Tests
+    pool: 
+      vmImage: 'windows-latest'
+
+    strategy:
+      parallel: 9
+
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Debug'
+
+    steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **/*tests.v2.dll
+        distributionBatchType: basedOnExecutionTime
+        diagnosticsEnabled: true
+        rerunFailedTests: true
+        rerunFailedThreshold: 10
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
+
+    
+  - job: PublishPipelineArtifact
+    dependsOn:
+      - FunctionsV1Tests
+      - FunctionsV2Tests
+
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: 'WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+
+    steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - publish: 'src/WebJobs.Extensions.DurableTask/bin'
+      artifact: bin
