@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private string hubName;
 
-        private bool? isDefaultHubName = null;
+        private string defaultHubName;
 
         /// <summary>
         /// Settings used for Durable HTTP functionality.
@@ -37,11 +37,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (this.hubName == null)
                 {
-                    this.isDefaultHubName = true;
-
                     // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
                     // specified in local.settings.json file to avoid being defaulted to "TestHubName"
                     this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+                    this.defaultHubName = this.hubName;
                 }
 
                 return this.hubName;
@@ -50,11 +49,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             set
             {
                 this.hubName = value;
-                if (!this.isDefaultHubName.HasValue)
-                {
-                    this.isDefaultHubName = false;
-                }
             }
+        }
+
+        internal void SetDefaultHubName(string hubName)
+        {
+            this.HubName = hubName;
+            this.defaultHubName = hubName;
         }
 
         /// <summary>
@@ -225,12 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsDefaultHubName()
         {
-            return this.isDefaultHubName ?? this.hubName == null;
-        }
-
-        internal void SetDefaultHubName(string defaultHubName)
-        {
-            this.hubName = defaultHubName;
+            return string.Equals(this.defaultHubName, this.hubName);
         }
 
         private static bool IsInNonProductionSlot()
