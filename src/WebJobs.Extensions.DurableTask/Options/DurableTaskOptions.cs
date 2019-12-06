@@ -52,12 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SetDefaultHubName(string hubName)
-        {
-            this.HubName = hubName;
-            this.defaultHubName = hubName;
-        }
-
         /// <summary>
         /// The section of configuration related to storage providers. If using Azure Storage provider, the schema should match
         /// <see cref="AzureStorageOptions"/>.
@@ -153,6 +147,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
+        /// <summary>
+        /// Sets HubName to a value that is considered a default value.
+        /// </summary>
+        /// <param name="hubName">TaskHub name that is considered the default.</param>
+        public void SetDefaultHubName(string hubName)
+        {
+            this.HubName = hubName;
+            this.defaultHubName = hubName;
+        }
+
         internal string GetDebugString()
         {
             var sb = new StringBuilder(4096);
@@ -207,8 +211,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (IsInNonProductionSlot() && this.IsDefaultHubName())
             {
-                throw new InvalidOperationException("Task Hub name must be specified in host.json when using slots. See documentation on Task Hubs for " +
-                    "information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
+                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the defaultHubName ({this.defaultHubName})." +
+                    "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
             this.Notifications.Validate();
