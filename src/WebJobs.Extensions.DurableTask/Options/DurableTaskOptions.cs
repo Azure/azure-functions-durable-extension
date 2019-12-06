@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (IsInNonProductionSlot() && this.IsDefaultHubName())
             {
-                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the defaultHubName ({this.defaultHubName})." +
+                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
                     "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsDefaultHubName()
         {
-            return string.Equals(this.defaultHubName, this.hubName);
+            return string.Equals(this.defaultHubName, this.hubName, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsInNonProductionSlot()
