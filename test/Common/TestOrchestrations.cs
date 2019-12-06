@@ -949,6 +949,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return string.Join(",", result.Select(kvp => kvp.Value));
         }
 
+        public static async Task<string> ContinueAsNew_Repro285([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var input = ctx.GetInput<int>();
+
+            if (input == 0)
+            {
+                ctx.ContinueAsNew(1);
+
+                return "continue as new";
+            }
+            else if (input == 1)
+            {
+                await ctx.CreateTimer<object>(ctx.CurrentUtcDateTime + TimeSpan.FromSeconds(1), null, CancellationToken.None);
+            }
+
+            return "ok";
+        }
+
+        public static async Task<string> ContinueAsNewMultipleTimersAndEvents([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var input = ctx.GetInput<int>();
+
+            if (input > 0)
+            {
+                var cts = new CancellationTokenSource();
+                var timerTask = ctx.CreateTimer<object>(ctx.CurrentUtcDateTime + TimeSpan.FromDays(1), null, cts.Token);
+                var eventTask = ctx.WaitForExternalEvent($"signal{input}");
+                await Task.WhenAny(timerTask, eventTask);
+                cts.Cancel();
+                ctx.ContinueAsNew(input - 1);
+                return input.ToString();
+            }
+            else if (input == 0)
+            {
+                return "ok";
+            }
+            else
+            {
+                return "error";
+            }
+        }
+
         public static async Task<bool> EntityProxyWithBindings([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var counter = ctx.GetInput<EntityId>();

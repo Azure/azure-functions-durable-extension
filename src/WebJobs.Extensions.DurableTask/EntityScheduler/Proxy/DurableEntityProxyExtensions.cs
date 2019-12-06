@@ -29,6 +29,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="client">orchestration client.</param>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        public static Task SignalEntityAsync<TEntityInterface>(this IDurableEntityClient client, string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            return SignalEntityAsync<TEntityInterface>(client, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+        }
+
+        /// <summary>
         /// Signals an entity to perform an operation.
         /// </summary>
         /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
@@ -39,6 +53,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public static Task SignalEntityAsync<TEntityInterface>(this IDurableEntityClient client, EntityId entityId, Action<TEntityInterface> operation)
         {
             var proxyContext = new EntityClientProxy(client);
+            var proxy = EntityProxyFactory.Create<TEntityInterface>(proxyContext, entityId);
+
+            operation(proxy);
+
+            if (proxyContext.SignalTask == null)
+            {
+                throw new InvalidOperationException("The operation action must perform an operation on the entity");
+            }
+
+            return proxyContext.SignalTask;
+        }
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="client">orchestration client.</param>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        public static Task SignalEntityAsync<TEntityInterface>(this IDurableEntityClient client, EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            var proxyContext = new EntityClientProxy(client, scheduledTimeUtc);
             var proxy = EntityProxyFactory.Create<TEntityInterface>(proxyContext, entityId);
 
             operation(proxy);
@@ -88,6 +126,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <param name="context">entity context.</param>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        public static void SignalEntity<TEntityInterface>(this IDurableEntityContext context, string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            SignalEntity<TEntityInterface>(context, new EntityId(ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+        }
+
+        /// <summary>
         /// Signals an entity to perform an operation.
         /// </summary>
         /// <param name="context">entity context.</param>
@@ -97,6 +148,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public static void SignalEntity<TEntityInterface>(this IDurableEntityContext context, EntityId entityId, Action<TEntityInterface> operation)
         {
             operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(context), entityId));
+        }
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <param name="context">entity context.</param>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        public static void SignalEntity<TEntityInterface>(this IDurableEntityContext context, EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(context, scheduledTimeUtc), entityId));
         }
 
         private static string ResolveEntityName<TEntityInterface>()

@@ -296,6 +296,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         void IDurableEntityContext.SignalEntity(EntityId entity, string operation, object input)
         {
+            this.SignalEntityInternal(entity, null, operation, input);
+        }
+
+        void IDurableEntityContext.SignalEntity(EntityId entity, DateTime scheduledTimeUtc, string operation, object input)
+        {
+            this.SignalEntityInternal(entity, scheduledTimeUtc, operation, input);
+        }
+
+        private void SignalEntityInternal(EntityId entity, DateTime? scheduledTimeUtc, string operation, object input)
+        {
             this.ThrowIfInvalidAccess();
             if (operation == null)
             {
@@ -315,13 +325,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Id = Guid.NewGuid(),
                 IsSignal = true,
                 Operation = operation,
+                ScheduledTime = scheduledTimeUtc,
             };
             if (input != null)
             {
                 request.SetInput(input);
             }
 
-            this.SendOperationMessage(target, "op", request);
+            this.SendOperationMessage(target, request);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -380,25 +391,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, string eventName, object message)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
         {
             lock (this.outbox)
             {
-                if (message is RequestMessage requestMessage)
+                string eventName;
+
+                if (requestMessage.ScheduledTime.HasValue)
+                {
+                    eventName = $"op@{requestMessage.ScheduledTime.Value:o}";
+                }
+                else
                 {
                     this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+
+                    eventName = "op";
                 }
 
                 this.outbox.Add(new OperationMessage()
                 {
                     Target = target,
                     EventName = eventName,
-                    EventContent = message,
+                    EventContent = requestMessage,
                 });
             }
         }
 
-        internal void SendResponseMessage(OrchestrationInstance target, string eventName, object message, bool isException)
+        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException)
         {
             lock (this.outbox)
             {
@@ -410,22 +429,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.outbox.Add(new ResultMessage()
                 {
                     Target = target,
-                    EventName = eventName,
+                    EventName = requestId.ToString(),
                     EventContent = message,
                     IsError = isException,
                 });
             }
         }
 
-        internal void SendLockMessage(OrchestrationInstance target, string eventName, object message)
+        internal void SendLockRequestMessage(OrchestrationInstance target, object message)
         {
             lock (this.outbox)
             {
                 this.outbox.Add(new LockMessage()
                 {
                     Target = target,
-                    EventName = eventName,
+                    EventName = "op",
                     EventContent = message,
+                });
+            }
+        }
+
+        internal void SendLockResponseMessage(OrchestrationInstance target, Guid requestId)
+        {
+            lock (this.outbox)
+            {
+                this.outbox.Add(new LockMessage()
+                {
+                    Target = target,
+                    EventName = requestId.ToString(),
+                    EventContent = new ResponseMessage()
+                    {
+                        Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
+                    },
                 });
             }
         }
