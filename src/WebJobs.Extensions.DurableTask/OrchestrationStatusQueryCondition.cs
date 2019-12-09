@@ -12,6 +12,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class OrchestrationStatusQueryCondition
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="OrchestrationStatusQueryCondition"/> class.
+        /// </summary>
+        public OrchestrationStatusQueryCondition() { }
+
+        internal OrchestrationStatusQueryCondition(EntityQuery entityQuery)
+        {
+            this.CreatedTimeFrom = entityQuery.LastOperationFrom;
+            this.CreatedTimeTo = entityQuery.LastOperationTo;
+            this.PageSize = entityQuery.PageSize;
+            this.ContinuationToken = entityQuery.ContinuationToken;
+            this.InstanceIdPrefix = entityQuery.EntityName;
+        }
+
+        /// <summary>
         /// Return orchestration instances which matches the runtimeStatus.
         /// </summary>
         public IEnumerable<OrchestrationRuntimeStatus> RuntimeStatus { get; set; }
@@ -42,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ContinuationToken { get; set; }
 
         /// <summary>
-        /// 
+        /// Return orchestration instances that have this instance id prefix.
         /// </summary>
         public string InstanceIdPrefix { get; set; }
     }

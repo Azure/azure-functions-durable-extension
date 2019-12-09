@@ -409,38 +409,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
         }
 
-        Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
+        /// <inheritdoc />
+        async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
-            var condition = this.CreateOrchestrationStatusQueryCondition(query);
-            var result = this.GetStatusAsync(condition, cancellationToken);
-            var entityResult = this.CreateEntityQueryResult(result);
+            var condition = new OrchestrationStatusQueryCondition(query);
+            var result = await ((IDurableClient)this).GetStatusAsync(condition, cancellationToken);
+            var entityResult = new EntityQueryResult(result);
             return entityResult;
-        }
-
-        private OrchestrationStatusQueryCondition CreateOrchestrationStatusQueryCondition(EntityQuery query)
-        {
-            return new OrchestrationStatusQueryCondition
-            {
-                CreatedTimeFrom = query.LastOperationFrom,
-                CreatedTimeTo = query.LastOperationTo,
-                PageSize = query.PageSize,
-                ContinuationToken = query.ContinuationToken,
-                InstanceIdPrefix = query.EntityName,
-            };
-        }
-
-        private Task<EntityQueryResult> CreateEntityQueryResult(Task<DurableOrchestrationStatus> result)
-        {
-            // create entity query result
-            // for each DurableOrchestrationStatus, create DurableEntityStatus and add to list
-            var entityStatuses = CreateEntityStatuses(result);
-            // set list
-            // set cancellationToken
-            return new EntityQueryResult
-            {
-                Entities = entityStatuses,
-                CancellationToken = result.CancellationToken,
-            };
         }
 
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)
