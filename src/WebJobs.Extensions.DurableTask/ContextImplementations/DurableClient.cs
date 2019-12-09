@@ -278,7 +278,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
-            await client.RaiseEventAsync(instance, scheduledTimeUtc.HasValue ? $"op@{scheduledTimeUtc.Value:o}" : "op", jrequest);
+            var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
+            await client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
                 hubName,

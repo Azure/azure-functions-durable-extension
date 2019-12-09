@@ -1034,7 +1034,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    eventName = $"op@{requestMessage.ScheduledTime.Value:o}";
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
                 }
                 else
                 {
@@ -1044,22 +1044,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.InnerContext.CurrentUtcDateTime,
                         TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
 
-                    eventName = "op";
+                    eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
             }
             else
             {
-                eventName = "release";
+                eventName = EntityMessageEventNames.ReleaseMessageEventName;
             }
 
             if (!this.IsReplaying)
             {
                 this.Config.TraceHelper.SendingEntityMessage(
-                this.InstanceId,
-                this.ExecutionId,
-                target.InstanceId,
-                eventName,
-                eventContent);
+                    this.InstanceId,
+                    this.ExecutionId,
+                    target.InstanceId,
+                    eventName,
+                    eventContent);
             }
 
             this.IncrementActionsOrThrowException();

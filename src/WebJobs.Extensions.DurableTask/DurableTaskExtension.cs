@@ -467,7 +467,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             entityShim.NumberEventsToReceive++;
 
-                            if (eventRaisedEvent.Name.StartsWith("op"))
+                            if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
                                 var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);

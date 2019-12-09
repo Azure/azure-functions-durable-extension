@@ -399,13 +399,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    eventName = $"op@{requestMessage.ScheduledTime.Value:o}";
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
                 }
                 else
                 {
                     this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
-
-                    eventName = "op";
+                    eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
 
                 this.outbox.Add(new OperationMessage()
@@ -429,7 +428,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.outbox.Add(new ResultMessage()
                 {
                     Target = target,
-                    EventName = requestId.ToString(),
+                    EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
                     EventContent = message,
                     IsError = isException,
                 });
@@ -443,7 +442,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.outbox.Add(new LockMessage()
                 {
                     Target = target,
-                    EventName = "op",
+                    EventName = EntityMessageEventNames.RequestMessageEventName,
                     EventContent = message,
                 });
             }
@@ -456,7 +455,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.outbox.Add(new LockMessage()
                 {
                     Target = target,
-                    EventName = requestId.ToString(),
+                    EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
                     EventContent = new ResponseMessage()
                     {
                         Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
