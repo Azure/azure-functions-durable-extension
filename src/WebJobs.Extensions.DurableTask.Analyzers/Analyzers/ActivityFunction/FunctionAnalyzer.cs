@@ -66,9 +66,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 var returnTypeName = GetReturnTypeNameFromCallActivityInvocation(context, invocationExpression);
 
-                var inputNode = GetInputNodeFromCallActivityInvocation(invocationExpression);
-                var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
-                var inputTypeName = GetQualifiedTypeName(inputType);
+                string inputTypeName = null;
+                if (TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode))
+                {
+                    var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
+                    inputTypeName = GetQualifiedTypeName(inputType);
+                }
 
                 calledFunctions.Add(new ActivityFunctionCall
                 {
@@ -117,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return "System.Threading.Tasks.Task";
         }
 
-        private SyntaxNode GetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression)
+        private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
         {
             var arguments = invocationExpression.ArgumentList.Arguments;
             if (arguments != null && arguments.Count > 1)
@@ -125,11 +128,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var lastArgumentNode = arguments.Last();
 
                 //An Argument node will always have a child node
-                var inputNode = lastArgumentNode.ChildNodes().First();
-                return inputNode;
+                inputNode = lastArgumentNode.ChildNodes().First();
+                return true;
             }
-            
-            return null;
+
+            inputNode = null;
+            return false;
         }
 
         private string GetQualifiedTypeName(ITypeSymbol typeInfo)
