@@ -50,6 +50,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RuntimeStatusParameter = "runtimeStatus";
         private const string PageSizeParameter = "top";
         private const string ReturnInternalServerErrorOnFailure = "returnInternalServerErrorOnFailure";
+        private const string LastOperationTimeFrom = "lastOperationTimeFrom";
+        private const string LastOperationTimeTo = " lastOperationTimeTo";
 
         // API Routes
         private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new TemplateMatcher(TemplateParser.Parse($"{OrchestratorsControllerSegment}{{{FunctionNameRouteParameter}}}/{{{InstanceIdRouteParameter}?}}"), defaultRouteValues);
         }
 
-        // /entity/{entityId}/{entityKey?}
+        // /entities/{entityName}/{entityKey?}
         private static TemplateMatcher GetEntityRoute()
         {
             var defaultRouteValues = RouteValueDictionaryFromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(EntityKeyRouteParameter, string.Empty) });
@@ -212,9 +214,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         string entityName = (string)routeValues[EntityNameRouteParameter];
                         string entityKey = (string)routeValues[EntityKeyRouteParameter];
                         EntityId entityId = new EntityId(entityName, entityKey);
-                        if (request.Method == HttpMethod.Get)
+                        if (entityKey != null && request.Method == HttpMethod.Get)
                         {
                             return await this.HandleGetEntityRequestAsync(request, entityId);
+                        }
+                        else if (entityKey == null && request.Method == HttpMethod.Get)
+                        {
+                            return await this.HandleListEntitiesRequestAsync(request, entityName);
                         }
                         else if (request.Method == HttpMethod.Post)
                         {
@@ -367,6 +373,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return response;
         }
 
+        private async Task<HttpResponseMessage> HandleListEntitiesRequestAsync(
+            HttpRequestMessage request, string entityName)
+        {
+            IDurableEntityClient client = this.GetClient(request);
+            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var lastOperationTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, LastOperationTimeFrom, default(DateTime));
+            var lastOperationTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, LastOperationTimeTo, default(DateTime));
+            var pageSize = GetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter);
+
+            var continuationToken = "";
+            if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
+            {
+                continuationToken = headerValues.FirstOrDefault();
+            }
+
+            var query = new EntityQuery()
+            {
+                EntityName = entityName,
+                LastOperationFrom = lastOperationTimeFrom,
+                LastOperationTo = lastOperationTimeTo,
+                PageSize = pageSize,
+                ContinuationToken = continuationToken,
+            };
+
+            var context = await client.ListEntitiesAsync(query, CancellationToken.None);
+            var statusForAllInstances = context.Entities.ToList();
+            var nextContinuationToken = context.ContinuationToken;
+
+            var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
+            foreach (var state in statusForAllInstances)
+            {
+                results.Add(this.ConvertFrom(state));
+            }
+
+            var response = request.CreateResponse(HttpStatusCode.OK, results);
+
+            response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
+            return response;
+        }
+
         private async Task<HttpResponseMessage> HandleDeleteHistoryByIdRequestAsync(
             HttpRequestMessage request,
             string instanceId)
@@ -504,6 +550,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreatedTime = status.CreatedTime.ToString("s") + "Z",
                 LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
                 HistoryEvents = status.History,
+            };
+        }
+
+        private StatusResponsePayload ConvertFrom(DurableEntityStatus status)
+        {
+            return new StatusResponsePayload
+            {
+                InstanceId = status.EntityId.ToString(),
+                Input = status.State,
+                LastUpdatedTime = status.LastOperationTime.ToString("s") + "Z",
             };
         }
 
