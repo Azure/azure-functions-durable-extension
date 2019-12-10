@@ -214,11 +214,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         string entityName = (string)routeValues[EntityNameRouteParameter];
                         string entityKey = (string)routeValues[EntityKeyRouteParameter];
                         EntityId entityId = new EntityId(entityName, entityKey);
-                        if (entityKey != null && request.Method == HttpMethod.Get)
+                        if (!string.IsNullOrEmpty(entityKey) && request.Method == HttpMethod.Get)
                         {
                             return await this.HandleGetEntityRequestAsync(request, entityId);
                         }
-                        else if (entityKey == null && request.Method == HttpMethod.Get)
+                        else if (request.Method == HttpMethod.Get)
                         {
                             return await this.HandleListEntitiesRequestAsync(request, entityName);
                         }
