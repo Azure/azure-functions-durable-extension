@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>a response containing the current state of the entity.</returns>
         Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(EntityId entityId, string taskHubName = null, string connectionName = null);
 
-        /// /// <summary>
+        /// <summary>
         /// Gets the status of all entity instances with paging that match the specified query conditions.
         /// </summary>
         /// <param name="query">Return entity instances that match the specified query conditions.</param>

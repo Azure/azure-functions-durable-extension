@@ -12,11 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class EntityQueryResult
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EntityQueryResult"/> class.
-        /// </summary>
-        public EntityQueryResult() { }
-
         internal EntityQueryResult(OrchestrationStatusQueryResult orchestrationResult)
         {
             this.Entities = this.GenerateEntityStatusCollection(orchestrationResult.DurableOrchestrationState);

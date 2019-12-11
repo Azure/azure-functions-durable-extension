@@ -11,11 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableEntityStatus
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DurableEntityStatus"/> class.
-        /// </summary>
-        public DurableEntityStatus() { }
-
         internal DurableEntityStatus(DurableOrchestrationStatus orchestrationStatus)
         {
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(orchestrationStatus.InstanceId);
