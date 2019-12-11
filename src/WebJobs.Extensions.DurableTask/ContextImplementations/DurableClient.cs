@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.dataConverter = config.DataConverter;
 
-            this.client = new TaskHubClient(serviceClient);
+            this.client = new TaskHubClient(serviceClient, config.DataConverter);
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
             this.hubName = attribute.TaskHub ?? config.Options.HubName;
