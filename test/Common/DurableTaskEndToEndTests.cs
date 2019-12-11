@@ -1083,6 +1083,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+#if FUNCTIONS_V1
         /// <summary>
         /// End-to-end test which validates correct exceptions for invalid timeout values.
         /// </summary>
@@ -1110,6 +1111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
         }
+#endif
 
         /// <summary>
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
@@ -1955,6 +1957,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+#if FUNCTIONS_V1
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
@@ -1981,6 +1984,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
         }
+#endif
 
         /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
@@ -2922,6 +2926,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+#if FUNCTIONS_V1
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task AzureStorage_TimerLimitExceeded_ThrowsException()
@@ -3026,6 +3031,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("timeout", output);
             }
         }
+#endif
 
         /// <summary>
         /// End-to-end test which validates basic use of the object dispatch feature.
