@@ -120,11 +120,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override bool ValidateDelayTime(TimeSpan timespan, out string errorMessage)
         {
+#if FUNCTIONS_V1
             if (timespan > MaxTimerDuration)
             {
                 errorMessage = $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays";
                 return false;
             }
+#endif
 
             return base.ValidateDelayTime(timespan, out errorMessage);
         }
