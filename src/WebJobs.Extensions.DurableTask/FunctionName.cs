@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// The name of a durable function.

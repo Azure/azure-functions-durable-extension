@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -274,6 +275,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return eventValue;
+        }
+
+        public static async Task<bool> SimpleEventWithTimeoutSucceeds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            TimeSpan timeout = ctx.GetInput<TimeSpan>();
+            await ctx.WaitForExternalEvent<string>("approval", timeout);
+            return true;
+        }
+
+        public static async Task<bool> SimpleActivityRetrySuccceds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            (TimeSpan firstRetry, TimeSpan maxRetry) = ctx.GetInput<(TimeSpan, TimeSpan)>();
+
+            RetryOptions retry = new RetryOptions(firstRetry, 5)
+            {
+                MaxRetryInterval = maxRetry,
+            };
+
+            await ctx.CallActivityWithRetryAsync<Guid>(nameof(TestActivities.NewGuid), retry, null);
+
+            return true;
+        }
+
+        public static async Task<bool> SimpleTimerSucceeds([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            DateTime fireAt = ctx.GetInput<DateTime>();
+            await ctx.CreateTimer(fireAt, CancellationToken.None);
+            return true;
         }
 
         public static async Task ThrowOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx)
@@ -997,6 +1026,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             entityProxy.Delete();
 
             return result == 16;
+        }
+
+        public static async Task<string> ReplaySafeLogger_OneLogMessage([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
+        {
+            log = ctx.CreateReplaySafeLogger(log);
+            string input = ctx.GetInput<string>();
+
+            log.LogInformation("ReplaySafeLogger Test: About to say Hello");
+
+            string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
+            return output;
         }
     }
 }

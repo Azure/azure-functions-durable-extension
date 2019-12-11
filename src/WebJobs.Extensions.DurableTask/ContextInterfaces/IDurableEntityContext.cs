@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Provides functionality for application code implementing an entity operation.
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs
         /// </remarks>
         string OperationName { get; }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         /// <summary>
         /// Contains function invocation context to assist with dependency injection at Entity construction time.
         /// </summary>

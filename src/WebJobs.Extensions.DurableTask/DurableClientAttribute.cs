@@ -4,9 +4,8 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Attribute used to bind a function parameter to a <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, or <see cref="IDurableOrchestrationClient"/> instance.
@@ -30,13 +29,13 @@ namespace Microsoft.Azure.WebJobs
         public string TaskHub { get; set; }
 
         /// <summary>
-        /// Optional. Gets or sets the name of the Azure Storage connection string used by this binding.
+        /// Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
+        /// to instances of the storage provider other than the default one this application communicates with.
         /// </summary>
-        /// <value>The name of a connection string that exists in the app's application settings.</value>
+        /// <value>The name of an app setting containing connection details.</value>
         /// <remarks>
-        /// The default behavior is to use the value specified by
-        /// <see cref="DurableTaskOptions.GetConnectionStringName"/>. If no value exists there, then
-        /// the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+        /// For Azure Storage the default behavior is to use the value of <see cref="AzureStorageOptions.ConnectionStringName"/>.
+        /// If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         public string ConnectionName { get; set; }
 

@@ -4,10 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using DurableTask.Core;
-using FluentAssertions;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -15,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class MessageSorterTests
     {
         private static readonly TimeSpan ReorderWindow = TimeSpan.FromMinutes(30);
-        private static readonly MessagePayloadDataConverter dataConverter = new MessagePayloadDataConverter(new SerializerSettingsFactory());
+        private static readonly MessagePayloadDataConverter DataConverter = new MessagePayloadDataConverter(new SerializerSettingsFactory());
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -295,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static RequestMessage Send(string senderId, string receiverId, string input, MessageSorter sorter, DateTime now, TimeSpan? reorderWindow = null)
         {
-            var msg = new RequestMessage(dataConverter)
+            var msg = new RequestMessage(DataConverter)
             {
                 Id = Guid.NewGuid(),
                 ParentInstanceId = senderId,

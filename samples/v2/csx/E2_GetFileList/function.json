@@ -1,9 +1,0 @@
-{
-  "bindings": [
-    {
-      "name": "rootDirectory",
-      "type": "activityTrigger",
-      "direction": "in"
-    }
-  ]
-}

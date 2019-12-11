@@ -2,12 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text;
 using Newtonsoft.Json;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// A unique identifier for an entity, consisting of entity name and entity key.

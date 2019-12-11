@@ -2,11 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
-namespace Microsoft.Azure.WebJobs.Extensions
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Formerly, the abstract base class for DurableOrchestrationContext.
@@ -24,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions
     /// Now obsolete: use <see cref="IDurableActivityContext"/> instead.
     /// </summary>
     [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1302", Justification = "Engineered for v1 legacy compatibility.")]
-    [Obsolete("Use IDurableOrchestrationContext instead.")]
+    [Obsolete("Use IDurableActivityContext instead.")]
     public interface DurableActivityContextBase : IDurableActivityContext
     {
     }
@@ -34,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions
     /// Now obsolete: use <see cref="IDurableOrchestrationClient"/> instead.
     /// </summary>
     [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1302", Justification = "Engineered for v1 legacy compatibility.")]
-    [Obsolete("Use IDurableOrchestrationContext instead.")]
+    [Obsolete("Use IDurableOrchestrationClient instead.")]
     public interface DurableOrchestrationClientBase : IDurableOrchestrationClient
     {
     }

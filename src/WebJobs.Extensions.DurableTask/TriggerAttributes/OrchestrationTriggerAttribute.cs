@@ -5,14 +5,14 @@ using System;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Trigger attribute used for durable orchestrator functions.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{Orchestration} ({Version})")]
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]
 #pragma warning restore CS0618 // Type or member is obsolete

@@ -19,15 +19,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension durableTaskConfig;
         private readonly ExtensionConfigContext extensionContext;
+        private readonly string storageConnectionString;
         private readonly EndToEndTraceHelper traceHelper;
 
         public ActivityTriggerAttributeBindingProvider(
             DurableTaskExtension durableTaskConfig,
             ExtensionConfigContext extensionContext,
+            string storageConnectionString,
             EndToEndTraceHelper traceHelper)
         {
             this.durableTaskConfig = durableTaskConfig;
             this.extensionContext = extensionContext;
+            this.storageConnectionString = storageConnectionString;
             this.traceHelper = traceHelper;
         }
 
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The activity name defaults to the method name.
             var activityName = new FunctionName(name);
             this.durableTaskConfig.RegisterActivity(activityName, null);
-            var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName);
+            var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName, this.durableTaskConfig);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
@@ -70,18 +73,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly ActivityTriggerAttribute attribute;
             private readonly FunctionName activityName;
             private readonly IReadOnlyDictionary<string, Type> contract;
+            private readonly DurableTaskExtension durableTaskConfig;
 
             public ActivityTriggerBinding(
                 ActivityTriggerAttributeBindingProvider parent,
                 ParameterInfo parameterInfo,
                 ActivityTriggerAttribute attribute,
-                FunctionName activity)
+                FunctionName activity,
+                DurableTaskExtension durableTaskConfig)
             {
                 this.parent = parent;
                 this.parameterInfo = parameterInfo;
                 this.attribute = attribute;
                 this.activityName = activity;
                 this.contract = GetBindingDataContract(parameterInfo);
+                this.durableTaskConfig = durableTaskConfig;
             }
 
             public Type TriggerValueType => typeof(IDurableActivityContext);
@@ -108,7 +114,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                var activityContext = (DurableActivityContext)value;
+                // If we are not directly passed a DurableActivityContext, we can assume we are being called directly
+                // by the admin API. This is mainly used for the Azure Portal execution scenario.
+                if (!(value is DurableActivityContext activityContext))
+                {
+                    if (!(value is string serializedInput))
+                    {
+                        throw new InvalidOperationException($"Cannot execute an Activity Trigger without a {nameof(DurableActivityContext)} or a {nameof(String)} that represents the serialized input.");
+                    }
+
+                    // Durable functions expects input as a JArray with one element.
+                    serializedInput = $"[{serializedInput}]";
+
+                    activityContext = new DurableActivityContext(this.durableTaskConfig, Guid.NewGuid().ToString(), serializedInput);
+                }
+
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object convertedValue;
@@ -164,9 +184,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var listener = new DurableTaskListener(
                     this.parent.durableTaskConfig,
+                    context.Descriptor.Id,
                     this.activityName,
                     context.Executor,
-                    FunctionType.Activity);
+                    FunctionType.Activity,
+                    this.parent.storageConnectionString);
                 return Task.FromResult<IListener>(listener);
             }
 

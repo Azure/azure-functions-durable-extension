@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -35,8 +36,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             FunctionAnalyzer functionAnalyzer = new FunctionAnalyzer();
             context.RegisterCompilationStartAction(compilation =>
             {
-                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivityCalls, SyntaxKind.InvocationExpression);
-                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivities, SyntaxKind.Attribute);
+                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivityCall, SyntaxKind.InvocationExpression);
+                compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivity, SyntaxKind.Attribute);
 
                 compilation.RegisterCompilationEndAction(functionAnalyzer.RegisterAnalyzers);
             });
@@ -54,117 +55,178 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             returnTypeAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
         }
 
-        public void FindActivityCalls(SyntaxNodeAnalysisContext context)
+        public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
             var invocationExpression = context.Node as InvocationExpressionSyntax;
+            if (IsCallActivityInvocation(invocationExpression))
+            {
+                if (!TryGetFunctionNameFromCallActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
+                {
+                    //Do not store ActivityFunctionCall if there is no function name
+                    return;
+                }
+
+                var returnTypeName = GetReturnTypeNameFromCallActivityInvocation(context, invocationExpression);
+
+                var inputNode = GetInputNodeFromCallActivityInvocation(invocationExpression);
+                var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
+                var inputTypeName = GetQualifiedTypeName(inputType);
+
+                calledFunctions.Add(new ActivityFunctionCall
+                {
+                    Name = functionNameNode.ToString().Trim('"'),
+                    NameNode = functionNameNode,
+                    ParameterNode = inputNode,
+                    ParameterType = inputTypeName,
+                    ExpectedReturnType = returnTypeName,
+                    InvocationExpression = invocationExpression
+                });
+            }
+        }
+
+        private bool IsCallActivityInvocation(InvocationExpressionSyntax invocationExpression)
+        {
             if (invocationExpression != null)
             {
-
                 var expression = invocationExpression.Expression as MemberAccessExpressionSyntax;
                 if (expression != null)
                 {
                     var name = expression.Name;
                     if (name.ToString().StartsWith("CallActivityAsync") || name.ToString().StartsWith("CallActivityWithRetryAsync"))
                     {
-                        var functionName = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
-                        var argumentType = invocationExpression.ArgumentList.Arguments.Last();
-                        var returnType = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression))
-                            .FirstOrDefault()?
-                            .ChildNodes()
-                            .Where(x => x.IsKind(SyntaxKind.GenericName))
-                            .FirstOrDefault()?
-                            .ChildNodes()
-                            .Where(x => x.IsKind(SyntaxKind.TypeArgumentList))?
-                            .FirstOrDefault();
-                        var returnTypeName = "System.Threading.Tasks.Task";
-                        if (returnType != null)
-                        {
-                            returnTypeName = GetQualifiedTypeName(context.SemanticModel.GetTypeInfo(returnType.ChildNodes().FirstOrDefault()).Type);
-                            returnTypeName = "System.Threading.Tasks.Task<" + returnTypeName + ">";
-
-                        }
-                        var typeInfo = context.SemanticModel.GetTypeInfo(argumentType.ChildNodes().First());
-                        var typeName = "";
-                        if (typeInfo.Type == null)
-                            return;
-                        typeName = GetQualifiedTypeName(typeInfo.Type);
-                        if (functionName != null && functionName.ToString().StartsWith("\""))
-                            calledFunctions.Add(new ActivityFunctionCall
-                            {
-                                Name = functionName.ToString().Trim('"'),
-                                NameNode = functionName,
-                                ParameterNode = argumentType,
-                                ParameterType = typeName,
-                                ExpectedReturnType = returnTypeName,
-                                ExpectedReturnTypeNode = invocationExpression
-                            });
+                        return true;
                     }
                 }
             }
+            
+            return false;
+        }
+
+        private bool TryGetFunctionNameFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode)
+        {
+            functionNameNode = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
+            return functionNameNode != null;
+        }
+
+        private string GetReturnTypeNameFromCallActivityInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpression)
+        {
+            if (SyntaxNodeUtils.TryGetTypeArgumentList((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
+            {
+                var returnType = context.SemanticModel.GetTypeInfo(identifierNode).Type;
+                return "System.Threading.Tasks.Task<" + GetQualifiedTypeName(returnType) + ">";
+            }
+
+            return "System.Threading.Tasks.Task";
+        }
+
+        private SyntaxNode GetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression)
+        {
+            var argumentNode = invocationExpression.ArgumentList.Arguments.LastOrDefault();
+            if (argumentNode != null)
+            {
+                //An Argument node will always have a child node
+                var inputNode = argumentNode.ChildNodes().First();
+                return inputNode;
+            }
+            
+            return null;
         }
 
         private string GetQualifiedTypeName(ITypeSymbol typeInfo)
         {
-            var tupleunderlyingtype = (typeInfo as INamedTypeSymbol).TupleUnderlyingType;
-            if (tupleunderlyingtype != null)
+            if (typeInfo != null)
             {
-                return $"Tuple<{string.Join(", ", tupleunderlyingtype.TypeArguments.Select(x => GetQualifiedTypeName(x)))}>";
-            }
-
-            var namedSymbol = typeInfo as INamedTypeSymbol;
-            var genericType = "";
-            if (namedSymbol.TypeArguments.Any())
-            {
-                genericType = "<" + GetQualifiedTypeName(namedSymbol.TypeArguments.First()) + ">";
-            }
-            var typeName = "";
-            if (typeInfo.OriginalDefinition.ContainingNamespace.ToString() != "<global namespace>")
-                typeName = typeInfo.OriginalDefinition.ContainingNamespace + "." + typeInfo.OriginalDefinition?.Name;
-            else
-                typeName = "System." + typeInfo.OriginalDefinition?.Name;
-            var returnType = typeName + genericType;
-            if (returnType == "System.Int")
-                return returnType + "32";
-            return returnType;
-        }
-
-        public void FindActivities(SyntaxNodeAnalysisContext context)
-        {
-            var attributeExpression = context.Node as AttributeSyntax;
-            if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "ActivityTrigger")
-            {
-                if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+                if (typeInfo is INamedTypeSymbol)
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out SyntaxNode attributeArgument))
+                    var tupleUnderlyingType = ((INamedTypeSymbol)typeInfo).TupleUnderlyingType;
+                    if (tupleUnderlyingType != null)
                     {
-                        var functionName = attributeArgument.ToString().Trim('"');
-                        if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attributeExpression, context, out SyntaxNode inputTypeNode))
-                        {
-                            ITypeSymbol inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
-                            if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
-                            {
-                                if (!TryGetInputTypeFromDurableContextCall(out inputType, context, attributeExpression))
-                                {
-                                    return;
-                                }
-                            }
-
-                            if (SyntaxNodeUtils.TryGetReturnType(attributeExpression, context, out ITypeSymbol returnType))
-                            {
-                                availableFunctions.Add(new ActivityFunctionDefinition
-                                {
-                                    FunctionName = functionName,
-                                    InputType = GetQualifiedTypeName(inputType),
-                                    ReturnType = GetQualifiedTypeName(returnType)
-                                });
-                            }
-                        }
+                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
                     }
+
+                    return typeInfo.ToString();
+                }
+
+                if (!string.IsNullOrEmpty(typeInfo.Name))
+                {
+                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString();
                 }
             }
+
+            return "Unknown Type";
         }
 
-        private static bool TryGetInputTypeFromDurableContextCall(out ITypeSymbol inputTypeNode, SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
+        public void FindActivity(SyntaxNodeAnalysisContext context)
+        {
+            var attribute = context.Node as AttributeSyntax;
+            if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
+            {
+                if (!TryGetFunctionName(attribute, out string functionName))
+                {
+                    //Do not store ActivityFunctionDefinition if there is no function name
+                    return;
+                }
+
+                if (!TryGetReturnType(context, attribute, out ITypeSymbol returnType))
+                {
+                    //Do not store ActivityFunctionDefinition if there is no return type
+                    return;
+                }
+
+                var returnTypeName = GetQualifiedTypeName(returnType);
+                var inputType = GetActivityFunctionInputTypeName(context, attribute);
+                var inputTypeName = GetQualifiedTypeName(inputType);
+
+                availableFunctions.Add(new ActivityFunctionDefinition
+                {
+                    FunctionName = functionName,
+                    InputType = inputTypeName,
+                    ReturnType = returnTypeName
+                });
+            }
+        }
+
+        private bool TryGetFunctionName(AttributeSyntax attributeExpression, out string functionName)
+        {
+            if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(attributeExpression, out SyntaxNode attributeArgument))
+            {
+                functionName = attributeArgument.ToString().Trim('"');
+                return true;
+            }
+
+            functionName = null;
+            return false;
+        }
+
+        private static bool TryGetReturnType(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol returnType)
+        {
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
+            {
+                returnType = context.SemanticModel.GetTypeInfo((methodDeclaration as MethodDeclarationSyntax).ReturnType).Type;
+                return true;
+            }
+
+            returnType = null;
+            return false;
+        }
+
+        private ITypeSymbol GetActivityFunctionInputTypeName(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
+        {
+            if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
+            {
+                var inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
+                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
+                {
+                    TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
+                }
+
+                return inputType;
+            }
+
+            return null;
+        }
+
+        private static bool TryGetInputTypeFromDurableContextCall(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol inputTypeNode)
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(attributeExpression, out SyntaxNode methodDeclaration))
             {

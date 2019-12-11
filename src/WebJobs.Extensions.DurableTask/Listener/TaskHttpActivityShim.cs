@@ -12,7 +12,7 @@ using DurableTask.Core;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class TaskHttpActivityShim : TaskActivity
     {

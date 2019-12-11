@@ -2,16 +2,31 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Text;
+using System.Linq;
+using System.Runtime.Serialization;
 using Microsoft.WindowsAzure.Storage;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Configuration options for the Azure Storage storage provider.
     /// </summary>
-    public class AzureStorageOptions : CommonStorageProviderOptions
+    public class AzureStorageOptions
     {
+        // 45 alphanumeric characters gives us a buffer in our table/queue/blob container names.
+        private const int MaxTaskHubNameSize = 45;
+        private const int MinTaskHubNameSize = 3;
+        private const string TaskHubPadding = "Hub";
+
+        /// <summary>
+        /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
+        /// </summary>
+        /// <remarks>
+        /// If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+        /// </remarks>
+        /// <value>The name of a connection string that exists in the app's application settings.</value>
+        public string ConnectionStringName { get; set; }
+
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
         /// </summary>
@@ -36,6 +51,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public int PartitionCount { get; set; } = 4;
 
         /// <summary>
+        /// Gets or set the number of control queue messages that can be buffered in memory
+        /// at a time, at which point the dispatcher will wait before dequeuing any additional
+        /// messages. The default is 64.
+        /// </summary>
+        /// <remarks>This has historically always been fixed to 64, but increasing it may increase
+        /// throughput.</remarks>
+        public int ControlQueueBufferThreshold { get; set; } = 64;
+
+        /// <summary>
         /// Gets or sets the visibility timeout of dequeued control queue messages.
         /// </summary>
         /// <value>
@@ -56,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// durable tracking store (History and Instances tables).
         /// </summary>
         /// <remarks><para>
-        /// If not specified, the <see cref="CommonStorageProviderOptions.ConnectionStringName"/> connection string
+        /// If not specified, the <see cref="AzureStorageOptions.ConnectionStringName"/> connection string
         /// is used for the durable tracking store.
         /// </para><para>
         /// This property is primarily useful when deploying multiple apps that need to share the same
@@ -90,7 +114,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// <value>Maximum interval for polling control and work-item queues.</value>
         public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
 
-        internal override void ValidateHubName(string hubName)
+        /// <summary>
+        /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
+        /// </summary>
+        public void ValidateHubName(string hubName)
         {
             try
             {
@@ -101,12 +128,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             }
             catch (ArgumentException e)
             {
-                throw new ArgumentException(
-                    $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.", e);
+                throw new ArgumentException(GetTaskHubErrorString(hubName), e);
+            }
+
+            if (hubName.Length > 50)
+            {
+                throw new ArgumentException(GetTaskHubErrorString(hubName));
             }
         }
 
-        internal override void Validate()
+        private static string GetTaskHubErrorString(string hubName)
+        {
+            return $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to {MaxTaskHubNameSize}.";
+        }
+
+        internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
+        {
+            sanitizedHubName = new string(hubName.ToCharArray()
+                                .Where(char.IsLetterOrDigit)
+                                .Take(MaxTaskHubNameSize)
+                                .ToArray());
+            if (sanitizedHubName.Length < MinTaskHubNameSize)
+            {
+                sanitizedHubName = sanitizedHubName + TaskHubPadding;
+            }
+
+            if (string.Equals(hubName, sanitizedHubName))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Throws an exception if any of the settings of the storage provider are invalid.
+        /// </summary>
+        public void Validate()
         {
             if (this.ControlQueueBatchSize <= 0)
             {
@@ -128,23 +186,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
             {
                 throw new InvalidOperationException($"{nameof(this.MaxQueuePollingInterval)} must be non-negative.");
             }
-        }
 
-        internal override void AddToDebugString(StringBuilder builder)
-        {
-            builder.Append(nameof(this.ConnectionStringName)).Append(": ").Append(this.ConnectionStringName).Append(", ");
-            builder.Append(nameof(this.PartitionCount)).Append(": ").Append(this.PartitionCount).Append(", ");
-            builder.Append(nameof(this.ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
-            builder.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
-            builder.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
-            builder.Append(nameof(this.TrackingStoreConnectionStringName)).Append(": ").Append(this.TrackingStoreConnectionStringName).Append(", ");
-            builder.Append(nameof(this.FetchLargeMessagesAutomatically)).Append(": ").Append(this.FetchLargeMessagesAutomatically).Append(", ");
-            if (!string.IsNullOrEmpty(this.TrackingStoreConnectionStringName))
+            if (this.ControlQueueBufferThreshold < 1 || this.ControlQueueBufferThreshold > 1000)
             {
-                builder.Append(nameof(this.TrackingStoreNamePrefix)).Append(": ").Append(this.TrackingStoreNamePrefix).Append(", ");
+                throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
             }
-
-            builder.Append(nameof(this.MaxQueuePollingInterval)).Append(": ").Append(this.MaxQueuePollingInterval).Append(", ");
         }
     }
 }

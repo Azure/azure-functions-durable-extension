@@ -3,7 +3,7 @@
 
 using System.Runtime.Serialization;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Class to hold statistics about this execution of purge history.

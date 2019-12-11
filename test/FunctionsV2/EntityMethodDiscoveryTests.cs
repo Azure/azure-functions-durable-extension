@@ -1,12 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Moq;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.Tests.V2
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class EntityMethodDiscoveryTests
     {

@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Provides functionality available to durable orchestration clients.
@@ -117,12 +116,13 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestratation instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        Task<string> StartNewAsync(string orchestratorFunctionName, string instanceId, object input);
+        Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input);
 
         /// <summary>
         /// Sends an event notification message to a waiting orchestration instance.
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput = true);
+        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput);
 
         /// <summary>
         /// Gets all the status of the orchestration instances.

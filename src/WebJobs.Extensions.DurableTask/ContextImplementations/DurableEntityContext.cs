@@ -2,11 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ExceptionServices;
-using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
@@ -80,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
         public FunctionBindingContext FunctionBindingContext { get; set; }
 #endif
 

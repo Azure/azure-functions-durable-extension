@@ -2,11 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -91,6 +88,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static string BindToPOCO([ActivityTrigger] PlainOldClrObject poco)
         {
             return poco.Foo;
+        }
+
+        // Mark as no automatic trigger to allow usage of output wrapper.
+        [NoAutomaticTrigger]
+        public static void BindToPOCOWithOutParameter([ActivityTrigger] PlainOldClrObject poco, string[] outputWrapper)
+        {
+            outputWrapper[0] = poco.Foo;
         }
 
         public static double BindToDouble([ActivityTrigger] double value)

@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -11,11 +11,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
     [Extension("DurableTask", "DurableTask")]
 #endif
     public class DurableTaskExtension :
@@ -58,14 +58,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly bool isOptionsConfigured;
-        private IOrchestrationServiceFactory orchestrationServiceFactory;
+        private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
-        private IOrchestrationService orchestrationService;
+        private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
 
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
 
         /// <summary>
@@ -89,12 +89,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
-        /// <param name="serializerSettingsFactory"></param>
+        /// <param name="serializerSettingsFactory">The factory used to create JsonSerializerSettings.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IOrchestrationServiceFactory orchestrationServiceFactory,
+            IDurabilityProviderFactory orchestrationServiceFactory,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             ISerializerSettingsFactory serializerSettingsFactory = null)
@@ -111,9 +111,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
-            this.orchestrationServiceFactory = orchestrationServiceFactory;
+            this.durabilityProviderFactory = orchestrationServiceFactory;
+            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
@@ -132,12 +133,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DataConverter = new MessagePayloadDataConverter(serializerSettingsFactory);
         }
 
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
         internal DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IOrchestrationServiceFactory orchestrationServiceFactory,
+            IDurabilityProviderFactory orchestrationServiceFactory,
             IConnectionStringResolver connectionStringResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandlerFactory)
@@ -218,35 +219,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
 
+            string storageConnectionString = null;
+            var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
+            if (providerFactory != null)
+            {
+                storageConnectionString = providerFactory.GetDefaultStorageConnectionString();
+            }
+
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, this.TraceHelper));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
-                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
+                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
             context.AddBindingRule<EntityTriggerAttribute>()
-                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, this.TraceHelper));
+                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
-            this.orchestrationService = this.orchestrationServiceFactory.GetOrchestrationService();
-
-            this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
-
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
-
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.orchestrationServiceFactory = new OrchestrationServiceFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
+            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
+            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.nameResolver = context.Config.NameResolver;
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
 
@@ -279,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
-            return this.orchestrationService.DeleteAsync();
+            return this.defaultDurabilityProvider.DeleteAsync();
         }
 
         /// <summary>
@@ -305,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return new TaskOrchestrationShim(this, name);
+                return new TaskOrchestrationShim(this, this.defaultDurabilityProvider, name);
             }
         }
 
@@ -545,30 +550,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
+                    {
+                        entityShim.SetFunctionInvocationCallback(userCodeInvoker);
+
+                        // 3. Run all the operations in the batch
+                        if (entityContext.InternalError == null)
+                        {
+                            try
                             {
-                                entityShim.SetFunctionInvocationCallback(userCodeInvoker);
+                                await entityShim.ExecuteBatch();
+                            }
+                            catch (Exception e)
+                            {
+                                entityContext.CaptureInternalError(e);
+                            }
+                        }
 
-                                // 3. Run all the operations in the batch
-                                if (entityContext.InternalError == null)
-                                {
-                                    try
-                                    {
-                                        await entityShim.ExecuteBatch();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        entityContext.CaptureInternalError(e);
-                                    }
-                                }
+                        // 4. Run the DTFx orchestration to persist the effects,
+                        // send the outbox, and continue as new
+                        await next();
 
-                                // 4. Run the DTFx orchestration to persist the effects,
-                                // send the outbox, and continue as new
-                                await next();
-
-                                // 5. If there were internal or application errors, indicate to the functions host
-                                entityContext.ThrowInternalExceptionIfAny();
-                                entityContext.ThrowApplicationExceptionsIfAny();
-                            },
+                        // 5. If there were internal or application errors, indicate to the functions host
+                        entityContext.ThrowInternalExceptionIfAny();
+                        entityContext.ThrowApplicationExceptionsIfAny();
+                    },
 #pragma warning restore CS0618
                 },
                 CancellationToken.None);
@@ -578,6 +583,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // If there were internal errors, do not commit the batch, but instead rethrow
             // here so DTFx can abort the batch and back off the work item
             entityContext.ThrowInternalExceptionIfAny();
+        }
+
+        internal string GetDefaultConnectionName()
+        {
+            return this.defaultDurabilityProvider.ConnectionName;
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
@@ -595,7 +605,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
 #endif
         }
@@ -629,7 +639,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 attribute,
                 attr =>
                 {
-                    IOrchestrationServiceClient innerClient = this.orchestrationServiceFactory.GetOrchestrationClient(attribute);
+                    DurabilityProvider innerClient = this.durabilityProviderFactory.GetDurabilityProvider(attribute);
                     return new DurableClient(innerClient, this, this.HttpApiHandler, attr);
                 });
 
@@ -836,7 +846,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             message: "Starting task hub worker",
                             writeToUserLogs: true);
 
-                        await this.orchestrationService.CreateIfNotExistsAsync();
+                        await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
                         // Enable flowing exception information from activities

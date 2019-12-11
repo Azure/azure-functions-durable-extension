@@ -1,5 +1,4 @@
 trigger:
-- v2
 - dev
 
 jobs:

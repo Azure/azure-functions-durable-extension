@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static JobHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
+            string storageProvider,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
 
-            IOrchestrationServiceFactory orchestrationServiceFactory = new OrchestrationServiceFactory(options, connectionResolver);
+            IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(options, connectionResolver);
 
             var extension = new DurableTaskExtension(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandler, lifeCycleNotificationHelper, serializerSettings);
             config.UseDurableTask(extension);

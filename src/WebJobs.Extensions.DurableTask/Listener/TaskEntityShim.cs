@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Common;
-using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

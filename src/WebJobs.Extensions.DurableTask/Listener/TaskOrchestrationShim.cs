@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.ExceptionServices;
-using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
@@ -21,11 +20,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly OutOfProcOrchestrationShim outOfProcShim;
         private readonly DurableTaskExtension config;
 
-        public TaskOrchestrationShim(DurableTaskExtension config, string name)
+        public TaskOrchestrationShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string name)
             : base(config)
         {
             this.config = config;
-            this.context = new DurableOrchestrationContext(config, name);
+            this.context = new DurableOrchestrationContext(config, durabilityProvider, name);
             this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
 
