@@ -25,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private JsonSerializer messageSerializer;
 
         public MessagePayloadDataConverter(ISerializerSettingsFactory serializerSettingsFactory)
+            : base(serializerSettingsFactory.CreateJsonSerializerSettings())
         {
             this.MessageSettings = serializerSettingsFactory.CreateJsonSerializerSettings();
         }
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
-        internal JsonSerializerSettings MessageSettings { get; private set; }
+        internal JsonSerializerSettings MessageSettings { get; }
 
         internal MessagePayloadDataConverter MessageConverter
         {

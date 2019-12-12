@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
-        /// <param name="serializerSettingsFactory">The factory used to create JsonSerializerSettings.</param>
+        /// <param name="serializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/>.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,

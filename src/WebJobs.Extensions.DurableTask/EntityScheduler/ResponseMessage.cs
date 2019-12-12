@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ResponseMessage
     {
-        private MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter dataConverter;
 
         public ResponseMessage(MessagePayloadDataConverter dataConverter)
         {

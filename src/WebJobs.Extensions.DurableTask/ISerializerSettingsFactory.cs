@@ -11,9 +11,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public interface ISerializerSettingsFactory
     {
         /// <summary>
-        /// Creates or retrieves JsonSerializerSettings to be used throughout the extension.
+        /// Creates or retrieves <see cref="JsonSerializerSettings"/> to be used throughout the extension.
         /// </summary>
-        /// <returns>JsonSerializerSettings to be used by the Durable Task Extension.</returns>
+        /// <returns><see cref="JsonSerializerSettings"/> to be used by the Durable Task Extension.</returns>
         JsonSerializerSettings CreateJsonSerializerSettings();
     }
 }
