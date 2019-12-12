@@ -3457,6 +3457,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Theory(Skip = "Azure Storage fails due to container deletion")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
+        {
+            var taskHubName1 = "GetStatus1";
+            var taskHubName2 = "GetStatus2";
+            await TestHelpers.DeleteTaskHubResources(taskHubName1, extendedSessions);
+            await TestHelpers.DeleteTaskHubResources(taskHubName2, extendedSessions);
+            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions, storageProviderType: storageProvider))
+            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions, storageProviderType: storageProvider))
+            {
+                await host1.StartAsync();
+                await host2.StartAsync();
+                var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.SignalAndCallStringStore), "foo", this.output);
+                var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SignalAndCallStringStore), "bar", this.output);
+                var client3 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SignalAndCallStringStore), "baz", this.output);
+
+                taskHubName1 = client1.TaskHubName;
+                taskHubName2 = client2.TaskHubName;
+                var instanceId = client1.InstanceId;
+
+                var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+                var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+                var condition1 = new OrchestrationStatusQueryCondition
+                {
+                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
+                    CreatedTimeFrom = yesterday,
+                    CreatedTimeTo = tomorrow,
+                    TaskHubNames = new List<string>() { taskHubName1 },
+                };
+                var condition2 = new OrchestrationStatusQueryCondition
+                {
+                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
+                    CreatedTimeFrom = yesterday,
+                    CreatedTimeTo = tomorrow,
+                    TaskHubNames = new List<string>() { taskHubName2 },
+                };
+
+                // Make sure it actually completed
+                await client1.WaitForCompletionAsync(this.output);
+                await client2.WaitForCompletionAsync(this.output);
+                await client3.WaitForCompletionAsync(this.output);
+
+                // Perform some operations
+                var result1 = await client1.ListAllEntitiesAsync(condition1, CancellationToken.None);
+
+                Assert.Single(result1.DurableOrchestrationState);
+                Assert.Equal(2, result2.DurableOrchestrationState.Count());
+
+                await host1.StopAsync();
+                await host2.StopAsync();
+            }
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task MaxOrchestrationAction_MaxReached_OrchestrationFails()

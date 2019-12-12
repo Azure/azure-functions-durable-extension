@@ -873,7 +873,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task GetEntity_Returns_State_Or_HTTP_404(bool hasKey, bool exists)
         {
             string entity = "SomeEntity";
-            string key = hasKey ? Guid.NewGuid().ToString("N") : "";
+            string key = hasKey ? Guid.NewGuid().ToString("N") : "$";
             var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
 
             uriBuilder.Path += $"/entities/{entity}";
@@ -896,6 +896,123 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             clientMock
                     .Setup(x => x.ReadEntityStateAsync<JToken>(entityId, null, null))
                     .Returns(Task.FromResult(result));
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+
+            if (exists)
+            {
+                Assert.Equal(HttpStatusCode.OK, actualResponse.StatusCode);
+
+                var content = await actualResponse.Content.ReadAsStringAsync();
+                Assert.Equal("{}", content);
+            }
+            else
+            {
+                Assert.Equal(HttpStatusCode.NotFound, actualResponse.StatusCode);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ListAllEntities_Returns_States_Or_HTTP404(bool hasName, bool exists)
+        {
+            string entityName = hasName ? Guid.NewGuid().ToString("N") : "";
+            var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+
+            uriBuilder.Path += $"/entities/{entityName}";
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = uriBuilder.Uri,
+            };
+
+            var result = new EntityStateResponse<JToken>() { EntityExists = exists, EntityState = exists ? new JObject() : null };
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+
+            clientMock
+                    .Setup(x => x.ListAllEntitiesAsync<JToken>(entityId, null, null))
+                    .Returns(Task.FromResult(result));
+
+
+
+            var list = (IList<DurableEntityStatus>)new List<DurableEntityStatus>
+            {
+                new DurableEntityStatus
+                {
+                    EntityId = new EntityId("DoThis", "one"),
+                    LastOperationTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
+                    State = OrchestrationRuntimeStatus.Running,
+                },
+                new DurableEntityStatus
+                {
+                    EntityId = new EntityId("DoThat", "two"),
+                    LastOperationTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
+                    State = OrchestrationRuntimeStatus.Running,
+                },
+            };
+
+            var result = new EntityQueryResult
+            {
+                Entities = list,
+                ContinuationToken = "YYYY-YYYYYYYY-YYYYYYYYYYYY",
+            };
+
+            var createdTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
+            var createdTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
+            var runtimeStatus = new List<OrchestrationRuntimeStatus>();
+            runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
+            var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
+            var pageSize = 100;
+            var continuationToken = "XXXX-XXXXXXXX-XXXXXXXXXXXX";
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.ListAllEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(result))
+                .Callback<EntityQuery, CancellationToken>((condition, cancellationToken) =>
+                {
+                    Assert.Equal(createdTimeFrom, condition.CreatedTimeFrom);
+                    Assert.Equal(createdTimeTo, condition.CreatedTimeTo);
+                    Assert.Equal(OrchestrationRuntimeStatus.Running, condition.RuntimeStatus.FirstOrDefault());
+                    Assert.Equal(pageSize, condition.PageSize);
+                    Assert.Equal(continuationToken, condition.ContinuationToken);
+                });
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += $"/Instances/";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&top=100";
+
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = getStatusRequestUriBuilder.Uri,
+            };
+            requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal("YYYY-YYYYYYYY-YYYYYYYYYYYY", responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+            clientMock.Verify(x => x.GetStatusAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()));
+            Assert.Equal("DoThis", actual[0].EntityId.EntityName);
+            Assert.Equal("one", actual[0].EntityId.EntityKey);
+            Assert.Equal("Running", actual[0].RuntimeStatus);
+            Assert.Equal("DoThat", actual[1].EntityId.EntityName);
+            Assert.Equal("02", actual[1].EntityId.EntityKey);
+            Assert.Equal("Running", actual[1].RuntimeStatus);
+
+
+
+
+
+
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
             var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -9,6 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Represents the status of a durable entity instance.
     /// </summary>
+    [DataContract]
     public class DurableEntityStatus
     {
         internal DurableEntityStatus(DurableOrchestrationStatus orchestrationStatus)
@@ -24,7 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// The unique EntityId of the instance.
         /// </value>
-        public EntityId EntityId { get; }
+        [DataMember(Name = "entityId")]
+        public EntityId EntityId { get; set; }
 
         /// <summary>
         /// Gets the time of the last operation of the entity instance.
@@ -32,7 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// The last operation time in UTC.
         /// </value>
-        public DateTime LastOperationTime { get; }
+        [DataMember(Name = "lastOperationTime")]
+        public DateTime LastOperationTime { get; set; }
 
         /// <summary>
         /// Gets the state of the entity instance.
@@ -40,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// The state as either a <c>JToken</c> or <c>null</c> if no state was provided.
         /// </value>
-        public JToken State { get; }
+        [DataMember(Name = "state")]
+        public JToken State { get; set; }
     }
 }

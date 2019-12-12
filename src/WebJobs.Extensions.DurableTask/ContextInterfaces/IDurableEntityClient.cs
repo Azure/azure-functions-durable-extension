@@ -45,8 +45,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets the status of all entity instances with paging that match the specified query conditions.
         /// </summary>
         /// <param name="query">Return entity instances that match the specified query conditions.</param>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-        /// <returns>Returns each page of entity status for all instances and continuation token of next page.</returns>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
+        /// <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
         Task<EntityQueryResult> ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken);
     }
 }
