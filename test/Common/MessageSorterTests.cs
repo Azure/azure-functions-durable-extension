@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class MessageSorterTests
     {
         private static readonly TimeSpan ReorderWindow = TimeSpan.FromMinutes(30);
-        private static readonly MessagePayloadDataConverter DataConverter = new MessagePayloadDataConverter(new SerializerSettingsFactory());
+        private static readonly MessagePayloadDataConverter DataConverter = new MessagePayloadDataConverter(new MessageSerializerSettingsFactory(), new ErrorSerializerSettingsFactory());
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]

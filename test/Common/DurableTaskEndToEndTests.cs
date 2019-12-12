@@ -4001,7 +4001,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private class CustomEnumSettings : ISerializerSettingsFactory
+        private class CustomEnumSettings : IMessageSerializerSettingsFactory
         {
             public JsonSerializerSettings CreateJsonSerializerSettings()
             {

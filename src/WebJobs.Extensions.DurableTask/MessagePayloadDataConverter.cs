@@ -13,21 +13,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class MessagePayloadDataConverter : JsonDataConverter
     {
-        private static readonly JsonSerializerSettings ErrorSettings = new JsonSerializerSettings
-        {
-            ContractResolver = new ExceptionResolver(),
-            TypeNameHandling = TypeNameHandling.Objects,
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-        };
-
         private MessagePayloadDataConverter messageConverter;
         private MessagePayloadDataConverter errorConverter;
         private JsonSerializer messageSerializer;
 
-        public MessagePayloadDataConverter(ISerializerSettingsFactory serializerSettingsFactory)
-            : base(serializerSettingsFactory.CreateJsonSerializerSettings())
+        public MessagePayloadDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory, IErrorSerializerSettingsFactory errorSerializerSettingsFactory)
+            : base(messageSerializerSettingsFactory.CreateJsonSerializerSettings())
         {
-            this.MessageSettings = serializerSettingsFactory.CreateJsonSerializerSettings();
+            this.MessageSettings = messageSerializerSettingsFactory.CreateJsonSerializerSettings();
+            this.ErrorSettings = errorSerializerSettingsFactory.CreateJsonSerializerSettings();
         }
 
         private MessagePayloadDataConverter(JsonSerializerSettings settings)
@@ -36,6 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         internal JsonSerializerSettings MessageSettings { get; }
+
+        internal JsonSerializerSettings ErrorSettings { get; }
 
         internal MessagePayloadDataConverter MessageConverter
         {
@@ -56,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (this.errorConverter == null)
                 {
-                    this.errorConverter = new MessagePayloadDataConverter(ErrorSettings);
+                    this.errorConverter = new MessagePayloadDataConverter(this.ErrorSettings);
                 }
 
                 return this.errorConverter;
@@ -117,23 +113,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return serializedJson;
-        }
-
-        private class ExceptionResolver : DefaultContractResolver
-        {
-            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-            {
-                JsonProperty property = base.CreateProperty(member, memberSerialization);
-
-                // Strip the TargetSite property from all exceptions
-                if (typeof(Exception).IsAssignableFrom(property.DeclaringType) &&
-                    property.PropertyName == nameof(Exception.TargetSite))
-                {
-                    property.ShouldSerialize = _ => false;
-                }
-
-                return property;
-            }
         }
     }
 }

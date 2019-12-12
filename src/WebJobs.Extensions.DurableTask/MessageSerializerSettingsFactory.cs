@@ -5,15 +5,15 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class SerializerSettingsFactory : ISerializerSettingsFactory
+    internal class MessageSerializerSettingsFactory : IMessageSerializerSettingsFactory
     {
         private JsonSerializerSettings jsonSerializerSettings;
 
-        public SerializerSettingsFactory()
+        public MessageSerializerSettingsFactory()
         {
         }
 
-        internal SerializerSettingsFactory(JsonSerializerSettings jsonSerializerSettings)
+        internal MessageSerializerSettingsFactory(JsonSerializerSettings jsonSerializerSettings)
         {
             this.jsonSerializerSettings = jsonSerializerSettings;
         }

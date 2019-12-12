@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
-            ISerializerSettingsFactory serializerSettingsFactory)
+            IMessageSerializerSettingsFactory serializerSettingsFactory)
         {
             IHost host = new HostBuilder()
                 .ConfigureLogging(

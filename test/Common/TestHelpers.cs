@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int httpAsyncSleepTime = 500,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-            ISerializerSettingsFactory serializerSettings = null,
+            IMessageSerializerSettingsFactory serializerSettings = null,
             DurableTaskOptions options = null)
         {
             switch (storageProviderType)
@@ -163,11 +163,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver = null,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-            ISerializerSettingsFactory serializerSettings = null)
+            IMessageSerializerSettingsFactory serializerSettings = null)
         {
             if (serializerSettings == null)
             {
-                serializerSettings = new SerializerSettingsFactory();
+                serializerSettings = new MessageSerializerSettingsFactory();
             }
 
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
