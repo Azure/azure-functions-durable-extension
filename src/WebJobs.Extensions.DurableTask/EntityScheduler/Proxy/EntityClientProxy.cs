@@ -9,10 +9,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class EntityClientProxy : IEntityProxyContext
     {
         private readonly IDurableEntityClient client;
+        private readonly DateTime? scheduledTimeForSignal;
 
         internal EntityClientProxy(IDurableEntityClient client)
         {
             this.client = client;
+        }
+
+        internal EntityClientProxy(IDurableEntityClient client, DateTime scheduledTimeForSignal)
+        {
+            this.client = client;
+            this.scheduledTimeForSignal = scheduledTimeForSignal;
         }
 
         internal Task SignalTask { get; private set; }
@@ -41,7 +48,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("The operation action must not perform more than one operation");
             }
 
-            this.SignalTask = this.client.SignalEntityAsync(entityId, operationName, operationInput);
+            if (this.scheduledTimeForSignal.HasValue)
+            {
+                this.SignalTask = this.client.SignalEntityAsync(entityId, this.scheduledTimeForSignal.Value, operationName, operationInput);
+            }
+            else
+            {
+                this.SignalTask = this.client.SignalEntityAsync(entityId, operationName, operationInput);
+            }
         }
     }
 }
