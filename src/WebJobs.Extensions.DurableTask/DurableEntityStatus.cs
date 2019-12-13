@@ -13,6 +13,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [DataContract]
     public class DurableEntityStatus
     {
+        internal DurableEntityStatus() { }
+
         internal DurableEntityStatus(DurableOrchestrationStatus orchestrationStatus)
         {
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(orchestrationStatus.InstanceId);

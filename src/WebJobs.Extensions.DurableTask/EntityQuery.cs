@@ -36,5 +36,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// ContinuationToken of the pager.
         /// </summary>
         public string ContinuationToken { get; set; }
+
+        /// <summary>
+        /// If true, the query will get the input of the entity.
+        /// </summary>
+        public bool FetchInput { get; set; } = false;
     }
 }

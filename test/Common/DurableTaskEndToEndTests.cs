@@ -3460,58 +3460,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory(Skip = "Azure Storage fails due to container deletion")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetExtendedSessionAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
+        public async Task DurableEntity_GetStatus_WithCondition(bool extendedSessions, string storageProvider, bool fetchInput)
         {
-            var taskHubName1 = "GetStatus1";
-            var taskHubName2 = "GetStatus2";
-            await TestHelpers.DeleteTaskHubResources(taskHubName1, extendedSessions);
-            await TestHelpers.DeleteTaskHubResources(taskHubName2, extendedSessions);
-            using (JobHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions, storageProviderType: storageProvider))
-            using (JobHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions, storageProviderType: storageProvider))
+            var taskHubName = "GetStatus1";
+            await TestHelpers.DeleteTaskHubResources(taskHubName, extendedSessions);
+            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHubName, extendedSessions, storageProviderType: storageProvider))
             {
-                await host1.StartAsync();
-                await host2.StartAsync();
-                var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.SignalAndCallStringStore), "foo", this.output);
-                var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SignalAndCallStringStore), "bar", this.output);
-                var client3 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SignalAndCallStringStore), "baz", this.output);
+                await host.StartAsync();
 
-                taskHubName1 = client1.TaskHubName;
-                taskHubName2 = client2.TaskHubName;
-                var instanceId = client1.InstanceId;
+                var id1 = new EntityId("aaab", "foo");
+                var id2 = new EntityId("aaab", "bar");
+                var id3 = new EntityId("aaab", "baz");
+                var idDifferentName = new EntityId("aaac", "foo");
+
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id1, this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id2, this.output);
+                var client3 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id3, this.output);
+                var client4 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), idDifferentName, this.output);
 
                 var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
                 var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
 
-                var condition1 = new OrchestrationStatusQueryCondition
+                var condition1 = new EntityQuery
                 {
-                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
-                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
-                    CreatedTimeFrom = yesterday,
-                    CreatedTimeTo = tomorrow,
-                    TaskHubNames = new List<string>() { taskHubName1 },
-                };
-                var condition2 = new OrchestrationStatusQueryCondition
-                {
-                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
-                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
-                    CreatedTimeFrom = yesterday,
-                    CreatedTimeTo = tomorrow,
-                    TaskHubNames = new List<string>() { taskHubName2 },
+                    EntityName = "aaab",
+                    LastOperationFrom = yesterday,
+                    LastOperationTo = tomorrow,
+                    FetchInput = fetchInput,
                 };
 
                 // Make sure it actually completed
                 await client1.WaitForCompletionAsync(this.output);
                 await client2.WaitForCompletionAsync(this.output);
                 await client3.WaitForCompletionAsync(this.output);
+                await client4.WaitForCompletionAsync(this.output);
 
                 // Perform some operations
-                var result1 = await client1.ListAllEntitiesAsync(condition1, CancellationToken.None);
+                var result = await client1.InnerClient.ListEntitiesAsync(condition1, CancellationToken.None);
 
-                Assert.Single(result1.DurableOrchestrationState);
-                Assert.Equal(2, result2.DurableOrchestrationState.Count());
+                Assert.Equal(3, result.Entities.Count());
 
-                await host1.StopAsync();
-                await host2.StopAsync();
+                if (fetchInput)
+                {
+                    Assert.NotNull(result.Entities.First());
+                }
+                else
+                {
+                    Assert.Null(result.Entities.First());
+                }
+
+                await host.StopAsync();
             }
         }
 

@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.PageSize = entityQuery.PageSize;
             this.ContinuationToken = entityQuery.ContinuationToken;
             this.InstanceIdPrefix = entityQuery.EntityName;
+            this.FetchInput = entityQuery.FetchInput;
         }
 
         /// <summary>
@@ -59,5 +60,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Return orchestration instances that have this instance id prefix.
         /// </summary>
         public string InstanceIdPrefix { get; set; }
+
+        /// <summary>
+        /// If true, the query will get the input of the entity.
+        /// </summary>
+        public bool FetchInput { get; set; } = true;
     }
 }

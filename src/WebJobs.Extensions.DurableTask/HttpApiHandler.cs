@@ -45,6 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
+        private const string FetchInputParameter = "fetchInput";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
@@ -402,6 +403,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 query.PageSize = pageSize;
             }
 
+            if (TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter, out bool fetchInput))
+            {
+                query.FetchInput = fetchInput;
+            }
+
             if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
             {
                 query.ContinuationToken = headerValues.FirstOrDefault();
@@ -411,13 +417,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var statusForAllInstances = result.Entities.ToList();
             var nextContinuationToken = result.ContinuationToken;
 
-            var responseArrayPayload = new List<StatusResponsePayload>(statusForAllInstances.Count);
-            foreach (var state in statusForAllInstances)
-            {
-                responseArrayPayload.Add(this.ConvertFrom(state));
-            }
-
-            var response = request.CreateResponse(HttpStatusCode.OK, responseArrayPayload);
+            var response = request.CreateResponse(HttpStatusCode.OK, result);
 
             response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
             return response;
@@ -472,13 +472,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
-
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, defaultValue: false);
-            var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, defaultValue: false);
 
-            bool showInput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, defaultValue: true);
-            bool returnInternalServerErrorOnFailure = GetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, defaultValue: false);
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
+            {
+                showHistory = false;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, out bool showHistoryOutput))
+            {
+                showHistoryOutput = false;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter, out bool showInput))
+            {
+                showInput = true;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out bool returnInternalServerErrorOnFailure))
+            {
+                returnInternalServerErrorOnFailure = false;
+            }
 
             var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
             if (status == null)
@@ -562,16 +576,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private StatusResponsePayload ConvertFrom(DurableEntityStatus status)
-        {
-            return new StatusResponsePayload
-            {
-                InstanceId = status.EntityId.ToString(),
-                Input = status.State,
-                LastUpdatedTime = status.LastOperationTime.ToString("s") + "Z",
-            };
-        }
-
         private static bool TryGetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName, out IEnumerable<T> collection)
             where T : struct
         {
@@ -607,10 +611,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 
-        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, bool defaultValue)
+        private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
+            if (bool.TryParse(value, out boolValue))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static bool TryGetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out int intValue)
