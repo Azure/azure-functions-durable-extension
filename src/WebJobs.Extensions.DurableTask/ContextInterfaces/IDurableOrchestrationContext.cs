@@ -327,6 +327,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void SignalEntity(EntityId entity, string operationName, object operationInput = null);
 
         /// <summary>
+        /// Signals an operation to be performed by an entity at a specified time. Any result or exception is ignored (fire and forget).
+        /// </summary>
+        /// <param name="entity">The target entity.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <param name="operationInput">The input for the operation.</param>
+        void SignalEntity(EntityId entity, DateTime scheduledTimeUtc, string operationName, object operationInput = null);
+
+        /// <summary>
         /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
         /// Any result or exception is ignored (fire and forget).
         /// </summary>

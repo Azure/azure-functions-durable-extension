@@ -2667,6 +2667,127 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Send a bunch of signals from a client to a single entity, then test that they are all being delivered.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, false, 1)]
+        [InlineData(true, false, 2)]
+        [InlineData(true, false, 20)]
+        [InlineData(true, false, 200)]
+        [InlineData(false, false, 1)]
+        [InlineData(false, false, 2)]
+        [InlineData(false, false, 20)]
+        [InlineData(false, false, 200)]
+        [InlineData(true, true, 1)]
+        [InlineData(true, true, 2)]
+        [InlineData(true, true, 20)]
+        [InlineData(true, true, 200)]
+        [InlineData(false, true, 1)]
+        [InlineData(false, true, 2)]
+        [InlineData(false, true, 20)]
+        [InlineData(false, true, 200)]
+        public async Task DurableEntity_ManyScheduledSignals(bool extendedSessions, bool delay, int numSignals)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_ManyScheduledSignals),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                var now = DateTime.UtcNow;
+
+                for (int i = 0; i < numSignals; i++)
+                {
+                    if (delay)
+                    {
+                        await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(i * (10.0 / numSignals)), i.ToString(), null);
+                    }
+                    else
+                    {
+                        await client.SignalEntity(this.output, i.ToString(), null);
+                    }
+                }
+
+                string DescribeWhatsMissing(List<string> curstate)
+                {
+                    var expected = new HashSet<string>();
+                    for (int i = 0; i < numSignals; i++)
+                    {
+                        expected.Add(i.ToString());
+                    }
+
+                    foreach (var s in curstate)
+                    {
+                        expected.Remove(s);
+                    }
+
+                    if (expected.Count == 0)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return string.Join(",", expected);
+                    }
+                }
+
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, DescribeWhatsMissing);
+
+                this.output.WriteLine(string.Join(", ", state));
+
+                // The scheduled signals are not guaranteed to be delivered in order, so we sort before comparing
+                var intlist = state.Select(s => int.Parse(s)).ToList();
+                intlist.Sort();
+
+                for (int i = 0; i < numSignals; i++)
+                {
+                    Assert.Equal(i, intlist[i]);
+                }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Send a scheduled signal, then an immediate signal, and test delivery order.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_ScheduledSignal(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_ScheduledSignal),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                var now = DateTime.UtcNow;
+
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(5), "delayed", null);
+                await client.SignalEntity(this.output, "immediate", null);
+
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 2 ? null : "expect both messages");
+
+                Assert.Equal("immediate, delayed", string.Join(", ", state));
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates an entity scenario where three "LockedIncrement" orchestrations
         /// concurrently increment a counter saved in blob storage, using a read-modify-write pattern, while holding
         /// a lock on the same entity. This tests that the lock prevents the interleaving of these orchestrations.
@@ -3163,6 +3284,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that orchestrations can call a timer after doing a continue as new.
+        /// This is meant to catch regressions of azure/durabletask/#285.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ContinueAsNew_Repro285()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ContinueAsNew_Repro285),
+                enableExtendedSessions: true))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ContinueAsNew_Repro285), 0, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that orchestrations can call a timer and then cancel it if receiving an event instead.
+        /// This is meant to catch regressions of azure/durabletask/#285.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, 20)]
+        [InlineData(false, 20)]
+        public async Task ContinueAsNewMultipleTimersAndEvents(bool extendedSessions, int numSignals)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ContinueAsNewMultipleTimersAndEvents),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ContinueAsNewMultipleTimersAndEvents), numSignals, this.output);
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                for (int i = numSignals; i > 0; i--)
+                {
+                    await client.RaiseEventAsync($"signal{i}", this.output);
+                }
+
+                var status = await client.WaitForCompletionAsync(this.output, false, false, TimeSpan.FromSeconds(80));
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
 
                 await host.StopAsync();
             }
@@ -3683,6 +3865,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
 
                 await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivity_Like_From_Azure_Portal()
+        {
+            using (JobHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.CallActivity_Like_From_Azure_Portal),
+                false))
+            {
+                string foo = "return_result";
+                await host.StartAsync();
+                string functionName = nameof(TestActivities.BindToPOCOWithOutParameter);
+                var startFunction = typeof(TestActivities).GetMethod(functionName);
+                string[] output = new string[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "poco", $"{{ \"Foo\": \"{foo}\" }}" },
+                    { "outputWrapper", output },
+                };
+
+                await host.CallAsync(startFunction, args);
+                this.output.WriteLine($"Started {functionName}");
+
+                Assert.Equal(foo, output[0]);
             }
         }
 

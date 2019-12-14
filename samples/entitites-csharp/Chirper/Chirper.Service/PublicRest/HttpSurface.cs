@@ -28,7 +28,7 @@ namespace Chirper.Service
             string userId)
         {
             Authenticate(req, userId);
-            var instanceId = await client.StartNewAsync(nameof(GetTimeline), userId);
+            var instanceId = await client.StartNewAsync<string>(nameof(GetTimeline), userId);
             return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(req, instanceId);
         }
 
