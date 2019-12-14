@@ -914,12 +914,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task Entities_Query_Calls_ListEntitiesAsync(bool hasName, bool exists)
+        public async Task Entities_Query_Calls_ListEntitiesAsync(bool hasName)
         {
             string entityName = hasName ? Guid.NewGuid().ToString("N") : "";
             var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
@@ -972,8 +970,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
 
             var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
-            Assert.Equal("YYYY-YYYYYYYY-YYYYYYYYYYYY", responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<DurableEntityStatus>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()));
             Assert.Equal("DoThis", actual[0].EntityId.EntityName);

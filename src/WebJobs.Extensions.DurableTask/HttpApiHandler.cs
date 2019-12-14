@@ -54,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string LastOperationTimeFrom = "lastOperationTimeFrom";
         private const string LastOperationTimeTo = " lastOperationTimeTo";
 
+        private const string EmptyEntityKeySymbol = "$";
+
         // API Routes
         private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
         private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
@@ -579,58 +581,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static bool TryGetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName, out IEnumerable<T> collection)
             where T : struct
         {
-            var results = new List<T>();
+            collection = new List<T>();
             string[] parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
 
             foreach (string value in parameters.SelectMany(x => x.Split(',')))
             {
                 if (Enum.TryParse(value, out T result))
                 {
-                    results.Add(result);
+                    ((List<T>)collection).Add(result);
                 }
             }
 
-            if (results.Any())
+            if (collection.Any())
             {
-                collection = results;
                 return true;
             }
 
-            collection = null;
             return false;
         }
 
         private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            if (DateTime.TryParse(value, out dateTimeValue))
-            {
-                return true;
-            }
-
-            return false;
+            return DateTime.TryParse(value, out dateTimeValue);
         }
 
         private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            if (bool.TryParse(value, out boolValue))
-            {
-                return true;
-            }
-
-            return false;
+            return bool.TryParse(value, out boolValue);
         }
 
         private static bool TryGetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out int intValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            if (int.TryParse(value, out intValue))
-            {
-                return true;
-            }
-
-            return false;
+            return int.TryParse(value, out intValue);
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
@@ -781,7 +766,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableEntityClient client = this.GetClient(request);
 
-            if (entityId.EntityKey.Equals("$"))
+            // This input for entity key parameter means that entity key is an empty string.
+            if (entityId.EntityKey.Equals(EmptyEntityKeySymbol))
             {
                 entityId = new EntityId(entityId.EntityName, "");
             }

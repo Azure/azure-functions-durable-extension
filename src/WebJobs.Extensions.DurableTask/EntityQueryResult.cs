@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal EntityQueryResult(OrchestrationStatusQueryResult orchestrationResult)
         {
-            this.Entities = this.GenerateEntityStatusCollection(orchestrationResult.DurableOrchestrationState);
+            this.Entities = (IReadOnlyCollection<DurableEntityStatus>)orchestrationResult.DurableOrchestrationState.Select(status => new DurableEntityStatus(status));
             this.ContinuationToken = orchestrationResult.ContinuationToken;
         }
 
@@ -31,16 +32,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <value>A server-generated continuation token or <c>null</c> if there are no further continuations.</value>
         public string ContinuationToken { get; set; }
-
-        private IReadOnlyCollection<DurableEntityStatus> GenerateEntityStatusCollection(IEnumerable<DurableOrchestrationStatus> orchestrationStatuses)
-        {
-            var collection = new List<DurableEntityStatus>();
-            foreach (DurableOrchestrationStatus orchestrationStatus in orchestrationStatuses)
-            {
-                collection.Add(new DurableEntityStatus(orchestrationStatus));
-            }
-
-            return collection;
-        }
     }
 }

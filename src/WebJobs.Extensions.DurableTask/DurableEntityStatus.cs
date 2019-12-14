@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public EntityId EntityId { get; set; }
 
         /// <summary>
-        /// Gets the time of the last operation of the entity instance.
+        /// Gets the time of the last operation processed by the entity instance.
         /// </summary>
         /// <value>
         /// The last operation time in UTC.

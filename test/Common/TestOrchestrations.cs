@@ -646,21 +646,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<string> EntityId_SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            // construct entity id from entity name and a supplied GUID
             var entity = ctx.GetInput<EntityId>();
 
-            // signal and call (both of these will be delivered close together)
             ctx.SignalEntity(entity, "set", "333");
 
             var result = await ctx.CallEntityAsync<string>(entity, "get");
-
-            if (result != "333")
-            {
-                return $"fail: wrong entity state: expected 333, got {result}";
-            }
-
-            // make another call to see if the state survives replay
-            result = await ctx.CallEntityAsync<string>(entity, "get");
 
             if (result != "333")
             {

@@ -62,8 +62,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string InstanceIdPrefix { get; set; }
 
         /// <summary>
-        /// If true, the query will get the input of the entity.
+        /// Determines whether the query will include the input of the orchestration.
         /// </summary>
-        public bool FetchInput { get; set; } = true;
+        public bool FetchState { get; set; } = false;
     }
 }
