@@ -215,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             return await this.HandleGetEntityRequestAsync(request, entityId);
                         }
-                        else if (request.Method == HttpMethod.Post)
+                        else if (request.Method == HttpMethod.Post || request.Method == HttpMethod.Delete)
                         {
                             return await this.HandlePostEntityOperationRequestAsync(request, entityId);
                         }
@@ -702,7 +702,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableEntityClient client = this.GetClient(request);
 
-            string operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            string operationName;
+
+            if (request.Method == HttpMethod.Delete)
+            {
+                operationName = "delete";
+            }
+            else
+            {
+                operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            }
 
             if (request.Content == null || request.Content.Headers.ContentLength == 0)
             {
