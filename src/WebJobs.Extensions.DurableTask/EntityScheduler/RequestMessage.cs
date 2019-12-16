@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return JsonConvert.DeserializeObject<T>(this.Input);
+                return this.dataConverter.MessageConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return JsonConvert.DeserializeObject(this.Input, inputType);
+                return this.dataConverter.MessageConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {
