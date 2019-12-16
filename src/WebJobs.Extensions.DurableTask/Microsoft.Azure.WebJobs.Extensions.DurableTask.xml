@@ -26,7 +26,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetAllOrchestrationStatesWithFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,Newtonsoft.Json.JsonSerializerSettings)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.PurgeInstanceHistoryByInstanceId(System.String)">
@@ -475,24 +475,11 @@
             <param name="operationName">The name of the operation.</param>
             <returns>A task representing the completion of the operation on the entity.</returns>
         </member>
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask-netstandard2.0.xml
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IOrchestrationServiceFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.ISerializerSettingsFactory)">
-=======
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient,System.Net.Http.HttpRequestMessage,System.String)">
->>>>>>> dev:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
             <summary>
             Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
             or contains the payload containing the output of the completed orchestration.
             </summary>
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask-netstandard2.0.xml
-            <param name="options">The configuration options for this extension.</param>
-            <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
-            <param name="nameResolver">The name resolver to use for looking up application settings.</param>
-            <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
-            <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
-            <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
-            <param name="serializerSettingsFactory"></param>
-=======
             <remarks>
             If the orchestration instance completes within the default 10 second timeout, then the HTTP response payload will
             contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
@@ -503,7 +490,6 @@
             <param name="request">The HTTP request that triggered the current function.</param>
             <param name="instanceId">The unique ID of the instance to check.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
->>>>>>> dev:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient,Microsoft.AspNetCore.Http.HttpRequest,System.String)">
             <summary>
@@ -1193,22 +1179,7 @@
             The activity function failed with an unhandled exception.
             </exception>
         </member>
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask-netstandard2.0.xml
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ISerializerSettingsFactory">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ISerializerSettingsFactory.CreateJsonSerializerSettings">
-            <summary>
-            
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
-=======
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync``1(System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions,System.String,System.Object)">
->>>>>>> dev:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
             </summary>
@@ -1561,11 +1532,12 @@
             <param name="instanceId">The instance id for the instance history to purge.</param>
             <returns>The number of instances purged.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,Newtonsoft.Json.JsonSerializerSettings)">
             <summary>
             Retrieves the state for a serialized entity.
             </summary>
             <param name="entityId">Entity id to fetch state for.</param>
+            <param name="serializierSettings">JsonSerializerSettings for custom deserialization.</param>
             <returns>State for the entity.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RewindAsync(System.String,System.String)">
@@ -1792,21 +1764,7 @@
             The last-updated time in UTC.
             </value>
         </member>
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask-netstandard2.0.xml
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxOrchestrationActions">
-            <summary>
-            Gets or sets the maximum number of orchestration actions. The default value is 100,000.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.OverridableExistingInstanceStates">
-            <summary>
-             States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EntityMessageReorderWindowInMinutes">
-=======
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationStatus.Input">
->>>>>>> dev:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
             <summary>
             Gets the input of the orchestrator function instance.
             </summary>
@@ -1859,7 +1817,7 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -1869,6 +1827,8 @@
             <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
             <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
+            <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
+            <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -2597,6 +2557,17 @@
             </summary>
             <returns>Returns an HttpClientHandler.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory">
+            <summary>
+            Interface defining methods to build instances of <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error serialization.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory.CreateJsonSerializerSettings">
+            <summary>
+            Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for error serialization.
+            </summary>
+            <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for error serialization.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">
             <summary>
             Interface defining methods to life cycle notifications.
@@ -2643,6 +2614,17 @@
             <param name="instanceId">The ID to use for the orchestration instance.</param>
             <param name="reason">Additional data associated with the tracking event.</param>
             <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory">
+            <summary>
+            Interface defining methods to build instances of <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message serialization.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory.CreateJsonSerializerSettings">
+            <summary>
+            Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for message serialization.
+            </summary>
+            <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
@@ -3285,29 +3267,7 @@
             instance is in a terminated, failed, or completed state.
             </summary>
         </member>
-<<<<<<< HEAD:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask-netstandard2.0.xml
-        <member name="T:Microsoft.Azure.WebJobs.OverridableStates">
-            <summary>
-            Represents options for different states that an existing orchestrator can be in to be able to be overwritten by
-            an attempt to start a new instance with the same instance Id.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.AnyState">
-            <summary>
-            Option to start a new orchestrator instance with an existing instnace Id when the existing
-            instance is in any state.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.NonRunningStates">
-            <summary>
-            Option to only start a new orchestrator instance with an existing instance Id when the existing
-            instance is in a terminated, failed, or completed state.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.PurgeHistoryResult">
-=======
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult">
->>>>>>> dev:src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
             <summary>
             Class to hold statistics about this execution of purge history.
             </summary>
