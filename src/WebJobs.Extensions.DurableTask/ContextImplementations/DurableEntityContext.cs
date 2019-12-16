@@ -459,7 +459,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     Target = target,
                     EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
-                    EventContent = new ResponseMessage()
+                    EventContent = new ResponseMessage(this.dataConverter)
                     {
                         Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                     },

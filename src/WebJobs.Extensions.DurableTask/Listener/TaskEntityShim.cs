@@ -336,7 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!request.IsSignal)
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
-                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializerr);
+                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
                 this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
             }
         }
