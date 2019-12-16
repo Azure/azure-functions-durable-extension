@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return new OrchestrationInstanceStatusQueryCondition
             {
-                RuntimeStatus = condition.RuntimeStatus.Select(
+                RuntimeStatus = condition.RuntimeStatus?.Select(
                     p => (OrchestrationStatus)Enum.Parse(typeof(OrchestrationStatus), p.ToString())),
                 CreatedTimeFrom = condition.CreatedTimeFrom,
                 CreatedTimeTo = condition.CreatedTimeTo,

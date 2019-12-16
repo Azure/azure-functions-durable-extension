@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static TemplateMatcher GetEntityRoute()
         {
             var defaultRouteValues = RouteValueDictionaryFromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(EntityKeyRouteParameter, string.Empty) });
-            return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
+            return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}?}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
         }
 
         // Can't use RouteValueDictionary.FromArray() due to it only being available in the version we use in Functions V2.
@@ -215,12 +215,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         string entityName = (string)routeValues[EntityNameRouteParameter];
                         string entityKey = (string)routeValues[EntityKeyRouteParameter];
-                        EntityId entityId = new EntityId(entityName, entityKey);
 
                         if (request.Method == HttpMethod.Get)
                         {
                             if (!string.IsNullOrEmpty(entityKey))
                             {
+                                EntityId entityId = new EntityId(entityName, entityKey);
                                 return await this.HandleGetEntityRequestAsync(request, entityId);
                             }
                             else
@@ -230,6 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                         else if (request.Method == HttpMethod.Post)
                         {
+                            EntityId entityId = new EntityId(entityName, entityKey);
                             return await this.HandlePostEntityOperationRequestAsync(request, entityId);
                         }
                         else
@@ -334,39 +335,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
+            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
+            var runtimeStatus = GetIEnumerableQueryParameterValue<OrchestrationRuntimeStatus>(queryNameValuePairs, RuntimeStatusParameter);
+            var pageSize = GetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter);
 
-            var condition = new OrchestrationStatusQueryCondition();
-
-            if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
-            {
-                condition.CreatedTimeFrom = createdTimeFrom;
-            }
-
-            if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, out DateTime createdTimeTo))
-            {
-                condition.CreatedTimeTo = createdTimeTo;
-            }
-
-            if (TryGetIEnumerableQueryParameterValue<OrchestrationRuntimeStatus>(queryNameValuePairs, RuntimeStatusParameter, out IEnumerable<OrchestrationRuntimeStatus> runtimeStatus))
-            {
-                condition.RuntimeStatus = runtimeStatus;
-            }
-
-            if (TryGetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter, out int pageSize))
-            {
-                condition.PageSize = pageSize;
-            }
-
+            var continuationToken = "";
             if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
             {
-                condition.ContinuationToken = headerValues.FirstOrDefault();
+                continuationToken = headerValues.FirstOrDefault();
             }
 
             IList<DurableOrchestrationStatus> statusForAllInstances;
+            var nextContinuationToken = "";
 
-            var context = await client.GetStatusAsync(condition, CancellationToken.None);
-            statusForAllInstances = context.DurableOrchestrationState.ToList();
-            var nextContinuationToken = context.ContinuationToken;
+            if (pageSize > 0)
+            {
+                var condition = new OrchestrationStatusQueryCondition()
+                {
+                    CreatedTimeFrom = createdTimeFrom,
+                    CreatedTimeTo = createdTimeTo,
+                    RuntimeStatus = runtimeStatus,
+                    PageSize = pageSize,
+                    ContinuationToken = continuationToken,
+                };
+                var context = await client.GetStatusAsync(condition, CancellationToken.None);
+                statusForAllInstances = context.DurableOrchestrationState.ToList();
+                nextContinuationToken = context.ContinuationToken;
+            }
+            else
+            {
+                statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
+            }
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
@@ -378,6 +378,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
             return response;
+        }
+
+        private static IEnumerable<T> GetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+            where T : struct
+        {
+            var results = new List<T>();
+            string[] parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
+
+            foreach (string value in parameters.SelectMany(x => x.Split(',')))
+            {
+                if (Enum.TryParse(value, out T result))
+                {
+                    results.Add(result);
+                }
+            }
+
+            return results;
+        }
+
+        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
+        {
+            string value = queryStringNameValueCollection[queryParameterName];
+            return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
+        }
+
+        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, bool defaultValue)
+        {
+            string value = queryStringNameValueCollection[queryParameterName];
+            return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
+        }
+
+        private static int GetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        {
+            string value = queryStringNameValueCollection[queryParameterName];
+            return int.TryParse(value, out int intValue) ? intValue : 0;
         }
 
         private async Task<HttpResponseMessage> HandleListEntitiesRequestAsync(
@@ -406,7 +441,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter, out bool fetchInput))
             {
-                query.FetchInput = fetchInput;
+                query.FetchState = fetchInput;
             }
 
             if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
@@ -415,10 +450,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var result = await client.ListEntitiesAsync(query, CancellationToken.None);
-            var statusForAllInstances = result.Entities.ToList();
+            var entities = result.Entities.ToList();
             var nextContinuationToken = result.ContinuationToken;
 
-            var response = request.CreateResponse(HttpStatusCode.OK, result);
+            var response = request.CreateResponse(HttpStatusCode.OK, entities);
 
             response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
             return response;

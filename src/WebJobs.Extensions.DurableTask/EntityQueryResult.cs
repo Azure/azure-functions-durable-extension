@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal EntityQueryResult(OrchestrationStatusQueryResult orchestrationResult)
         {
-            this.Entities = (IReadOnlyCollection<DurableEntityStatus>)orchestrationResult.DurableOrchestrationState.Select(status => new DurableEntityStatus(status));
+            this.Entities = orchestrationResult.DurableOrchestrationState.Select(status => new DurableEntityStatus(status));
             this.ContinuationToken = orchestrationResult.ContinuationToken;
         }
 
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a collection of statuses of entity instances matching the query description.
         /// </summary>
         /// <value>A collection of entity instance status values.</value>
-        public IReadOnlyCollection<DurableEntityStatus> Entities { get; set; }
+        public IEnumerable<DurableEntityStatus> Entities { get; set; }
 
         /// <summary>
         /// Gets or sets a token that can be used to resume the query with data not already returned by this query.

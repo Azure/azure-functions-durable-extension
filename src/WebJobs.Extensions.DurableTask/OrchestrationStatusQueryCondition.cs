@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.PageSize = entityQuery.PageSize;
             this.ContinuationToken = entityQuery.ContinuationToken;
             this.InstanceIdPrefix = entityQuery.EntityName;
-            this.FetchInput = entityQuery.FetchInput;
+            this.FetchInput = entityQuery.FetchState;
         }
 
         /// <summary>
@@ -64,6 +64,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Determines whether the query will include the input of the orchestration.
         /// </summary>
-        public bool FetchState { get; set; } = false;
+        public bool FetchInput { get; set; } = false;
     }
 }

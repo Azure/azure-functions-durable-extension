@@ -3652,10 +3652,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EntityName = "aaab",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
-                FetchInput = fetchInput,
+                FetchState = fetchInput,
             };
 
-            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query);
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("aaab", "foo"),
+                new EntityId("aaabac", "bar"),
+                new EntityId("aaabac", "baz"),
+                new EntityId("aaac", "foo"),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_FetchInput), storageProvider, query, entityIds);
 
             Assert.Equal(3, result.Entities.Count());
 
@@ -3685,7 +3693,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 PageSize = 2,
             };
 
-            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query);
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("aaab", "foo"),
+                new EntityId("aaabac", "bar"),
+                new EntityId("aaabac", "baz"),
+                new EntityId("aaac", "foo"),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query, entityIds);
 
             Assert.Equal(2, result.Entities.Count());
         }
@@ -3703,14 +3719,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EntityName = "noResult",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
+                FetchState = fetchInput,
             };
 
-            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query);
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("aaab", "foo"),
+                new EntityId("aaabac", "bar"),
+                new EntityId("aaabac", "baz"),
+                new EntityId("aaac", "foo"),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query, entityIds);
 
             Assert.Empty(result.Entities);
         }
 
-        private async Task<EntityQueryResult> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query)
+        private async Task<EntityQueryResult> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query, IList<EntityId> entitiyIds)
         {
             using (JobHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -3720,22 +3745,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var id1 = new EntityId("aaab", "foo");
-                var id2 = new EntityId("aaab", "bar");
-                var id3 = new EntityId("aaab", "baz");
-                var idDifferentName = new EntityId("aaac", "foo");
+                TestDurableClient client = null;
 
-                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id1, this.output);
-                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id2, this.output);
-                var client3 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id3, this.output);
-                var client4 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), idDifferentName, this.output);
-                
-                await client1.WaitForCompletionAsync(this.output);
-                await client2.WaitForCompletionAsync(this.output);
-                await client3.WaitForCompletionAsync(this.output);
-                await client4.WaitForCompletionAsync(this.output);
-                
-                var result = await client1.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                foreach (EntityId id in entitiyIds)
+                {
+                    client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id, this.output);
+
+                    await client.WaitForCompletionAsync(this.output);
+                }
+
+                var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
 
                 await host.StopAsync();
 

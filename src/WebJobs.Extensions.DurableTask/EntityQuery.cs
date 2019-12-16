@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ContinuationToken { get; set; }
 
         /// <summary>
-        /// Determines whether the query will include the input of the entity.
+        /// Determines whether the query will include the state of the entity.
         /// </summary>
         public bool FetchState { get; set; } = false;
     }

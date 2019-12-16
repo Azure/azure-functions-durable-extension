@@ -22,6 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class HttpApiHandlerTests
     {
+        private const string EmptyEntityKeySymbol = "$";
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
@@ -876,11 +878,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string key = hasKey ? Guid.NewGuid().ToString("N") : "$";
             var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
 
-            uriBuilder.Path += $"/entities/{entity}";
+            uriBuilder.Path += $"/entities/{entity}/{key}";
 
-            if (!string.IsNullOrEmpty(key))
+            if (key.Equals(EmptyEntityKeySymbol))
             {
-                uriBuilder.Path += $"/{key}";
+                key = "";
             }
 
             var testRequest = new HttpRequestMessage
@@ -919,65 +921,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task Entities_Query_Calls_ListEntitiesAsync(bool hasName)
         {
-            string entityName = hasName ? Guid.NewGuid().ToString("N") : "";
-            var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            // Build mock
+            string entityName = Guid.NewGuid().ToString("N");
 
-            uriBuilder.Path += $"/entities/{entityName}";
-
-            var testRequest = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = uriBuilder.Uri,
-            };
-
-            var list = (IReadOnlyCollection<DurableEntityStatus>)new List<DurableEntityStatus>
+            var mockList = (IReadOnlyCollection<DurableEntityStatus>)new List<DurableEntityStatus>
             {
                 new DurableEntityStatus
                 {
-                    EntityId = new EntityId("DoThis", "one"),
+                    EntityId = new EntityId(entityName, "one"),
                     LastOperationTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
                     State = null,
                 },
                 new DurableEntityStatus
                 {
-                    EntityId = new EntityId("DoThat", "two"),
+                    EntityId = new EntityId(entityName, "two"),
                     LastOperationTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
                     State = null,
                 },
             };
 
-            var result = new EntityQueryResult() { Entities = list, ContinuationToken = null };
+            var mockResult = new EntityQueryResult() { Entities = mockList, ContinuationToken = null };
             var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
 
             clientMock
                     .Setup(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()))
-                    .Returns(Task.FromResult(result));
+                    .Returns(Task.FromResult(mockResult));
 
-            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            // Build Uri
+            var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+
+            if (hasName)
+            {
+                uriBuilder.Path += $"/entities/{entityName}";
+            }
+            else
+            {
+                uriBuilder.Path += $"/entities/";
+            }
 
             var lastOperationTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
             var lastOperationTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
 
-            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
-            getStatusRequestUriBuilder.Path += $"/Entities/";
-            getStatusRequestUriBuilder.Query = $"lastOperationTimeFrom={WebUtility.UrlEncode(lastOperationTimeFrom.ToString())}&lastOperationTimeTo={WebUtility.UrlEncode(lastOperationTimeTo.ToString())}&fetchInput=false&top=100";
+            uriBuilder.Query = $"lastOperationTimeFrom={WebUtility.UrlEncode(lastOperationTimeFrom.ToString())}&lastOperationTimeTo={WebUtility.UrlEncode(lastOperationTimeTo.ToString())}&fetchInput=false&top=100";
 
             var requestMessage = new HttpRequestMessage
             {
                 Method = HttpMethod.Get,
-                RequestUri = getStatusRequestUriBuilder.Uri,
+                RequestUri = uriBuilder.Uri,
             };
+
             requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
 
+            // Test HttpApiHandler response
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
             var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
 
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<DurableEntityStatus>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()));
-            Assert.Equal("DoThis", actual[0].EntityId.EntityName);
+            Assert.Equal(entityName, actual[0].EntityId.EntityName);
             Assert.Equal("one", actual[0].EntityId.EntityKey);
-            Assert.Equal("DoThat", actual[1].EntityId.EntityName);
-            Assert.Equal("02", actual[1].EntityId.EntityKey);
+            Assert.Equal(entityName, actual[1].EntityId.EntityName);
+            Assert.Equal("two", actual[1].EntityId.EntityKey);
         }
 
         [Theory]
