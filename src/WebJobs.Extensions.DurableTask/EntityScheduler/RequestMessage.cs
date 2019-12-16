@@ -51,6 +51,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ParentInstanceId { get; set; }
 
         /// <summary>
+        /// Optionally, a scheduled time at which to start the operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "due", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public DateTime? ScheduledTime { get; set; }
+
+        /// <summary>
         /// A timestamp for this request.
         /// Used for duplicate filtering and in-order delivery.
         /// </summary>

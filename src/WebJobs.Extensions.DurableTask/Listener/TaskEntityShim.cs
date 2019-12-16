@@ -247,17 +247,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // send lock request to next entity in the lock set
                 var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(request.LockSet[request.Position]) };
-                this.context.SendLockMessage(target, "op", request);
+                this.context.SendLockRequestMessage(target, request);
             }
             else
             {
                 // send lock acquisition completed response back to originating orchestration instance
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
-                var message = new ResponseMessage(this.dataConverter)
-                {
-                    Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
-                };
-                this.context.SendLockMessage(target, request.Id.ToString(), message);
+                this.context.SendLockResponseMessage(target, request.Id);
             }
         }
 
@@ -340,9 +336,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!request.IsSignal)
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
-                var guid = request.Id.ToString();
-                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
-                this.context.SendResponseMessage(target, guid, jresponse, !response.IsException);
+                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializerr);
+                this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
             }
         }
 
@@ -419,8 +414,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Result = result.Result,
                         ExceptionType = result.IsError ? "Error" : null,
                     };
-                    var guid = request.Id.ToString();
-                    this.context.SendResponseMessage(target, guid, responseMessage, !result.IsError);
+                    this.context.SendResponseMessage(target, request.Id, responseMessage, !result.IsError);
                 }
             }
 
@@ -439,7 +433,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     InstanceId = EntityId.GetSchedulerIdFromEntityId(signal.Target),
                 };
-                this.context.SendOperationMessage(target, "op", request);
+                this.context.SendOperationMessage(target, request);
             }
         }
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -484,13 +485,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             entityShim.NumberEventsToReceive++;
 
-                            if (eventRaisedEvent.Name == "op")
+                            if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
                                 var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
 
-                                // run this through the message sorter to help with reordering and duplicate filtering
-                                var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+                                IEnumerable<RequestMessage> deliverNow;
+
+                                if (requestMessage.ScheduledTime.HasValue)
+                                {
+                                    // messages with a scheduled time are always delivered immediately
+                                    deliverNow = new RequestMessage[] { requestMessage };
+                                }
+                                else
+                                {
+                                    // run this through the message sorter to help with reordering and duplicate filtering
+                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+                                }
 
                                 foreach (var message in deliverNow)
                                 {

@@ -37,7 +37,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (method == null)
             {
-                throw new InvalidOperationException($"No operation named '{context.OperationName}' was found.");
+                if (string.Equals("delete", context.OperationName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    Entity.Current.DeleteState();
+                    return;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"No operation named '{context.OperationName}' was found.");
+                }
             }
 
             // check that the number of arguments is zero or one
