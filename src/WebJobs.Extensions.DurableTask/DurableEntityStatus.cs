@@ -20,8 +20,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(orchestrationStatus.InstanceId);
             this.LastOperationTime = orchestrationStatus.LastUpdatedTime;
 
-            // TODO: This should not be hardcoded
-            this.State = orchestrationStatus?.Input["state"] ?? JValue.CreateNull();
+            if (orchestrationStatus?.Input is JObject input)
+            {
+                SchedulerState state = input.ToObject<SchedulerState>();
+                this.State = state.EntityState;
+            }
         }
 
         /// <summary>
