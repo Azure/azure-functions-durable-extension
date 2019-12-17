@@ -279,7 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.Options.Notifications.EventGrid != null
                 && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
             {
-                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
+                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper, this.DataConverter);
             }
 
             // Fallback: Disable Notification
@@ -488,7 +488,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
-                                var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
+                                var requestMessage = this.DataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
 
                                 IEnumerable<RequestMessage> deliverNow;
 
@@ -520,7 +520,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             else
                             {
                                 // we are receiving a lock release
-                                var message = JsonConvert.DeserializeObject<ReleaseMessage>(eventRaisedEvent.Input);
+                                var message = this.DataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
 
                                 if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {

@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string hubName;
         private readonly string storageConnectionString;
         private readonly EndToEndTraceHelper traceHelper;
+        private readonly MessagePayloadDataConverter dataConverter;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
 
         private DisconnectedPerformanceMonitor performanceMonitor;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string storageConnectionString,
             EndToEndTraceHelper traceHelper,
+            MessagePayloadDataConverter dataConverter,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
             this.functionId = functionId;
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.storageConnectionString = storageConnectionString;
             this.performanceMonitor = performanceMonitor;
             this.traceHelper = traceHelper;
+            this.dataConverter = dataConverter;
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
         }
 
@@ -92,8 +95,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (heartbeat != null)
             {
                 metrics.PartitionCount = heartbeat.PartitionCount;
-                metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
-                metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
+                metrics.ControlQueueLengths = this.dataConverter.Serialize(heartbeat.ControlQueueLengths);
+                metrics.ControlQueueLatencies = this.dataConverter.Serialize(heartbeat.ControlQueueLatencies);
                 metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;
                 if (heartbeat.WorkItemQueueLatency != null)
                 {
@@ -141,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    heartbeats[i].ControlQueueLengths = JsonConvert.DeserializeObject<IReadOnlyList<int>>(metrics[i].ControlQueueLengths);
+                    heartbeats[i].ControlQueueLengths = this.dataConverter.Deserialize<IReadOnlyList<int>>(metrics[i].ControlQueueLengths);
                 }
 
                 if (metrics[i].ControlQueueLatencies == null)
@@ -150,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    heartbeats[i].ControlQueueLatencies = JsonConvert.DeserializeObject<IReadOnlyList<TimeSpan>>(metrics[i].ControlQueueLatencies);
+                    heartbeats[i].ControlQueueLatencies = this.dataConverter.Deserialize<IReadOnlyList<TimeSpan>>(metrics[i].ControlQueueLatencies);
                 }
             }
 

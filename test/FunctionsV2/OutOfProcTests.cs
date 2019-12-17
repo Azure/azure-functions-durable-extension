@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Callback<DurableHttpRequest>(req => request = req)
                 .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
 
-            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object, new MessagePayloadDataConverter(new MessageSerializerSettingsFactory(), new ErrorSerializerSettingsFactory()));
 
             var executionJson = @"
 {
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Callback<DurableHttpRequest>(req => request = req)
                 .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
 
-            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object, new MessagePayloadDataConverter(new MessageSerializerSettingsFactory(), new ErrorSerializerSettingsFactory()));
 
             var executionJson = @"
 {

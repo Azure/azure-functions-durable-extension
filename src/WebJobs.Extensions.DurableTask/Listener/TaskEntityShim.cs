@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     // a previous incarnation of this instance called continueAsNew
-                    this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, this.dataConverter.MessageSettings);
+                    this.context.State = this.dataConverter.Deserialize<SchedulerState>(serializedInput);
                 }
                 catch (Exception e)
                 {

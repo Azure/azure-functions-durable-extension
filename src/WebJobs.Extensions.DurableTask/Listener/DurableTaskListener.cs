@@ -57,7 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                                                                         this.functionName,
                                                                                         this.config.Options.HubName,
                                                                                         this.storageConnectionString,
-                                                                                        this.config.TraceHelper));
+                                                                                        this.config.TraceHelper,
+                                                                                        this.config.DataConverter));
 #endif
         }
 
