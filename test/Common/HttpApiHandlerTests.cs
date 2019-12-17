@@ -916,41 +916,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task Entities_Query_Calls_ListEntitiesAsync(bool hasName)
+        public async Task Entities_Query_Calls_ListEntitiesAsync(bool useNameFilter, bool fetchState, bool useContinuationToken)
         {
             // Build mock
             string entityName = Guid.NewGuid().ToString("N");
 
-            var mockList = (IReadOnlyCollection<DurableEntityStatus>)new List<DurableEntityStatus>
+            var mockList = new List<DurableEntityStatus>
             {
                 new DurableEntityStatus
                 {
                     EntityId = new EntityId(entityName, "one"),
                     LastOperationTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
-                    State = null,
+                    State = 1,
                 },
                 new DurableEntityStatus
                 {
                     EntityId = new EntityId(entityName, "two"),
                     LastOperationTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
-                    State = null,
+                    State = 2,
                 },
             };
 
-            var mockResult = new EntityQueryResult() { Entities = mockList, ContinuationToken = null };
+            if (!fetchState)
+            {
+                mockList.ForEach(status => status.State = null);
+            }
+
+            var lastOperationTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
+            var lastOperationTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
+            var continuationToken = useContinuationToken ? Guid.NewGuid().ToString("N") : null;
+            var pageSize = 2;
+
+            var mockResult = new EntityQueryResult() { Entities = mockList, ContinuationToken = continuationToken };
             var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
 
             clientMock
-                    .Setup(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()))
-                    .Returns(Task.FromResult(mockResult));
+                .Setup(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()))
+                .Callback<EntityQuery, CancellationToken>((query, cancellationToken) =>
+                {
+                    // Ensure all query string parameters were correctly parsed
+                    Assert.Equal(lastOperationTimeFrom, query.LastOperationFrom);
+                    Assert.Equal(lastOperationTimeTo, query.LastOperationTo);
+                    Assert.Equal(useNameFilter ? entityName : null, query.EntityName);
+                    Assert.Equal(fetchState, query.FetchState);
+                    Assert.Equal(continuationToken, query.ContinuationToken);
+                    Assert.Equal(useContinuationToken ? continuationToken : null, query.ContinuationToken);
+                    Assert.Equal(pageSize, query.PageSize);
+                })
+                .Returns(Task.FromResult(mockResult));
 
             // Build Uri
             var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
 
-            if (hasName)
+            if (useNameFilter)
             {
                 uriBuilder.Path += $"/entities/{entityName}";
             }
@@ -959,10 +986,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 uriBuilder.Path += $"/entities/";
             }
 
-            var lastOperationTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
-            var lastOperationTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
-
-            uriBuilder.Query = $"lastOperationTimeFrom={WebUtility.UrlEncode(lastOperationTimeFrom.ToString())}&lastOperationTimeTo={WebUtility.UrlEncode(lastOperationTimeTo.ToString())}&fetchInput=false&top=100";
+            uriBuilder.Query += $"&lastOperationTimeFrom={WebUtility.UrlEncode(lastOperationTimeFrom.ToString("s"))}";
+            uriBuilder.Query += $"&lastOperationTimeTo={WebUtility.UrlEncode(lastOperationTimeTo.ToString("s"))}";
+            uriBuilder.Query += $"&fetchState={fetchState}";
+            uriBuilder.Query += $"&top={pageSize}";
 
             var requestMessage = new HttpRequestMessage
             {
@@ -970,19 +997,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 RequestUri = uriBuilder.Uri,
             };
 
-            requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
+            if (useContinuationToken)
+            {
+                requestMessage.Headers.Add("x-ms-continuation-token", continuationToken);
+            }
 
             // Test HttpApiHandler response
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
-
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
-            var actual = JsonConvert.DeserializeObject<IList<DurableEntityStatus>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()));
+
+            var actual = JsonConvert.DeserializeObject<IList<DurableEntityStatus>>(await responseMessage.Content.ReadAsStringAsync());
+            Assert.Equal(mockList.Count, actual.Count);
+
             Assert.Equal(entityName, actual[0].EntityId.EntityName);
             Assert.Equal("one", actual[0].EntityId.EntityKey);
+
             Assert.Equal(entityName, actual[1].EntityId.EntityName);
             Assert.Equal("two", actual[1].EntityId.EntityKey);
+
+            if (fetchState)
+            {
+                Assert.Equal(1, (int)actual[0].State);
+                Assert.Equal(2, (int)actual[1].State);
+            }
+            else
+            {
+                Assert.Equal(JTokenType.Null, actual[0].State.Type);
+                Assert.Equal(JTokenType.Null, actual[1].State.Type);
+            }
         }
 
         [Theory]

@@ -3642,37 +3642,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableEntity_ListEntitiesAsync_FetchInput(bool fetchInput, string storageProvider)
+        public async Task DurableEntity_ListEntitiesAsync_FetchState(bool fetchState, string storageProvider)
         {
             var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
             var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
 
             var query = new EntityQuery
             {
-                EntityName = "aaab",
+                EntityName = "StringStore",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
-                FetchState = fetchInput,
+                FetchState = fetchState,
             };
 
             List<EntityId> entityIds = new List<EntityId>()
             {
-                new EntityId("aaab", "foo"),
-                new EntityId("aaabac", "bar"),
-                new EntityId("aaabac", "baz"),
-                new EntityId("aaac", "foo"),
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore", "bar"),
+                new EntityId("StringStore", "baz"),
+                new EntityId("StringStore2", "foo"),
             };
 
-            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_FetchInput), storageProvider, query, entityIds);
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_FetchState), storageProvider, query, entityIds);
 
             Assert.Equal(3, result.Entities.Count());
 
-            if (fetchInput)
+            if (fetchState)
             {
                 Assert.NotNull(result.Entities.First().State);
             }
             else
             {
+                // TODO: This part is still failing - need to investigate
                 Assert.Null(result.Entities.First().State);
             }
         }
@@ -3687,7 +3688,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var query = new EntityQuery
             {
-                EntityName = "aaab",
+                EntityName = "StringStore",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
                 PageSize = 2,
@@ -3695,13 +3696,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             List<EntityId> entityIds = new List<EntityId>()
             {
-                new EntityId("aaab", "foo"),
-                new EntityId("aaabac", "bar"),
-                new EntityId("aaabac", "baz"),
-                new EntityId("aaac", "foo"),
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore", "bar"),
+                new EntityId("StringStore", "baz"),
+                new EntityId("StringStore2", "foo"),
             };
 
-            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query, entityIds);
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_Paging), storageProvider, query, entityIds);
 
             Assert.Equal(2, result.Entities.Count());
         }
@@ -3709,7 +3710,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableEntity_ListEntitiesAsync_NoResults(bool fetchInput, string storageProvider)
+        public async Task DurableEntity_ListEntitiesAsync_NoResults(bool fetchState, string storageProvider)
         {
             var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
             var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
@@ -3719,15 +3720,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EntityName = "noResult",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
-                FetchState = fetchInput,
+                FetchState = fetchState,
             };
 
             List<EntityId> entityIds = new List<EntityId>()
             {
-                new EntityId("aaab", "foo"),
-                new EntityId("aaabac", "bar"),
-                new EntityId("aaabac", "baz"),
-                new EntityId("aaac", "foo"),
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore2", "bar"),
+                new EntityId("StringStore2", "baz"),
+                new EntityId("StringStore2", "foo"),
             };
 
             var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query, entityIds);

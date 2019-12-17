@@ -22,8 +22,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CreatedTimeTo = entityQuery.LastOperationTo;
             this.PageSize = entityQuery.PageSize;
             this.ContinuationToken = entityQuery.ContinuationToken;
-            this.InstanceIdPrefix = entityQuery.EntityName;
             this.FetchInput = entityQuery.FetchState;
+
+            if (!string.IsNullOrEmpty(entityQuery.EntityName))
+            {
+                this.InstanceIdPrefix = EntityId.GetSchedulerIdPrefixFromEntityName(entityQuery.EntityName);
+            }
         }
 
         /// <summary>

@@ -43,15 +43,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
-        private const string ShowInputParameter = "showInput";
         private const string FetchInputParameter = "fetchInput";
+        private const string FetchStateParameter = "fetchState";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
         private const string PageSizeParameter = "top";
         private const string ReturnInternalServerErrorOnFailure = "returnInternalServerErrorOnFailure";
         private const string LastOperationTimeFrom = "lastOperationTimeFrom";
-        private const string LastOperationTimeTo = " lastOperationTimeTo";
+        private const string LastOperationTimeTo = "lastOperationTimeTo";
 
         private const string EmptyEntityKeySymbol = "$";
 
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request, string entityName)
         {
             IDurableEntityClient client = this.GetClient(request);
-            var queryNameValuePairs = request.GetQueryNameValuePairs();
+            NameValueCollection queryNameValuePairs = request.GetQueryNameValuePairs();
 
             var query = new EntityQuery();
             query.EntityName = entityName;
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, LastOperationTimeTo, out DateTime lastOperationTimeTo))
             {
-                query.LastOperationFrom = lastOperationTimeTo;
+                query.LastOperationTo = lastOperationTimeTo;
             }
 
             if (TryGetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter, out int pageSize))
@@ -439,23 +439,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 query.PageSize = pageSize;
             }
 
-            if (TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter, out bool fetchInput))
+            if (TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchStateParameter, out bool fetchState))
             {
-                query.FetchState = fetchInput;
+                query.FetchState = fetchState;
             }
 
-            if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
+            if (request.Headers.TryGetValues("x-ms-continuation-token", out IEnumerable<string> headerValues))
             {
                 query.ContinuationToken = headerValues.FirstOrDefault();
             }
 
-            var result = await client.ListEntitiesAsync(query, CancellationToken.None);
-            var entities = result.Entities.ToList();
-            var nextContinuationToken = result.ContinuationToken;
+            EntityQueryResult result = await client.ListEntitiesAsync(query, CancellationToken.None);
+            HttpResponseMessage response = request.CreateResponse(HttpStatusCode.OK, result.Entities);
 
-            var response = request.CreateResponse(HttpStatusCode.OK, entities);
-
-            response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
+            response.Headers.Add("x-ms-continuation-token", result.ContinuationToken);
             return response;
         }
 
