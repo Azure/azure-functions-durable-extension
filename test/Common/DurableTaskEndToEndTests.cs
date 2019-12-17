@@ -3953,8 +3953,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DefaultIMessageSerializerSettingsFactory),
-                true,
-                serializerSettings: new DefaultEnumSettings()))
+                true))
             {
                 await host.StartAsync();
 
@@ -4230,20 +4229,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 serializer.Converters.Add(new StringEnumConverter());
-
-                return serializer;
-            }
-        }
-
-        // JsonSerializerSettings without StringEnumConverter
-        private class DefaultEnumSettings : IMessageSerializerSettingsFactory
-        {
-            public JsonSerializerSettings CreateJsonSerializerSettings()
-            {
-                var serializer = new JsonSerializerSettings()
-                {
-                    TypeNameHandling = TypeNameHandling.None,
-                };
 
                 return serializer;
             }
