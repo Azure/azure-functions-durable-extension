@@ -279,7 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.Options.Notifications.EventGrid != null
                 && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
             {
-                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper, this.DataConverter);
+                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
             }
 
             // Fallback: Disable Notification

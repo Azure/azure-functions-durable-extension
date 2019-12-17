@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskOptions options;
         private readonly EndToEndTraceHelper traceHelper;
-        private readonly MessagePayloadDataConverter dataConverter;
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
@@ -30,12 +29,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public EventGridLifeCycleNotificationHelper(
             DurableTaskOptions options,
             INameResolver nameResolver,
-            EndToEndTraceHelper traceHelper,
-            MessagePayloadDataConverter dataConverter)
+            EndToEndTraceHelper traceHelper)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
-            this.dataConverter = dataConverter;
 
             if (nameResolver == null)
             {
@@ -155,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string reason,
             FunctionState functionState)
         {
-            string json = this.dataConverter.Serialize(eventGridEventArray);
+            string json = JsonConvert.SerializeObject(eventGridEventArray);
             StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
             Stopwatch stopWatch = Stopwatch.StartNew();
 

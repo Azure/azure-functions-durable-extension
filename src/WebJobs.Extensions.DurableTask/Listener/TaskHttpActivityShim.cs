@@ -39,14 +39,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage response = await this.httpClient.SendAsync(requestMessage);
             DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
 
-            return this.config.DataConverter.Serialize(durableHttpResponse);
+            return JsonConvert.SerializeObject(durableHttpResponse);
         }
 
         private async Task<HttpRequestMessage> ReconstructHttpRequestMessage(string serializedRequest)
         {
             // DeserializeObject deserializes into a List and then the first element
             // of that list is the DurableHttpRequest
-            IList<DurableHttpRequest> input = this.config.DataConverter.Deserialize<IList<DurableHttpRequest>>(serializedRequest);
+            IList<DurableHttpRequest> input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(serializedRequest);
             DurableHttpRequest durableHttpRequest = input.First();
 
             string contentType = "";
