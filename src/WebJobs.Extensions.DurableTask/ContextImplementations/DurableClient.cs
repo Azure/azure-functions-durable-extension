@@ -267,7 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
-            var request = new RequestMessage(this.dataConverter)
+            var request = new RequestMessage()
             {
                 ParentInstanceId = null,
                 Id = guid,
@@ -277,9 +277,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (operationInput != null)
             {
-                request.SetInput(operationInput);
+                request.SetInput(operationInput, this.dataConverter);
             }
-          
+
             var jrequest = JToken.FromObject(request, this.dataConverter.MessageSerializer);
             var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
             await client.RaiseEventAsync(instance, eventName, jrequest);

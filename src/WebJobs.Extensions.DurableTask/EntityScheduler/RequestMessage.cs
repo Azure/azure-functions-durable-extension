@@ -12,13 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class RequestMessage
     {
-        private readonly MessagePayloadDataConverter dataConverter;
-
-        public RequestMessage(MessagePayloadDataConverter dataConverter)
-        {
-            this.dataConverter = dataConverter;
-        }
-
         /// <summary>
         /// The name of the operation being called (if this is an operation message) or <c>null</c>
         /// (if this is a lock request).
@@ -84,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;
 
-        public void SetInput(object obj)
+        public void SetInput(object obj, MessagePayloadDataConverter dataConverter)
         {
             try
             {
@@ -94,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = this.dataConverter.MessageConverter.Serialize(obj);
+                    this.Input = dataConverter.MessageConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -103,11 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public T GetInput<T>()
+        public T GetInput<T>(MessagePayloadDataConverter dataConverter)
         {
             try
             {
-                return this.dataConverter.MessageConverter.Deserialize<T>(this.Input);
+                return dataConverter.MessageConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -115,11 +108,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public object GetInput(Type inputType)
+        public object GetInput(Type inputType, MessagePayloadDataConverter dataConverter)
         {
             try
             {
-                return this.dataConverter.MessageConverter.Deserialize(this.Input, inputType);
+                return dataConverter.MessageConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {
