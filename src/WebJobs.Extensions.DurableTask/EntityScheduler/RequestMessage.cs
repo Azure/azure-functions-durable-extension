@@ -12,12 +12,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class RequestMessage
     {
-        private readonly MessagePayloadDataConverter dataConverter;
+        // This no-arg constructor is used when a RequestMessage is deserialized.
+        public RequestMessage() { }
 
         public RequestMessage(MessagePayloadDataConverter dataConverter)
         {
-            this.dataConverter = dataConverter;
+            if (dataConverter == null)
+            {
+                throw new ArgumentNullException(nameof(dataConverter));
+            }
+
+            this.DataConverter = dataConverter;
         }
+
+        /// <summary>
+        /// MessagePayloadDataConverter for serialization.
+        /// </summary>
+        [JsonIgnore]
+        public MessagePayloadDataConverter DataConverter { get; set; }
 
         /// <summary>
         /// The name of the operation being called (if this is an operation message) or <c>null</c>
@@ -94,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = this.dataConverter.MessageConverter.Serialize(obj);
+                    this.Input = this.DataConverter.MessageConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -107,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return this.dataConverter.MessageConverter.Deserialize<T>(this.Input);
+                return this.DataConverter.MessageConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -119,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return this.dataConverter.MessageConverter.Deserialize(this.Input, inputType);
+                return this.DataConverter.MessageConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {

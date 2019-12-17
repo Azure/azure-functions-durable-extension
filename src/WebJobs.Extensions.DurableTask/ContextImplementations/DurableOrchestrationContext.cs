@@ -701,6 +701,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal async Task<TResult> WaitForEntityResponse<TResult>(Guid guid, EntityId? lockToUse)
         {
             var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "EntityResponse");
+            response.DataConverter = this.dataConverter;
 
             if (lockToUse.HasValue)
             {

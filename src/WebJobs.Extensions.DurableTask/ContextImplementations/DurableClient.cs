@@ -279,7 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 request.SetInput(operationInput);
             }
-          
+
             var jrequest = JToken.FromObject(request, this.dataConverter.MessageSerializer);
             var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
             await client.RaiseEventAsync(instance, eventName, jrequest);

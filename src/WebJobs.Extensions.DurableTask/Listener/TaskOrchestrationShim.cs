@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.dataConverter = config.DataConverter;
             this.context = new DurableOrchestrationContext(config, durabilityProvider, name);
-            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
+            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context, this.dataConverter);
         }
 
         public override DurableCommonContext Context => this.context;

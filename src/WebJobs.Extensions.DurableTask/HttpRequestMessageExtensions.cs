@@ -21,29 +21,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        public static HttpResponseMessage CreateResponse<T>(this HttpRequestMessage request, HttpStatusCode statusCode, T value)
+        public static HttpResponseMessage CreateResponse<T>(this HttpRequestMessage request, HttpStatusCode statusCode, T value, MessagePayloadDataConverter dataConverter)
         {
             return new HttpResponseMessage
             {
-                Content = new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json"),
+                Content = new StringContent(dataConverter.Serialize(value), Encoding.UTF8, "application/json"),
                 RequestMessage = request,
                 StatusCode = statusCode,
             };
         }
 
-        public static HttpResponseMessage CreateErrorResponse(this HttpRequestMessage request, HttpStatusCode statusCode, string message)
+        public static HttpResponseMessage CreateErrorResponse(this HttpRequestMessage request, HttpStatusCode statusCode, string message, MessagePayloadDataConverter dataConverter)
         {
             var error = new { Message = message };
 
             return new HttpResponseMessage
             {
-                Content = new StringContent(JsonConvert.SerializeObject(error), Encoding.UTF8, "application/json"),
+                Content = new StringContent(dataConverter.Serialize(error), Encoding.UTF8, "application/json"),
                 RequestMessage = request,
                 StatusCode = statusCode,
             };
         }
 
-        public static HttpResponseMessage CreateErrorResponse(this HttpRequestMessage request, HttpStatusCode statusCode, string message, Exception e)
+        public static HttpResponseMessage CreateErrorResponse(this HttpRequestMessage request, HttpStatusCode statusCode, string message, Exception e, MessagePayloadDataConverter dataConverter)
         {
             var error = new
             {
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return new HttpResponseMessage
             {
-                Content = new StringContent(JsonConvert.SerializeObject(error), Encoding.UTF8, "application/json"),
+                Content = new StringContent(dataConverter.Serialize(error), Encoding.UTF8, "application/json"),
                 RequestMessage = request,
                 StatusCode = statusCode,
             };
