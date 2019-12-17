@@ -157,13 +157,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         TInput IDurableEntityContext.GetInput<TInput>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput<TInput>();
+            return this.CurrentOperation.GetInput<TInput>(this.dataConverter);
         }
 
         object IDurableEntityContext.GetInput(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput(argumentType);
+            return this.CurrentOperation.GetInput(argumentType, this.dataConverter);
         }
 
         TState IDurableEntityContext.GetState<TState>(Func<TState> initializer)
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // is lost, we don't want the calling orchestrations to think everything is o.k.
                     // They should be notified, so we replace all non-error operation results
                     // with an exception result.
-                    serializationErrorMessage = new ResponseMessage(this.dataConverter)
+                    serializationErrorMessage = new ResponseMessage()
                     {
                         ExceptionType = serializationException.GetType().AssemblyQualifiedName,
                         Result = this.dataConverter.ErrorConverter.Serialize(serializationException),
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
-            var request = new RequestMessage(this.dataConverter)
+            var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
                 Id = Guid.NewGuid(),
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (input != null)
             {
-                request.SetInput(input);
+                request.SetInput(input, this.dataConverter);
             }
 
             this.SendOperationMessage(target, request);
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
-            this.CurrentOperationResponse.SetResult(result);
+            this.CurrentOperationResponse.SetResult(result, this.dataConverter);
         }
 
         private void ThrowIfInvalidAccess()
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     Target = target,
                     EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
-                    EventContent = new ResponseMessage(this.dataConverter)
+                    EventContent = new ResponseMessage()
                     {
                         Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
                     },

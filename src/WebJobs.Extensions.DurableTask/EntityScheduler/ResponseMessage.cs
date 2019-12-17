@@ -9,25 +9,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ResponseMessage
     {
-        // This no-arg constructor is used when a RequestMessage is deserialized.
-        public ResponseMessage() { }
-
-        public ResponseMessage(MessagePayloadDataConverter dataConverter)
-        {
-            if (dataConverter == null)
-            {
-                throw new ArgumentNullException(nameof(dataConverter));
-            }
-
-            this.DataConverter = dataConverter;
-        }
-
-        /// <summary>
-        /// MessagePayloadDataConverter for serialization.
-        /// </summary>
-        [JsonIgnore]
-        public MessagePayloadDataConverter DataConverter { get; set; }
-
         [JsonProperty(PropertyName = "result")]
         public string Result { get; set; }
 
@@ -37,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsException => this.ExceptionType != null;
 
-        public void SetResult(object result)
+        public void SetResult(object result, MessagePayloadDataConverter dataConverter)
         {
             this.ExceptionType = null;
             if (result is JToken jtoken)
@@ -46,17 +27,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                this.Result = this.DataConverter.MessageConverter.Serialize(result);
+                this.Result = dataConverter.MessageConverter.Serialize(result);
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, EntityId entity)
+        public void SetExceptionResult(Exception exception, string operation, EntityId entity, MessagePayloadDataConverter dataConverter)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
             try
             {
-                this.Result = this.DataConverter.ErrorConverter.Serialize(exception);
+                this.Result = dataConverter.ErrorConverter.Serialize(exception);
             }
             catch (Exception)
             {
@@ -65,11 +46,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var wrapper = new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
                 this.ExceptionType = wrapper.GetType().AssemblyQualifiedName;
-                this.Result = this.DataConverter.ErrorConverter.Serialize(wrapper);
+                this.Result = dataConverter.ErrorConverter.Serialize(wrapper);
             }
         }
 
-        public T GetResult<T>()
+        public T GetResult<T>(MessagePayloadDataConverter dataConverter)
         {
             if (this.IsException)
             {
@@ -79,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     var type = Type.GetType(this.ExceptionType, true);
-                    e = (Exception)this.DataConverter.ErrorConverter.Deserialize(this.Result, type);
+                    e = (Exception)dataConverter.ErrorConverter.Deserialize(this.Result, type);
                 }
                 catch
                 {
@@ -100,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return this.DataConverter.MessageConverter.Deserialize<T>(this.Result);
+                return dataConverter.MessageConverter.Deserialize<T>(this.Result);
             }
         }
 

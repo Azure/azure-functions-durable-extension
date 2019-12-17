@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                 RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
             };
-            return this.config.DataConverter.Serialize(payload);
+            return JsonConvert.SerializeObject(payload);
         }
 
         public StartOrchestrationArgs JObjectToStartOrchestrationArgs(JObject input, DurableClientAttribute attr)
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public StartOrchestrationArgs StringToStartOrchestrationArgs(string input, DurableClientAttribute attr)
         {
-            return !string.IsNullOrEmpty(input) ? this.config.DataConverter.Deserialize<StartOrchestrationArgs>(input) : null;
+            return !string.IsNullOrEmpty(input) ? JsonConvert.DeserializeObject<StartOrchestrationArgs>(input) : null;
         }
 
         private class OrchestrationClientAsyncCollector : IAsyncCollector<StartOrchestrationArgs>

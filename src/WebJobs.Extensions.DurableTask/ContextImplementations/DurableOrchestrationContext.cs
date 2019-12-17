@@ -556,7 +556,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
                     operationId = guid.ToString();
                     operationName = operation;
-                    var request = new RequestMessage(this.dataConverter)
+                    var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
                         Id = guid,
@@ -566,7 +566,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                     if (input != null)
                     {
-                        request.SetInput(input);
+                        request.SetInput(input, this.dataConverter);
                     }
 
                     this.SendEntityMessage(target, request);
@@ -701,7 +701,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal async Task<TResult> WaitForEntityResponse<TResult>(Guid guid, EntityId? lockToUse)
         {
             var response = await this.WaitForExternalEvent<ResponseMessage>(guid.ToString(), "EntityResponse");
-            response.DataConverter = this.dataConverter;
 
             if (lockToUse.HasValue)
             {
@@ -710,7 +709,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // can rethrow an exception if that was the result of the operation
-            return response.GetResult<TResult>();
+            return response.GetResult<TResult>(this.dataConverter);
         }
 
         internal Task<T> WaitForExternalEvent<T>(string name, string reason)
@@ -972,7 +971,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // send lock request to first entity in the lock set
             var target = new OrchestrationInstance() { InstanceId = EntityId.GetSchedulerIdFromEntityId(entities[0]) };
-            var request = new RequestMessage(this.dataConverter)
+            var request = new RequestMessage()
             {
                 Id = lockRequestId,
                 ParentInstanceId = this.InstanceId,

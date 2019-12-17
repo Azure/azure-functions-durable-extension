@@ -2282,11 +2282,6 @@
             A message that represents an operation request or a lock request.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.DataConverter">
-            <summary>
-            
-            </summary>
-        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Operation">
             <summary>
             The name of the operation being called (if this is an operation message) or <c>null</c>
@@ -2339,11 +2334,6 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Position">
             <summary>
             For lock requests involving multiple locks, the message number.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ResponseMessage.DataConverter">
-            <summary>
-            
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState">
@@ -2702,7 +2692,7 @@
             Not intended for public consumption.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,DurableTask.Core.Serializing.JsonDataConverter)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim"/> class.
             </summary>

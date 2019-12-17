@@ -12,25 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class RequestMessage
     {
-        // This no-arg constructor is used when a RequestMessage is deserialized.
-        public RequestMessage() { }
-
-        public RequestMessage(MessagePayloadDataConverter dataConverter)
-        {
-            if (dataConverter == null)
-            {
-                throw new ArgumentNullException(nameof(dataConverter));
-            }
-
-            this.DataConverter = dataConverter;
-        }
-
-        /// <summary>
-        /// MessagePayloadDataConverter for serialization.
-        /// </summary>
-        [JsonIgnore]
-        public MessagePayloadDataConverter DataConverter { get; set; }
-
         /// <summary>
         /// The name of the operation being called (if this is an operation message) or <c>null</c>
         /// (if this is a lock request).
@@ -96,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;
 
-        public void SetInput(object obj)
+        public void SetInput(object obj, MessagePayloadDataConverter dataConverter)
         {
             try
             {
@@ -106,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = this.DataConverter.MessageConverter.Serialize(obj);
+                    this.Input = dataConverter.MessageConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -115,11 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public T GetInput<T>()
+        public T GetInput<T>(MessagePayloadDataConverter dataConverter)
         {
             try
             {
-                return this.DataConverter.MessageConverter.Deserialize<T>(this.Input);
+                return dataConverter.MessageConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -127,11 +108,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public object GetInput(Type inputType)
+        public object GetInput(Type inputType, MessagePayloadDataConverter dataConverter)
         {
             try
             {
-                return this.DataConverter.MessageConverter.Deserialize(this.Input, inputType);
+                return dataConverter.MessageConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.Core.Serializing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -18,17 +17,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class OutOfProcOrchestrationShim
     {
         private readonly IDurableOrchestrationContext context;
-        private readonly JsonDataConverter dataConverter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OutOfProcOrchestrationShim"/> class.
         /// </summary>
         /// <param name="context">The orchestration execution context.</param>
-        /// /// <param name="dataConverter">JsonDataConverter for serialization settings.</param>
-        public OutOfProcOrchestrationShim(IDurableOrchestrationContext context, JsonDataConverter dataConverter)
+        public OutOfProcOrchestrationShim(IDurableOrchestrationContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
-            this.dataConverter = dataConverter;
         }
 
         private enum AsyncActionType
@@ -63,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns><c>true</c> if there are more executions to process; <c>false</c> otherwise.</returns>
         public async Task<bool> ExecuteAsync(JObject executionJson)
         {
-            var execution = this.dataConverter.Deserialize<OutOfProcOrchestratorState>(executionJson.ToString());
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(executionJson.ToString());
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);

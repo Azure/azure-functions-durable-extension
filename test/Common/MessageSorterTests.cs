@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class MessageSorterTests
     {
         private static readonly TimeSpan ReorderWindow = TimeSpan.FromMinutes(30);
-        private static readonly MessagePayloadDataConverter DataConverter = new MessagePayloadDataConverter(new MessageSerializerSettingsFactory(), new ErrorSerializerSettingsFactory());
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -30,7 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             MessageSorter receiverSorter = new MessageSorter();
 
             // delivering the sequence in order produces 1 message each time
-            receiverSorter = new MessageSorter();
             batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("1");
             batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();
@@ -59,7 +57,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             MessageSorter receiverSorter = new MessageSorter();
 
             // delivering the sequence in order produces 1 message each time
-            receiverSorter = new MessageSorter();
             batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("1");
             batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();
@@ -291,7 +288,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static RequestMessage Send(string senderId, string receiverId, string input, MessageSorter sorter, DateTime now, TimeSpan? reorderWindow = null)
         {
-            var msg = new RequestMessage(DataConverter)
+            var msg = new RequestMessage()
             {
                 Id = Guid.NewGuid(),
                 ParentInstanceId = senderId,

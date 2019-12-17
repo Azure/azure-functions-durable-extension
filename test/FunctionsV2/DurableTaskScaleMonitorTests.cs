@@ -40,16 +40,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.traceHelper = new EndToEndTraceHelper(this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask")), false);
             this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.storageConnectionString, this.hubName);
 
-            var dataConverter = new MessagePayloadDataConverter(new MessageSerializerSettingsFactory(), new ErrorSerializerSettingsFactory());
-
             this.scaleMonitor = new DurableTaskScaleMonitor(
-                                                this.functionId,
-                                                this.functionName,
-                                                this.hubName,
-                                                this.storageConnectionString,
-                                                this.traceHelper,
-                                                dataConverter,
-                                                this.performanceMonitor.Object);
+                this.functionId,
+                this.functionName,
+                this.hubName,
+                this.storageConnectionString,
+                this.traceHelper,
+                this.performanceMonitor.Object);
         }
 
         [Fact]

@@ -261,7 +261,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // set context for operation
             this.context.CurrentOperation = request;
-            this.context.CurrentOperationResponse = new ResponseMessage(this.dataConverter);
+            this.context.CurrentOperationResponse = new ResponseMessage();
 
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
@@ -294,7 +294,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.CaptureApplicationError(e);
 
                 // exception must be sent with response back to caller
-                this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.EntityId);
+                this.context.CurrentOperationResponse.SetExceptionResult(
+                    e,
+                    this.context.CurrentOperation.Operation,
+                    this.EntityId,
+                    this.dataConverter);
             }
 
             // clear the async-local static context that is visible to the application code
@@ -409,7 +413,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         InstanceId = request.ParentInstanceId,
                     };
-                    var responseMessage = new ResponseMessage(this.dataConverter)
+                    var responseMessage = new ResponseMessage()
                     {
                         Result = result.Result,
                         ExceptionType = result.IsError ? "Error" : null,
@@ -421,7 +425,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // send signal messages
             foreach (var signal in outOfProcResult.Signals)
             {
-                var request = new RequestMessage(this.dataConverter)
+                var request = new RequestMessage()
                 {
                     ParentInstanceId = this.context.InstanceId,
                     Id = Guid.NewGuid(),
