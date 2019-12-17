@@ -20,6 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableEntityContext context;
 
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private readonly TaskCompletionSource<object> doneProcessingMessages
             = new TaskCompletionSource<object>();
 
@@ -31,6 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TaskEntityShim(DurableTaskExtension config, string schedulerId)
             : base(config)
         {
+            this.dataConverter = config.DataConverter;
             this.SchedulerId = schedulerId;
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
             this.context = new DurableEntityContext(config, this.EntityId, this);
@@ -87,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return MessagePayloadDataConverter.Default.Serialize(new EntityStatus()
+                return this.dataConverter.MessageConverter.Serialize(new EntityStatus()
                 {
                     EntityExists = this.context.State.EntityExists,
                     QueueSize = this.context.State.Queue?.Count ?? 0,
@@ -119,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     // a previous incarnation of this instance called continueAsNew
-                    this.context.State = JsonConvert.DeserializeObject<SchedulerState>(serializedInput, MessagePayloadDataConverter.MessageSettings);
+                    this.context.State = this.dataConverter.Deserialize<SchedulerState>(serializedInput);
                 }
                 catch (Exception e)
                 {
@@ -291,7 +294,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.CaptureApplicationError(e);
 
                 // exception must be sent with response back to caller
-                this.context.CurrentOperationResponse.SetExceptionResult(e, this.context.CurrentOperation.Operation, this.EntityId);
+                this.context.CurrentOperationResponse.SetExceptionResult(
+                    e,
+                    this.context.CurrentOperation.Operation,
+                    this.EntityId,
+                    this.dataConverter);
             }
 
             // clear the async-local static context that is visible to the application code
@@ -333,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!request.IsSignal)
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
-                var jresponse = JToken.FromObject(response, MessagePayloadDataConverter.DefaultSerializer);
+                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
                 this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
             }
         }

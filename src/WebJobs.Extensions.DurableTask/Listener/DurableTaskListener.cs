@@ -52,12 +52,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionType = functionType;
             this.storageConnectionString = storageConnectionString;
 #if !FUNCTIONS_V1
-            this.scaleMonitor = new Lazy<DurableTaskScaleMonitor>(() => new DurableTaskScaleMonitor(
-                                                                                        this.functionId,
-                                                                                        this.functionName,
-                                                                                        this.config.Options.HubName,
-                                                                                        this.storageConnectionString,
-                                                                                        this.config.TraceHelper));
+            this.scaleMonitor = new Lazy<DurableTaskScaleMonitor>(() =>
+                new DurableTaskScaleMonitor(
+                    this.functionId,
+                    this.functionName,
+                    this.config.Options.HubName,
+                    this.storageConnectionString,
+                    this.config.TraceHelper));
 #endif
         }
 

@@ -18,11 +18,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string serializedInput;
 
         private readonly string instanceId;
+
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private JToken parsedJsonInput;
         private string serializedOutput;
 
-        internal DurableActivityContext(string instanceId, string serializedInput)
+        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput)
         {
+            this.dataConverter = config.DataConverter;
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
         }
@@ -102,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return serializedValue;
             }
 
-            return MessagePayloadDataConverter.Default.Deserialize(serializedValue, destinationType);
+            return this.dataConverter.MessageConverter.Deserialize(serializedValue, destinationType);
         }
 
         internal string GetSerializedOutput()
@@ -135,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.serializedOutput = MessagePayloadDataConverter.Default.Serialize(output);
+                    this.serializedOutput = this.dataConverter.MessageConverter.Serialize(output);
                 }
             }
             else

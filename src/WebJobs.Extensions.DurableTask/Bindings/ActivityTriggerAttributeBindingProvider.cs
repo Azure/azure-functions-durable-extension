@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The activity name defaults to the method name.
             var activityName = new FunctionName(name);
             this.durableTaskConfig.RegisterActivity(activityName, null);
-            var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName);
+            var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName, this.durableTaskConfig);
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
@@ -73,18 +73,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly ActivityTriggerAttribute attribute;
             private readonly FunctionName activityName;
             private readonly IReadOnlyDictionary<string, Type> contract;
+            private readonly DurableTaskExtension durableTaskConfig;
 
             public ActivityTriggerBinding(
                 ActivityTriggerAttributeBindingProvider parent,
                 ParameterInfo parameterInfo,
                 ActivityTriggerAttribute attribute,
-                FunctionName activity)
+                FunctionName activity,
+                DurableTaskExtension durableTaskConfig)
             {
                 this.parent = parent;
                 this.parameterInfo = parameterInfo;
                 this.attribute = attribute;
                 this.activityName = activity;
                 this.contract = GetBindingDataContract(parameterInfo);
+                this.durableTaskConfig = durableTaskConfig;
             }
 
             public Type TriggerValueType => typeof(IDurableActivityContext);
@@ -123,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Durable functions expects input as a JArray with one element.
                     serializedInput = $"[{serializedInput}]";
 
-                    activityContext = new DurableActivityContext(Guid.NewGuid().ToString(), serializedInput);
+                    activityContext = new DurableActivityContext(this.durableTaskConfig, Guid.NewGuid().ToString(), serializedInput);
                 }
 
                 Type destinationType = this.parameterInfo.ParameterType;

@@ -17,6 +17,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -3904,6 +3905,81 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CustomIMessageSerializerSettingsFactory()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ComplexTypeOrchestrator),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.CustomIMessageSerializerSettingsFactory),
+                true,
+                serializerSettings: new CustomEnumSettings()))
+            {
+                await host.StartAsync();
+
+                var inputWithEnum = new ComplexType
+                {
+                    A = -42,
+                    B = new List<DateTime> { DateTime.UtcNow, DateTime.UtcNow.AddYears(1) },
+                    C = ComplexType.CustomEnum.Value2,
+                    D = new ComplexType.ComplexInnerType
+                    {
+                        E = Guid.NewGuid().ToString(),
+                        F = TimeSpan.FromHours(1.5),
+                    },
+                };
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEnum, this.output);
+                await client.WaitForCompletionAsync(this.output);
+                var status = client.GetStatusAsync();
+
+                Assert.NotNull(status);
+                Assert.Contains("Value2", status.Result.Output.ToString());
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DefaultIMessageSerializerSettingsFactory()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.ComplexTypeOrchestrator),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DefaultIMessageSerializerSettingsFactory),
+                true))
+            {
+                await host.StartAsync();
+
+                var inputWithEnum = new ComplexType
+                {
+                    A = -42,
+                    B = new List<DateTime> { DateTime.UtcNow, DateTime.UtcNow.AddYears(1) },
+                    C = ComplexType.CustomEnum.Value2,
+                    D = new ComplexType.ComplexInnerType
+                    {
+                        E = Guid.NewGuid().ToString(),
+                        F = TimeSpan.FromHours(1.5),
+                    },
+                };
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEnum, this.output);
+                await client.WaitForCompletionAsync(this.output);
+                var status = client.GetStatusAsync();
+
+                Assert.NotNull(status);
+                Assert.DoesNotContain("Value2", status.Result.Output.ToString());
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TaskHubName_DefaultNameSiteWithDashes_UsesSanitizedHubName()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
@@ -4107,7 +4183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [DataContract]
-        private class ComplexType
+        internal class ComplexType
         {
             [DataContract]
             public enum CustomEnum
@@ -4139,6 +4215,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 [DataMember]
                 public TimeSpan F { get; set; }
+            }
+        }
+
+        // JsonSerializerSettings with StringEnumConverter
+        private class CustomEnumSettings : IMessageSerializerSettingsFactory
+        {
+            public JsonSerializerSettings CreateJsonSerializerSettings()
+            {
+                var serializer = new JsonSerializerSettings()
+                {
+                    TypeNameHandling = TypeNameHandling.None,
+                };
+
+                serializer.Converters.Add(new StringEnumConverter());
+
+                return serializer;
             }
         }
     }

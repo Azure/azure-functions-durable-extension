@@ -29,7 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             MessageSorter receiverSorter = new MessageSorter();
 
             // delivering the sequence in order produces 1 message each time
-            receiverSorter = new MessageSorter();
             batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("1");
             batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();
@@ -58,7 +57,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             MessageSorter receiverSorter = new MessageSorter();
 
             // delivering the sequence in order produces 1 message each time
-            receiverSorter = new MessageSorter();
             batch = receiverSorter.ReceiveInOrder(message1, ReorderWindow).ToList();
             Assert.Single(batch).Input.Equals("1");
             batch = receiverSorter.ReceiveInOrder(message2, ReorderWindow).ToList();

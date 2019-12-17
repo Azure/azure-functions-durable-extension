@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -609,6 +610,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return sum;
+        }
+
+        public static ComplexType ComplexTypeOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var input = context.GetInput<ComplexType>();
+            return input;
         }
 
 #pragma warning disable 618
