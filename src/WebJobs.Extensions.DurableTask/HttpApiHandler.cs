@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RewindOperation = "rewind";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
-        private const string FetchInputParameter = "fetchInput";
+        private const string ShowInputParameter = "showInput";
         private const string FetchStateParameter = "fetchState";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeFrom", out DateTime createdTimeFrom))
+            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
             {
                 var badRequestResponse = request.CreateResponse(
                     HttpStatusCode.BadRequest,
@@ -483,12 +483,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return badRequestResponse;
             }
 
-            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeTo", out DateTime createdTimeTo))
+            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, out DateTime createdTimeTo))
             {
                 createdTimeTo = DateTime.UtcNow;
             }
 
-            TryGetIEnumerableQueryParameterValue<OrchestrationStatus>(queryNameValuePairs, "runtimeStatus", out IEnumerable<OrchestrationStatus> runtimeStatusCollection);
+            TryGetIEnumerableQueryParameterValue<OrchestrationStatus>(queryNameValuePairs, RuntimeStatusParameter, out IEnumerable<OrchestrationStatus> runtimeStatusCollection);
 
             PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatusCollection);
 
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showHistoryOutput = false;
             }
 
-            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchInputParameter, out bool showInput))
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
             {
                 showInput = true;
             }
