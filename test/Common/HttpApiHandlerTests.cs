@@ -22,6 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class HttpApiHandlerTests
     {
+        private const string EmptyEntityKeySymbol = "$";
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
@@ -873,14 +875,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task GetEntity_Returns_State_Or_HTTP_404(bool hasKey, bool exists)
         {
             string entity = "SomeEntity";
-            string key = hasKey ? Guid.NewGuid().ToString("N") : "";
+            string key = hasKey ? Guid.NewGuid().ToString("N") : "$";
             var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
 
-            uriBuilder.Path += $"/entities/{entity}";
+            uriBuilder.Path += $"/entities/{entity}/{key}";
 
-            if (!string.IsNullOrEmpty(key))
+            if (key.Equals(EmptyEntityKeySymbol))
             {
-                uriBuilder.Path += $"/{key}";
+                key = "";
             }
 
             var testRequest = new HttpRequestMessage
@@ -910,6 +912,120 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             else
             {
                 Assert.Equal(HttpStatusCode.NotFound, actualResponse.StatusCode);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task Entities_Query_Calls_ListEntitiesAsync(bool useNameFilter, bool fetchState, bool useContinuationToken)
+        {
+            // Build mock
+            string entityName = Guid.NewGuid().ToString("N");
+
+            var mockList = new List<DurableEntityStatus>
+            {
+                new DurableEntityStatus
+                {
+                    EntityId = new EntityId(entityName, "one"),
+                    LastOperationTime = new DateTime(2018, 3, 10, 10, 10, 10, DateTimeKind.Utc),
+                    State = 1,
+                },
+                new DurableEntityStatus
+                {
+                    EntityId = new EntityId(entityName, "two"),
+                    LastOperationTime = new DateTime(2018, 3, 10, 10, 6, 10, DateTimeKind.Utc),
+                    State = 2,
+                },
+            };
+
+            if (!fetchState)
+            {
+                mockList.ForEach(status => status.State = null);
+            }
+
+            var lastOperationTimeFrom = new DateTime(2018, 3, 10, 10, 1, 0, DateTimeKind.Utc);
+            var lastOperationTimeTo = new DateTime(2018, 3, 10, 10, 23, 59, DateTimeKind.Utc);
+            var continuationToken = useContinuationToken ? Guid.NewGuid().ToString("N") : null;
+            var pageSize = 2;
+
+            var mockResult = new EntityQueryResult() { Entities = mockList, ContinuationToken = continuationToken };
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+
+            clientMock
+                .Setup(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()))
+                .Callback<EntityQuery, CancellationToken>((query, cancellationToken) =>
+                {
+                    // Ensure all query string parameters were correctly parsed
+                    Assert.Equal(lastOperationTimeFrom, query.LastOperationFrom);
+                    Assert.Equal(lastOperationTimeTo, query.LastOperationTo);
+                    Assert.Equal(useNameFilter ? entityName : null, query.EntityName);
+                    Assert.Equal(fetchState, query.FetchState);
+                    Assert.Equal(continuationToken, query.ContinuationToken);
+                    Assert.Equal(useContinuationToken ? continuationToken : null, query.ContinuationToken);
+                    Assert.Equal(pageSize, query.PageSize);
+                })
+                .Returns(Task.FromResult(mockResult));
+
+            // Build Uri
+            var uriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+
+            if (useNameFilter)
+            {
+                uriBuilder.Path += $"/entities/{entityName}";
+            }
+            else
+            {
+                uriBuilder.Path += $"/entities/";
+            }
+
+            uriBuilder.Query += $"&lastOperationTimeFrom={WebUtility.UrlEncode(lastOperationTimeFrom.ToString("s"))}";
+            uriBuilder.Query += $"&lastOperationTimeTo={WebUtility.UrlEncode(lastOperationTimeTo.ToString("s"))}";
+            uriBuilder.Query += $"&fetchState={fetchState}";
+            uriBuilder.Query += $"&top={pageSize}";
+
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = uriBuilder.Uri,
+            };
+
+            if (useContinuationToken)
+            {
+                requestMessage.Headers.Add("x-ms-continuation-token", continuationToken);
+            }
+
+            // Test HttpApiHandler response
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            clientMock.Verify(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()));
+
+            var actual = JsonConvert.DeserializeObject<IList<DurableEntityStatus>>(await responseMessage.Content.ReadAsStringAsync());
+            Assert.Equal(mockList.Count, actual.Count);
+
+            Assert.Equal(entityName, actual[0].EntityId.EntityName);
+            Assert.Equal("one", actual[0].EntityId.EntityKey);
+
+            Assert.Equal(entityName, actual[1].EntityId.EntityName);
+            Assert.Equal("two", actual[1].EntityId.EntityKey);
+
+            if (fetchState)
+            {
+                Assert.Equal(1, (int)actual[0].State);
+                Assert.Equal(2, (int)actual[1].State);
+            }
+            else
+            {
+                Assert.Equal(JTokenType.Null, actual[0].State.Type);
+                Assert.Equal(JTokenType.Null, actual[1].State.Type);
             }
         }
 

@@ -439,6 +439,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
         }
 
+        /// <inheritdoc />
+        async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
+        {
+            var condition = new OrchestrationStatusQueryCondition(query);
+            var result = await ((IDurableClient)this).GetStatusAsync(condition, cancellationToken);
+            var entityResult = new EntityQueryResult(result);
+            return entityResult;
+        }
+
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)
         {
             return await GetOrchestrationInstanceStateAsync(this.client, instanceId);

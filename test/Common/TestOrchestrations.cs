@@ -651,6 +651,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "ok";
         }
 
+        public static async Task<string> EntityId_SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entity = ctx.GetInput<EntityId>();
+
+            ctx.SignalEntity(entity, "set", "333");
+
+            var result = await ctx.CallEntityAsync<string>(entity, "get");
+
+            if (result != "333")
+            {
+                return $"fail: wrong entity state: expected 333, got {result}";
+            }
+
+            return "ok";
+        }
+
         public static async Task<string> StringStoreWithCreateDelete([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // construct entity id from entity name and a (deterministic) new guid key
