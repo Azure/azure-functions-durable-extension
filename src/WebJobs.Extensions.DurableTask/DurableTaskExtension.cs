@@ -895,7 +895,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         message: "Stopping task hub worker",
                         writeToUserLogs: true);
 
-                    await this.taskHubWorker.StopAsync(isForced: true);
+                    await this.taskHubWorker.StopAsync(isForced: !this.Options.UseGracefulShutdown);
                     this.isTaskHubWorkerStarted = false;
                     return true;
                 }

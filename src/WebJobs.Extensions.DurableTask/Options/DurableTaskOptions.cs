@@ -144,6 +144,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public int EntityMessageReorderWindowInMinutes { get; set; } = 30;
 
+        /// <summary>
+        /// Preview setting for gracefully shutting down to prevent WebJob shutdowns from failing
+        /// activities or orchestrations.
+        /// </summary>
+        public bool UseGracefulShutdown { get; set; } = false;
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
