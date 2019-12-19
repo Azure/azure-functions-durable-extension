@@ -351,26 +351,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetAllStatus_is_Success()
         {
-            var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
+            var result = new OrchestrationStatusQueryResult
             {
-                new DurableOrchestrationStatus
+                DurableOrchestrationState = new List<DurableOrchestrationStatus>
                 {
-                    Name = "DoThis",
-                    InstanceId = "01",
-                    RuntimeStatus = OrchestrationRuntimeStatus.Running,
-                },
-                new DurableOrchestrationStatus
-                {
-                    Name = "DoThat",
-                    InstanceId = "02",
-                    RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                    new DurableOrchestrationStatus
+                    {
+                        Name = "DoThis",
+                        InstanceId = "01",
+                        RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                    },
+                    new DurableOrchestrationStatus
+                    {
+                        Name = "DoThat",
+                        InstanceId = "02",
+                        RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                    },
                 },
             };
 
             var clientMock = new Mock<IDurableClient>();
             clientMock
-                .Setup(x => x.GetStatusAsync(default(DateTime), default(DateTime), new List<OrchestrationRuntimeStatus>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(list));
+                .Setup(x => x.GetStatusAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(result));
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
 
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
