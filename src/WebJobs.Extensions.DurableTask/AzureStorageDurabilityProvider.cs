@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreatedTimeTo = condition.CreatedTimeTo,
                 TaskHubNames = condition.TaskHubNames,
                 InstanceIdPrefix = condition.InstanceIdPrefix,
-                FetchInput = condition.FetchInput,
+                FetchInput = condition.ShowInput,
             };
         }
     }

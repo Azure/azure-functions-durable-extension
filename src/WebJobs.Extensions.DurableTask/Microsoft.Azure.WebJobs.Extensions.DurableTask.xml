@@ -3428,7 +3428,7 @@
             Return orchestration instances that have this instance id prefix.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.FetchInput">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.ShowInput">
             <summary>
             Determines whether the query will include the input of the orchestration.
             </summary>
