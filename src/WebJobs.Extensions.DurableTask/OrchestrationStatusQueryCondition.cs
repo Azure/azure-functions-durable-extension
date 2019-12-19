@@ -28,6 +28,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.InstanceIdPrefix = EntityId.GetSchedulerIdPrefixFromEntityName(entityQuery.EntityName);
             }
+            else
+            {
+                this.InstanceIdPrefix = "@";
+            }
         }
 
         /// <summary>

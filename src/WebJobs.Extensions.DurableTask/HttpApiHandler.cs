@@ -340,10 +340,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
             var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
             var runtimeStatus = GetIEnumerableQueryParameterValue<OrchestrationRuntimeStatus>(queryNameValuePairs, RuntimeStatusParameter);
-            var pageSize = GetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter);
+
+            if (!TryGetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter, out int pageSize))
+            {
+                pageSize = 100;
+            }
 
             var continuationToken = "";
-            if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
+            if (request.Headers.TryGetValues("x-ms-continuation-token", out IEnumerable<string> headerValues))
             {
                 continuationToken = headerValues.FirstOrDefault();
             }
@@ -403,18 +407,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             string value = queryStringNameValueCollection[queryParameterName];
             return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
-        }
-
-        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, bool defaultValue)
-        {
-            string value = queryStringNameValueCollection[queryParameterName];
-            return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
-        }
-
-        private static int GetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
-        {
-            string value = queryStringNameValueCollection[queryParameterName];
-            return int.TryParse(value, out int intValue) ? intValue : 0;
         }
 
         private async Task<HttpResponseMessage> HandleListEntitiesRequestAsync(

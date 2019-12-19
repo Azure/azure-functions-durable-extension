@@ -3214,6 +3214,12 @@
             Gets or sets the time window within which entity messages get deduplicated and reordered.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseGracefulShutdown">
+            <summary>
+            Preview setting for gracefully shutting down to prevent WebJob shutdowns from failing
+            activities or orchestrations.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
             <summary>
             Sets HubName to a value that is considered a default value.

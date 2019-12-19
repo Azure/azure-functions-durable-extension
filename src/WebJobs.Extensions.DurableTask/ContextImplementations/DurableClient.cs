@@ -408,7 +408,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
-            this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
             string entityState = await provider.RetrieveSerializedEntityState(entityId, this.dataConverter.MessageSettings);
 
             return new EntityStateResponse<T>()
