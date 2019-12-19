@@ -22,11 +22,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CreatedTimeTo = entityQuery.LastOperationTo;
             this.PageSize = entityQuery.PageSize;
             this.ContinuationToken = entityQuery.ContinuationToken;
-            this.FetchInput = entityQuery.FetchState;
+            this.ShowInput = entityQuery.FetchState;
 
             if (!string.IsNullOrEmpty(entityQuery.EntityName))
             {
                 this.InstanceIdPrefix = EntityId.GetSchedulerIdPrefixFromEntityName(entityQuery.EntityName);
+            }
+            else
+            {
+                this.InstanceIdPrefix = "@";
             }
         }
 
@@ -68,6 +72,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Determines whether the query will include the input of the orchestration.
         /// </summary>
-        public bool FetchInput { get; set; } = false;
+        public bool ShowInput { get; set; } = true;
     }
 }

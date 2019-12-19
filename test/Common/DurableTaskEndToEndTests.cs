@@ -3674,7 +3674,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
             else
             {
-                // TODO: This part is still failing - need to investigate
                 Assert.Null(result.Entities.First().State);
             }
         }

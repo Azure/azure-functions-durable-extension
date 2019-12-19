@@ -2,8 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -25,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Return entity instances which had operations before this DateTime.
         /// </summary>
-        public DateTime LastOperationTo { get; set; } = DateTime.MaxValue;
+        public DateTime LastOperationTo { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// Number of records per one request. The default value is 100.

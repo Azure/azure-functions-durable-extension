@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -23,7 +24,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (orchestrationStatus?.Input is JObject input)
             {
                 SchedulerState state = input.ToObject<SchedulerState>();
-                this.State = state.EntityState;
+                if (state?.EntityState != null)
+                {
+                    try
+                    {
+                        // Entity state is expected to be JSON-compatible
+                        this.State = JToken.Parse(state.EntityState);
+                    }
+                    catch (JsonException)
+                    {
+                        // Just in case the above assumption is ever wrong, fallback to a raw string
+                        this.State = state.EntityState;
+                    }
+                }
             }
         }
 
