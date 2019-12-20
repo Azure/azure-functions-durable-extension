@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EventGridLifeCycleNotificationHelper : ILifeCycleNotificationHelper
     {
-        private readonly DurableTaskOptions config;
+        private readonly DurableTaskOptions options;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly bool useTrace;
         private readonly string eventGridKeyValue;
@@ -27,11 +27,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static HttpMessageHandler httpMessageHandler = null;
 
         public EventGridLifeCycleNotificationHelper(
-            DurableTaskOptions config,
+            DurableTaskOptions options,
             INameResolver nameResolver,
             EndToEndTraceHelper traceHelper)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
 
             if (nameResolver == null)
@@ -39,12 +39,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(nameResolver));
             }
 
-            if (config.Notifications == null)
+            if (options.Notifications == null)
             {
-                throw new ArgumentNullException(nameof(config.Notifications));
+                throw new ArgumentNullException(nameof(options.Notifications));
             }
 
-            var eventGridNotificationsConfig = config.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(config.Notifications.EventGrid));
+            var eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
 
             this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
             this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // For more detail about the Event Grid, please refer this document.
                     // Post to custom topic for Azure Event Grid
                     // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    this.HttpMessageHandler = config.NotificationHandler ?? new HttpRetryMessageHandler(
+                    this.HttpMessageHandler = options.NotificationHandler ?? new HttpRetryMessageHandler(
                         new HttpClientHandler(),
                         eventGridNotificationsConfig.PublishRetryCount,
                         eventGridNotificationsConfig.PublishRetryInterval,

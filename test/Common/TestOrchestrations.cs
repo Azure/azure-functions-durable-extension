@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -611,6 +612,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return sum;
         }
 
+        public static ComplexType ComplexTypeOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var input = context.GetInput<ComplexType>();
+            return input;
+        }
+
 #pragma warning disable 618
         public static Task<string> LegacyOrchestration([OrchestrationTrigger] DurableOrchestrationContextBase ctx)
         {
@@ -635,6 +642,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // make another call to see if the state survives replay
             result = await ctx.CallEntityAsync<string>(entity, "get");
+
+            if (result != "333")
+            {
+                return $"fail: wrong entity state: expected 333, got {result}";
+            }
+
+            return "ok";
+        }
+
+        public static async Task<string> EntityId_SignalAndCallStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entity = ctx.GetInput<EntityId>();
+
+            ctx.SignalEntity(entity, "set", "333");
+
+            var result = await ctx.CallEntityAsync<string>(entity, "get");
 
             if (result != "333")
             {
@@ -947,6 +970,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var result = await ctx.CallEntityAsync<List<KeyValuePair<DateTime, string>>>(chatroom, "get");
 
             return string.Join(",", result.Select(kvp => kvp.Value));
+        }
+
+        public static async Task<string> ContinueAsNew_Repro285([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var input = ctx.GetInput<int>();
+
+            if (input == 0)
+            {
+                ctx.ContinueAsNew(1);
+
+                return "continue as new";
+            }
+            else if (input == 1)
+            {
+                await ctx.CreateTimer<object>(ctx.CurrentUtcDateTime + TimeSpan.FromSeconds(1), null, CancellationToken.None);
+            }
+
+            return "ok";
+        }
+
+        public static async Task<string> ContinueAsNewMultipleTimersAndEvents([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var input = ctx.GetInput<int>();
+
+            if (input > 0)
+            {
+                var cts = new CancellationTokenSource();
+                var timerTask = ctx.CreateTimer<object>(ctx.CurrentUtcDateTime + TimeSpan.FromDays(1), null, cts.Token);
+                var eventTask = ctx.WaitForExternalEvent($"signal{input}");
+                await Task.WhenAny(timerTask, eventTask);
+                cts.Cancel();
+                ctx.ContinueAsNew(input - 1);
+                return input.ToString();
+            }
+            else if (input == 0)
+            {
+                return "ok";
+            }
+            else
+            {
+                return "error";
+            }
         }
 
         public static async Task<bool> EntityProxyWithBindings([OrchestrationTrigger] IDurableOrchestrationContext ctx)

@@ -26,7 +26,7 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetAllOrchestrationStatesWithFilters(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,Newtonsoft.Json.JsonSerializerSettings)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.PurgeInstanceHistoryByInstanceId(System.String)">
@@ -111,6 +111,9 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#SignalEntityAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String,System.Object,System.String,System.String)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#SignalEntityAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.String,System.Object,System.String,System.String)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#TerminateAsync(System.String,System.String)">
             <inheritdoc />
         </member>
@@ -133,6 +136,9 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#ListEntitiesAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
@@ -228,6 +234,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#SignalEntity(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#SignalEntity(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.String,System.Object)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#StartNewOrchestration(System.String,System.Object,System.String)">
@@ -652,6 +661,18 @@
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient.SignalEntityAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.String,System.Object,System.String,System.String)">
+            <summary>
+            Signals an entity to perform an operation, at a specified time.
+            </summary>
+            <param name="entityId">The target entity.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationInput">The input for the operation.</param>
+            <param name="taskHubName">The TaskHubName of the target entity.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient.ReadEntityStateAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String,System.String)">
             <summary>
             Tries to read the current state of an entity. Returns default(<typeparamref name="T"/>) if the entity does not
@@ -662,6 +683,14 @@
             <param name="taskHubName">The TaskHubName of the target entity.</param>
             <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
             <returns>a response containing the current state of the entity.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient.ListEntitiesAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery,System.Threading.CancellationToken)">
+            <summary>
+            Gets the status of all entity instances with paging that match the specified query conditions.
+            </summary>
+            <param name="query">Return entity instances that match the specified query conditions.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
+            <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext">
             <summary>
@@ -753,6 +782,15 @@
             <param name="entity">The target entity.</param>
             <param name="operationName">The name of the operation.</param>
             <param name="operationInput">The operation input.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext.SignalEntity(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.String,System.Object)">
+            <summary>
+            Signals an entity to perform an operation, at a specified time. Any result or exception is ignored (fire and forget).
+            </summary>
+            <param name="entity">The target entity.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationInput">The input for the operation.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext.StartNewOrchestration(System.String,System.Object,System.String)">
             <summary>
@@ -1303,6 +1341,15 @@
             <param name="operationName">The name of the operation.</param>
             <param name="operationInput">The input for the operation.</param>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.SignalEntity(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.String,System.Object)">
+            <summary>
+            Signals an operation to be performed by an entity at a specified time. Any result or exception is ignored (fire and forget).
+            </summary>
+            <param name="entity">The target entity.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+            <param name="operationName">The name of the operation.</param>
+            <param name="operationInput">The input for the operation.</param>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.StartNewOrchestration(System.String,System.Object,System.String)">
             <summary>
             Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
@@ -1494,11 +1541,12 @@
             <param name="instanceId">The instance id for the instance history to purge.</param>
             <returns>The number of instances purged.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RetrieveSerializedEntityState(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,Newtonsoft.Json.JsonSerializerSettings)">
             <summary>
             Retrieves the state for a serialized entity.
             </summary>
             <param name="entityId">Entity id to fetch state for.</param>
+            <param name="serializierSettings">JsonSerializerSettings for custom deserialization.</param>
             <returns>State for the entity.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.RewindAsync(System.String,System.String)">
@@ -1593,6 +1641,35 @@
             </summary>
             <param name="other">The <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> object to compare with.</param>
             <returns><c>true</c> if the two attributes have the same configuration; otherwise <c>false</c>.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityStatus">
+            <summary>
+            Represents the status of a durable entity instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityStatus.EntityId">
+            <summary>
+            Gets the EntityId of the queried entity instance.
+            </summary>
+            <value>
+            The unique EntityId of the instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityStatus.LastOperationTime">
+            <summary>
+            Gets the time of the last operation processed by the entity instance.
+            </summary>
+            <value>
+            The last operation time in UTC.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityStatus.State">
+            <summary>
+            Gets the state of the entity instance.
+            </summary>
+            <value>
+            The state as either a <c>JToken</c> or <c>null</c> if no state was provided.
+            </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest">
             <summary>
@@ -1783,7 +1860,7 @@
             Obsolete. Please use an alternate constructor overload.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -1793,6 +1870,8 @@
             <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
             <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
+            <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
+            <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
             <summary>
@@ -1866,6 +1945,58 @@
             </summary>
             <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
             <param name="listenerConfig">Durable Functions configuration.</param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery">
+            <summary>
+            Query condition for searching the status of entity instances.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.EntityName">
+            <summary>
+            Return entity instances associated with this entity name.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.LastOperationFrom">
+            <summary>
+            Return entity instances which had operations after this DateTime.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.LastOperationTo">
+            <summary>
+            Return entity instances which had operations before this DateTime.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.PageSize">
+            <summary>
+            Number of records per one request. The default value is 100.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.ContinuationToken">
+            <summary>
+            ContinuationToken of the pager.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.FetchState">
+            <summary>
+            Determines whether the query will include the state of the entity.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQueryResult">
+            <summary>
+            The status of all entity instances with paging for a given query.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQueryResult.Entities">
+            <summary>
+            Gets or sets a collection of statuses of entity instances matching the query description.
+            </summary>
+            <value>A collection of entity instance status values.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQueryResult.ContinuationToken">
+            <summary>
+            Gets or sets a token that can be used to resume the query with data not already returned by this query.
+            </summary>
+            <value>A server-generated continuation token or <c>null</c> if there are no further continuations.</value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Entity">
             <summary>
@@ -1945,6 +2076,11 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId.CompareTo(System.Object)">
             <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityMessageEventNames">
+            <summary>
+            Determines event names to use for messages sent to and from entities.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntitySchedulerException">
             <summary>
@@ -2077,6 +2213,17 @@
             <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient,System.String,System.DateTime,System.Action{``0})">
+            <summary>
+            Signals an entity to perform an operation, at a specified time.
+            </summary>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+            <param name="client">orchestration client.</param>
+            <param name="entityKey">The target entity key.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient,Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.Action{``0})">
             <summary>
             Signals an entity to perform an operation.
@@ -2084,6 +2231,17 @@
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
             <param name="client">orchestration client.</param>
             <param name="entityId">The target entity.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions.SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient,Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.Action{``0})">
+            <summary>
+            Signals an entity to perform an operation, at a specified time.
+            </summary>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+            <param name="client">orchestration client.</param>
+            <param name="entityId">The target entity.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
             <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <returns>A task that completes when the message has been reliably enqueued.</returns>
         </member>
@@ -2114,12 +2272,32 @@
             <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions.SignalEntity``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext,System.String,System.DateTime,System.Action{``0})">
+            <summary>
+            Signals an entity to perform an operation, at a specified time.
+            </summary>
+            <param name="context">entity context.</param>
+            <param name="entityKey">The target entity key.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions.SignalEntity``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext,Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.Action{``0})">
             <summary>
             Signals an entity to perform an operation.
             </summary>
             <param name="context">entity context.</param>
             <param name="entityId">The target entity.</param>
+            <param name="operation">A delegate that performs the desired operation on the entity.</param>
+            <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions.SignalEntity``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext,Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.Action{``0})">
+            <summary>
+            Signals an entity to perform an operation, at a specified time.
+            </summary>
+            <param name="context">entity context.</param>
+            <param name="entityId">The target entity.</param>
+            <param name="scheduledTimeUtc">The time at which to start the operation.</param>
             <param name="operation">A delegate that performs the desired operation on the entity.</param>
             <typeparam name="TEntityInterface">Entity interface.</typeparam>
         </member>
@@ -2220,6 +2398,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentInstanceId">
             <summary>
             The parent instance that called this operation.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ScheduledTime">
+            <summary>
+            Optionally, a scheduled time at which to start the operation.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Timestamp">
@@ -2516,6 +2699,17 @@
             </summary>
             <returns>Returns an HttpClientHandler.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory">
+            <summary>
+            Interface defining methods to build instances of <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error serialization.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory.CreateJsonSerializerSettings">
+            <summary>
+            Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for error serialization.
+            </summary>
+            <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for error serialization.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">
             <summary>
             Interface defining methods to life cycle notifications.
@@ -2562,6 +2756,17 @@
             <param name="instanceId">The ID to use for the orchestration instance.</param>
             <param name="reason">Additional data associated with the tracking event.</param>
             <returns>A task that completes when the lifecycle notification message has been sent.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory">
+            <summary>
+            Interface defining methods to build instances of <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message serialization.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory.CreateJsonSerializerSettings">
+            <summary>
+            Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for message serialization.
+            </summary>
+            <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
@@ -2942,6 +3147,18 @@
             Gets or sets the time window within which entity messages get deduplicated and reordered.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseGracefulShutdown">
+            <summary>
+            Preview setting for gracefully shutting down to prevent WebJob shutdowns from failing
+            activities or orchestrations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
+            <summary>
+            Sets HubName to a value that is considered a default value.
+            </summary>
+            <param name="hubName">TaskHub name that is considered the default.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventGridNotificationOptions">
             <summary>
             Configuration of the Event Grid notification options
@@ -3104,6 +3321,11 @@
             Query condition for searching the status of orchestration instances.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition"/> class.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.RuntimeStatus">
             <summary>
             Return orchestration instances which matches the runtimeStatus.
@@ -3132,6 +3354,16 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.ContinuationToken">
             <summary>
             ContinuationToken of the pager.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.InstanceIdPrefix">
+            <summary>
+            Return orchestration instances that have this instance id prefix.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.ShowInput">
+            <summary>
+            Determines whether the query will include the input of the orchestration.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryResult">

@@ -38,6 +38,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurabilityProvider durabilityProvider;
         private readonly int maxActionCount;
 
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private int actionCount;
 
         private string serializedOutput;
@@ -54,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
+            this.dataConverter = config.DataConverter;
             this.durabilityProvider = durabilityProvider;
             this.actionCount = 0;
             this.maxActionCount = config.Options.MaxOrchestrationActions;
@@ -144,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return default(T);
             }
 
-            return MessagePayloadDataConverter.Default.Deserialize<T>(this.RawInput);
+            return this.dataConverter.MessageConverter.Deserialize<T>(this.RawInput);
         }
 
         /// <summary>
@@ -172,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.serializedOutput = MessagePayloadDataConverter.Default.Serialize(output);
+                    this.serializedOutput = this.dataConverter.MessageConverter.Serialize(output);
                 }
             }
             else
@@ -193,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Limit the custom status payload to 16 KB
             const int MaxCustomStatusPayloadSizeInKB = 16;
-            this.serializedCustomStatus = MessagePayloadDataConverter.Default.Serialize(
+            this.serializedCustomStatus = this.dataConverter.MessageConverter.Serialize(
                 customStatusObject,
                 MaxCustomStatusPayloadSizeInKB);
         }
@@ -206,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, null, input);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, null, input, null);
         }
 
         /// <inheritdoc />
@@ -217,7 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(retryOptions));
             }
 
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input, null);
         }
 
         Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content)
@@ -268,7 +271,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId: null,
                 operation: null,
                 retryOptions: null,
-                input: req);
+                input: req,
+                scheduledTimeUtc: null);
 
             return durableHttpResponse;
         }
@@ -344,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallActivityAsync<TResult>(string functionName, object input)
         {
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, null, input);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, null, input, null);
         }
 
         /// <inheritdoc />
@@ -355,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(retryOptions));
             }
 
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, retryOptions, input);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, retryOptions, input, null);
         }
 
         /// <inheritdoc/>
@@ -380,8 +384,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, null);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
+            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+        }
+
+        /// <inheritdoc/>
+        void IDurableOrchestrationContext.SignalEntity(EntityId entity, DateTime startTime, string operationName, object operationInput)
+        {
+            this.ThrowIfInvalidAccess();
+            if (operationName == null)
+            {
+                throw new ArgumentNullException(nameof(operationName));
+            }
+
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, startTime);
+            System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "scheduling operations on entities is synchronous");
             alreadyCompletedTask.Wait(); // just so we see exceptions during testing
         }
 
@@ -390,7 +408,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
             var actualInstanceId = string.IsNullOrEmpty(instanceId) ? this.NewGuid().ToString() : instanceId;
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input, null);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "starting orchestrations is synchronous");
             return actualInstanceId;
         }
@@ -402,7 +420,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string operation,
             RetryOptions retryOptions,
-            object input)
+            object input,
+            DateTime? scheduledTimeUtc)
         {
             this.ThrowIfInvalidAccess();
 
@@ -543,13 +562,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Id = guid,
                         IsSignal = oneWay,
                         Operation = operation,
+                        ScheduledTime = scheduledTimeUtc,
                     };
                     if (input != null)
                     {
-                        request.SetInput(input);
+                        request.SetInput(input, this.dataConverter);
                     }
 
-                    this.SendEntityMessage(target, "op", request);
+                    this.SendEntityMessage(target, request);
 
                     if (!oneWay)
                     {
@@ -689,7 +709,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // can rethrow an exception if that was the result of the operation
-            return response.GetResult<TResult>();
+            return response.GetResult<TResult>(this.dataConverter);
         }
 
         internal Task<T> WaitForExternalEvent<T>(string name, string reason)
@@ -768,7 +788,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.pendingExternalEvents.Remove(name);
                     }
 
-                    object deserializedObject = MessagePayloadDataConverter.Default.Deserialize(input, genericTypeArgument);
+                    object deserializedObject = this.dataConverter.MessageConverter.Deserialize(input, genericTypeArgument);
 
                     if (deserializedObject is ResponseMessage responseMessage)
                     {
@@ -904,14 +924,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<TResult> IDurableOrchestrationContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
+            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput, null);
         }
 
         /// <inheritdoc/>
         Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput);
+            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput, null);
         }
 
         /// <inheritdoc/>
@@ -961,7 +981,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.LockRequestId = lockRequestId.ToString();
 
-            this.SendEntityMessage(target, "op", request);
+            this.SendEntityMessage(target, request);
 
             // wait for the response from the last entity in the lock set
             await this.WaitForExternalEvent<ResponseMessage>(this.LockRequestId, "LockAcquisitionCompleted");
@@ -986,7 +1006,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         ParentInstanceId = this.InstanceId,
                         LockRequestId = this.LockRequestId,
                     };
-                    this.SendEntityMessage(instance, "release", message);
+                    this.SendEntityMessage(instance, message);
                 }
 
                 this.ContextLocks = null;
@@ -1009,15 +1029,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendEntityMessage(OrchestrationInstance target, string eventName, object eventContent)
+        internal void SendEntityMessage(OrchestrationInstance target, object eventContent)
         {
+            string eventName;
+
             if (eventContent is RequestMessage requestMessage)
             {
-                this.MessageSorter.LabelOutgoingMessage(
-                    requestMessage,
-                    target.InstanceId,
-                    this.InnerContext.CurrentUtcDateTime,
-                    TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
+                if (requestMessage.ScheduledTime.HasValue)
+                {
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
+                }
+                else
+                {
+                    this.MessageSorter.LabelOutgoingMessage(
+                        requestMessage,
+                        target.InstanceId,
+                        this.InnerContext.CurrentUtcDateTime,
+                        TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
+
+                    eventName = EntityMessageEventNames.RequestMessageEventName;
+                }
+            }
+            else
+            {
+                eventName = EntityMessageEventNames.ReleaseMessageEventName;
             }
 
             if (!this.IsReplaying)

@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int httpAsyncSleepTime = 500,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            IMessageSerializerSettingsFactory serializerSettings = null,
             DurableTaskOptions options = null)
         {
             switch (storageProviderType)
@@ -151,7 +152,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProviderType,
                 nameResolver,
                 durableHttpMessageHandler,
-                lifeCycleNotificationHelper);
+                lifeCycleNotificationHelper,
+                serializerSettings);
         }
 
         public static JobHost GetJobHostWithOptions(
@@ -160,8 +162,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string storageProviderType = AzureStorageProviderType,
             INameResolver nameResolver = null,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            IMessageSerializerSettingsFactory serializerSettings = null)
         {
+            if (serializerSettings == null)
+            {
+                serializerSettings = new MessageSerializerSettingsFactory();
+            }
+
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
             if (durableHttpMessageHandler == null)
@@ -169,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
             }
 
-            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, storageProviderType, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper);
+            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, storageProviderType, loggerProvider, testNameResolver, durableHttpMessageHandler, lifeCycleNotificationHelper, serializerSettings);
         }
 
         public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)

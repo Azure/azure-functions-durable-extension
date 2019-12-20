@@ -90,6 +90,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return poco.Foo;
         }
 
+        // Mark as no automatic trigger to allow usage of output wrapper.
+        [NoAutomaticTrigger]
+        public static void BindToPOCOWithOutParameter([ActivityTrigger] PlainOldClrObject poco, string[] outputWrapper)
+        {
+            outputWrapper[0] = poco.Foo;
+        }
+
         public static double BindToDouble([ActivityTrigger] double value)
         {
             return value;

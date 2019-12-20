@@ -35,26 +35,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static void AnalyzeAttributeClassName(SyntaxNodeAnalysisContext context)
         {
-            var attributeExpression = context.Node as AttributeSyntax;
-            if (attributeExpression != null && attributeExpression.ChildNodes().First().ToString() == "EntityTrigger")
+            var attribute = context.Node as AttributeSyntax;
+            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
             {
-                if (SyntaxNodeUtils.TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+                if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(attribute, out SyntaxNode attributeArgument))
                 {
-                    if (SyntaxNodeUtils.TryGetFunctionName(functionAttribute, out SyntaxNode attributeArgument))
+                    var functionName = attributeArgument.ToString().Trim('"');
+                    if (SyntaxNodeUtils.TryGetClassSymbol(attribute, context.SemanticModel, out INamedTypeSymbol classSymbol))
                     {
-                        var functionName = attributeArgument.ToString().Trim('"');
-                        if (SyntaxNodeUtils.TryGetClassSymbol(attributeExpression, context.SemanticModel, out INamedTypeSymbol classSymbol))
+                        var className = classSymbol.Name.ToString();
+
+                        if (!ClassNameMatchesFunctionName(classSymbol, functionName))
                         {
-                            var className = classSymbol.Name.ToString();
+                            var diagnosticClassName = Diagnostic.Create(Rule, classSymbol.Locations[0], className, functionName);
+                            var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), className, functionName);
 
-                            if (!ClassNameMatchesFunctionName(classSymbol, functionName))
-                            {
-                                var diagnosticClassName = Diagnostic.Create(Rule, classSymbol.Locations[0], className, functionName);
-                                var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), className, functionName);
-
-                                context.ReportDiagnostic(diagnosticClassName);
-                                context.ReportDiagnostic(diagnosticAttribute);
-                            }
+                            context.ReportDiagnostic(diagnosticClassName);
+                            context.ReportDiagnostic(diagnosticAttribute);
                         }
                     }
                 }

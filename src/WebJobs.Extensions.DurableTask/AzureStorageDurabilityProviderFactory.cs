@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
             {
-                this.options.HubName = sanitizedHubName;
+                this.options.SetDefaultHubName(sanitizedHubName);
             }
 
             this.connectionStringResolver = connectionStringResolver;

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -89,13 +90,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
+        /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
+        /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -122,6 +127,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
+
+            if (messageSerializerSettingsFactory == null)
+            {
+                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            }
+
+            if (errorSerializerSettingsFactory == null)
+            {
+                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            }
+
+            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
         }
 
 #if FUNCTIONS_V1
@@ -160,6 +177,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal ILifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
+
+        internal MessagePayloadDataConverter DataConverter { get; private set; }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -466,13 +485,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             entityShim.NumberEventsToReceive++;
 
-                            if (eventRaisedEvent.Name == "op")
+                            if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
-                                var requestMessage = JsonConvert.DeserializeObject<RequestMessage>(eventRaisedEvent.Input);
+                                var requestMessage = this.DataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
 
-                                // run this through the message sorter to help with reordering and duplicate filtering
-                                var deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+                                IEnumerable<RequestMessage> deliverNow;
+
+                                if (requestMessage.ScheduledTime.HasValue)
+                                {
+                                    // messages with a scheduled time are always delivered immediately
+                                    deliverNow = new RequestMessage[] { requestMessage };
+                                }
+                                else
+                                {
+                                    // run this through the message sorter to help with reordering and duplicate filtering
+                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+                                }
 
                                 foreach (var message in deliverNow)
                                 {
@@ -491,7 +520,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             else
                             {
                                 // we are receiving a lock release
-                                var message = JsonConvert.DeserializeObject<ReleaseMessage>(eventRaisedEvent.Input);
+                                var message = this.DataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
 
                                 if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {
@@ -866,7 +895,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         message: "Stopping task hub worker",
                         writeToUserLogs: true);
 
-                    await this.taskHubWorker.StopAsync(isForced: true);
+                    await this.taskHubWorker.StopAsync(isForced: !this.Options.UseGracefulShutdown);
                     this.isTaskHubWorkerStarted = false;
                     return true;
                 }

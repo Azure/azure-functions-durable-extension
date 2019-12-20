@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsException => this.ExceptionType != null;
 
-        public void SetResult(object result)
+        public void SetResult(object result, MessagePayloadDataConverter dataConverter)
         {
             this.ExceptionType = null;
             if (result is JToken jtoken)
@@ -27,17 +27,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                this.Result = MessagePayloadDataConverter.Default.Serialize(result);
+                this.Result = dataConverter.MessageConverter.Serialize(result);
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, EntityId entity)
+        public void SetExceptionResult(Exception exception, string operation, EntityId entity, MessagePayloadDataConverter dataConverter)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
             try
             {
-                this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(exception);
+                this.Result = dataConverter.ErrorConverter.Serialize(exception);
             }
             catch (Exception)
             {
@@ -46,11 +46,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var wrapper = new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
                 this.ExceptionType = wrapper.GetType().AssemblyQualifiedName;
-                this.Result = MessagePayloadDataConverter.ErrorConverter.Serialize(wrapper);
+                this.Result = dataConverter.ErrorConverter.Serialize(wrapper);
             }
         }
 
-        public T GetResult<T>()
+        public T GetResult<T>(MessagePayloadDataConverter dataConverter)
         {
             if (this.IsException)
             {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     var type = Type.GetType(this.ExceptionType, true);
-                    e = (Exception)MessagePayloadDataConverter.ErrorConverter.Deserialize(this.Result, type);
+                    e = (Exception)dataConverter.ErrorConverter.Deserialize(this.Result, type);
                 }
                 catch
                 {
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return MessagePayloadDataConverter.Default.Deserialize<T>(this.Result);
+                return dataConverter.MessageConverter.Deserialize<T>(this.Result);
             }
         }
 

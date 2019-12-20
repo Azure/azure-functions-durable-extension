@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
+        private readonly MessagePayloadDataConverter dataConverter;
 
         internal DurableClient(
             DurabilityProvider serviceClient,
@@ -46,7 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
-            this.client = new TaskHubClient(serviceClient);
+            this.dataConverter = config.DataConverter;
+
+            this.client = new TaskHubClient(serviceClient, this.dataConverter);
             this.durabilityProvider = serviceClient;
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
@@ -207,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.SignalEntityAsync(this.client, this.TaskHubName, entityId, operationName, operationInput);
+                return this.SignalEntityAsyncInternal(this.client, this.TaskHubName, entityId, null, operationName, operationInput);
             }
             else
             {
@@ -223,11 +226,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
-                return this.SignalEntityAsync(taskHubClient, taskHubName, entityId, operationName, operationInput);
+                return this.SignalEntityAsyncInternal(taskHubClient, taskHubName, entityId, null, operationName, operationInput);
             }
         }
 
-        private async Task SignalEntityAsync(TaskHubClient client, string hubName, EntityId entityId, string operationName, object operationInput)
+        /// <inheritdoc />
+        Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, DateTime scheduledTimeUtc, string operationName, object operationInput, string taskHubName, string connectionName)
+        {
+            if (string.IsNullOrEmpty(taskHubName))
+            {
+                return this.SignalEntityAsyncInternal(this.client, this.TaskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(connectionName))
+                {
+                    connectionName = this.attribute.ConnectionName;
+                }
+
+                var attribute = new DurableClientAttribute
+                {
+                    TaskHub = taskHubName,
+                    ConnectionName = connectionName,
+                };
+
+                TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
+                return this.SignalEntityAsyncInternal(taskHubClient, taskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
+            }
+        }
+
+        private async Task SignalEntityAsyncInternal(TaskHubClient client, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
         {
             if (operationName == null)
             {
@@ -245,14 +273,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Id = guid,
                 IsSignal = true,
                 Operation = operationName,
+                ScheduledTime = scheduledTimeUtc,
             };
             if (operationInput != null)
             {
-                request.SetInput(operationInput);
+                request.SetInput(operationInput, this.dataConverter);
             }
 
-            var jrequest = JToken.FromObject(request, MessagePayloadDataConverter.DefaultSerializer);
-            await client.RaiseEventAsync(instance, "op", jrequest);
+            var jrequest = JToken.FromObject(request, this.dataConverter.MessageSerializer);
+            var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
+            await client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
                 hubName,
@@ -378,13 +408,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
-            this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
-            string entityState = await provider.RetrieveSerializedEntityState(entityId);
+            string entityState = await provider.RetrieveSerializedEntityState(entityId, this.dataConverter.MessageSettings);
 
             return new EntityStateResponse<T>()
             {
                 EntityExists = entityState != null,
-                EntityState = MessagePayloadDataConverter.Default.Deserialize<T>(entityState),
+                EntityState = this.dataConverter.Deserialize<T>(entityState),
             };
         }
 
@@ -407,6 +436,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             CancellationToken cancellationToken)
         {
             return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
+        {
+            var condition = new OrchestrationStatusQueryCondition(query);
+            var result = await ((IDurableClient)this).GetStatusAsync(condition, cancellationToken);
+            var entityResult = new EntityQueryResult(result);
+            return entityResult;
         }
 
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)

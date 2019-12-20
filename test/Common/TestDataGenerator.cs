@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetExtendedSessionAndFullFeaturedStorageProviderOptions()
+        public static IEnumerable<object[]> GetBooleanAndFullFeaturedStorageProviderOptions()
         {
             foreach (object boolOption in BoolOptions)
             {

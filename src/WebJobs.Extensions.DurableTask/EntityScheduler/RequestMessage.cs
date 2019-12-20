@@ -44,6 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ParentInstanceId { get; set; }
 
         /// <summary>
+        /// Optionally, a scheduled time at which to start the operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "due", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public DateTime? ScheduledTime { get; set; }
+
+        /// <summary>
         /// A timestamp for this request.
         /// Used for duplicate filtering and in-order delivery.
         /// </summary>
@@ -71,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;
 
-        public void SetInput(object obj)
+        public void SetInput(object obj, MessagePayloadDataConverter dataConverter)
         {
             try
             {
@@ -81,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = MessagePayloadDataConverter.Default.Serialize(obj);
+                    this.Input = dataConverter.MessageConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -90,11 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public T GetInput<T>()
+        public T GetInput<T>(MessagePayloadDataConverter dataConverter)
         {
             try
             {
-                return JsonConvert.DeserializeObject<T>(this.Input);
+                return dataConverter.MessageConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -102,11 +108,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public object GetInput(Type inputType)
+        public object GetInput(Type inputType, MessagePayloadDataConverter dataConverter)
         {
             try
             {
-                return JsonConvert.DeserializeObject(this.Input, inputType);
+                return dataConverter.MessageConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {

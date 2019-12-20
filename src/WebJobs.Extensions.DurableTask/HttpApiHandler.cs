@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -45,11 +44,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
+        private const string FetchStateParameter = "fetchState";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
         private const string PageSizeParameter = "top";
         private const string ReturnInternalServerErrorOnFailure = "returnInternalServerErrorOnFailure";
+        private const string LastOperationTimeFrom = "lastOperationTimeFrom";
+        private const string LastOperationTimeTo = "lastOperationTimeTo";
+
+        private const string EmptyEntityKeySymbol = "$";
 
         // API Routes
         private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
@@ -59,10 +63,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
+        private readonly MessagePayloadDataConverter dataConverter;
 
         public HttpApiHandler(DurableTaskExtension config, ILogger logger)
         {
             this.config = config;
+            this.dataConverter = this.config.DataConverter;
             this.logger = logger;
         }
 
@@ -89,11 +95,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new TemplateMatcher(TemplateParser.Parse($"{OrchestratorsControllerSegment}{{{FunctionNameRouteParameter}}}/{{{InstanceIdRouteParameter}?}}"), defaultRouteValues);
         }
 
-        // /entity/{entityId}/{entityKey?}
+        // /entities/{entityName}/{entityKey?}
         private static TemplateMatcher GetEntityRoute()
         {
             var defaultRouteValues = RouteValueDictionaryFromArray(new KeyValuePair<string, object>[] { new KeyValuePair<string, object>(EntityKeyRouteParameter, string.Empty) });
-            return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
+            return new TemplateMatcher(TemplateParser.Parse($"{EntitiesControllerSegment}{{{EntityNameRouteParameter}?}}/{{{EntityKeyRouteParameter}?}}"), defaultRouteValues);
         }
 
         // Can't use RouteValueDictionary.FromArray() due to it only being available in the version we use in Functions V2.
@@ -211,13 +217,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         string entityName = (string)routeValues[EntityNameRouteParameter];
                         string entityKey = (string)routeValues[EntityKeyRouteParameter];
-                        EntityId entityId = new EntityId(entityName, entityKey);
+
                         if (request.Method == HttpMethod.Get)
                         {
-                            return await this.HandleGetEntityRequestAsync(request, entityId);
+                            if (!string.IsNullOrEmpty(entityKey))
+                            {
+                                EntityId entityId = new EntityId(entityName, entityKey);
+                                return await this.HandleGetEntityRequestAsync(request, entityId);
+                            }
+                            else
+                            {
+                                return await this.HandleListEntitiesRequestAsync(request, entityName);
+                            }
                         }
-                        else if (request.Method == HttpMethod.Post)
+                        else if (request.Method == HttpMethod.Post || request.Method == HttpMethod.Delete)
                         {
+                            EntityId entityId = new EntityId(entityName, entityKey);
                             return await this.HandlePostEntityOperationRequestAsync(request, entityId);
                         }
                         else
@@ -322,48 +337,95 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var createdTimeFrom = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, default(DateTime));
-            var createdTimeTo = GetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, default(DateTime));
-            var runtimeStatus = GetIEnumerableQueryParameterValue<OrchestrationRuntimeStatus>(queryNameValuePairs, RuntimeStatusParameter);
-            var pageSize = GetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter);
 
-            var continuationToken = "";
+            var condition = new OrchestrationStatusQueryCondition();
+
+            if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
+            {
+                condition.CreatedTimeFrom = createdTimeFrom;
+            }
+
+            if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, out DateTime createdTimeTo))
+            {
+                condition.CreatedTimeTo = createdTimeTo;
+            }
+
+            if (TryGetIEnumerableQueryParameterValue<OrchestrationRuntimeStatus>(queryNameValuePairs, RuntimeStatusParameter, out IEnumerable<OrchestrationRuntimeStatus> runtimeStatus))
+            {
+                condition.RuntimeStatus = runtimeStatus;
+            }
+
+            if (TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
+            {
+                condition.ShowInput = showInput;
+            }
+
+            if (TryGetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter, out int pageSize))
+            {
+                condition.PageSize = pageSize;
+            }
+
             if (request.Headers.TryGetValues("x-ms-continuation-token", out var headerValues))
             {
-                continuationToken = headerValues.FirstOrDefault();
+                condition.ContinuationToken = headerValues.FirstOrDefault();
             }
 
             IList<DurableOrchestrationStatus> statusForAllInstances;
-            var nextContinuationToken = "";
 
-            if (pageSize > 0)
-            {
-                var condition = new OrchestrationStatusQueryCondition()
-                {
-                    CreatedTimeFrom = createdTimeFrom,
-                    CreatedTimeTo = createdTimeTo,
-                    RuntimeStatus = runtimeStatus,
-                    PageSize = pageSize,
-                    ContinuationToken = continuationToken,
-                };
-                var context = await client.GetStatusAsync(condition, CancellationToken.None);
-                statusForAllInstances = context.DurableOrchestrationState.ToList();
-                nextContinuationToken = context.ContinuationToken;
-            }
-            else
-            {
-                statusForAllInstances = await client.GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus);
-            }
+            var context = await client.GetStatusAsync(condition, CancellationToken.None);
+            statusForAllInstances = context.DurableOrchestrationState.ToList();
+            var nextContinuationToken = context.ContinuationToken;
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
             foreach (var state in statusForAllInstances)
             {
-                results.Add(this.ConvertFrom(state));
+                results.Add(ConvertFrom(state));
             }
 
             var response = request.CreateResponse(HttpStatusCode.OK, results);
 
             response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> HandleListEntitiesRequestAsync(
+            HttpRequestMessage request, string entityName)
+        {
+            IDurableEntityClient client = this.GetClient(request);
+            NameValueCollection queryNameValuePairs = request.GetQueryNameValuePairs();
+
+            var query = new EntityQuery();
+            query.EntityName = entityName;
+
+            if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, LastOperationTimeFrom, out DateTime lastOperationTimeFrom))
+            {
+                query.LastOperationFrom = lastOperationTimeFrom;
+            }
+
+            if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, LastOperationTimeTo, out DateTime lastOperationTimeTo))
+            {
+                query.LastOperationTo = lastOperationTimeTo;
+            }
+
+            if (TryGetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter, out int pageSize))
+            {
+                query.PageSize = pageSize;
+            }
+
+            if (TryGetBooleanQueryParameterValue(queryNameValuePairs, FetchStateParameter, out bool fetchState))
+            {
+                query.FetchState = fetchState;
+            }
+
+            if (request.Headers.TryGetValues("x-ms-continuation-token", out IEnumerable<string> headerValues))
+            {
+                query.ContinuationToken = headerValues.FirstOrDefault();
+            }
+
+            EntityQueryResult result = await client.ListEntitiesAsync(query, CancellationToken.None);
+            HttpResponseMessage response = request.CreateResponse(HttpStatusCode.OK, result.Entities);
+
+            response.Headers.Add("x-ms-continuation-token", result.ContinuationToken);
             return response;
         }
 
@@ -386,10 +448,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var createdTimeFrom =
-                GetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeFrom", DateTime.MinValue);
-
-            if (createdTimeFrom == DateTime.MinValue)
+            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
             {
                 var badRequestResponse = request.CreateResponse(
                     HttpStatusCode.BadRequest,
@@ -397,10 +456,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return badRequestResponse;
             }
 
-            var createdTimeTo =
-                GetDateTimeQueryParameterValue(queryNameValuePairs, "createdTimeTo", DateTime.UtcNow);
-            var runtimeStatusCollection =
-                GetIEnumerableQueryParameterValue<OrchestrationStatus>(queryNameValuePairs, "runtimeStatus");
+            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeToParameter, out DateTime createdTimeTo))
+            {
+                createdTimeTo = DateTime.UtcNow;
+            }
+
+            TryGetIEnumerableQueryParameterValue<OrchestrationStatus>(queryNameValuePairs, RuntimeStatusParameter, out IEnumerable<OrchestrationStatus> runtimeStatusCollection);
 
             PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatusCollection);
 
@@ -417,13 +478,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
-
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var showHistory = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, defaultValue: false);
-            var showHistoryOutput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, defaultValue: false);
 
-            bool showInput = GetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, defaultValue: true);
-            bool returnInternalServerErrorOnFailure = GetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, defaultValue: false);
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
+            {
+                showHistory = false;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, out bool showHistoryOutput))
+            {
+                showHistoryOutput = false;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
+            {
+                showInput = true;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out bool returnInternalServerErrorOnFailure))
+            {
+                returnInternalServerErrorOnFailure = false;
+            }
 
             var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
             if (status == null)
@@ -475,7 +550,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var response =
                 request.CreateResponse(
                 statusCode,
-                this.ConvertFrom(status));
+                ConvertFrom(status));
 
             if (location != null)
             {
@@ -491,7 +566,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return response;
         }
 
-        private StatusResponsePayload ConvertFrom(DurableOrchestrationStatus status)
+        private static StatusResponsePayload ConvertFrom(DurableOrchestrationStatus status)
         {
             return new StatusResponsePayload
             {
@@ -507,39 +582,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static IEnumerable<T> GetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        private static bool TryGetIEnumerableQueryParameterValue<T>(NameValueCollection queryStringNameValueCollection, string queryParameterName, out IEnumerable<T> collection)
             where T : struct
         {
-            var results = new List<T>();
+            collection = new List<T>();
             string[] parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
 
             foreach (string value in parameters.SelectMany(x => x.Split(',')))
             {
                 if (Enum.TryParse(value, out T result))
                 {
-                    results.Add(result);
+                    ((List<T>)collection).Add(result);
                 }
             }
 
-            return results;
+            if (collection.Any())
+            {
+                return true;
+            }
+
+            return false;
         }
 
-        private static DateTime GetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, DateTime defaultDateTime)
+        private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            return DateTime.TryParse(value, out DateTime dateTime) ? dateTime : defaultDateTime;
+            return DateTime.TryParse(value, out dateTimeValue);
         }
 
-        private static bool GetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, bool defaultValue)
+        private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
+            return bool.TryParse(value, out boolValue);
         }
 
-        private static int GetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName)
+        private static bool TryGetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out int intValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            return int.TryParse(value, out int intValue) ? intValue : 0;
+            return int.TryParse(value, out intValue);
         }
 
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
@@ -580,15 +660,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IDurableOrchestrationClient client = this.GetClient(request);
 
                 object input = null;
-                if (request.Content != null)
+                if (request.Content?.Headers?.ContentLength != 0)
                 {
-                    using (Stream s = await request.Content.ReadAsStreamAsync())
-                    using (StreamReader sr = new StreamReader(s))
-                    using (JsonReader reader = new JsonTextReader(sr))
-                    {
-                        JsonSerializer serializer = JsonSerializer.Create(MessagePayloadDataConverter.MessageSettings);
-                        input = serializer.Deserialize<object>(reader);
-                    }
+                    string json = await request.Content.ReadAsStringAsync();
+                    input = JsonConvert.DeserializeObject(json, this.dataConverter.MessageSettings);
                 }
 
                 string id = await client.StartNewAsync(functionName, instanceId, input);
@@ -690,6 +765,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableEntityClient client = this.GetClient(request);
 
+            // This input for entity key parameter means that entity key is an empty string.
+            if (entityId.EntityKey.Equals(EmptyEntityKeySymbol))
+            {
+                entityId = new EntityId(entityId.EntityName, "");
+            }
+
             EntityStateResponse<JToken> response = await client.ReadEntityStateAsync<JToken>(entityId);
 
             if (!response.EntityExists)
@@ -708,7 +789,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableEntityClient client = this.GetClient(request);
 
-            string operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            string operationName;
+
+            if (request.Method == HttpMethod.Delete)
+            {
+                operationName = "delete";
+            }
+            else
+            {
+                operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            }
 
             if (request.Content == null || request.Content.Headers.ContentLength == 0)
             {

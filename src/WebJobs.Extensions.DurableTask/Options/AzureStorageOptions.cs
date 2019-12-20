@@ -53,11 +53,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or set the number of control queue messages that can be buffered in memory
         /// at a time, at which point the dispatcher will wait before dequeuing any additional
-        /// messages. The default is 64.
+        /// messages. The default is 256. The maximum value is 1000.
         /// </summary>
-        /// <remarks>This has historically always been fixed to 64, but increasing it may increase
-        /// throughput.</remarks>
-        public int ControlQueueBufferThreshold { get; set; } = 64;
+        /// <remarks>
+        /// Increasing this value can improve orchestration throughput by pre-fetching more
+        /// orchestration messages from control queues. The downside is that it increases the
+        /// possibility of duplicate function executions if partition leases move between app
+        /// instances. This most often occurs when the number of app instances changes.
+        /// </remarks>
+        /// <value>A non-negative integer between 0 and 1000. The default value is <c>256</c>.</value>
+        public int ControlQueueBufferThreshold { get; set; } = 256;
 
         /// <summary>
         /// Gets or sets the visibility timeout of dequeued control queue messages.

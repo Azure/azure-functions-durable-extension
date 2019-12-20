@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -165,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public int GetDelayInSecondsAfterOnProcessException(Exception exception)
         {
-            return this.GetDelayInSecondsAfterOnProcessException(exception);
+            return this.GetOrchestrationService().GetDelayInSecondsAfterOnProcessException(exception);
         }
 
         /// <inheritdoc/>
@@ -298,8 +299,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Retrieves the state for a serialized entity.
         /// </summary>
         /// <param name="entityId">Entity id to fetch state for.</param>
+        /// <param name="serializierSettings">JsonSerializerSettings for custom deserialization.</param>
         /// <returns>State for the entity.</returns>
-        public virtual Task<string> RetrieveSerializedEntityState(EntityId entityId)
+        public virtual Task<string> RetrieveSerializedEntityState(EntityId entityId, JsonSerializerSettings serializierSettings)
         {
             throw this.GetNotImplementedException(nameof(this.RetrieveSerializedEntityState));
         }

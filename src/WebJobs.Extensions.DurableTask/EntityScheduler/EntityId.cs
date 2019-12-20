@@ -44,6 +44,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return $"@{entityId.EntityName}@{entityId.EntityKey}";
         }
 
+        internal static string GetSchedulerIdPrefixFromEntityName(string entityName)
+        {
+            return $"@{entityName.ToLowerInvariant()}@";
+        }
+
         internal static EntityId GetEntityIdFromSchedulerId(string schedulerId)
         {
             var pos = schedulerId.IndexOf('@', 1);

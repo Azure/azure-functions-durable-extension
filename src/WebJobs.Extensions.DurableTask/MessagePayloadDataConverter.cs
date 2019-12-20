@@ -13,29 +13,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class MessagePayloadDataConverter : JsonDataConverter
     {
-        // The default JsonDataConverter for DTFx includes type information in JSON objects. This causes issues
-        // because the type information generated from C# scripts cannot be understood by DTFx. For this reason, explicitly
-        // configure the JsonDataConverter to not include CLR type information. This is also safer from a security perspective.
-        internal static readonly JsonSerializerSettings MessageSettings = new JsonSerializerSettings
+        private MessagePayloadDataConverter messageConverter;
+        private MessagePayloadDataConverter errorConverter;
+        private JsonSerializer messageSerializer;
+
+        public MessagePayloadDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory, IErrorSerializerSettingsFactory errorSerializerSettingsFactory)
+            : base(messageSerializerSettingsFactory.CreateJsonSerializerSettings())
         {
-            TypeNameHandling = TypeNameHandling.None,
-        };
+            this.MessageSettings = messageSerializerSettingsFactory.CreateJsonSerializerSettings();
+            this.ErrorSettings = errorSerializerSettingsFactory.CreateJsonSerializerSettings();
+        }
 
-        private static readonly JsonSerializerSettings ErrorSettings = new JsonSerializerSettings
-        {
-            ContractResolver = new ExceptionResolver(),
-            TypeNameHandling = TypeNameHandling.Objects,
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-        };
-
-        // Default singleton instances
-        public static readonly MessagePayloadDataConverter Default = new MessagePayloadDataConverter(MessageSettings);
-        public static readonly MessagePayloadDataConverter ErrorConverter = new MessagePayloadDataConverter(ErrorSettings);
-        public static readonly JsonSerializer DefaultSerializer = JsonSerializer.Create(MessageSettings);
-
-        public MessagePayloadDataConverter(JsonSerializerSettings settings)
+        private MessagePayloadDataConverter(JsonSerializerSettings settings)
             : base(settings)
         {
+        }
+
+        internal JsonSerializerSettings MessageSettings { get; }
+
+        internal JsonSerializerSettings ErrorSettings { get; }
+
+        internal MessagePayloadDataConverter MessageConverter
+        {
+            get
+            {
+                if (this.messageConverter == null)
+                {
+                    this.messageConverter = new MessagePayloadDataConverter(this.MessageSettings);
+                }
+
+                return this.messageConverter;
+            }
+        }
+
+        internal MessagePayloadDataConverter ErrorConverter
+        {
+            get
+            {
+                if (this.errorConverter == null)
+                {
+                    this.errorConverter = new MessagePayloadDataConverter(this.ErrorSettings);
+                }
+
+                return this.errorConverter;
+            }
+        }
+
+        internal JsonSerializer MessageSerializer
+        {
+            get
+            {
+                if (this.messageSerializer == null)
+                {
+                    this.messageSerializer = JsonSerializer.Create(this.MessageSettings);
+                }
+
+                return this.messageSerializer;
+            }
         }
 
         /// <summary>
@@ -79,23 +113,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return serializedJson;
-        }
-
-        private class ExceptionResolver : DefaultContractResolver
-        {
-            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-            {
-                JsonProperty property = base.CreateProperty(member, memberSerialization);
-
-                // Strip the TargetSite property from all exceptions
-                if (typeof(Exception).IsAssignableFrom(property.DeclaringType) &&
-                    property.PropertyName == nameof(Exception.TargetSite))
-                {
-                    property.ShouldSerialize = _ => false;
-                }
-
-                return property;
-            }
         }
     }
 }

@@ -34,10 +34,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public void FindEntityTriggers(SyntaxNodeAnalysisContext context)
         {
             var attribute = context.Node as AttributeSyntax;
-
-            if (string.Equals(attribute.ToString(), "EntityTrigger"))
+            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
             {
-                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attribute, context, out SyntaxNode parameterNode))
+                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode))
                 {
                     var paramTypeName = parameterNode.ToString();
                     if (!string.Equals(paramTypeName, "IDurableEntityContext"))

@@ -41,12 +41,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.storageConnectionString, this.hubName);
 
             this.scaleMonitor = new DurableTaskScaleMonitor(
-                                                this.functionId,
-                                                this.functionName,
-                                                this.hubName,
-                                                this.storageConnectionString,
-                                                this.traceHelper,
-                                                this.performanceMonitor.Object);
+                this.functionId,
+                this.functionName,
+                this.hubName,
+                this.storageConnectionString,
+                this.traceHelper,
+                this.performanceMonitor.Object);
         }
 
         [Fact]

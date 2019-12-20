@@ -12,6 +12,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class OrchestrationStatusQueryCondition
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="OrchestrationStatusQueryCondition"/> class.
+        /// </summary>
+        public OrchestrationStatusQueryCondition() { }
+
+        internal OrchestrationStatusQueryCondition(EntityQuery entityQuery)
+        {
+            this.CreatedTimeFrom = entityQuery.LastOperationFrom;
+            this.CreatedTimeTo = entityQuery.LastOperationTo;
+            this.PageSize = entityQuery.PageSize;
+            this.ContinuationToken = entityQuery.ContinuationToken;
+            this.ShowInput = entityQuery.FetchState;
+
+            if (!string.IsNullOrEmpty(entityQuery.EntityName))
+            {
+                this.InstanceIdPrefix = EntityId.GetSchedulerIdPrefixFromEntityName(entityQuery.EntityName);
+            }
+            else
+            {
+                this.InstanceIdPrefix = "@";
+            }
+        }
+
+        /// <summary>
         /// Return orchestration instances which matches the runtimeStatus.
         /// </summary>
         public IEnumerable<OrchestrationRuntimeStatus> RuntimeStatus { get; set; }
@@ -40,5 +63,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// ContinuationToken of the pager.
         /// </summary>
         public string ContinuationToken { get; set; }
+
+        /// <summary>
+        /// Return orchestration instances that have this instance id prefix.
+        /// </summary>
+        public string InstanceIdPrefix { get; set; }
+
+        /// <summary>
+        /// Determines whether the query will include the input of the orchestration.
+        /// </summary>
+        public bool ShowInput { get; set; } = true;
     }
 }

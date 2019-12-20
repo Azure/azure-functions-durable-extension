@@ -20,11 +20,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskEntityShim shim;
 
+        private readonly MessagePayloadDataConverter dataConverter;
+
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
         public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
+            this.dataConverter = config.DataConverter;
             this.self = entity;
             this.shim = shim;
         }
@@ -154,13 +157,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         TInput IDurableEntityContext.GetInput<TInput>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput<TInput>();
+            return this.CurrentOperation.GetInput<TInput>(this.dataConverter);
         }
 
         object IDurableEntityContext.GetInput(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput(argumentType);
+            return this.CurrentOperation.GetInput(argumentType, this.dataConverter);
         }
 
         TState IDurableEntityContext.GetState<TState>(Func<TState> initializer)
@@ -178,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    result = JsonConvert.DeserializeObject<TState>(this.State.EntityState);
+                    result = this.dataConverter.Deserialize<TState>(this.State.EntityState);
                 }
                 catch (Exception e)
                 {
@@ -266,7 +269,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    this.State.EntityState = MessagePayloadDataConverter.Default.Serialize(this.CurrentState);
+                    this.State.EntityState = this.dataConverter.MessageConverter.Serialize(this.CurrentState);
                 }
                 catch (Exception e)
                 {
@@ -283,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     serializationErrorMessage = new ResponseMessage()
                     {
                         ExceptionType = serializationException.GetType().AssemblyQualifiedName,
-                        Result = MessagePayloadDataConverter.ErrorConverter.Serialize(serializationException),
+                        Result = this.dataConverter.ErrorConverter.Serialize(serializationException),
                     };
                 }
 
@@ -295,6 +298,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         void IDurableEntityContext.SignalEntity(EntityId entity, string operation, object input)
+        {
+            this.SignalEntityInternal(entity, null, operation, input);
+        }
+
+        void IDurableEntityContext.SignalEntity(EntityId entity, DateTime scheduledTimeUtc, string operation, object input)
+        {
+            this.SignalEntityInternal(entity, scheduledTimeUtc, operation, input);
+        }
+
+        private void SignalEntityInternal(EntityId entity, DateTime? scheduledTimeUtc, string operation, object input)
         {
             this.ThrowIfInvalidAccess();
             if (operation == null)
@@ -315,13 +328,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Id = Guid.NewGuid(),
                 IsSignal = true,
                 Operation = operation,
+                ScheduledTime = scheduledTimeUtc,
             };
             if (input != null)
             {
-                request.SetInput(input);
+                request.SetInput(input, this.dataConverter);
             }
 
-            this.SendOperationMessage(target, "op", request);
+            this.SendOperationMessage(target, request);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -369,7 +383,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
-            this.CurrentOperationResponse.SetResult(result);
+            this.CurrentOperationResponse.SetResult(result, this.dataConverter);
         }
 
         private void ThrowIfInvalidAccess()
@@ -380,25 +394,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, string eventName, object message)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
         {
             lock (this.outbox)
             {
-                if (message is RequestMessage requestMessage)
+                string eventName;
+
+                if (requestMessage.ScheduledTime.HasValue)
+                {
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
+                }
+                else
                 {
                     this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                    eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
 
                 this.outbox.Add(new OperationMessage()
                 {
                     Target = target,
                     EventName = eventName,
-                    EventContent = message,
+                    EventContent = requestMessage,
                 });
             }
         }
 
-        internal void SendResponseMessage(OrchestrationInstance target, string eventName, object message, bool isException)
+        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException)
         {
             lock (this.outbox)
             {
@@ -410,22 +431,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.outbox.Add(new ResultMessage()
                 {
                     Target = target,
-                    EventName = eventName,
+                    EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
                     EventContent = message,
                     IsError = isException,
                 });
             }
         }
 
-        internal void SendLockMessage(OrchestrationInstance target, string eventName, object message)
+        internal void SendLockRequestMessage(OrchestrationInstance target, object message)
         {
             lock (this.outbox)
             {
                 this.outbox.Add(new LockMessage()
                 {
                     Target = target,
-                    EventName = eventName,
+                    EventName = EntityMessageEventNames.RequestMessageEventName,
                     EventContent = message,
+                });
+            }
+        }
+
+        internal void SendLockResponseMessage(OrchestrationInstance target, Guid requestId)
+        {
+            lock (this.outbox)
+            {
+                this.outbox.Add(new LockMessage()
+                {
+                    Target = target,
+                    EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
+                    EventContent = new ResponseMessage()
+                    {
+                        Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
+                    },
                 });
             }
         }
