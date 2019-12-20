@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2010
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29418.71
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask", "src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}"
 EndProject
@@ -17,6 +17,11 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V2", "test\FunctionsV2\WebJobs.Extensions.DurableTask.Tests.V2.csproj", "{F2A5DABB-36D4-4152-AF49-2570149899E1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V1", "test\FunctionsV1\WebJobs.Extensions.DurableTask.Tests.V1.csproj", "{F99CA746-553C-43B4-943B-59A5D190459A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9850DECF-CBA2-43E7-B5E2-55053DD308E9}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
