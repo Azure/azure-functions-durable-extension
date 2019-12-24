@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var nameOfNamespace = "nameof(" + classNameWithNamespce + ")";
             var nameOfClassName = "nameof(" + className + ")";
 
-            if (String.Equals(className, functionName) || String.Equals(nameOfClassName, functionName) || String.Equals(nameOfNamespace, functionName))
+            if (string.Equals(className, functionName) || string.Equals(nameOfClassName, functionName) || string.Equals(nameOfNamespace, functionName))
             {
                 return true;
             }

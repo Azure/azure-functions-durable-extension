@@ -15,27 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     {
         private readonly string diagnosticId = ClassNameAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = ClassNameAnalyzer.severity;
-        private readonly string fixtestV2 = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-
-namespace ExternalInteraction
-{
-    public static class HireEmployee
-    {
-        [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            }
-}";
 
         [TestMethod]
         public void ClassName_NonIssue()
@@ -146,7 +125,7 @@ namespace ExternalInteraction
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
+                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -157,17 +136,15 @@ namespace ExternalInteraction
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
+                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 10)
+                            new DiagnosticResultLocation("Test0.cs", 15, 23)
                      }
             };
             
             VerifyCSharpDiagnostic(test, expectedResults);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

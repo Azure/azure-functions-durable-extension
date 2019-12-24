@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -15,8 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class FunctionAnalyzer : DiagnosticAnalyzer
     {
-        public List<ActivityFunctionDefinition> availableFunctions = new List<ActivityFunctionDefinition>();
-        public List<ActivityFunctionCall> calledFunctions = new List<ActivityFunctionCall>();
+        private List<ActivityFunctionDefinition> availableFunctions = new List<ActivityFunctionDefinition>();
+        private List<ActivityFunctionCall> calledFunctions = new List<ActivityFunctionCall>();
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
@@ -43,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             });
         }
 
-
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
             ArgumentAnalyzer argumentAnalyzer = new ArgumentAnalyzer();
@@ -68,9 +66,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 var returnTypeName = GetReturnTypeNameFromCallActivityInvocation(context, invocationExpression);
 
-                var inputNode = GetInputNodeFromCallActivityInvocation(invocationExpression);
-                var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
-                var inputTypeName = GetQualifiedTypeName(inputType);
+                string inputTypeName = null;
+                if (TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode))
+                {
+                    var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
+                    inputTypeName = GetQualifiedTypeName(inputType);
+                }
 
                 calledFunctions.Add(new ActivityFunctionCall
                 {
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private string GetReturnTypeNameFromCallActivityInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpression)
         {
-            if (SyntaxNodeUtils.TryGetTypeArgumentList((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
+            if (SyntaxNodeUtils.TryGetTypeArgumentIdentifierNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
             {
                 var returnType = context.SemanticModel.GetTypeInfo(identifierNode).Type;
                 return "System.Threading.Tasks.Task<" + GetQualifiedTypeName(returnType) + ">";
@@ -119,17 +120,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return "System.Threading.Tasks.Task";
         }
 
-        private SyntaxNode GetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression)
+        private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
         {
-            var argumentNode = invocationExpression.ArgumentList.Arguments.LastOrDefault();
-            if (argumentNode != null)
+            var arguments = invocationExpression.ArgumentList.Arguments;
+            if (arguments != null && arguments.Count > 1)
             {
+                var lastArgumentNode = arguments.Last();
+
                 //An Argument node will always have a child node
-                var inputNode = argumentNode.ChildNodes().First();
-                return inputNode;
+                inputNode = lastArgumentNode.ChildNodes().First();
+                return true;
             }
-            
-            return null;
+
+            inputNode = null;
+            return false;
         }
 
         private string GetQualifiedTypeName(ITypeSymbol typeInfo)
@@ -215,7 +219,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
             {
                 var inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
-                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.IDurableActivityContext") || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext"))
+                if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext") 
+                    || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext") 
+                    || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"))
                 {
                     TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
                 }
@@ -242,10 +248,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                             var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName));
                             if (genericName.Any())
                             {
-                                var typeArgumentListEnumerable = genericName.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList));
-                                if (typeArgumentListEnumerable.Any())
+                                var typeArgumentList = genericName.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).FirstOrDefault();
+                                if (typeArgumentList != null)
                                 {
-                                    inputTypeNode = context.SemanticModel.GetTypeInfo(typeArgumentListEnumerable.First().ChildNodes().First()).Type;
+                                    inputTypeNode = context.SemanticModel.GetTypeInfo(typeArgumentList.ChildNodes().First()).Type;
                                     return true;
                                 }
                             }

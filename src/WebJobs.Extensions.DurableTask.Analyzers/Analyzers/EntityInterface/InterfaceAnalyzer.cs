@@ -24,9 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
 
-        public List<EntityInterface> entityInterfacesList = new List<EntityInterface>();
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, InterfaceContentAnalyzer.NoMethodsRule, InterfaceContentAnalyzer.NotAMethodRule, ParameterAnalyzer.Rule, EntityInterfaceReturnTypeAnalyzer.Rule); } }
+        private List<EntityInterface> entityInterfacesList = new List<EntityInterface>();
+        
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule, InterfaceContentAnalyzer.NoMethodsRule, InterfaceContentAnalyzer.NotAMethodRule, ParameterAnalyzer.Rule, EntityInterfaceReturnTypeAnalyzer.Rule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -119,15 +119,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetIdentifierName(SyntaxNode typeArgumentList, out SyntaxNode identifierName)
         {
-            var identifierNameEnumerable = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-            if (identifierNameEnumerable.Any())
-            {
-                identifierName = identifierNameEnumerable.First();
-                return true;
-            }
-
-            identifierName = null;
-            return false;
+            identifierName = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+            return identifierName != null;
         }
 
         private bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode typeArgumentList)

@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
         }
 
         [TestMethod]
-        public void InterfaceContentAnalyzer_Field()
+        public void InterfaceContentAnalyzer_Property()
         {
             var test = @"
     using System;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
 
         public interface IEntityExample
         {
-            public string fieldTest;
+            public string PropertyTest {get; set};
 
             public static void methodTest();
         }
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.EntityInterfaceContentAnalyzerMessageFormat, "public string fieldTest;"),
+                Message = string.Format(Resources.EntityInterfaceContentAnalyzerMessageFormat, "public string PropertyTest {get; set};"),
                 Severity = severity,
                 Locations =
                     new[] {

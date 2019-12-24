@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
@@ -15,24 +14,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         private readonly string diagnosticId = GuidAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = GuidAnalyzer.severity;
-        String fixtest = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.WebJobs;
 
-    namespace VSSample
-    {
-        public static class HelloSequence
+        private readonly string allTests = @"
+        public void guidAllCalls()
         {
-            [FunctionName('E1_HelloSequence')]
-            public static async Task<List<string>> Run(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-context.NewGuid();
-            }
+            Guid.NewGuid();
+            System.Guid.NewGuid();
         }
-    }";
+    }
+}";
 
         [TestMethod]
         public void NewGuid_NonIssueCalls()
@@ -44,13 +34,7 @@ context.NewGuid();
     {
         public static class GuidNewGuidExample
         {
-            public void guidNonIssueCalls()
-            {
-			    Guid.NewGuid();
-                System.Guid.NewGuid();
-            }
-        }
-    }";
+            " + allTests;
 
             VerifyCSharpDiagnostic(test);
         }
@@ -79,7 +63,7 @@ context.NewGuid();
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -88,8 +72,6 @@ context.NewGuid();
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -116,7 +98,7 @@ context.NewGuid();
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -125,8 +107,6 @@ context.NewGuid();
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -139,40 +119,32 @@ context.NewGuid();
     namespace VSSample
     {
         [Deterministic]
-        public int testDeterministicMethod()
-        {
-            Guid.NewGuid();
-            return 5;   
-        }
-    }";
-            var expected = new DiagnosticResult
+        " + allTests;
+
+            var expectedResults = new DiagnosticResult[2];
+            expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 10, 13)
+                            new DiagnosticResultLocation("Test0.cs", 11, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            expectedResults[1] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 12, 13)
+                        }
+            };
 
-            var fixtestAttribute = @"
-    using System;
-    using Microsoft.Azure.WebJobs;
-
-    namespace VSSample
-    {
-        
-        public int testDeterministicMethod()
-        {
-            Guid.NewGuid();
-            return 5;   
-        }
-    }";
-
-            //VerifyCSharpFix(test, fixtestAttribute);
+            VerifyCSharpDiagnostic(test, expectedResults);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

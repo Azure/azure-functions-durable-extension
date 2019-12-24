@@ -44,23 +44,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 return;
             }
+
             var syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
             if (syntaxReference == null)
             {
                 return;
             }
+
             var declaration = syntaxReference.GetSyntax(context.CancellationToken);
 
             if (SyntaxNodeUtils.IsMarkedDeterministic(declaration))
             {
                 return;
             }
-            else
-            {
-                var diagnostic = Diagnostic.Create(Rule, invocation.GetLocation(), invocation);
 
-                context.ReportDiagnostic(diagnostic);
-            }
+            var diagnostic = Diagnostic.Create(Rule, invocation.GetLocation(), invocation);
+
+            context.ReportDiagnostic(diagnostic);
         }
     }
 }
