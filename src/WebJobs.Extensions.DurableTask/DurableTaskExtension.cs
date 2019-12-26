@@ -23,6 +23,7 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -208,7 +209,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.Options.NotificationUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
+
+                try
+                {
+                    this.Options.NotificationUrl = context.GetWebhookHandler();
+                }
+                catch (StorageException)
+                {
+                    throw new InvalidOperationException("Make sure you are using a storage account type that supports tables, queues, and blobs");
+                }
+                catch (AggregateException aggregateException)
+                {
+                    if (aggregateException.Flatten().InnerExceptions.OfType<StorageException>().Any())
+                    {
+                        throw new InvalidOperationException("Make sure you are using a storage account type that supports tables, queues, and blobs");
+                    }
+                }
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
