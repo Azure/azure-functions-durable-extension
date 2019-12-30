@@ -54,7 +54,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Activity,
                 isReplay: false);
 
-            FunctionResult result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
+            FunctionResult result;
+            try
+            {
+                result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                this.config.TraceHelper.FunctionFailed(
+                    this.config.Options.HubName,
+                    this.activityName,
+                    instanceId,
+                    $"An internal error occurred while attempting to execute this function: " + e,
+                    functionType: FunctionType.Activity,
+                    isReplay: false);
+
+                // TODO: Throw a different exception that can be used to abort the orchestration rather than failing it.
+                //       https://github.com/Azure/azure-functions-durable-extension/issues/472
+                throw new TaskFailureException(
+                    $"An internal error occurred while attempting to execute '{this.activityName}'.",
+                    Utils.SerializeCause(e, this.config.DataConverter.ErrorConverter));
+            }
+
             if (!result.Succeeded)
             {
                 // Flow the original activity function exception to the orchestration

@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -13,8 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
-        private string hubName;
-
+        private string originalHubName;
+        private string resolvedHubName;
         private string defaultHubName;
 
         /// <summary>
@@ -35,20 +38,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             get
             {
-                if (this.hubName == null)
+                if (this.resolvedHubName == null)
                 {
                     // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
                     // specified in local.settings.json file to avoid being defaulted to "TestHubName"
-                    this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
-                    this.defaultHubName = this.hubName;
+                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+                    this.defaultHubName = this.resolvedHubName;
+                    this.originalHubName = string.Empty;
                 }
 
-                return this.hubName;
+                return this.resolvedHubName;
             }
 
             set
             {
-                this.hubName = value;
+                if (this.originalHubName == null)
+                {
+                    this.originalHubName = value;
+                }
+
+                this.resolvedHubName = value;
             }
         }
 
@@ -163,50 +172,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultHubName = hubName;
         }
 
-        internal string GetDebugString()
+        internal void TraceConfiguration(EndToEndTraceHelper traceHelper)
         {
-            var sb = new StringBuilder(4096);
-            sb.AppendLine("Initializing extension with the following settings:");
-            sb.Append(nameof(this.HubName)).Append(":").Append(this.HubName).Append(", ");
+            // Format the options data as JSON in a way that is friendly for technical humans to read.
+            JObject configurationJson = JObject.FromObject(
+                this,
+                new JsonSerializer
+                {
+                    Converters = { new StringEnumConverter() },
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                });
 
-            this.AppendStorageProviderValuesToDebugString(sb);
-
-            sb.Append(nameof(this.MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
-            sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
-            sb.Append(nameof(this.ExtendedSessionsEnabled)).Append(": ").Append(this.ExtendedSessionsEnabled).Append(", ");
-            sb.Append(nameof(this.UseGracefulShutdown)).Append(": ").Append(this.UseGracefulShutdown).Append(", ");
-            if (this.ExtendedSessionsEnabled)
+            // Don't trace the notification URL query string since it may contain secrets.
+            // This is the only property which we expect to contain secrets. Everything else should be *names*
+            // of secrets that are resolved later from environment variables, etc.
+            if (configurationJson.TryGetValue(nameof(this.NotificationUrl), StringComparison.OrdinalIgnoreCase, out JToken notificationUrlJson) &&
+                notificationUrlJson.Type == JTokenType.String &&
+                Uri.TryCreate((string)notificationUrlJson, UriKind.Absolute, out Uri notificationUri))
             {
-                sb.Append(nameof(this.ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
+                string sanitizedUrl = notificationUri.GetLeftPart(UriPartial.Path);
+                configurationJson[nameof(this.NotificationUrl)] = sanitizedUrl;
             }
 
-            if (this.NotificationUrl != null)
+            // At this stage the task hub name is expected to have been resolved. However, we want to know
+            // what the original value was in addition to the resolved value, so we're updating the JSON
+            // blob property to use the original, unresolved value.
+            if (configurationJson.TryGetValue(nameof(this.HubName), StringComparison.OrdinalIgnoreCase, out _))
             {
-                // Don't trace the query string, since that contains secrets
-                string url = this.NotificationUrl.GetLeftPart(UriPartial.Path);
-                sb.Append(nameof(this.NotificationUrl)).Append(": ").Append(url).Append(", ");
+                configurationJson[nameof(this.HubName)] = this.originalHubName;
             }
 
-            sb.Append(nameof(this.Notifications)).Append(": { ");
-            this.Notifications.AddToDebugString(sb);
-            sb.Append(" }, ");
-
-            sb.Append(nameof(this.Tracing)).Append(": { ");
-            this.Tracing.AddToDebugString(sb);
-            sb.Append(" }");
-
-            return sb.ToString();
-        }
-
-        private void AppendStorageProviderValuesToDebugString(StringBuilder sb)
-        {
-            sb.Append(nameof(this.StorageProvider)).Append(": { ");
-            foreach (var value in this.StorageProvider)
-            {
-                sb.Append(value.Key).Append(": ").Append(value.Value).Append(", ");
-            }
-
-            sb.Append(" }, ");
+            // This won't be exactly the same as what is declared in host.json because any unspecified values
+            // will have been initialized with their defaults. We need the Functions runtime to handle tracing
+            // of the actual host.json values: https://github.com/Azure/azure-functions-host/issues/5422.
+            traceHelper.TraceConfiguration(this.HubName, configurationJson.ToString(Formatting.None));
         }
 
         internal void Validate()
@@ -237,12 +236,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsDefaultHubName()
         {
-            return string.Equals(this.defaultHubName, this.hubName, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(this.defaultHubName, this.resolvedHubName, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsInNonProductionSlot()
         {
-            var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+            string slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
 
             // slotName can be null in a test environment
             if (slotName != null && !string.Equals(slotName, "Production", StringComparison.OrdinalIgnoreCase))
