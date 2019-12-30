@@ -174,6 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(nameof(this.MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
             sb.Append(nameof(this.ExtendedSessionsEnabled)).Append(": ").Append(this.ExtendedSessionsEnabled).Append(", ");
+            sb.Append(nameof(this.UseGracefulShutdown)).Append(": ").Append(this.UseGracefulShutdown).Append(", ");
             if (this.ExtendedSessionsEnabled)
             {
                 sb.Append(nameof(this.ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
