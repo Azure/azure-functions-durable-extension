@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             try
             {
                 string path = request.RequestUri.AbsolutePath;
-                string basePath = this.config.Options.NotificationUrl.AbsolutePath;
+                string basePath = this.config.NotificationUrl.AbsolutePath;
                 path = path.Substring(basePath.Length);
                 var routeValues = new RouteValueDictionary();
                 if (StartOrchestrationRoute.TryMatch(path, routeValues))
@@ -872,7 +872,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.NotificationUrl;
+            Uri notificationUri = this.config.NotificationUrl;
 
             string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
             return hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
@@ -882,7 +882,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.NotificationUrl;
+            Uri notificationUri = this.config.NotificationUrl;
 
             return !string.IsNullOrEmpty(notificationUri.Query)
                 ? notificationUri.Query.TrimStart('?')
@@ -914,7 +914,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.NotificationUrl;
+            Uri notificationUri = this.config.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
@@ -978,7 +978,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void ThrowIfWebhooksNotConfigured()
         {
-            if (this.config.Options.NotificationUrl == null)
+            if (this.config.NotificationUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }

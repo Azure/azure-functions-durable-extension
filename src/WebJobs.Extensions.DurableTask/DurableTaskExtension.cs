@@ -169,6 +169,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
+        /// <summary>
+        /// Gets the base URI for handling HTTP webhooks.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended to be used only in self-hosting scenarios. When
+        /// hosting in the Azure Functions runtime, this property is set automatically
+        /// when the extension is initialized.
+        /// </remarks>
+        /// <value>
+        /// The base URI for handling HTTP webhooks.
+        /// </value>
+        public Uri NotificationUrl { get; set; }
+
         internal DurableTaskOptions Options { get; }
 
         internal HttpApiHandler HttpApiHandler { get; private set; }
@@ -204,10 +217,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options.Validate();
 
             // For 202 support
-            if (this.Options.NotificationUrl == null)
+            if (this.NotificationUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
+                this.NotificationUrl = context.GetWebhookHandler();
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
@@ -892,9 +905,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // If there is no listener for a function (e.g. it's a [NoAutomaticTrigger] function) then we don't
                 // need to wait for it to be deregistered before shutting down the task hub worker.
                 if (this.isTaskHubWorkerStarted &&
-                    this.knownOrchestrators.Values.Count(info => !info.IsDeregistered && info.Executor != null) == 0 &&
-                    this.knownActivities.Values.Count(info => !info.IsDeregistered && info.Executor != null) == 0 &&
-                    this.knownEntities.Values.Count(info => !info.IsDeregistered && info.Executor != null) == 0)
+                    !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
+                    !this.knownActivities.Values.Any(info => info.HasActiveListener) &&
+                    !this.knownEntities.Values.Any(info => info.HasActiveListener))
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 
