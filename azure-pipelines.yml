@@ -119,7 +119,6 @@ jobs:
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
-
     
   - job: PublishPipelineArtifact
     dependsOn:
