@@ -704,15 +704,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                var info = new RegisteredFunctionInfo(executor, isOutOfProc: false);
+                this.knownActivities[activityFunction] = info;
+
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: activityFunction.Name,
-                    message: $"Registering activity function named {activityFunction}.",
+                    message: $"Registered activity function named {activityFunction}.",
                     writeToUserLogs: false);
-
-                var info = new RegisteredFunctionInfo(executor, isOutOfProc: false);
-                this.knownActivities[activityFunction] = info;
             }
         }
 
@@ -757,7 +757,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterEntity(FunctionName entityFunction)
         {
             RegisteredFunctionInfo existing;
-            if (this.knownOrchestrators.TryGetValue(entityFunction, out existing) && !existing.IsDeregistered)
+            if (this.knownEntities.TryGetValue(entityFunction, out existing) && !existing.IsDeregistered)
             {
                 existing.IsDeregistered = true;
 
@@ -888,7 +888,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (this.isTaskHubWorkerStarted &&
                     this.knownOrchestrators.Values.Count(info => !info.IsDeregistered) == 0 &&
-                    this.knownActivities.Values.Count(info => !info.IsDeregistered) == 0)
+                    this.knownActivities.Values.Count(info => !info.IsDeregistered) == 0 &&
+                    this.knownEntities.Values.Count(info => !info.IsDeregistered) == 0)
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 
