@@ -44,7 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // specified in local.settings.json file to avoid being defaulted to "TestHubName"
                     this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
                     this.defaultHubName = this.resolvedHubName;
-                    this.originalHubName = string.Empty;
                 }
 
                 return this.resolvedHubName;
@@ -197,10 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // At this stage the task hub name is expected to have been resolved. However, we want to know
             // what the original value was in addition to the resolved value, so we're updating the JSON
             // blob property to use the original, unresolved value.
-            if (configurationJson.TryGetValue(nameof(this.HubName), StringComparison.OrdinalIgnoreCase, out _))
-            {
-                configurationJson[nameof(this.HubName)] = this.originalHubName;
-            }
+            configurationJson[nameof(this.HubName)] = this.originalHubName;
 
             // This won't be exactly the same as what is declared in host.json because any unspecified values
             // will have been initialized with their defaults. We need the Functions runtime to handle tracing
