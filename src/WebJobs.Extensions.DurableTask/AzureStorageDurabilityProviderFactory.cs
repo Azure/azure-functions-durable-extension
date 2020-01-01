@@ -13,9 +13,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskOptions options;
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly IConnectionStringResolver connectionStringResolver;
-        private readonly AzureStorageOrchestrationServiceSettings defaultSettings;
         private readonly string defaultConnectionName;
         private AzureStorageDurabilityProvider defaultStorageProvider;
+
+        // Must wait to get settings until we have validated taskhub name.
+        private bool haveValidatedOptions;
+        private AzureStorageOrchestrationServiceSettings defaultSettings;
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
@@ -26,18 +29,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();
-            if (!this.options.IsDefaultHubName())
-            {
-                this.azureStorageOptions.ValidateHubName(this.options.HubName);
-            }
-            else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
-            {
-                this.options.SetDefaultHubName(sanitizedHubName);
-            }
 
             this.connectionStringResolver = connectionStringResolver;
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
-            this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
         }
 
         internal string GetDefaultStorageConnectionString()
@@ -45,8 +39,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.connectionStringResolver.Resolve(this.defaultConnectionName);
         }
 
+        private void ValidateOptions()
+        {
+            if (!this.haveValidatedOptions)
+            {
+                if (!this.options.IsDefaultHubName())
+                {
+                    this.azureStorageOptions.ValidateHubName(this.options.HubName);
+                }
+                else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
+                {
+                    this.options.SetDefaultHubName(sanitizedHubName);
+                }
+
+                this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
+                this.haveValidatedOptions = true;
+            }
+        }
+
         public DurabilityProvider GetDurabilityProvider()
         {
+            this.ValidateOptions();
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
@@ -58,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
+            this.ValidateOptions();
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
