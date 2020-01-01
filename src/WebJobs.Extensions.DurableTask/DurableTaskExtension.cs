@@ -245,6 +245,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void ResolveAppSettingOptions()
         {
+            if (this.Options == null)
+            {
+                throw new InvalidOperationException($"{nameof(this.Options)} must be set before resolving app settings.");
+            }
+
+            if (this.nameResolver == null)
+            {
+                throw new InvalidOperationException($"{nameof(this.nameResolver)} must be set before resolving app settings.");
+            }
+
             if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
             {
                 // use the resolved task hub name
