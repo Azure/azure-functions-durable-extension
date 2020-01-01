@@ -236,18 +236,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetDurableTaskConfig()
         {
-            var options = new DurableTaskOptions { HubName = "DurableTaskHub" };
+            var options = new DurableTaskOptions();
+            options.HubName = "DurableTaskHub";
+            options.NotificationUrl = new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var connectionStringResolver = new TestConnectionStringResolver();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver);
-            var extension = new DurableTaskExtension(
+            return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 TestHelpers.GetTestNameResolver(),
                 serviceFactory,
                 new DurableHttpMessageHandlerFactory());
-            extension.NotificationUrl = new Uri(TestConstants.NotificationUrl);
-            return extension;
         }
     }
 }

@@ -26,12 +26,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.executor = new Mock<ITriggeredFunctionExecutor>(MockBehavior.Strict);
             this.storageConnectionString = TestHelpers.GetStorageConnectionString();
             this.listener = new DurableTaskListener(
-                this.config,
-                this.functionId,
-                this.functionName,
-                this.executor.Object,
-                FunctionType.Activity,
-                this.storageConnectionString);
+                                            this.config,
+                                            this.functionId,
+                                            this.functionName,
+                                            this.executor.Object,
+                                            FunctionType.Activity,
+                                            this.storageConnectionString);
         }
 
         [Fact]
@@ -50,7 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetDurableTaskConfig()
         {
-            var options = new DurableTaskOptions { HubName = "DurableTaskHub" };
+            var options = new DurableTaskOptions();
+            options.HubName = "DurableTaskHub";
+            options.NotificationUrl = new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var connectionStringResolver = new TestConnectionStringResolver();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver);

@@ -98,6 +98,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
 
         /// <summary>
+        /// Gets or sets the base URL for the HTTP APIs managed by this extension.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended for use only by runtime hosts.
+        /// </remarks>
+        /// <value>
+        /// A URL pointing to the hosted function app that responds to status polling requests.
+        /// </value>
+        public Uri NotificationUrl { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>
@@ -171,6 +182,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+
+            // Don't trace the notification URL query string since it may contain secrets.
+            // This is the only property which we expect to contain secrets. Everything else should be *names*
+            // of secrets that are resolved later from environment variables, etc.
+            if (configurationJson.TryGetValue(nameof(this.NotificationUrl), StringComparison.OrdinalIgnoreCase, out JToken notificationUrlJson) &&
+                notificationUrlJson.Type == JTokenType.String &&
+                Uri.TryCreate((string)notificationUrlJson, UriKind.Absolute, out Uri notificationUri))
+            {
+                string sanitizedUrl = notificationUri.GetLeftPart(UriPartial.Path);
+                configurationJson[nameof(this.NotificationUrl)] = sanitizedUrl;
+            }
 
             // At this stage the task hub name is expected to have been resolved. However, we want to know
             // what the original value was in addition to the resolved value, so we're updating the JSON

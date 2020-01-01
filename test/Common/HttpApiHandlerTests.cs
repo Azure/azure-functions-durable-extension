@@ -30,13 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions()
             {
-                HubName = "DurableTaskHub",
                 Notifications = new NotificationOptions(),
             };
+            options.NotificationUrl = null;
+            options.HubName = "DurableTaskHub";
 
-            var extension = GetTestExtension(options);
-            extension.NotificationUrl = null;
-            var httpApiHandler = new HttpApiHandler(extension, null);
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
             var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
             Assert.Equal("Webhooks are not configured", ex.Message);
         }
@@ -1142,10 +1141,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetTestExtension()
         {
-            var options = new DurableTaskOptions { HubName = "DurableFunctionsHub" };
-            DurableTaskExtension extension = GetTestExtension(options);
-            extension.NotificationUrl = new Uri(TestConstants.NotificationUrl);
-            return extension;
+            var options = new DurableTaskOptions();
+            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+            options.HubName = "DurableFunctionsHub";
+
+            return GetTestExtension(options);
         }
 
         private static DurableTaskExtension GetTestExtension(DurableTaskOptions options)

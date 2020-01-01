@@ -169,19 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
-        /// <summary>
-        /// Gets the base URI for handling HTTP webhooks.
-        /// </summary>
-        /// <remarks>
-        /// This property is intended to be used only in self-hosting scenarios. When
-        /// hosting in the Azure Functions runtime, this property is set automatically
-        /// when the extension is initialized.
-        /// </remarks>
-        /// <value>
-        /// The base URI for handling HTTP webhooks.
-        /// </value>
-        public Uri NotificationUrl { get; set; }
-
         internal DurableTaskOptions Options { get; }
 
         internal HttpApiHandler HttpApiHandler { get; private set; }
@@ -217,10 +204,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options.Validate();
 
             // For 202 support
-            if (this.NotificationUrl == null)
+            if (this.Options.NotificationUrl == null)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.NotificationUrl = context.GetWebhookHandler();
+                this.Options.NotificationUrl = context.GetWebhookHandler();
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
