@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
-        private DurabilityProvider durabilityProvider;
+        private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = orchestrationServiceFactory;
-            this.durabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.isOptionsConfigured = true;
 
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
-            this.taskHubWorker = new TaskHubWorker(this.durabilityProvider, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
-            this.durabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
-            return this.durabilityProvider.DeleteAsync();
+            return this.defaultDurabilityProvider.DeleteAsync();
         }
 
         /// <summary>
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return new TaskOrchestrationShim(this, this.durabilityProvider, name);
+                return new TaskOrchestrationShim(this, this.defaultDurabilityProvider, name);
             }
         }
 
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetDefaultConnectionName()
         {
-            return this.durabilityProvider.ConnectionName;
+            return this.defaultDurabilityProvider.ConnectionName;
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
@@ -874,7 +874,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             writeToUserLogs: true);
 
                         Stopwatch sw = Stopwatch.StartNew();
-                        await this.durabilityProvider.CreateIfNotExistsAsync();
+                        await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
                         this.TraceHelper.ExtensionInformationalEvent(
