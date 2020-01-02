@@ -173,30 +173,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void TraceConfiguration(EndToEndTraceHelper traceHelper)
         {
-            // Format the options data as JSON in a way that is friendly for technical humans to read.
-            JObject configurationJson = JObject.FromObject(
-                this,
-                new JsonSerializer
-                {
-                    Converters = { new StringEnumConverter() },
-                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                });
+            // Clone the options to avoid making changes to the original.
+            // We make updates to the clone rather than to JSON to ensure we're updating what we think we're updating.
+            DurableTaskOptions clone = JObject.FromObject(this).ToObject<DurableTaskOptions>();
 
             // Don't trace the notification URL query string since it may contain secrets.
             // This is the only property which we expect to contain secrets. Everything else should be *names*
             // of secrets that are resolved later from environment variables, etc.
-            if (configurationJson.TryGetValue(nameof(this.NotificationUrl), StringComparison.OrdinalIgnoreCase, out JToken notificationUrlJson) &&
-                notificationUrlJson.Type == JTokenType.String &&
-                Uri.TryCreate((string)notificationUrlJson, UriKind.Absolute, out Uri notificationUri))
+            if (clone.NotificationUrl != null)
             {
-                string sanitizedUrl = notificationUri.GetLeftPart(UriPartial.Path);
-                configurationJson[nameof(this.NotificationUrl)] = sanitizedUrl;
+                clone.NotificationUrl = new Uri(clone.NotificationUrl.GetLeftPart(UriPartial.Path));
             }
 
             // At this stage the task hub name is expected to have been resolved. However, we want to know
             // what the original value was in addition to the resolved value, so we're updating the JSON
             // blob property to use the original, unresolved value.
-            configurationJson[nameof(this.HubName)] = this.originalHubName;
+            clone.HubName = this.originalHubName;
+
+            // Format the options data as JSON in a way that is friendly for technical humans to read.
+            JObject configurationJson = JObject.FromObject(
+                clone,
+                new JsonSerializer
+                {
+                    Converters = { new StringEnumConverter() },
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                });
 
             // This won't be exactly the same as what is declared in host.json because any unspecified values
             // will have been initialized with their defaults. We need the Functions runtime to handle tracing
