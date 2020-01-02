@@ -2,9 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Linq;
-using System.Runtime.Serialization;
-using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -13,11 +10,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class AzureStorageOptions
     {
-        // 45 alphanumeric characters gives us a buffer in our table/queue/blob container names.
-        private const int MaxTaskHubNameSize = 45;
-        private const int MinTaskHubNameSize = 3;
-        private const string TaskHubPadding = "Hub";
-
         /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
         /// </summary>
@@ -118,53 +110,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <value>Maximum interval for polling control and work-item queues.</value>
         public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
-
-        /// <summary>
-        /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
-        /// </summary>
-        public void ValidateHubName(string hubName)
-        {
-            try
-            {
-                NameValidator.ValidateBlobName(hubName);
-                NameValidator.ValidateContainerName(hubName.ToLowerInvariant());
-                NameValidator.ValidateTableName(hubName);
-                NameValidator.ValidateQueueName(hubName.ToLowerInvariant());
-            }
-            catch (ArgumentException e)
-            {
-                throw new ArgumentException(GetTaskHubErrorString(hubName), e);
-            }
-
-            if (hubName.Length > 50)
-            {
-                throw new ArgumentException(GetTaskHubErrorString(hubName));
-            }
-        }
-
-        private static string GetTaskHubErrorString(string hubName)
-        {
-            return $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to {MaxTaskHubNameSize}.";
-        }
-
-        internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
-        {
-            sanitizedHubName = new string(hubName.ToCharArray()
-                                .Where(char.IsLetterOrDigit)
-                                .Take(MaxTaskHubNameSize)
-                                .ToArray());
-            if (sanitizedHubName.Length < MinTaskHubNameSize)
-            {
-                sanitizedHubName = sanitizedHubName + TaskHubPadding;
-            }
-
-            if (string.Equals(hubName, sanitizedHubName))
-            {
-                return true;
-            }
-
-            return false;
-        }
 
         /// <summary>
         /// Throws an exception if any of the settings of the storage provider are invalid.

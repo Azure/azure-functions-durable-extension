@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
+using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -13,9 +15,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
-        private string hubName;
+        // 45 alphanumeric characters gives us a buffer in our table/queue/blob container names.
+        private const int MaxTaskHubNameSize = 45;
+        private const int MinTaskHubNameSize = 3;
+        private const string TaskHubPadding = "Hub";
 
         private string defaultHubName;
+
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        public DurableTaskOptions()
+        {
+            // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
+            // specified in local.settings.json file to avoid being defaulted to "TestHubName"
+
+            if (IsInNonProductionSlot())
+            {
+                this.defaultHubName = this.HubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+            }
+            else
+            {
+                this.IsSanitizedHubName(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"), out var sanitizedHubName);
+                this.defaultHubName = this.HubName = sanitizedHubName;
+            }
+        }
 
         /// <summary>
         /// Settings used for Durable HTTP functionality.
@@ -31,26 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
-        public string HubName
-        {
-            get
-            {
-                if (this.hubName == null)
-                {
-                    // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
-                    // specified in local.settings.json file to avoid being defaulted to "TestHubName"
-                    this.hubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
-                    this.defaultHubName = this.hubName;
-                }
-
-                return this.hubName;
-            }
-
-            set
-            {
-                this.hubName = value;
-            }
-        }
+        public string HubName { get; set; }
 
         /// <summary>
         /// The section of configuration related to storage providers. If using Azure Storage provider, the schema should match
@@ -174,7 +179,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(nameof(this.MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
             sb.Append(nameof(this.ExtendedSessionsEnabled)).Append(": ").Append(this.ExtendedSessionsEnabled).Append(", ");
-            sb.Append(nameof(this.UseGracefulShutdown)).Append(": ").Append(this.UseGracefulShutdown).Append(", ");
             if (this.ExtendedSessionsEnabled)
             {
                 sb.Append(nameof(this.ExtendedSessionIdleTimeoutInSeconds)).Append(": ").Append(this.ExtendedSessionIdleTimeoutInSeconds).Append(", ");
@@ -209,16 +213,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(" }, ");
         }
 
+        internal void ValidateHubName(string hubName)
+        {
+            try
+            {
+                NameValidator.ValidateBlobName(hubName);
+                NameValidator.ValidateContainerName(hubName.ToLowerInvariant());
+                NameValidator.ValidateTableName(hubName);
+                NameValidator.ValidateQueueName(hubName.ToLowerInvariant());
+            }
+            catch (ArgumentException e)
+            {
+                throw new ArgumentException(GetTaskHubErrorString(hubName), e);
+            }
+
+            if (hubName.Length > MaxTaskHubNameSize)
+            {
+                throw new ArgumentException(GetTaskHubErrorString(hubName));
+            }
+        }
+
+        private static string GetTaskHubErrorString(string hubName)
+        {
+            return $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to {MaxTaskHubNameSize}";
+        }
+
+        private bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
+        {
+            sanitizedHubName = new string(hubName.ToCharArray()
+                                .Where(char.IsLetterOrDigit)
+                                .Take(MaxTaskHubNameSize)
+                                .ToArray());
+            if (sanitizedHubName.Length < MinTaskHubNameSize)
+            {
+                sanitizedHubName = sanitizedHubName + TaskHubPadding;
+            }
+
+            if (string.Equals(hubName, sanitizedHubName))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         internal void Validate()
         {
-            if (string.IsNullOrEmpty(this.HubName))
+            if (string.IsNullOrWhiteSpace(this.HubName))
             {
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
-            if (IsInNonProductionSlot() && this.IsDefaultHubName())
+            this.ValidateHubName(this.HubName);
+
+            if (IsInNonProductionSlot() && !IsInDevelopment() && this.IsDefaultHubName())
             {
-                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
+                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name ({this.HubName}) must not equal the default HubName ({this.defaultHubName})." +
                     "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
             }
 
@@ -237,7 +287,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsDefaultHubName()
         {
-            return string.Equals(this.defaultHubName, this.hubName, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(this.defaultHubName, this.HubName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsInDevelopment()
+        {
+            return Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME") == null;
         }
 
         private static bool IsInNonProductionSlot()
@@ -245,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var slotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
 
             // slotName can be null in a test environment
-            if (slotName != null && !string.Equals(slotName, "Production", StringComparison.OrdinalIgnoreCase))
+            if (slotName == null || !string.Equals(slotName, "Production", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -13,8 +13,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskOptions options;
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly IConnectionStringResolver connectionStringResolver;
-        private readonly AzureStorageOrchestrationServiceSettings defaultSettings;
         private readonly string defaultConnectionName;
+        private readonly Lazy<AzureStorageOrchestrationServiceSettings> defaultSettings;
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         public AzureStorageDurabilityProviderFactory(
@@ -22,22 +22,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IConnectionStringResolver connectionStringResolver)
         {
             this.options = options.Value;
+            this.connectionStringResolver = connectionStringResolver;
+
             this.azureStorageOptions = new AzureStorageOptions();
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();
-            if (!this.options.IsDefaultHubName())
-            {
-                this.azureStorageOptions.ValidateHubName(this.options.HubName);
-            }
-            else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
-            {
-                this.options.SetDefaultHubName(sanitizedHubName);
-            }
 
-            this.connectionStringResolver = connectionStringResolver;
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
-            this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
+            this.defaultSettings = new Lazy<AzureStorageOrchestrationServiceSettings>(() => this.GetAzureStorageOrchestrationServiceSettings());
         }
 
         internal string GetDefaultStorageConnectionString()
@@ -49,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.defaultStorageProvider == null)
             {
-                var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
+                var defaultService = new AzureStorageOrchestrationService(this.defaultSettings.Value);
                 this.defaultStorageProvider = new AzureStorageDurabilityProvider(defaultService, this.defaultConnectionName);
             }
 
@@ -67,8 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageOrchestrationServiceSettings settings = this.GetAzureStorageOrchestrationServiceSettings(connectionName, attribute.TaskHub);
 
             AzureStorageDurabilityProvider innerClient;
-            if (string.Equals(this.defaultSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(this.defaultSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(this.defaultSettings.Value.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(this.defaultSettings.Value.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
                 // as the host when possible to ensure we any send operations can be picked up
@@ -83,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return innerClient;
         }
 
-        internal AzureStorageOrchestrationServiceSettings GetAzureStorageOrchestrationServiceSettings(
+        private AzureStorageOrchestrationServiceSettings GetAzureStorageOrchestrationServiceSettings(
             string connectionName = null,
             string taskHubNameOverride = null)
         {
