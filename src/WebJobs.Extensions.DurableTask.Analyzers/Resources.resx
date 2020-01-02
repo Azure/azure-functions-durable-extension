@@ -275,6 +275,9 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="IOTypesAnalyzerTitle" xml:space="preserve">
     <value>I/O operations are not allowed inside an orchestrator function.</value>
   </data>
+  <data name="MethodAnalyzerMessageFormat" xml:space="preserve">
+    <value>Method call '{0}' violates the orchestrator deterministic code constraint. Method does not have the Deterministic attribute on the method declaration.</value>
+  </data>
   <data name="MethodAttributeAnalyzerTitle" xml:space="preserve">
     <value>Method calls in an orchestrator must be marked [Deterministic] on the method declaration.</value>
   </data>
