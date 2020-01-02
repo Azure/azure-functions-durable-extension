@@ -531,6 +531,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Method call &apos;{0}&apos; violates the orchestrator deterministic code constraint. Method does not have the Deterministic attribute on the method declaration..
+        /// </summary>
+        public static string MethodAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("MethodAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Method calls in an orchestrator must be marked [Deterministic] on the method declaration..
         /// </summary>
         public static string MethodAttributeAnalyzerTitle {
