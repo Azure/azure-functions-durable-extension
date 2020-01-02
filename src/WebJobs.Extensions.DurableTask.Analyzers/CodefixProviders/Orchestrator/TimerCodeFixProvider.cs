@@ -161,13 +161,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private bool TryGetObjectCreationExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) => TryGetChildNodes(argument, SyntaxKind.ObjectCreationExpression, out nodes);
+        private static bool TryGetObjectCreationExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
+            TryGetChildNodes(argument, SyntaxKind.ObjectCreationExpression, out nodes);
 
-        private bool TryGetSimpleMemberAccessExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) => TryGetChildNodes(argument, SyntaxKind.SimpleMemberAccessExpression, out nodes);
+        private static bool TryGetSimpleMemberAccessExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) => 
+            TryGetChildNodes(argument, SyntaxKind.SimpleMemberAccessExpression, out nodes);
 
-        private bool TryGetIdentifierNameChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) => TryGetChildNodes(argument, SyntaxKind.IdentifierName, out nodes);
+        private static bool TryGetIdentifierNameChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
+            TryGetChildNodes(argument, SyntaxKind.IdentifierName, out nodes);
 
-        private bool TryGetChildNodes(SyntaxNode argument, SyntaxKind kind, out IEnumerable<SyntaxNode> nodes)
+        private static bool TryGetChildNodes(SyntaxNode argument, SyntaxKind kind, out IEnumerable<SyntaxNode> nodes)
         {
             if (argument == null)
             {
@@ -191,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private bool TryGetTypeName(SemanticModel semanticModel, SyntaxNode identifier, out string typeName)
+        private static bool TryGetTypeName(SemanticModel semanticModel, SyntaxNode identifier, out string typeName)
         {
             var typeInfo = semanticModel.GetTypeInfo(identifier);
             if (typeInfo.Type != null)
@@ -204,11 +207,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
         
-        private string GetTypeWithoutNamespace(string type)
+        private static string GetTypeWithoutNamespace(string type)
         {
-            var splitString = type.Split('.');
-            var length = splitString.Length;
-            return splitString[length - 1];
+            var index = type.LastIndexOf('.') + 1;
+            return type.Substring(index);
         }
 
         private bool TryGetMillisecondsParameter(SyntaxNode expression, out string milliseconds)
