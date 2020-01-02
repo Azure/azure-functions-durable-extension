@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
-        private bool haveValidatedOptions;
+        private bool hasValidatedOptions;
         private AzureStorageOrchestrationServiceSettings defaultSettings;
 
         public AzureStorageDurabilityProviderFactory(
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.azureStorageOptions.Validate();
 
-            this.connectionStringResolver = connectionStringResolver;
+            this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
         }
 
@@ -39,9 +39,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.connectionStringResolver.Resolve(this.defaultConnectionName);
         }
 
-        private void ValidateOptions()
+        // This method should not be called before the app settings are resolved into the options.
+        // Because of this, we wait to validate the options until righ before building a durability provider, rather
+        // than in the Factory constructor.
+        private void EnsureOptionsAreValid()
         {
-            if (!this.haveValidatedOptions)
+            if (!this.hasValidatedOptions)
             {
                 if (!this.options.IsDefaultHubName())
                 {
@@ -53,13 +56,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
-                this.haveValidatedOptions = true;
+                this.hasValidatedOptions = true;
             }
         }
 
         public DurabilityProvider GetDurabilityProvider()
         {
-            this.ValidateOptions();
+            this.EnsureOptionsAreValid();
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
@@ -71,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            this.ValidateOptions();
+            this.EnsureOptionsAreValid();
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
