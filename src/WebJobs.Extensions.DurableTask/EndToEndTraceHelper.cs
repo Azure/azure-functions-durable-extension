@@ -726,6 +726,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void TraceConfiguration(
+            string hubName,
+            string configurationJsonString)
+        {
+            EtwEventSource.Instance.ExtensionConfiguration(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                configurationJsonString,
+                ExtensionVersion);
+
+            this.logger.LogInformation(
+                "Durable extension configuration loaded: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                configurationJsonString, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+        }
+
         private bool ShouldLogEvent(bool isReplay)
         {
             return this.traceReplayEvents || !isReplay;

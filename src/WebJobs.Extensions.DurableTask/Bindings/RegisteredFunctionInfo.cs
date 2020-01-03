@@ -19,5 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal bool IsDeregistered { get; set; }
 
         internal bool IsOutOfProc { get; }
+
+        internal bool HasActiveListener => this.Executor != null && !this.IsDeregistered;
     }
 }

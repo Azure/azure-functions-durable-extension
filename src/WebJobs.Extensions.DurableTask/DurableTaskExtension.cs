@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -12,8 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
-using DurableTask.Core.Common;
-using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
@@ -280,12 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void TraceConfigurationSettings()
         {
-            this.TraceHelper.ExtensionInformationalEvent(
-                this.Options.HubName,
-                instanceId: string.Empty,
-                functionName: string.Empty,
-                message: $"Initializing extension with the following settings: {this.Options.GetDebugString()}",
-                writeToUserLogs: true);
+            this.Options.TraceConfiguration(this.TraceHelper);
         }
 
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
@@ -725,15 +719,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                var info = new RegisteredFunctionInfo(executor, isOutOfProc: false);
+                this.knownActivities[activityFunction] = info;
+
                 this.TraceHelper.ExtensionInformationalEvent(
                     this.Options.HubName,
                     instanceId: string.Empty,
                     functionName: activityFunction.Name,
-                    message: $"Registering activity function named {activityFunction}.",
+                    message: $"Registered activity function named {activityFunction}.",
                     writeToUserLogs: false);
-
-                var info = new RegisteredFunctionInfo(executor, isOutOfProc: false);
-                this.knownActivities[activityFunction] = info;
             }
         }
 
@@ -778,7 +772,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void DeregisterEntity(FunctionName entityFunction)
         {
             RegisteredFunctionInfo existing;
-            if (this.knownOrchestrators.TryGetValue(entityFunction, out existing) && !existing.IsDeregistered)
+            if (this.knownEntities.TryGetValue(entityFunction, out existing) && !existing.IsDeregistered)
             {
                 existing.IsDeregistered = true;
 
@@ -879,8 +873,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             message: "Starting task hub worker",
                             writeToUserLogs: true);
 
+                        Stopwatch sw = Stopwatch.StartNew();
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
+
+                        this.TraceHelper.ExtensionInformationalEvent(
+                            this.Options.HubName,
+                            instanceId: string.Empty,
+                            functionName: string.Empty,
+                            message: $"Task hub worker started. Latency: {sw.Elapsed}",
+                            writeToUserLogs: true);
 
                         // Enable flowing exception information from activities
                         // to the parent orchestration code.
@@ -899,19 +901,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
+                // Wait to shut down the task hub worker until all function listeners have been shut down.
+                // We set IsDeregistered to true when Stop() is called on the listener
+                // We set Executor to a non-null value only if there is a listener associated with this function.
+                // If there is no listener for a function (e.g. it's a [NoAutomaticTrigger] function) then we don't
+                // need to wait for it to be deregistered before shutting down the task hub worker.
                 if (this.isTaskHubWorkerStarted &&
-                    this.knownOrchestrators.Values.Count(info => !info.IsDeregistered) == 0 &&
-                    this.knownActivities.Values.Count(info => !info.IsDeregistered) == 0)
+                    !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
+                    !this.knownActivities.Values.Any(info => info.HasActiveListener) &&
+                    !this.knownEntities.Values.Any(info => info.HasActiveListener))
                 {
+                    bool isGracefulStop = this.Options.UseGracefulShutdown;
+
                     this.TraceHelper.ExtensionInformationalEvent(
                         this.Options.HubName,
                         instanceId: string.Empty,
                         functionName: string.Empty,
-                        message: "Stopping task hub worker",
+                        message: $"Stopping task hub worker. IsGracefulStop: {isGracefulStop}",
                         writeToUserLogs: true);
 
-                    await this.taskHubWorker.StopAsync(isForced: !this.Options.UseGracefulShutdown);
+                    Stopwatch sw = Stopwatch.StartNew();
+                    await this.taskHubWorker.StopAsync(isForced: !isGracefulStop);
                     this.isTaskHubWorkerStarted = false;
+
+                    this.TraceHelper.ExtensionInformationalEvent(
+                        this.Options.HubName,
+                        instanceId: string.Empty,
+                        functionName: string.Empty,
+                        message: $"Task hub worker stopped. IsGracefulStop: {isGracefulStop}. Latency: {sw.Elapsed}",
+                        writeToUserLogs: true);
+
                     return true;
                 }
             }

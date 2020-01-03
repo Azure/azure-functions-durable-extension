@@ -11,6 +11,7 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -65,31 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 options = new DurableTaskOptions();
             }
-
-            options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
-            options.Tracing = new TraceOptions()
-            {
-                TraceInputsAndOutputs = true,
-                TraceReplayEvents = traceReplayEvents,
-            };
-            options.Notifications = new NotificationOptions()
-            {
-                EventGrid = new EventGridNotificationOptions()
-                {
-                    KeySettingName = eventGridKeySettingName,
-                    TopicEndpoint = eventGridTopicEndpoint,
-                    PublishEventTypes = eventGridPublishEventTypes,
-                },
-            };
-            options.HttpSettings = new HttpOptions()
-            {
-                DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
-            };
-            options.NotificationUrl = notificationUrl;
-            options.ExtendedSessionsEnabled = enableExtendedSessions;
-            options.MaxConcurrentOrchestratorFunctions = 200;
-            options.MaxConcurrentActivityFunctions = 200;
-            options.NotificationHandler = eventGridNotificationHandler;
 
             options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             options.Tracing = new TraceOptions()
