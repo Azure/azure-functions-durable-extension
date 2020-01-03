@@ -4036,14 +4036,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
             durableTaskOptions.HubName = $"%{taskHubSettingName}%";
 
-            var mockNameResolver = new Mock<INameResolver>();
-            mockNameResolver.Setup(res => res.Resolve(taskHubSettingName))
-                .Returns(taskHubName);
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { taskHubSettingName, taskHubName },
+            });
 
             using (var host = TestHelpers.GetJobHostWithOptions(
                 this.loggerProvider,
                 durableTaskOptions,
-                nameResolver: mockNameResolver.Object))
+                nameResolver: nameResolver))
             {
                 await host.StartAsync();
                 await host.StopAsync();
@@ -4061,9 +4062,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
             durableTaskOptions.HubName = $"%{taskHubSettingName}%";
 
-            var mockNameResolver = new Mock<INameResolver>();
-            mockNameResolver.Setup(res => res.Resolve(taskHubSettingName))
-                .Returns(taskHubName);
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { taskHubSettingName, taskHubName },
+            });
 
             ArgumentException exception =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -4071,7 +4073,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     using (var host = TestHelpers.GetJobHostWithOptions(
                             this.loggerProvider,
                             durableTaskOptions,
-                            nameResolver: mockNameResolver.Object))
+                            nameResolver: nameResolver))
                     {
                         await host.StartAsync();
                         await host.StopAsync();
