@@ -40,9 +40,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // This method should not be called before the app settings are resolved into the options.
-        // Because of this, we wait to validate the options until righ before building a durability provider, rather
+        // Because of this, we wait to validate the options until right before building a durability provider, rather
         // than in the Factory constructor.
-        private void EnsureOptionsAreValid()
+        private void EnsureInitialized()
         {
             if (!this.hasValidatedOptions)
             {
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public DurabilityProvider GetDurabilityProvider()
         {
-            this.EnsureOptionsAreValid();
+            this.EnsureInitialized();
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            this.EnsureOptionsAreValid();
+            this.EnsureInitialized();
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
