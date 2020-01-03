@@ -105,6 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.ResolveAppSettingOptions();
 
             if (loggerFactory == null)
             {
@@ -195,12 +196,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InitializeForFunctionsV1(context);
             }
 
-            if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
-            {
-                // use the resolved task hub name
-                this.Options.HubName = taskHubName;
-            }
-
             // Throw if any of the configured options are invalid
             this.Options.Validate();
 
@@ -248,16 +243,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
         }
 
+        private void ResolveAppSettingOptions()
+        {
+            if (this.Options == null)
+            {
+                throw new InvalidOperationException($"{nameof(this.Options)} must be set before resolving app settings.");
+            }
+
+            if (this.nameResolver == null)
+            {
+                throw new InvalidOperationException($"{nameof(this.nameResolver)} must be set before resolving app settings.");
+            }
+
+            if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
+            {
+                // use the resolved task hub name
+                this.Options.HubName = taskHubName;
+            }
+        }
+
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
+            this.nameResolver = context.Config.NameResolver;
+            this.ResolveAppSettingOptions();
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
-            this.nameResolver = context.Config.NameResolver;
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
