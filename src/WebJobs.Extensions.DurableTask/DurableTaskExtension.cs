@@ -665,6 +665,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
+                // Wait to shut down the task hub worker until all function listeners have been shut down.
                 if (this.isTaskHubWorkerStarted &&
                     this.knownOrchestrators.Values.Count(info => !info.IsDeregistered) == 0 &&
                     this.knownActivities.Values.Count(info => !info.IsDeregistered) == 0)
