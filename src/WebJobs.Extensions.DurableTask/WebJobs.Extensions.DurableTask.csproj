@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.6.5" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.1" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
