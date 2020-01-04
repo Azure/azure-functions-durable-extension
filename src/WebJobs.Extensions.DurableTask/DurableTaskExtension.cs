@@ -902,10 +902,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             using (await this.taskHubLock.AcquireAsync())
             {
                 // Wait to shut down the task hub worker until all function listeners have been shut down.
-                // We set IsDeregistered to true when Stop() is called on the listener
-                // We set Executor to a non-null value only if there is a listener associated with this function.
-                // If there is no listener for a function (e.g. it's a [NoAutomaticTrigger] function) then we don't
-                // need to wait for it to be deregistered before shutting down the task hub worker.
                 if (this.isTaskHubWorkerStarted &&
                     !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
                     !this.knownActivities.Values.Any(info => info.HasActiveListener) &&

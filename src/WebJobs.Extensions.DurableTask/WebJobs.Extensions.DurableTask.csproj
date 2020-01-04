@@ -71,8 +71,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.0" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.1" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
   </ItemGroup>
 
