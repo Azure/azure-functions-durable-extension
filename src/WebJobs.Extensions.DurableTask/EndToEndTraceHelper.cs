@@ -310,6 +310,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void FunctionAborted(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason,
+            FunctionType functionType)
+        {
+            EtwEventSource.Instance.FunctionAborted(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                reason,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: false);
+
+            this.logger.LogWarning(
+                "{instanceId}: Function '{functionName} ({functionType})' was aborted. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, functionType, reason, false /*isReplay*/, hubName,
+                LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
         public void OperationCompleted(
            string hubName,
            string functionName,
