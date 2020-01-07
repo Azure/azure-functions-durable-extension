@@ -61,13 +61,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                this.config.TraceHelper.FunctionFailed(
+                this.config.TraceHelper.FunctionAborted(
                     this.config.Options.HubName,
                     this.activityName,
                     instanceId,
                     $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {e}",
-                    functionType: FunctionType.Activity,
-                    isReplay: false);
+                    functionType: FunctionType.Activity);
 
                 // This will abort the execution and cause the message to go back onto the queue for re-processing
                 throw new SessionAbortedException(

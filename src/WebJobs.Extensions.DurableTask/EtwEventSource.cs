@@ -382,6 +382,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(223, TaskHub, AppName, SlotName, Details, ExtensionVersion);
         }
 
+        [Event(224, Level = EventLevel.Warning)]
+        public void FunctionAborted(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string Reason,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(224, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
+        }
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }
