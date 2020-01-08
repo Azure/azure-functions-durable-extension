@@ -5,12 +5,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class IOTypesAnalyzer : DiagnosticAnalyzer
+    public class IOTypesAnalyzer
     {
         public const string DiagnosticId = "DF0105";
 
@@ -20,41 +21,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
-
-        public override void Initialize(AnalysisContext context)
+        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierIO, SyntaxKind.IdentifierName);
-        }
+            var diagnosedIssue = false;
 
-        private static void AnalyzeIdentifierIO(SyntaxNodeAnalysisContext context)
-        {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierText = identifierName.Identifier.ValueText;
-                var identifierNameSymbol = context.SemanticModel.GetSymbolInfo(identifierName, context.CancellationToken).Symbol;
-                var typeInfo = context.SemanticModel.GetTypeInfo(identifierName);
-                if (typeInfo.Type != null)
+                var identifierName = descendant as IdentifierNameSyntax;
+                if (identifierName != null)
                 {
-                    var type = typeInfo.Type.ToString();
-                    if (IsIOClass(type))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    var identifierNameSymbol = semanticModel.GetSymbolInfo(identifierName, context.CancellationToken).Symbol;
+                    var typeInfo = semanticModel.GetTypeInfo(identifierName);
+                    if (typeInfo.Type != null)
                     {
-                        if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+                        var type = typeInfo.Type.ToString();
+                        if (IsIOClass(type))
                         {
-                            return;
+                            var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
+
+                            context.ReportDiagnostic(diagnostic);
+
+                            diagnosedIssue = true;
                         }
-
-                        var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
-
-                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
+
+            return diagnosedIssue;
         }
 
         private static bool IsIOClass(string s)

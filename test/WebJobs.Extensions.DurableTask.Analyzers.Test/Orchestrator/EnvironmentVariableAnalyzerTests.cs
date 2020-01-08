@@ -256,80 +256,106 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         public void GetEnvironmentVariables_InMethod_DeterministicAttribute()
         {
             var test = @"
-    using System;
-    using Microsoft.Azure.WebJobs;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-    namespace VSSample
+namespace VSSample
+{
+    public static class HelloSequence
     {
-        public static class EnvironmentExample
+        [FunctionName(""E1_HelloSequence"")]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                DirectCall();
+            
+                return ""Hello"";
+            }
+
+        public static string DirectCall()
         {
-            [Deterministic]
             " + allTests;
 
-            var expectedResults = new DiagnosticResult[6];
+
+            var expectedResults = new DiagnosticResult[7];
             expectedResults[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.GetEnvironmentVariable"),
+                Id = MethodAnalyzer.DiagnosticId,
+                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 13)
+                            new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.GetEnvironmentVariables"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.GetEnvironmentVariable"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 13)
+                            new DiagnosticResultLocation("Test0.cs", 27, 13)
                         }
             };
 
             expectedResults[2] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.ExpandEnvironmentVariables"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.GetEnvironmentVariables"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 13)
+                            new DiagnosticResultLocation("Test0.cs", 28, 13)
                         }
             };
 
             expectedResults[3] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Environment.GetEnvironmentVariable"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.ExpandEnvironmentVariables"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 13)
+                            new DiagnosticResultLocation("Test0.cs", 29, 13)
                         }
             };
 
             expectedResults[4] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Environment.GetEnvironmentVariables"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Environment.GetEnvironmentVariable"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 13)
+                            new DiagnosticResultLocation("Test0.cs", 30, 13)
                         }
             };
 
             expectedResults[5] = new DiagnosticResult
             {
                 Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Environment.GetEnvironmentVariables"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 31, 13)
+                        }
+            };
+
+            expectedResults[6] = new DiagnosticResult
+            {
+                Id = diagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Environment.ExpandEnvironmentVariables"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 18, 13)
+                            new DiagnosticResultLocation("Test0.cs", 32, 13)
                         }
             };
 
@@ -338,7 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new EnvironmentVariableAnalyzer();
+            return new OrchestratorAnalyzer();
         }
     }
 }
