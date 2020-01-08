@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -3943,8 +3944,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(argumentException);
             Assert.Equal(
                 argumentException.Message.Contains($"{taskHubName}V1")
-                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 45."
-                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 45.",
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters and have length between 3 and 45."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters and have length between 3 and 45.",
                 argumentException.Message);
         }
 
@@ -4024,6 +4025,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
             }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TaskHubName_AppSettingReference_ValidTaskHub_UsesResolvedTaskHub()
+        {
+            string taskHubSettingName = "TaskHubName";
+            string taskHubName = "ValidTaskHub";
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = $"%{taskHubSettingName}%";
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { taskHubSettingName, taskHubName },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.Equal(taskHubName, durableTaskOptions.HubName);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TaskHubName_AppSettingReference_InvalidTaskHub_ThrowsException()
+        {
+            string taskHubSettingName = "TaskHubName";
+            string taskHubName = "Invalid-Task-Hub";
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = $"%{taskHubSettingName}%";
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { taskHubSettingName, taskHubName },
+            });
+
+            ArgumentException exception =
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHostWithOptions(
+                            this.loggerProvider,
+                            durableTaskOptions,
+                            nameResolver: nameResolver))
+                    {
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
+                });
+
+            Assert.NotNull(exception);
+            Assert.Equal(
+                $"Task hub name '{taskHubName}' should contain only alphanumeric characters and have length between 3 and 45.",
+                exception.Message);
         }
 
         [Fact]
@@ -4207,6 +4267,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ValidateExtensionLifecycleLogs()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ValidateExtensionLifecycleLogs),
+                false))
+            {
+                // simply starting and stopping should generate all the logs we need to check for
+                await host.StartAsync();
+                await Task.Delay(3000);
+                await host.StopAsync();
+            }
+
+            TestLogger testLogger = this.loggerProvider.CreatedLoggers.Single(
+                logger => logger.Category == TestHelpers.LogCategory);
+
+            // Ensure the basic startup/shutdown logs are present
+            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Starting task hub worker"));
+            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Task hub worker started"));
+            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Stopping task hub worker"));
+            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Task hub worker stopped"));
+
+            // Ensure the configuration log is present and contains valid JSON.
+            // Expected format: "Durable extension configuration loaded: {json}. HubName: ..."
+            const string PrefixText = "Durable extension configuration loaded: ";
+            LogMessage configMessage = Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains(PrefixText));
+            string configMessageText = configMessage.FormattedMessage;
+            int start = configMessageText.IndexOf(PrefixText) + PrefixText.Length;
+            int end = configMessageText.IndexOf(". HubName: ", start);
+            Assert.NotEqual(-1, end);
+            string configJson = configMessageText.Substring(start, end - start);
+
+            // This will throw if the JSON is not valid
+            JObject.Parse(configJson);
         }
 
         private static StringBuilder GenerateMediumRandomStringPayload()

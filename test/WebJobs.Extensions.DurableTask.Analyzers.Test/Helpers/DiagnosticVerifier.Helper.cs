@@ -1,11 +1,15 @@
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace TestHelper
 {
@@ -19,6 +23,11 @@ namespace TestHelper
         private static readonly MetadataReference SystemCoreReference = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
         private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
+        private static readonly MetadataReference EnvironmentReference = MetadataReference.CreateFromFile(typeof(Environment).Assembly.Location);
+        private static readonly MetadataReference ThreadReference = MetadataReference.CreateFromFile(typeof(Thread).Assembly.Location);
+        private static readonly MetadataReference TaskReference = MetadataReference.CreateFromFile(typeof(Task).Assembly.Location);
+        private static readonly MetadataReference DurableFunctionsReference = MetadataReference.CreateFromFile(typeof(IDurableActivityContext).Assembly.Location);
+        private static readonly MetadataReference ILoggerReference = MetadataReference.CreateFromFile(typeof(ILogger).Assembly.Location);
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
@@ -152,7 +161,12 @@ namespace TestHelper
                 .AddMetadataReference(projectId, CorlibReference)
                 .AddMetadataReference(projectId, SystemCoreReference)
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
-                .AddMetadataReference(projectId, CodeAnalysisReference);
+                .AddMetadataReference(projectId, CodeAnalysisReference)
+                .AddMetadataReference(projectId, EnvironmentReference)
+                .AddMetadataReference(projectId, ThreadReference)
+                .AddMetadataReference(projectId, TaskReference)
+                .AddMetadataReference(projectId, DurableFunctionsReference)
+                .AddMetadataReference(projectId, ILoggerReference);
 
             int count = 0;
             foreach (var source in sources)

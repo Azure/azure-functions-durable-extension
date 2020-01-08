@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
@@ -37,19 +38,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             var expression = root.FindNode(diagnosticSpan, false, true);
+            if (!TryGetInvocationExpression(expression, out SyntaxNode invocationExpression))
+            {
+                return;
+            }
 
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
             var durableVersion = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-            if (SyntaxNodeUtils.IsInsideOrchestrator(expression) && durableVersion.Equals(DurableVersion.V2))
+            if (SyntaxNodeUtils.IsInsideOrchestrator(invocationExpression) && durableVersion.Equals(DurableVersion.V2))
             {
-                if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
+                if (TryGetDurableOrchestrationContextVariableName(invocationExpression, out string variableName))
                 {
                     var newExpression = "";
-                    if (TryGetMillisecondsParameter(expression, out string milliseconds))
+                    if (TryGetMillisecondsParameter(invocationExpression, out string milliseconds))
                     {
 
-                        if (TryGetCancellationTokenParameter(expression, semanticModel, out string cancellationToken))
+                        if (TryGetCancellationTokenParameter(invocationExpression, semanticModel, out string cancellationToken))
                         {
                             newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), " + cancellationToken + ")";
                         }
@@ -58,9 +63,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                             newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), CancellationToken.None)";
                         }
                     }
-                    else if (TryGetTimespanParameter(expression, semanticModel, out string timeSpan))
+                    else if (TryGetTimespanParameter(invocationExpression, semanticModel, out string timeSpan))
                     {
-                        if (TryGetCancellationTokenParameter(expression, semanticModel, out string cancellationToken))
+                        if (TryGetCancellationTokenParameter(invocationExpression, semanticModel, out string cancellationToken))
                         {
                             newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), " + cancellationToken + ")";
                         }
@@ -75,20 +80,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     diagnostic);
                 }
             }
-            else if (SyntaxNodeUtils.IsMarkedDeterministic(expression))
+            else if (SyntaxNodeUtils.IsMarkedDeterministic(invocationExpression))
             {
                 context.RegisterCodeFix(
                 CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(TimerCodeFixProvider)), diagnostic);
             }
         }
 
-        private bool TryGetTimespanParameter(SyntaxNode expression, SemanticModel semanticModel,  out string timeSpan)
+        private bool TryGetInvocationExpression(SyntaxNode expression, out SyntaxNode invocationExpression)
+        {
+            if (expression.IsKind(SyntaxKind.InvocationExpression))
+            {
+                invocationExpression = expression;
+                return true;
+            }
+
+            invocationExpression = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
+            return invocationExpression != null;
+        }
+
+        private bool TryGetTimespanParameter(SyntaxNode expression, SemanticModel semanticModel, out string timeSpan)
         {
             if (TryGetArgumentEnumerable(expression, out IEnumerable<SyntaxNode> argumentEnumerable))
             {
                 foreach (SyntaxNode argument in argumentEnumerable)
                 {
-                    if (TryGetParameterOfType(argument, semanticModel, "TimeSpan", out string timeSpanReference))
+                    if (TryGetParameterOfType(argument, semanticModel, "System.TimeSpan", out string timeSpanReference))
                     {
                         timeSpan = timeSpanReference;
                         return true;
@@ -106,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 foreach (SyntaxNode argument in argumentEnumerable)
                 {
-                    if (TryGetParameterOfType(argument, semanticModel, "CancellationToken", out string cancellationTokenReference))
+                    if (TryGetParameterOfType(argument, semanticModel, "System.Threading.CancellationToken", out string cancellationTokenReference))
                     {
                         cancellationToken = cancellationTokenReference;
                         return true;
@@ -118,48 +135,82 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private bool TryGetParameterOfType(SyntaxNode argument, SemanticModel semanticModel, string typeToCompare, out string typeReference)
+        private bool TryGetParameterOfType(SyntaxNode argument, SemanticModel semanticModel, string typeToCompare, out string parameter)
         {
-            var objectCreationExpressionEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.ObjectCreationExpression));
-            if (objectCreationExpressionEnumerable.Any())
+            if (TryGetIdentifierNameChildNodes(argument, out IEnumerable<SyntaxNode> node) ||
+                TryGetSimpleMemberAccessExpressionChildNodes(argument, out node) ||
+                TryGetObjectCreationExpressionChildNodes(argument, out node))
             {
-                var identifierNameEnumerable = objectCreationExpressionEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-                if (identifierNameEnumerable.Any())
+                if (TryGetIdentifierNameChildNodes(node.FirstOrDefault(), out IEnumerable<SyntaxNode> identifiers))
                 {
-                    var identifierName = identifierNameEnumerable.First();
-                    var typeInfo = semanticModel.GetTypeInfo(identifierName);
-                    if (typeInfo.Type != null)
+                    var typeWithoutNamespace = GetTypeWithoutNamespace(typeToCompare);
+                    foreach (SyntaxNode identifier in identifiers)
                     {
-                        var type = typeInfo.Type.ToString();
-                        if (string.Equals(type, typeToCompare))
+                        if (string.Equals(identifier.ToString(), typeWithoutNamespace) ||
+                            TryGetTypeName(semanticModel, identifier, out string typeName) &&
+                            string.Equals(typeName, typeToCompare))
                         {
-                            typeReference = objectCreationExpressionEnumerable.First().ToString();
-                            return true;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                var identifierNameEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-                if (identifierNameEnumerable.Any())
-                {
-                    var identifierName = identifierNameEnumerable.First();
-                    var typeInfo = semanticModel.GetTypeInfo(identifierName);
-                    if (typeInfo.Type != null)
-                    {
-                        var type = typeInfo.Type.ToString();
-                        if (string.Equals(type, typeToCompare))
-                        {
-                            typeReference = identifierNameEnumerable.First().ToString();
+                            parameter = node.First().ToString();
                             return true;
                         }
                     }
                 }
             }
 
-            typeReference = null;
+            parameter = null;
             return false;
+        }
+
+        private static bool TryGetObjectCreationExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
+            TryGetChildNodes(argument, SyntaxKind.ObjectCreationExpression, out nodes);
+
+        private static bool TryGetSimpleMemberAccessExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) => 
+            TryGetChildNodes(argument, SyntaxKind.SimpleMemberAccessExpression, out nodes);
+
+        private static bool TryGetIdentifierNameChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
+            TryGetChildNodes(argument, SyntaxKind.IdentifierName, out nodes);
+
+        private static bool TryGetChildNodes(SyntaxNode argument, SyntaxKind kind, out IEnumerable<SyntaxNode> nodes)
+        {
+            if (argument == null)
+            {
+                nodes = null;
+                return false;
+            }
+
+            if (argument.IsKind(kind))
+            {
+                nodes = new List<SyntaxNode>() { argument };
+                return true;
+            }
+            
+            nodes = argument.ChildNodes().Where(x => x.IsKind(kind));
+            
+            if (nodes.FirstOrDefault() != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetTypeName(SemanticModel semanticModel, SyntaxNode identifier, out string typeName)
+        {
+            var typeInfo = semanticModel.GetTypeInfo(identifier);
+            if (typeInfo.Type != null)
+            {
+                typeName = typeInfo.Type.ToString();
+                return true;
+            }
+
+            typeName = null;
+            return false;
+        }
+        
+        private static string GetTypeWithoutNamespace(string type)
+        {
+            var index = type.LastIndexOf('.') + 1;
+            return type.Substring(index);
         }
 
         private bool TryGetMillisecondsParameter(SyntaxNode expression, out string milliseconds)

@@ -42,10 +42,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var memberAccessExpression = identifierName.Parent;
                     var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
 
-                    if (!memberSymbol?.ToString().StartsWith("System.DateTime") ?? true)
+                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.DateTime"))
                     {
                         return;
                     }
+
                     if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
                     {
                         return;

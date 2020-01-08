@@ -128,6 +128,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test, expected);
         }
 
+        [TestMethod]
+        public void ReturnTypeAnalyzer_IncorrectReturn_Tuple()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.SignalEntityAsync<IEntityExample>();
+            }
+        }
+
+        public interface IEntityExample
+        {
+            public static Tuple<int, string> methodTestOneParameter(string test);
+        }
+    }";
+            var expected = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat, "Tuple<int, string>"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 13)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new InterfaceAnalyzer();

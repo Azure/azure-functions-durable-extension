@@ -15,27 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
     {
         private readonly string diagnosticId = EntityContextAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = EntityContextAnalyzer.severity;
-        private readonly string fixtestV2 = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-
-namespace ExternalInteraction
-{
-    public static class HireEmployee
-    {
-        [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            }
-}";
 
         [TestMethod]
         public void EntityTrigger_NonIssue()
@@ -91,7 +70,7 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityContextAnalyzerMessageFormat, "Object"),
+                Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "Object"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -100,8 +79,6 @@ namespace ExternalInteraction
             };
             
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -131,7 +108,7 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityContextAnalyzerMessageFormat, "string"),
+                Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "string"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -140,12 +117,10 @@ namespace ExternalInteraction
             };
             
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
-        public void EntityTrigger_WrongDurableInterface()
+        public void EntityTrigger_Tuple()
         {
             var test = @"
 using System.Collections.Generic;
@@ -163,7 +138,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableOrchestrationContext context,
+            [EntityTrigger] Tuple<int, string> context,
             ILogger log)
             {
             }
@@ -171,17 +146,15 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityContextAnalyzerMessageFormat, "IDurableOrchestrationContext"),
+                Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "Tuple<int, string>"),
                 Severity = severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 29)
                      }
             };
-            
-            VerifyCSharpDiagnostic(test, expected);
 
-            //VerifyCSharpFix(test, fixtest);
+            VerifyCSharpDiagnostic(test, expected);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

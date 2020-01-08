@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public const string DiagnosticId = "DF0107";
 
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.MethodAttributeAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.MethodAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
@@ -44,23 +44,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 return;
             }
+
             var syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
             if (syntaxReference == null)
             {
                 return;
             }
+
             var declaration = syntaxReference.GetSyntax(context.CancellationToken);
 
-            if (SyntaxNodeUtils.IsMarkedDeterministic(declaration))
+            if (SyntaxNodeUtils.IsMarkedDeterministic(declaration) || SyntaxNodeUtils.IsInsideOrchestrator(declaration))
             {
                 return;
             }
-            else
-            {
-                var diagnostic = Diagnostic.Create(Rule, invocation.GetLocation(), invocation);
 
-                context.ReportDiagnostic(diagnostic);
-            }
+            var diagnostic = Diagnostic.Create(Rule, invocation.GetLocation(), invocation);
+
+            context.ReportDiagnostic(diagnostic);
         }
     }
 }

@@ -144,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static string GetTaskHubErrorString(string hubName)
         {
-            return $"Task hub name '{hubName}' should contain only alphanumeric characters excluding '-' and have length up to {MaxTaskHubNameSize}.";
+            return $"Task hub name '{hubName}' should contain only alphanumeric characters and have length between {MinTaskHubNameSize} and {MaxTaskHubNameSize}.";
         }
 
         internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)

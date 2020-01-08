@@ -3,7 +3,6 @@
 
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 using Microsoft.CodeAnalysis;
 
@@ -15,8 +14,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private readonly string diagnosticId = IOTypesAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = IOTypesAnalyzer.severity;
 
+        private readonly string allTests = @"
+            public void allCalls(HttpClient httpClient, SqlConnection sqlConnection, CloudBlobClient cloudBlobClient, CloudQueueClient cloudQueueClient, 
+                CloudTableClient cloudTableClient, DocumentClient documentClient, WebRequest webRequest)
+            {
+                Uri uri = new Uri('test');
+
+                HttpClient httpClient2;
+                SqlConnection sqlConnection2;
+                CloudBlobClient cloudBlobClient2;
+                CloudQueueClient cloudQueueClient2;
+                CloudTableClient cloudTableClient2;
+                DocumentClient documentClient2;
+                WebRequest webRequest2;
+
+                httpClient.GetType();
+                sqlConnection.GetType();
+                cloudBlobClient.GetType();
+                cloudQueueClient.GetType();
+                cloudTableClient.GetType();
+                documentClient.Dispose();
+                webRequest.GetType();
+            }
+        }
+    }";
+
         [TestMethod]
-        public void NonIssueCalls()
+        public void IOTypes_NonIssueCalls()
         {
             var test = @"
     using System;
@@ -32,29 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class NonIssueExample
         {
-            public void iONonIssueCalls(HttpClient httpClient, SqlConnection sqlConnection, CloudBlobClient cloudBlobClient, CloudQueueClinet cloudQueueClinet, 
-                CloudTableClient cloudTableClient, DocumentClient documentClient, WebRequest webRequest)
-            {
-                Uri uri = new Uri('test');
-
-                HttpClient httpClient2;
-                SqlConnection sqlConnection2;
-                CloudBlobClient cloudBlobClient2;
-                CloudQueueClinet cloudQueueClinet2;
-                CloudTableClient cloudTableClient2;
-                DocumentClient documentClient2;
-                WebRequest webRequest2;
-
-                httpClient.GetType();
-                sqlConnection.GetType();
-                cloudBlobClient.GetType();
-                cloudQueueClient.GetType();
-                cloudTableClient.GetType();
-                documentClient.Dispose();
-                webRequest.GetType();
-            }
-        }
-    }";
+            " + allTests;
 
             VerifyCSharpDiagnostic(test);
         }
@@ -83,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -119,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -130,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "httpClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -165,7 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -201,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -212,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "sqlConnection"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -247,7 +249,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -283,7 +285,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -294,7 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "cloudBlobClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -329,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -365,7 +367,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -376,7 +378,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "cloudQueueClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -411,7 +413,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -447,7 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -458,7 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "cloudTableClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -493,7 +495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -529,7 +531,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -540,7 +542,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "documentClient"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -575,7 +577,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -611,7 +613,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -622,11 +624,262 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "webRequest"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
                 Severity = severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedResults);
+        }
+
+        [TestMethod]
+        public void IOTypes_InDeterministicMethod_All()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [Deterministic]
+            " + allTests;
+
+            var expectedResults = new DiagnosticResult[21];
+            expectedResults[0] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 13, 34)
+                        }
+            };
+
+            expectedResults[1] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 13, 57)
+                        }
+            };
+
+            expectedResults[2] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 13, 86)
+                        }
+            };
+
+            expectedResults[3] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 13, 119)
+                        }
+            };
+
+            expectedResults[4] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 14, 17)
+                        }
+            };
+
+            expectedResults[5] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 14, 52)
+                        }
+            };
+
+            expectedResults[6] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 14, 83)
+                        }
+            };
+
+            expectedResults[7] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 18, 17)
+                        }
+            };
+
+            expectedResults[8] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 19, 17)
+                        }
+            };
+
+            expectedResults[9] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 20, 17)
+                        }
+            };
+
+            expectedResults[10] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 17)
+                        }
+            };
+
+            expectedResults[11] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 22, 17)
+                        }
+            };
+
+            expectedResults[12] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 23, 17)
+                        }
+            };
+
+            expectedResults[13] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 24, 17)
+                        }
+            };
+
+            expectedResults[14] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "HttpClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 26, 17)
+                        }
+            };
+
+            expectedResults[15] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "SqlConnection"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 27, 17)
+                        }
+            };
+
+            expectedResults[16] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudBlobClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 28, 17)
+                        }
+            };
+
+            expectedResults[17] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudQueueClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 29, 17)
+                        }
+            };
+
+            expectedResults[18] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "CloudTableClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 30, 17)
+                        }
+            };
+
+            expectedResults[19] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DocumentClient"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 31, 17)
+                        }
+            };
+
+            expectedResults[20] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "WebRequest"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 32, 17)
                         }
             };
 

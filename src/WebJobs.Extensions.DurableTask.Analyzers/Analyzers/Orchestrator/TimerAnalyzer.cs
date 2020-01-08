@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -48,28 +49,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 if (identifierText == "Delay")
                 {
                     var memberAccessExpression = identifierName.Parent;
-                    var invocationExpression = memberAccessExpression.Parent;
                     var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
 
-                    if (!memberSymbol?.ToString().StartsWith("System.Threading.Tasks.Task") ?? true)
+                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
                     {
                         return;
                     }
-                    else if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                        {
-                            var diagnostic = Diagnostic.Create(rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+                    {
+                        return;
+                    }
+
+                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                    {
+                        var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+
+                        var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
+        }
+
+        private static SyntaxNode GetAwaitOrInvocationExpression(SyntaxNode memberAccessExpression)
+        {
+            var invocationExpression = memberAccessExpression.Parent;
+            var awaitExpression = invocationExpression.Parent;
+            if (awaitExpression.IsKind(SyntaxKind.AwaitExpression))
+            {
+                return awaitExpression;
+            }
+
+            return invocationExpression;
         }
 
         private static void AnalyzeIdentifierThread(SyntaxNodeAnalysisContext context)
@@ -84,25 +97,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 if (identifierText == "Sleep")
                 {
                     var memberAccessExpression = identifierName.Parent;
-                    var invocationExpression = memberAccessExpression.Parent;
                     var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
 
-                    if (!memberSymbol?.ToString().StartsWith("System.Threading.Thread") ?? true)
+                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Thread"))
                     {
                         return;
                     }
-                    else if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                        {
-                            var diagnostic = Diagnostic.Create(rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
+                    {
+                        return;
+                    }
+
+                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                    {
+                        var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+
+                        var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }

@@ -54,7 +54,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Activity,
                 isReplay: false);
 
-            FunctionResult result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
+            FunctionResult result;
+            try
+            {
+                result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                this.config.TraceHelper.FunctionAborted(
+                    this.config.Options.HubName,
+                    this.activityName,
+                    instanceId,
+                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {e}",
+                    functionType: FunctionType.Activity);
+
+                // This will abort the execution and cause the message to go back onto the queue for re-processing
+                throw new SessionAbortedException(
+                    $"An internal error occurred while attempting to execute '{this.activityName}'.", e);
+            }
+
             if (!result.Succeeded)
             {
                 // Flow the original activity function exception to the orchestration

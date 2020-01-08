@@ -310,6 +310,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void FunctionAborted(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason,
+            FunctionType functionType)
+        {
+            EtwEventSource.Instance.FunctionAborted(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                reason,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: false);
+
+            this.logger.LogWarning(
+                "{instanceId}: Function '{functionName} ({functionType})' was aborted. Reason: {reason}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, functionType, reason, false /*isReplay*/, hubName,
+                LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
         public void OperationCompleted(
            string hubName,
            string functionName,
@@ -724,6 +748,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId, functionName, functionType, expirationTimeString, isReplay, FunctionState.TimerExpired,
                     hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
+        }
+
+        public void TraceConfiguration(
+            string hubName,
+            string configurationJsonString)
+        {
+            EtwEventSource.Instance.ExtensionConfiguration(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                configurationJsonString,
+                ExtensionVersion);
+
+            this.logger.LogInformation(
+                "Durable extension configuration loaded: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                configurationJsonString, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
         }
 
         private bool ShouldLogEvent(bool isReplay)

@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
@@ -16,23 +15,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private readonly string diagnosticId = TimerAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = TimerAnalyzer.severity;
 
-        String fixtest = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.WebJobs;
-
-    namespace VSSample
-    {
-        public static class HelloSequence
-        {
-            [FunctionName('E1_HelloSequence')]
-            public static async Task<List<string>> Run(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
+        private readonly string allTests = @"
+            public void timerAllCalls()
             {
-                context.CreateTimer;
+                Thread.Sleep(100);
+                System.Threading.Thread.Sleep(100);
+                Task.Delay(100);
+                System.Threading.Tasks.Task.Delay(100);
             }
-        }
+}
     }";
 
         [TestMethod]
@@ -45,15 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class TimerNonIssueCalls
         {
-            public void timerNonIssueCalls()
-            {
-			    Thread.Sleep(100);
-                Task.Delay(100);
-                System.Threadig.Thread.Sleep(100);
-                System.Threading.Tasks.Task.Delay(100);
-            }
-        }
-    }";
+            " + allTests;
 
             VerifyCSharpDiagnostic(test);
         }
@@ -82,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Delay"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Delay(100)"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -91,8 +74,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         [TestMethod]
@@ -119,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Delay"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Delay(100)"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -128,12 +109,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
-        //Disabled test. Thread class doesn't seem to work correctly with the roslyn test helper.
-        //[TestMethod]
+        [TestMethod]
         public void ThreadInOrchestrator_Sleep_Namespace()
         {
             var test = @"
@@ -157,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Thread.Sleep(100)"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -166,12 +144,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
-        //Disabled test. Thread class doesn't seem to work correctly with the roslyn test helper.
-        //[TestMethod]
+        [TestMethod]
         public void ThreadInOrchestrator_Sleep()
         {
             var test = @"
@@ -195,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep(100)"),
                 Severity = severity,
                 Locations =
                     new[] {
@@ -204,76 +179,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
-        
 
         [TestMethod]
-        public void TaskInMethod_DeterministicAttribute_Delay()
+        public void Timer_DeterministicAttribute_All()
         {
             var test = @"
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
 
     namespace VSSample
     {
         [Deterministic]
-        public int testDeterministicMethod()
-        {
-            Task.Delay(100);
-            return 5;
-        }
-    }";
-            var expected = new DiagnosticResult
+        " + allTests;
+
+            var expectedResults = new DiagnosticResult[4];
+            expectedResults[0] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Delay"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep(100)"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 13)
+                            new DiagnosticResultLocation("Test0.cs", 13, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
-
-            // Test fix
-        }
-
-        //Disabled test. Thread class doesn't seem to work correctly with the roslyn test helper.
-        //[TestMethod]
-        public void ThreadInMethod_DeterministicAttribute_Sleep()
-        {
-            var test = @"
-    using System;
-    using System.Threading;
-    using Microsoft.Azure.WebJobs;
-
-    namespace VSSample
-    {
-        [Deterministic]
-        public int testDeterministicMethod()
-        {
-            Thread.Sleep(100);
-            return 5;
-        }
-    }";
-            var expected = new DiagnosticResult
+            expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Thread.Sleep(100)"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 13)
+                            new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            expectedResults[2] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Delay(100)"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                        }
+            };
 
-            // Test fix
+            expectedResults[3] = new DiagnosticResult
+            {
+                Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Delay(100)"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 16, 17)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedResults);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

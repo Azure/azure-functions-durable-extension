@@ -15,30 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     {
         private readonly string diagnosticId = StaticFunctionAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.severity;
-        private readonly string fixtestV2 = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-
-namespace ExternalInteraction
-{
-    public static class HireEmployee
-    {
-        [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            }
-}";
 
         [TestMethod]
-        public void EntityTrigger_NonIssue()
+        public void StaticFunction_NonIssue()
         {
             var test = @"
 using System.Collections.Generic;
@@ -65,7 +44,7 @@ namespace ExternalInteraction
         }
 
         [TestMethod]
-        public void EntityTrigger_Object()
+        public void StaticFunction_NonStatic()
         {
             var test = @"
 using System.Collections.Generic;
@@ -91,7 +70,7 @@ namespace ExternalInteraction
             var expected = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = String.Format(Resources.EntityStaticAnalyzerMessageFormat, "RunOrchestrator"),
+                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "RunOrchestrator"),
                 Severity = severity,
                 Locations =
                  new[] {
@@ -100,8 +79,6 @@ namespace ExternalInteraction
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            //VerifyCSharpFix(test, fixtest);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

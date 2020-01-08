@@ -27,10 +27,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (node.IsKind(SyntaxKind.MethodDeclaration))
                 {
-                    var returnTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.GenericName));
-                    if (returnTypeNode.Any())
+                    var returnTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+                    if (returnTypeNode != null)
                     {
-                        var returnType = returnTypeNode.First().ToString();
+                        var returnType = returnTypeNode.ToString();
                         if (!returnType.Equals("void") && !returnType.StartsWith("Task"))
                         {
                             var diagnostic = Diagnostic.Create(Rule, node.GetLocation(), returnType);
