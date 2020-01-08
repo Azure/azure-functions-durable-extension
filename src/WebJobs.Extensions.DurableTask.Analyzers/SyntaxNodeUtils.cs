@@ -49,11 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static bool IsMarkedDeterministic(SyntaxNode node) => TryGetDeterministicAttribute(node, out _);
-
-
-        internal static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute) => TryGetAttribute(node, "Deterministic", out deterministicAttribute);
-
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))

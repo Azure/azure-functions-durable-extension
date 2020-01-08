@@ -80,11 +80,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     diagnostic);
                 }
             }
-            else if (SyntaxNodeUtils.IsMarkedDeterministic(invocationExpression))
-            {
-                context.RegisterCodeFix(
-                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(TimerCodeFixProvider)), diagnostic);
-            }
         }
 
         private bool TryGetInvocationExpression(SyntaxNode expression, out SyntaxNode invocationExpression)
