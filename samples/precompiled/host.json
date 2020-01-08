@@ -12,7 +12,7 @@
       "routePrefix": ""
     },
     "durableTask": {
-      "hubName": "SampleHubVS"
+      "hubName": "%MyTaskHubName%"
     }
   }
 }
