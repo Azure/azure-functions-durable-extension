@@ -26,6 +26,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 }
     }";
 
+        private readonly string fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+            await context.CreateTimer(context.CurrentUtcDateTime.AddMilliseconds(100), CancellationToken.None);
+            }
+        }
+    }";
+
         [TestMethod]
         public void TimerInMethod_NonIssueCalls()
         {
@@ -47,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var test = @"
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
 
@@ -69,11 +90,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -82,6 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var test = @"
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
 
@@ -104,11 +128,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -118,6 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
 
     namespace VSSample
@@ -139,11 +166,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -153,6 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
 
     namespace VSSample
@@ -174,11 +204,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -241,6 +273,390 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expectedResults);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_Await_New()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                await Task.Delay(new TimeSpan(100), new CancellationToken());
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(new TimeSpan(100)), new CancellationToken());
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_Await_Variables()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                var cancellationToken = new CancellationToken();
+                await Task.Delay(timeSpan, cancellationToken);
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                var cancellationToken = new CancellationToken();
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(timeSpan), cancellationToken);
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_Await_MemberAccessExpression()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                await Task.Delay(timeSpan, CancellationToken.None);
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(timeSpan), CancellationToken.None);
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_Await_TimeSpanOnly()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                await Task.Delay(timeSpan);
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(timeSpan), CancellationToken.None);
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_New()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                Task.Delay(new TimeSpan(100), new CancellationToken());
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(new TimeSpan(100)), new CancellationToken());
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_Variables()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                var cancellationToken = new CancellationToken();
+                Task.Delay(timeSpan, cancellationToken);
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                var cancellationToken = new CancellationToken();
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(timeSpan), cancellationToken);
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_MemberAccessExpression()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                Task.Delay(timeSpan, CancellationToken.None);
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(timeSpan), CancellationToken.None);
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
+        public void CodeFixProvider_TimeSpanOnly()
+        {
+            var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+                Task.Delay(timeSpan);
+            }
+        }
+    }";
+
+            var fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var timeSpan = new TimeSpan();
+            await context.CreateTimer(context.CurrentUtcDateTime.Add(timeSpan), CancellationToken.None);
+            }
+        }
+    }";
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

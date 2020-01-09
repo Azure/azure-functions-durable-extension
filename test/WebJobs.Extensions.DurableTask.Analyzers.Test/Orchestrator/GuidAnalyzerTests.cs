@@ -24,6 +24,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }
 }";
 
+        private readonly string fix = @"
+    using System;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static void Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.NewGuid();
+            }
+        }
+    }";
+
         [TestMethod]
         public void NewGuid_NonIssueCalls()
         {
@@ -44,16 +62,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
             [FunctionName('E1_HelloSequence')]
-            public static async Task<List<string>> Run(
+            public static void Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 Guid.NewGuid();
@@ -67,11 +84,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -79,16 +98,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
             [FunctionName('E1_HelloSequence')]
-            public static async Task<List<string>> Run(
+            public static void Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 System.Guid.NewGuid();
@@ -102,11 +120,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -115,6 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var test = @"
     using System;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
@@ -129,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 13)
+                            new DiagnosticResultLocation("Test0.cs", 12, 13)
                         }
             };
 
@@ -140,7 +161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 13)
+                            new DiagnosticResultLocation("Test0.cs", 13, 13)
                         }
             };
 

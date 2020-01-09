@@ -15,17 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
         private readonly string diagnosticId = ClientAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = ClientAnalyzer.severity;
 
-        [TestMethod]
-        public void DurableClient_V1_NonIssue()
-        {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
+        private readonly string v1Fix = @"
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -34,53 +25,83 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [OrchestrationClient] DurableOrchestrationClient client, ILogger log)
+            [OrchestrationClient] DurableOrchestrationClient client,
+            ILogger log)
             {
             }
 }";
+
+        private readonly string v2ClientFix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [DurableClient] IDurableClient client,
+            ILogger log)
+            {
+            }
+}";
+
+        private readonly string v2OrchestrationClientFix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [DurableClient] IDurableOrchestrationClient client,
+            ILogger log)
+            {
+            }
+}";
+
+        private readonly string v2EntityClientFix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(""HireEmployee"")]
+        public static async Task<Application> RunOrchestrator(
+            [DurableClient] IDurableEntityClient client,
+            ILogger log)
+            {
+            }
+}";
+
+        [TestMethod]
+        public void DurableClient_V1_NonIssue()
+        {
             SyntaxNodeUtils.version = DurableVersion.V1;
-            VerifyCSharpDiagnostic(test);
+
+            VerifyCSharpDiagnostic(v1Fix);
         }
 
         [TestMethod]
         public void DurableClient_V2_NonIssue()
         {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-
-namespace ExternalInteraction
-{
-    public static class HireEmployee
-    {
-        [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
-            [DurableClient] IDurableClient durableClient, [DurableClient] IDurableOrchestrationClient durableOrchestrationClient, 
-            [DurableClient] IDurableEntityClient durableEntityClient, ILogger log)
-            {
-            }
-}";
             SyntaxNodeUtils.version = DurableVersion.V2;
-            VerifyCSharpDiagnostic(test);
+
+            VerifyCSharpDiagnostic(v2ClientFix);
+            VerifyCSharpDiagnostic(v2OrchestrationClientFix);
+            VerifyCSharpDiagnostic(v2EntityClientFix);
         }
 
         [TestMethod]
         public void OrchestrationClient_V1_Object()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -89,7 +110,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [OrchestrationClient] Object context,
+            [OrchestrationClient] Object client,
             ILogger log)
             {
             }
@@ -101,25 +122,22 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 35)
+                            new DiagnosticResultLocation("Test0.cs", 11, 35)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V1;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v1Fix);
         }
 
         [TestMethod]
         public void OrchestrationClient_V1_String()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -128,7 +146,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [OrchestrationClient] string context,
+            [OrchestrationClient] string client,
             ILogger log)
             {
             }
@@ -140,25 +158,22 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 35)
+                            new DiagnosticResultLocation("Test0.cs", 11, 35)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V1;
+
             VerifyCSharpDiagnostic(test, expected);
+            
+            VerifyCSharpFix(test, v1Fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
         public void OrchestrationClient_V1_V2DurableInterface()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -167,7 +182,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [OrchestrationClient] IDurableClient context,
+            [OrchestrationClient] IDurableClient client,
             ILogger log)
             {
             }
@@ -179,25 +194,22 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 35)
+                            new DiagnosticResultLocation("Test0.cs", 11, 35)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V1;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v1Fix);
         }
 
         [TestMethod]
         public void OrchestrationClient_V1_Tuple()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -206,7 +218,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [OrchestrationClient] Tuple<int, string> context,
+            [OrchestrationClient] Tuple<int, string> client,
             ILogger log)
             {
             }
@@ -218,25 +230,22 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 35)
+                            new DiagnosticResultLocation("Test0.cs", 11, 35)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V1;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v1Fix);
         }
 
         [TestMethod]
         public void DurableClient_V2_Object()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -245,7 +254,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [DurableClient] Object context,
+            [DurableClient] Object client,
             ILogger log)
             {
             }
@@ -257,25 +266,24 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V2;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v2ClientFix, 0);
+            VerifyCSharpFix(test, v2EntityClientFix, 1);
+            VerifyCSharpFix(test, v2OrchestrationClientFix, 2);
         }
 
         [TestMethod]
         public void DurableClient_V2_String()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -284,7 +292,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [DurableClient] string context,
+            [DurableClient] string client,
             ILogger log)
             {
             }
@@ -296,25 +304,24 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V2;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v2ClientFix, 0);
+            VerifyCSharpFix(test, v2EntityClientFix, 1);
+            VerifyCSharpFix(test, v2OrchestrationClientFix, 2);
         }
 
         [TestMethod]
         public void DurableClient_V2_V1DurableClass()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -323,7 +330,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [DurableClient] DurableOrchestrationClient context,
+            [DurableClient] DurableOrchestrationClient client,
             ILogger log)
             {
             }
@@ -335,25 +342,24 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V2;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v2ClientFix, 0);
+            VerifyCSharpFix(test, v2EntityClientFix, 1);
+            VerifyCSharpFix(test, v2OrchestrationClientFix, 2);
         }
 
         [TestMethod]
         public void DurableClient_V2_Tuple()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -362,7 +368,7 @@ namespace ExternalInteraction
     {
         [FunctionName(""HireEmployee"")]
         public static async Task<Application> RunOrchestrator(
-            [DurableClient] Tuple<int, string> context,
+            [DurableClient] Tuple<int, string> client,
             ILogger log)
             {
             }
@@ -374,12 +380,17 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
 
             SyntaxNodeUtils.version = DurableVersion.V2;
+
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, v2ClientFix, 0);
+            VerifyCSharpFix(test, v2EntityClientFix, 1);
+            VerifyCSharpFix(test, v2OrchestrationClientFix, 2);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

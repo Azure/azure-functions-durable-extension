@@ -4,9 +4,12 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -34,14 +37,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
-            var expression = root.FindNode(diagnosticSpan);
+            var expression = root.FindNode(diagnosticSpan) as InvocationExpressionSyntax;
+            if (expression == null)
+            {
+                return;
+            }
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
             {
                 if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
                 {
                     context.RegisterCodeFix(
-                    CodeAction.Create(FixGuidInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, variableName + ".NewGuid()"), nameof(GuidCodeFixProvider)),
+                    CodeAction.Create(FixGuidInOrchestrator.ToString(), c => ReplaceWithInvocationExpressionAsync(context.Document, expression, c, variableName + ".NewGuid()"), nameof(GuidCodeFixProvider)),
                     diagnostic);
                 }
             }
@@ -50,6 +57,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 context.RegisterCodeFix(
                 CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(GuidCodeFixProvider)), diagnostic);
             }
-}
+        }
+        private async Task<Document> ReplaceWithInvocationExpressionAsync(Document document, InvocationExpressionSyntax invocationExpression, CancellationToken cancellationToken, string expressionString)
+        {
+            var newExpression = SyntaxFactory.ParseExpression(expressionString)
+                .WithLeadingTrivia(invocationExpression.GetLeadingTrivia())
+                .WithTrailingTrivia(invocationExpression.GetTrailingTrivia());
+
+            var root = await document.GetSyntaxRootAsync(cancellationToken);
+            var newRoot = root.ReplaceNode(invocationExpression, newExpression);
+            return document.WithSyntaxRoot(newRoot);
+        }
     }
 }

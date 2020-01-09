@@ -29,6 +29,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }
 }";
 
+        private readonly string fix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName('E1_HelloSequence')]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.CurrentUtcDateTime;
+            }
+        }
+    }";
+
         [TestMethod]
         public void DateTimeInMethod_NonIssueCalls()
         {
@@ -77,6 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -112,6 +133,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -147,6 +170,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -182,6 +207,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -217,6 +244,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -252,6 +281,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]

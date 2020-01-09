@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -46,10 +45,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                         if (!ClassNameMatchesFunctionName(classSymbol, functionName))
                         {
-                            var diagnosticClassName = Diagnostic.Create(Rule, classSymbol.Locations[0], className, functionName);
                             var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), className, functionName);
-
-                            context.ReportDiagnostic(diagnosticClassName);
+                            
                             context.ReportDiagnostic(diagnosticAttribute);
                         }
                     }

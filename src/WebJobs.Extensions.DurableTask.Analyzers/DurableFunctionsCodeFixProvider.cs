@@ -24,17 +24,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return document;
         }
 
-        protected async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string expression)
+        protected async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string identifierString)
         {
-            var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var newRoot = root.ReplaceNode(identifierNode, SyntaxFactory.IdentifierName(expression));
-            return document.WithSyntaxRoot(newRoot);
-        }
+            var newIdentifier = SyntaxFactory.IdentifierName(identifierString)
+                .WithLeadingTrivia(identifierNode.GetLeadingTrivia())
+                .WithTrailingTrivia(identifierNode.GetTrailingTrivia());
 
-        protected async Task<Document> ReplaceWithExpressionAsync(Document document, SyntaxNode oldExpression, CancellationToken cancellationToken, string newExpression)
-        {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var newRoot = root.ReplaceNode(oldExpression, SyntaxFactory.ParseExpression(newExpression, 0, null, false));
+            var newRoot = root.ReplaceNode(identifierNode, newIdentifier);
             return document.WithSyntaxRoot(newRoot);
         }
 

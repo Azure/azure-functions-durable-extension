@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -16,17 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private readonly string diagnosticId = StaticFunctionAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.severity;
 
-        [TestMethod]
-        public void StaticFunction_NonIssue()
-        {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
+        private readonly string fix = @"
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -34,26 +25,26 @@ namespace ExternalInteraction
     public static class HireEmployee
     {
         [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
+        public static void RunOrchestrator(
             [EntityTrigger] IDurableEntityContext context,
             ILogger log)
             {
-            }
+            } 
+    }
 }";
-            VerifyCSharpDiagnostic(test);
+
+        [TestMethod]
+        public void StaticFunction_NonIssue()
+        {
+            VerifyCSharpDiagnostic(fix);
         }
 
         [TestMethod]
         public void StaticFunction_NonStatic()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -61,11 +52,12 @@ namespace ExternalInteraction
     public static class HireEmployee
     {
         [FunctionName(""HireEmployee"")]
-        public async Task<Application> RunOrchestrator(
+        public void RunOrchestrator(
             [EntityTrigger] IDurableEntityContext context,
             ILogger log)
             {
-            }
+            } 
+    }
 }";
             var expected = new DiagnosticResult
             {
@@ -74,11 +66,13 @@ namespace ExternalInteraction
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 40)
+                            new DiagnosticResultLocation("Test0.cs", 11, 21)
                      }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

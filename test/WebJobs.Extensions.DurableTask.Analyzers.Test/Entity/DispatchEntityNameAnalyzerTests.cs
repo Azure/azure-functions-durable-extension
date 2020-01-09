@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -16,18 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private readonly string diagnosticId = DispatchClassNameAnalyzer.DiagnosticId;
         private readonly DiagnosticSeverity severity = DispatchClassNameAnalyzer.severity;
 
-        [TestMethod]
-        public void DispatchCall_NonIssue()
-        {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+        private readonly string fix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
@@ -35,21 +24,17 @@ using Microsoft.Extensions.Logging;
         public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyEmptyEntity>();
     }";
 
-            VerifyCSharpDiagnostic(test);
+        [TestMethod]
+        public void DispatchCall_NonIssue()
+        {
+            VerifyCSharpDiagnostic(fix);
         }
 
         [TestMethod]
         public void DispatchCall_Object()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
@@ -63,25 +48,20 @@ using Microsoft.Extensions.Logging;
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix);
         }
 
         [TestMethod]
         public void DispatchCall_String()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
@@ -95,25 +75,20 @@ using Microsoft.Extensions.Logging;
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected); 
+            VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix);
         }
 
         [TestMethod]
         public void DispatchCall_ILogger()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
@@ -127,25 +102,20 @@ using Microsoft.Extensions.Logging;
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix);
         }
 
         [TestMethod]
         public void DispatchCall_Tuple()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
@@ -159,11 +129,13 @@ using Microsoft.Extensions.Logging;
                 Severity = severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            VerifyCSharpFix(test, fix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
