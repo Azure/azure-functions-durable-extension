@@ -32,6 +32,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// <summary>
         ///     Indicate if the client is External from the azure function where orchestrator functions are hosted.
         /// </summary>
-        public bool IsExternalClient { get; set; }
+        /// <remarks>
+        ///     Default is true.
+        /// </remarks>
+        public bool IsExternalClient { get; set; } = true;
     }
 }

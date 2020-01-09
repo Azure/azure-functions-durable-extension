@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
 {
@@ -11,14 +12,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
     public class DurableClientFactory : IDurableClientFactory
     {
         private readonly DurableTaskExtension durableTaskConfig;
+        private readonly DurableClientOptions defaultDurableClientOptions;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="DurableClientFactory"/> class.
         /// </summary>
         /// <param name="durableTaskConfig">Configuration for the Durable Functions extension.</param>
-        public DurableClientFactory(DurableTaskExtension durableTaskConfig)
+        /// <param name="defaultDurableClientOptions">Default Options to Build Durable Clients.</param>
+        public DurableClientFactory(DurableTaskExtension durableTaskConfig, IOptions<DurableClientOptions> defaultDurableClientOptions)
         {
             this.durableTaskConfig = durableTaskConfig;
+            this.defaultDurableClientOptions = defaultDurableClientOptions.Value;
         }
 
         /// <summary>
@@ -34,6 +38,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             }
 
             return this.durableTaskConfig.GetClient(new DurableClientAttribute(durableClientOptions));
+        }
+
+        /// <summary>
+        /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientOptions"/> instance.
+        /// </summary>
+        /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        public IDurableClient CreateClient()
+        {
+            return this.CreateClient(this.defaultDurableClientOptions);
         }
     }
 }
