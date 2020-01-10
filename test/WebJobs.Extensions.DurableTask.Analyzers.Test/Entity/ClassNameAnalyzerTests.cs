@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     public class ClassNameAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = ClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ClassNameAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = ClassNameAnalyzer.Severity;
 
         [TestMethod]
         public void ClassName_NonIssue()

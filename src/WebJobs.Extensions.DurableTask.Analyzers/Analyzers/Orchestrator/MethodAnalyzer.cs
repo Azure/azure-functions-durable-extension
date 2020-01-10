@@ -5,11 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -22,9 +19,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.MethodAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Orchestrator;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         public static bool RegisterDiagnostics(SyntaxNode methodDeclaration, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
@@ -39,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 var declaration = method.Declaration;
 
+                // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
                 if (DateTimeAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
                     EnvironmentVariableAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
                     GuidAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
@@ -83,11 +81,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             foreach (SyntaxNode descendant in methodDeclaration.DescendantNodes())
             {
-                var invocation = descendant as InvocationExpressionSyntax;
-                if (invocation != null)
+                if (descendant is InvocationExpressionSyntax invocation)
                 {
-                    var methodSymbol = semanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol as IMethodSymbol;
-                    if (methodSymbol != null)
+                    if (semanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol is IMethodSymbol methodSymbol)
                     {
                         var syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
                         if (syntaxReference != null)
@@ -103,6 +99,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return methodInformationList;
+        }
+
+        private class MethodInformation
+        {
+
+            public MethodInformation(SyntaxNode declaration, InvocationExpressionSyntax invocation)
+            {
+                this.Declaration = declaration;
+                this.Invocation = invocation;
+                this.IsDeterministic = true;
+            }
+
+            public bool IsDeterministic { get; set; }
+
+            public SyntaxNode Declaration { get; }
+
+            public InvocationExpressionSyntax Invocation { get; }
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class DateTimeAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = DateTimeAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = DateTimeAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = DateTimeAnalyzer.Severity;
 
         private readonly string allTests = @"
         public void dateTimeNow()

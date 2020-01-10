@@ -5,10 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            foreach (SyntaxNode method in orchestratorMethodDeclarations)
+            foreach (SyntaxNode method in this.orchestratorMethodDeclarations)
             {
                 DateTimeAnalyzer.RegisterDiagnostic(method, context, this.semanticModel);
                 EnvironmentVariableAnalyzer.RegisterDiagnostic(method, context, this.semanticModel);
@@ -68,12 +66,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return;
             }
             
-            if (semanticModel == null)
+            if (this.semanticModel == null)
             {
-                semanticModel = context.SemanticModel;
+                this.semanticModel = context.SemanticModel;
             }
 
-            orchestratorMethodDeclarations.Add(declaration);
+            this.orchestratorMethodDeclarations.Add(declaration);
         }
     }
 }

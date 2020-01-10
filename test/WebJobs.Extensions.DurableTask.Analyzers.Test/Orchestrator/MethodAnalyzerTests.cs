@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class MethodAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = MethodAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = MethodAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = MethodAnalyzer.Severity;
 
         [TestMethod]
         public void MethodCallsInOrchestrator_NonIssueCalls()

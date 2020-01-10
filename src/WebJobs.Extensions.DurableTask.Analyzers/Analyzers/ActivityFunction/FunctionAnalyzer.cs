@@ -89,10 +89,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (invocationExpression != null)
             {
-                var expression = invocationExpression.Expression as MemberAccessExpressionSyntax;
-                if (expression != null)
+                if (invocationExpression.Expression is MemberAccessExpressionSyntax memberAccessExpression)
                 {
-                    var name = expression.Name;
+                    var name = memberAccessExpression.Name;
                     if (name.ToString().StartsWith("CallActivityAsync") || name.ToString().StartsWith("CallActivityWithRetryAsync"))
                     {
                         return true;

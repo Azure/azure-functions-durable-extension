@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class ThreadTaskAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = ThreadTaskAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ThreadTaskAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = ThreadTaskAnalyzer.Severity;
 
         private readonly string allTests = @"
             public void threadTaskAllCalls()

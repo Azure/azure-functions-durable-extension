@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class EnvironmentVariableAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = EnvironmentVariableAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = EnvironmentVariableAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = EnvironmentVariableAnalyzer.Severity;
 
         private readonly string allTests = @"
         public void environmentAllCalls()

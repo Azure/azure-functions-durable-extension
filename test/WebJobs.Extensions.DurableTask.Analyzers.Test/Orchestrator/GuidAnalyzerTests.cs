@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class GuidAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = GuidAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = GuidAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = GuidAnalyzer.Severity;
 
         private readonly string allTests = @"
         public void guidAllCalls()

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
     public class OrchestratorContextAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = OrchestratorContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = OrchestratorContextAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = OrchestratorContextAnalyzer.Severity;
 
         [TestMethod]
         public void OrchestrationContext_V1_NonIssue()

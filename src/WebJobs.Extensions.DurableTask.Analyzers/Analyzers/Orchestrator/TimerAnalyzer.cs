@@ -5,8 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
-using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -20,15 +18,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString V1MessageFormat = new LocalizableResourceString(nameof(Resources.V1TimerAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Orchestrator;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
-        public static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         private static DurableVersion version;
 
         internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
+            // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
             return (AnalyzeIdentifierTask(method, context, semanticModel) |
                 AnalyzeIdentifierThread(method, context, semanticModel));
         }
@@ -39,8 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierName = descendant as IdentifierNameSyntax;
-                if (identifierName != null)
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
                     version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
@@ -88,8 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierName = descendant as IdentifierNameSyntax;
-                if (identifierName != null)
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
                     version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 

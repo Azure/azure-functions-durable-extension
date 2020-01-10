@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
     public class ClientAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = ClientAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ClientAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = ClientAnalyzer.Severity;
 
         [TestMethod]
         public void DurableClient_V1_NonIssue()
