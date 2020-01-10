@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
     public class OrchestratorContextAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = OrchestratorContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = OrchestratorContextAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = OrchestratorContextAnalyzer.Severity;
 
         private readonly string v1Fix = @"
 using Microsoft.Azure.WebJobs;

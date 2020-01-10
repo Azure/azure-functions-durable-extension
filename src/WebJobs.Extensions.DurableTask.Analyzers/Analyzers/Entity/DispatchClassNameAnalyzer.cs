@@ -18,9 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Entity;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
 
@@ -33,8 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void AnalyzeDispatchEntityName(SyntaxNodeAnalysisContext context)
         {
-            var expression = context.Node as MemberAccessExpressionSyntax;
-            if (expression != null)
+            if (context.Node is MemberAccessExpressionSyntax expression)
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))

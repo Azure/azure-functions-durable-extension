@@ -44,11 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     CodeAction.Create(FixDateTimeInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, variableName + ".CurrentUtcDateTime"), nameof(DateTimeCodeFixProvider)), diagnostic);
                 }
             }
-            else if (SyntaxNodeUtils.IsMarkedDeterministic(expression))
-            {
-                context.RegisterCodeFix(
-                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(DateTimeCodeFixProvider)), diagnostic);
-            }
         }
     }
 }

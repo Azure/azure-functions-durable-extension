@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     public class InterfaceContentAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = InterfaceContentAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = InterfaceContentAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = InterfaceContentAnalyzer.Severity;
 
         [TestMethod]
         public void InterfaceContentAnalyzer_NonIssue()

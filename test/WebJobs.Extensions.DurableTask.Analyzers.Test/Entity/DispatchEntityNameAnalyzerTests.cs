@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     public class DispatchEntityNameAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = DispatchClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = DispatchClassNameAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = DispatchClassNameAnalyzer.Severity;
 
         private readonly string fix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;

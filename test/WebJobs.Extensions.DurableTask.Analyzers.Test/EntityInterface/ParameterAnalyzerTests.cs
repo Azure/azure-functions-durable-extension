@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     public class ParameterAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = ParameterAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ParameterAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = ParameterAnalyzer.Severity;
 
         [TestMethod]
         public void ParameterAnalyzer_NonIssue()

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class ThreadTaskAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = ThreadTaskAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ThreadTaskAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = ThreadTaskAnalyzer.Severity;
 
         private readonly string allTests = @"
             public void threadTaskAllCalls()
@@ -366,105 +366,131 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void ThreadTask_DeterministicAttribute_All()
+        public void ThreadTask_InMethod_OrchestratorCall_All()
         {
             var test = @"
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.WebJobs;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-    namespace VSSample
+namespace VSSample
+{
+    public static class HelloSequence
     {
-        [Deterministic]
-        " + allTests;
+        [FunctionName(""E1_HelloSequence"")]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                DirectCall();
+            
+                return ""Hello"";
+            }
 
-            var expectedResults = new DiagnosticResult[8];
+        public static string DirectCall()
+        {
+            " + allTests;
+
+
+            var expectedResults = new DiagnosticResult[9];
             expectedResults[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Run"),
+                Id = MethodAnalyzer.DiagnosticId,
+                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 23)
+                            new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Factory.StartNew"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Run"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 23)
+                            new DiagnosticResultLocation("Test0.cs", 27, 23)
                         }
             };
 
             expectedResults[2] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Run"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Factory.StartNew"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 23)
+                            new DiagnosticResultLocation("Test0.cs", 28, 23)
                         }
             };
 
             expectedResults[3] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Factory.StartNew"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Run"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 23)
+                            new DiagnosticResultLocation("Test0.cs", 29, 23)
                         }
             };
 
             expectedResults[4] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "t.Start"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Factory.StartNew"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 19, 17)
+                            new DiagnosticResultLocation("Test0.cs", 30, 23)
                         }
             };
 
             expectedResults[5] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "t2.Start"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "t.Start"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 17)
+                            new DiagnosticResultLocation("Test0.cs", 33, 17)
                         }
             };
 
             expectedResults[6] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "task.ContinueWith"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "t2.Start"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 24, 17)
+                            new DiagnosticResultLocation("Test0.cs", 35, 17)
                         }
             };
 
             expectedResults[7] = new DiagnosticResult
             {
                 Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "task.ContinueWith"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 38, 17)
+                        }
+            };
+
+            expectedResults[8] = new DiagnosticResult
+            {
+                Id = diagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "task2.ContinueWith"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 26, 17)
+                            new DiagnosticResultLocation("Test0.cs", 40, 17)
                         }
             };
 
@@ -473,7 +499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new ThreadTaskAnalyzer();
+            return new OrchestratorAnalyzer();
         }
     }
 }

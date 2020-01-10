@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class GuidAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = GuidAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = GuidAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = GuidAnalyzer.Severity;
 
         private readonly string allTests = @"
         public void guidAllCalls()
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void NewGuidInMethod_DeterministicAttribute()
+        public void NewGuid_InMethod_OrchestratorCall_All()
         {
             var test = @"
     using System;
@@ -138,30 +138,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
+{
+    public static class HelloSequence
     {
-        [Deterministic]
-        " + allTests;
+        [FunctionName(""E1_HelloSequence"")]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                DirectCall();
+            
+                return ""Hello"";
+            }
 
-            var expectedResults = new DiagnosticResult[2];
+        public static string DirectCall()
+        {
+            " + allTests;
+
+
+            var expectedResults = new DiagnosticResult[3];
             expectedResults[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
+                Id = MethodAnalyzer.DiagnosticId,
+                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 13)
+                            new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 24, 13)
+                        }
+            };
+
+            expectedResults[2] = new DiagnosticResult
+            {
+                Id = diagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 13)
+                            new DiagnosticResultLocation("Test0.cs", 25, 13)
                         }
             };
 
@@ -175,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new GuidAnalyzer();
+            return new OrchestratorAnalyzer();
         }
     }
 }

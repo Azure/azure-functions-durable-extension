@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -48,11 +47,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return false;
         }
-
-        internal static bool IsMarkedDeterministic(SyntaxNode node) => TryGetDeterministicAttribute(node, out _);
-
-
-        internal static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute) => TryGetAttribute(node, "Deterministic", out deterministicAttribute);
 
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
