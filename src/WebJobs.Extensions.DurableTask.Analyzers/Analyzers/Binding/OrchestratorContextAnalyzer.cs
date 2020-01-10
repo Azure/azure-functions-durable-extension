@@ -21,10 +21,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString V2MessageFormat = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString V2Description = new LocalizableResourceString(nameof(Resources.V2OrchestratorContextAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Binding;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, severity, isEnabledByDefault: true, description: V1Description);
-        private static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: V2Description);
+        private static readonly DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, Severity, isEnabledByDefault: true, description: V1Description);
+        private static readonly DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: V2Description);
         
         private static DurableVersion version;
 
@@ -38,22 +38,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindOrchestrationTriggers(SyntaxNodeAnalysisContext context)
         {
-            var attribute = context.Node as AttributeSyntax;
-
-            var semanticModel = context.SemanticModel;
-            version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
-
-            if (string.Equals(attribute.ToString(), "OrchestrationTrigger"))
+            if (context.Node is AttributeSyntax attribute)
             {
-                if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode))
-                {
-                    if (!ParameterTypeIsCorrectDurableType(parameterNode))
-                    {
-                        if(TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                        {
-                            var diagnostic = Diagnostic.Create(rule, parameterNode.GetLocation(), parameterNode);
+                var semanticModel = context.SemanticModel;
+                version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-                            context.ReportDiagnostic(diagnostic);
+                if (string.Equals(attribute.ToString(), "OrchestrationTrigger"))
+                {
+                    if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode))
+                    {
+                        if (!ParameterTypeIsCorrectDurableType(parameterNode))
+                        {
+                            if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                            {
+                                var diagnostic = Diagnostic.Create(rule, parameterNode.GetLocation(), parameterNode);
+
+                                context.ReportDiagnostic(diagnostic);
+                            }
                         }
                     }
                 }

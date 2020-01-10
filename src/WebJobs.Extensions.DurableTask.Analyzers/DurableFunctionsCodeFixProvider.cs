@@ -12,18 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     public abstract class DurableFunctionsCodeFixProvider : CodeFixProvider
     {
-        protected async Task<Document> RemoveDeterministicAttributeAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken)
-        {
-            var root = await document.GetSyntaxRootAsync(cancellationToken);
-            if (SyntaxNodeUtils.TryGetDeterministicAttribute(identifierNode, out SyntaxNode deterministicAttribute))
-            {
-                var newRoot = root.RemoveNode(deterministicAttribute, SyntaxRemoveOptions.KeepExteriorTrivia);
-                return document.WithSyntaxRoot(newRoot);
-            }
-
-            return document;
-        }
-
         protected async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string expression)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);

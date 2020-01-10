@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class DateTimeAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = DateTimeAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = DateTimeAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = DateTimeAnalyzer.Severity;
 
         private readonly string allTests = @"
         public void dateTimeNow()
@@ -258,81 +258,106 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         public void DateTimeInMethod_DeterministicAttribute_All()
         {
             var test = @"
-    using System;
-    using Microsoft.Azure.WebJobs;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-     namespace VSSample
+namespace VSSample
+{
+    public static class HelloSequence
     {
-        public static class DateTimeNowExample
+        [FunctionName(""E1_HelloSequence"")]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                DirectCall();
+            
+                return ""Hello"";
+            }
+
+        public static string DirectCall()
         {
-            [Deterministic]
             " + allTests;
 
 
-            var expectedResults = new DiagnosticResult[6];
+            var expectedResults = new DiagnosticResult[7];
             expectedResults[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
+                Id = MethodAnalyzer.DiagnosticId,
+                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 13)
+                            new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
             expectedResults[1] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 13)
+                            new DiagnosticResultLocation("Test0.cs", 27, 13)
                         }
             };
 
             expectedResults[2] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Today"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 13)
+                            new DiagnosticResultLocation("Test0.cs", 28, 13)
                         }
             };
 
             expectedResults[3] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Today"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 4)
+                            new DiagnosticResultLocation("Test0.cs", 29, 13)
                         }
             };
 
             expectedResults[4] = new DiagnosticResult
             {
                 Id = diagnosticId,
-                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
                 Severity = severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 4)
+                            new DiagnosticResultLocation("Test0.cs", 30, 4)
                         }
             };
 
             expectedResults[5] = new DiagnosticResult
             {
                 Id = diagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
+                Severity = severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 31, 4)
+                        }
+            };
+
+            expectedResults[6] = new DiagnosticResult
+            {
+                Id = diagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Today"),
                 Severity = severity,
                 Locations =
                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 18, 13)
+                            new DiagnosticResultLocation("Test0.cs", 32, 13)
                        }
             };
 
@@ -346,7 +371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new DateTimeAnalyzer();
+            return new OrchestratorAnalyzer();
         }
     }
 }

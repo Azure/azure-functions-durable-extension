@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
@@ -79,11 +78,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     CodeAction.Create(FixTimerInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, newExpression), nameof(TimerCodeFixProvider)),
                     diagnostic);
                 }
-            }
-            else if (SyntaxNodeUtils.IsMarkedDeterministic(invocationExpression))
-            {
-                context.RegisterCodeFix(
-                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(TimerCodeFixProvider)), diagnostic);
             }
         }
 

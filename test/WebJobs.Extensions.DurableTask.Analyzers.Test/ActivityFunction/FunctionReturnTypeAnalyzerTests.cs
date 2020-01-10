@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     public class FunctionReturnTypeAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = FunctionReturnTypeAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = FunctionReturnTypeAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = FunctionReturnTypeAnalyzer.Severity;
 
         [TestMethod]
         public void Argument_NonIssueCalls()

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
     public class EntityContetAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = EntityContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = EntityContextAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = EntityContextAnalyzer.Severity;
 
         [TestMethod]
         public void EntityTrigger_NonIssue()

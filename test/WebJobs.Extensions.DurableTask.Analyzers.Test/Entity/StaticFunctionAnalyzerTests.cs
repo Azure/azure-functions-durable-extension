@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     public class StaticFunctionAnalyzerTests : CodeFixVerifier
     {
         private readonly string diagnosticId = StaticFunctionAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.severity;
+        private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.Severity;
 
         [TestMethod]
         public void StaticFunction_NonIssue()
