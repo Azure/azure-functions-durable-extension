@@ -358,28 +358,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken)
         {
-            IList<OrchestrationState> states = await this.DurabilityProvider.GetAllOrchestrationStates(cancellationToken);
-
-            var results = new List<DurableOrchestrationStatus>();
-            foreach (OrchestrationState state in states)
-            {
-                results.Add(ConvertOrchestrationStateToStatus(state));
-            }
-
-            return results;
+            return await this.GetAllStatusHelper(null, null, null, cancellationToken);
         }
 
         /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
-            IList<OrchestrationState> states = await this.DurabilityProvider.GetAllOrchestrationStatesWithFilters(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
-            var results = new List<DurableOrchestrationStatus>();
-            foreach (OrchestrationState state in states)
+            return await this.GetAllStatusHelper(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
+        }
+
+        private async Task<IList<DurableOrchestrationStatus>> GetAllStatusHelper(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
+        {
+            var condition = this.CreateConditionFromParameters(createdTimeFrom, createdTimeTo, runtimeStatus);
+
+            var response = await ((IDurableOrchestrationClient)this).ListInstancesAsync(condition, cancellationToken);
+
+            return (IList<DurableOrchestrationStatus>)response.DurableOrchestrationState;
+        }
+
+        private OrchestrationStatusQueryCondition CreateConditionFromParameters(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus)
+        {
+            var condition = new OrchestrationStatusQueryCondition
             {
-                results.Add(ConvertOrchestrationStateToStatus(state));
+                PageSize = int.MaxValue,
+            };
+
+            if (createdTimeFrom != null)
+            {
+                condition.CreatedTimeFrom = (DateTime)createdTimeFrom;
             }
 
-            return results;
+            if (createdTimeTo != null)
+            {
+                condition.CreatedTimeTo = (DateTime)createdTimeTo;
+            }
+
+            if (runtimeStatus != null)
+            {
+                condition.RuntimeStatus = runtimeStatus;
+            }
+
+            return condition;
         }
 
         Task<EntityStateResponse<T>> IDurableEntityClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName)
@@ -430,8 +449,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new PurgeHistoryResult(numInstancesDeleted);
         }
 
-        /// <inheritdoc />
         Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(
+            OrchestrationStatusQueryCondition condition,
+            CancellationToken cancellationToken)
+        {
+            return ((IDurableOrchestrationClient)this).ListInstancesAsync(condition, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.ListInstancesAsync(
             OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken)
         {
@@ -442,7 +468,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
             var condition = new OrchestrationStatusQueryCondition(query);
-            var result = await ((IDurableClient)this).GetStatusAsync(condition, cancellationToken);
+            var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
             var entityResult = new EntityQueryResult(result);
             return entityResult;
         }
