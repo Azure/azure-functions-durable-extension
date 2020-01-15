@@ -378,10 +378,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private OrchestrationStatusQueryCondition CreateConditionFromParameters(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus)
         {
-            var condition = new OrchestrationStatusQueryCondition
-            {
-                PageSize = int.MaxValue,
-            };
+            var condition = new OrchestrationStatusQueryCondition();
 
             if (createdTimeFrom != null)
             {
