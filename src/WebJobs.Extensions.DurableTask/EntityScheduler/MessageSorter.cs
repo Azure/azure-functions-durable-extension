@@ -41,6 +41,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public void LabelOutgoingMessage(RequestMessage message, string destination, DateTime now, TimeSpan reorderWindow)
         {
+            if (reorderWindow.Ticks == 0)
+            {
+                return; // we are not doing any message sorting.
+            }
+
             DateTime timestamp = now;
 
             if (this.SendHorizon + reorderWindow + MinIntervalBetweenCollections < now)
@@ -93,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IEnumerable<RequestMessage> ReceiveInOrder(RequestMessage message, TimeSpan reorderWindow)
         {
             // messages sent from clients and forwarded lock messages are not participating in the sorting.
-            if (message.ParentInstanceId == null || message.Position > 0)
+            if (reorderWindow.Ticks == 0 || message.ParentInstanceId == null || message.Position > 0)
             {
                 // Just pass the message through.
                 yield return message;
@@ -155,14 +160,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.ReceivedFromInstance == null)
             {
-                this.ReceivedFromInstance = new Dictionary<string, ReceiveBuffer>(StringComparer.OrdinalIgnoreCase)
+                this.ReceivedFromInstance = new Dictionary<string, ReceiveBuffer>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!this.ReceivedFromInstance.TryGetValue(message.ParentInstanceId, out receiveBuffer))
+            {
+                this.ReceivedFromInstance[message.ParentInstanceId] = receiveBuffer = new ReceiveBuffer()
                 {
-                    { message.ParentInstanceId,  receiveBuffer = new ReceiveBuffer() },
+                    ExecutionId = message.ParentExecutionId,
                 };
             }
-            else if (!this.ReceivedFromInstance.TryGetValue(message.ParentInstanceId, out receiveBuffer))
+            else if (receiveBuffer.ExecutionId != message.ParentExecutionId)
             {
-                this.ReceivedFromInstance[message.ParentInstanceId] = receiveBuffer = new ReceiveBuffer();
+                // this message is from a new execution; release all buffered messages and start over
+                foreach (var kvp in receiveBuffer.Buffered)
+                {
+                    yield return kvp.Value;
+                }
+
+                receiveBuffer.Last = DateTime.MinValue;
+                receiveBuffer.ExecutionId = message.ParentExecutionId;
+                receiveBuffer.Buffered.Clear();
             }
 
             if (message.Timestamp <= receiveBuffer.Last)
@@ -227,6 +245,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal class ReceiveBuffer
         {
             public DateTime Last { get; set; }// last message delivered, or DateTime.Min if none
+
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public string ExecutionId { get; set; } // execution id of last message, if any
 
             [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
             public SortedDictionary<DateTime, RequestMessage> Buffered { get; set; }
