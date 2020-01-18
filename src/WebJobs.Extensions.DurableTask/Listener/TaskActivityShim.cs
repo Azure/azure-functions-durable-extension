@@ -61,6 +61,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // without the outer FunctionInvocationException.
                 Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
 
+                // If the exception looks like an RPC exception, wrap it in an OutOfProcessException
+                // to strip unhelpful information from message.
+                if (OutOfProcExceptionHelpers.IsRpcException(exceptionToReport))
+                {
+                    exceptionToReport = OutOfProcExceptionHelpers.GetExceptionWithFriendlyMessage(exceptionToReport);
+                }
+
                 this.config.TraceHelper.FunctionFailed(
                     this.config.Options.HubName,
                     this.activityName,

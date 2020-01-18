@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
-            object returnValue;
+            object returnValue = null;
             try
             {
                 Task invokeTask = this.functionInvocationCallback();
@@ -97,32 +97,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                string exceptionDetails = e.ToString();
-                this.config.TraceHelper.FunctionFailed(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    exceptionDetails,
-                    FunctionType.Orchestrator,
-                    this.context.IsReplaying);
-
-                if (!this.context.IsReplaying)
+                if (OutOfProcExceptionHelpers.IsRpcException(e.InnerException))
                 {
-                    this.context.AddDeferredTask(() => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                    returnValue = OutOfProcExceptionHelpers.ExtractOutOfProcStateJson(e.InnerException);
+                }
+
+                if (string.IsNullOrEmpty(returnValue as string))
+                {
+                    string exceptionDetails = e.ToString();
+                    this.config.TraceHelper.FunctionFailed(
                         this.context.HubName,
                         this.context.Name,
                         this.context.InstanceId,
                         exceptionDetails,
-                        this.context.IsReplaying));
+                        FunctionType.Orchestrator,
+                        this.context.IsReplaying);
+
+                    if (!this.context.IsReplaying)
+                    {
+                        this.context.AddDeferredTask(
+                            () => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                                this.context.HubName,
+                                this.context.Name,
+                                this.context.InstanceId,
+                                exceptionDetails,
+                                this.context.IsReplaying));
+                    }
+
+                    var orchestrationException = new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                        Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+
+                    this.context.OrchestrationException = 
+                        ExceptionDispatchInfo.Capture(orchestrationException);
+
+                    throw orchestrationException;
                 }
-
-                var orchestrationException = new OrchestrationFailureException(
-                    $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
-                    Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
-
-                this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
-
-                throw orchestrationException;
             }
             finally
             {
@@ -208,8 +218,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
-                throw new OrchestrationFailureException(
+                var orchestrationException = new OrchestrationFailureException(
                     $"Orchestrator function '{this.context.Name}' failed: {execution.Error}");
+                this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
+                throw orchestrationException;
             }
 
             if (execution.IsDone)
