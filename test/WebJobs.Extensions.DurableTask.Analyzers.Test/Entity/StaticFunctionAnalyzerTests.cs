@@ -62,7 +62,7 @@ namespace ExternalInteraction
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "RunOrchestrator"),
+                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "EntityAnalyzerTest"),
                 Severity = Severity,
                 Locations =
                  new[] {
