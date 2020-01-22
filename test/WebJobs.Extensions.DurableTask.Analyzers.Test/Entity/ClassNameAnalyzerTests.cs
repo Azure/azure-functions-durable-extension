@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class ClassNameAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = ClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ClassNameAnalyzer.Severity;
+        private static readonly string DiagnosticId = ClassNameAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = ClassNameAnalyzer.Severity;
 
         [TestMethod]
         public void ClassName_NonIssue()
@@ -121,7 +121,7 @@ namespace ExternalInteraction
             }
 }";
 
-            var fix = @"
+            var ExpectedFix = @"
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -144,9 +144,9 @@ namespace ExternalInteraction
 }";
             var expectedResults = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 23)
@@ -155,7 +155,7 @@ namespace ExternalInteraction
             
             VerifyCSharpDiagnostic(test, expectedResults);
             
-            VerifyCSharpFix(test, fix);
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

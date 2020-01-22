@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     [TestClass]
     public class GuidAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = GuidAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = GuidAnalyzer.Severity;
+        private static readonly string DiagnosticId = GuidAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = GuidAnalyzer.Severity;
 
         private readonly string allTests = @"
         public void guidAllCalls()
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }
 }";
 
-        private readonly string fix = @"
+        private readonly string ExpectedFix = @"
     using System;
     using Microsoft.Azure.WebJobs;
     using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -77,20 +77,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -113,20 +113,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -155,41 +155,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             " + allTests;
 
 
-            var expectedResults = new DiagnosticResult[3];
-            expectedResults[0] = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult[3];
+            expectedDiagnostics[0] = new DiagnosticResult
             {
                 Id = MethodAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 14, 17)
                         }
             };
 
-            expectedResults[1] = new DiagnosticResult
+            expectedDiagnostics[1] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Guid.NewGuid"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 24, 13)
                         }
             };
 
-            expectedResults[2] = new DiagnosticResult
+            expectedDiagnostics[2] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Guid.NewGuid"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 25, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expectedResults);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

@@ -53,6 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
             }
         }
+
         private async Task<Document> ReplaceWithInvocationExpressionAsync(Document document, InvocationExpressionSyntax invocationExpression, CancellationToken cancellationToken, string expressionString)
         {
             var newExpression = SyntaxFactory.ParseExpression(expressionString)

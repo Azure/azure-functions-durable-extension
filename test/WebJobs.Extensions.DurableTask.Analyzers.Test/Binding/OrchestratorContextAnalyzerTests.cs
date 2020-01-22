@@ -12,10 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
     [TestClass]
     public class OrchestratorContextAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = OrchestratorContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = OrchestratorContextAnalyzer.Severity;
+        private static readonly string DiagnosticId = OrchestratorContextAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = OrchestratorContextAnalyzer.Severity;
 
-        private readonly string v1Fix = @"
+        private readonly string v1ExpectedFix = @"
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +33,7 @@ namespace ExternalInteraction
     }
 }";
 
-        private readonly string v1BaseFix = @"
+        private readonly string v1BaseExpectedFix = @"
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -51,7 +51,7 @@ namespace ExternalInteraction
     }
 }";
 
-        private readonly string v2Fix = @"
+        private readonly string v2ExpectedFix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
@@ -73,15 +73,15 @@ namespace ExternalInteraction
         public void OrchestrationContext_V1_NonIssue()
         {
             SyntaxNodeUtils.version = DurableVersion.V1;
-            VerifyCSharpDiagnostic(v1Fix);
-            VerifyCSharpDiagnostic(v1BaseFix);
+            VerifyCSharpDiagnostic(v1ExpectedFix);
+            VerifyCSharpDiagnostic(v1BaseExpectedFix);
         }
 
         [TestMethod]
         public void OrchestrationContext_V2_NonIssue()
         {
             SyntaxNodeUtils.version = DurableVersion.V2;
-            VerifyCSharpDiagnostic(v2Fix);
+            VerifyCSharpDiagnostic(v2ExpectedFix);
         }
 
 
@@ -105,11 +105,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "Object"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -118,10 +118,10 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V1;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1Fix, 0);
-            VerifyCSharpFix(test, v1BaseFix, 1);
+            VerifyCSharpFix(test, v1ExpectedFix, 0);
+            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -144,11 +144,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "string"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -157,10 +157,10 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V1;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1Fix, 0);
-            VerifyCSharpFix(test, v1BaseFix, 1);
+            VerifyCSharpFix(test, v1ExpectedFix, 0);
+            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -183,11 +183,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "Tuple<int, string>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -196,10 +196,10 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V1;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1Fix, 0);
-            VerifyCSharpFix(test, v1BaseFix, 1);
+            VerifyCSharpFix(test, v1ExpectedFix, 0);
+            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -222,11 +222,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V1OrchestratorContextAnalyzerMessageFormat, "IDurableOrchestrationContext"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -235,10 +235,10 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V1;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1Fix, 0);
-            VerifyCSharpFix(test, v1BaseFix, 1);
+            VerifyCSharpFix(test, v1ExpectedFix, 0);
+            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -261,11 +261,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "Object"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -274,9 +274,9 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V2;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2Fix);
+            VerifyCSharpFix(test, v2ExpectedFix);
         }
 
         [TestMethod]
@@ -299,11 +299,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "string"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -312,9 +312,9 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V2;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2Fix);
+            VerifyCSharpFix(test, v2ExpectedFix);
         }
 
         [TestMethod]
@@ -337,11 +337,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "Tuple<int, string>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -350,9 +350,9 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V2;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2Fix);
+            VerifyCSharpFix(test, v2ExpectedFix);
         }
 
         [TestMethod]
@@ -375,11 +375,11 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.V2OrchestratorContextAnalyzerMessageFormat, "DurableOrchestrationContext"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 36)
@@ -388,9 +388,9 @@ namespace ExternalInteraction
 
             SyntaxNodeUtils.version = DurableVersion.V2;
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2Fix);
+            VerifyCSharpFix(test, v2ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

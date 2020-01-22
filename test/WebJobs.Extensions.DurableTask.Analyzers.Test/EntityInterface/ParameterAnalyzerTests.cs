@@ -11,8 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     [TestClass]
     public class ParameterAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = ParameterAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ParameterAnalyzer.Severity;
+        private static readonly string DiagnosticId = ParameterAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = ParameterAnalyzer.Severity;
 
         [TestMethod]
         public void ParameterAnalyzer_NonIssue()
@@ -72,18 +72,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             public static void methodTestOneParameter(string test, int number);
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityInterfaceParameterAnalyzerMessageFormat, "public static void methodTestOneParameter(string test, int number);"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

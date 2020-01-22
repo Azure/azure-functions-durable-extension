@@ -11,8 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     [TestClass]
     public class EntityInterfaceReturnTypeAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = EntityInterfaceReturnTypeAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = EntityInterfaceReturnTypeAnalyzer.Severity;
+        private static readonly string DiagnosticId = EntityInterfaceReturnTypeAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = EntityInterfaceReturnTypeAnalyzer.Severity;
 
         [TestMethod]
         public void ReturnTypeAnalyzer_NonIssue()
@@ -74,18 +74,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             public static Object methodTestOneParameter(string test);
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat, "Object"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -114,18 +114,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             public static string methodTestOneParameter(string test);
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat, "string"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -154,18 +154,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             public static Tuple<int, string> methodTestOneParameter(string test);
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat, "Tuple<int, string>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

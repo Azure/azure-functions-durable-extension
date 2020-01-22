@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     [TestClass]
     public class ArgumentAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = ArgumentAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ArgumentAnalyzer.Severity;
+        private static readonly string DiagnosticId = ArgumentAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = ArgumentAnalyzer.Severity;
 
         [TestMethod]
         public void Argument_NonIssueCalls()
@@ -132,17 +132,17 @@ namespace VSSample
         }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 23, 84)
                      }
             };
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -182,17 +182,17 @@ namespace VSSample
         }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 23, 84)
                      }
             };
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
 

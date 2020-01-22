@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     [TestClass]
     public class TimerAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = TimerAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = TimerAnalyzer.Severity;
+        private static readonly string DiagnosticId = TimerAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = TimerAnalyzer.Severity;
 
         private readonly string allTests = @"
             public void timerAllCalls()
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 }
     }";
 
-        private readonly string fix = @"
+        private readonly string ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -83,20 +83,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Delay(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -121,20 +121,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Delay(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -159,20 +159,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Thread.Sleep(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -197,20 +197,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 16, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -242,63 +242,63 @@ namespace VSSample
             " + allTests;
 
 
-            var expectedResults = new DiagnosticResult[5];
-            expectedResults[0] = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult[5];
+            expectedDiagnostics[0] = new DiagnosticResult
             {
                 Id = MethodAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
-            expectedResults[1] = new DiagnosticResult
+            expectedDiagnostics[1] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Thread.Sleep(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 27, 17)
                         }
             };
 
-            expectedResults[2] = new DiagnosticResult
+            expectedDiagnostics[2] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Thread.Sleep(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 28, 17)
                         }
             };
 
-            expectedResults[3] = new DiagnosticResult
+            expectedDiagnostics[3] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Task.Delay(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 29, 17)
                         }
             };
 
-            expectedResults[4] = new DiagnosticResult
+            expectedDiagnostics[4] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.Threading.Tasks.Task.Delay(100)"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 30, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expectedResults);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -324,7 +324,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -344,7 +344,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -372,7 +372,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -394,11 +394,11 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
-        public void CodeFixProvider_Await_MemberAccessExpression()
+        public void CodeEFixProvider_Await_MemberAccessExpression()
         {
             var test = @"
     using System;
@@ -421,7 +421,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -442,7 +442,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -469,7 +469,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -490,7 +490,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -516,7 +516,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -536,7 +536,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -564,7 +564,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -586,7 +586,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -613,7 +613,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -634,7 +634,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -661,7 +661,7 @@ namespace VSSample
         }
     }";
 
-            var fix = @"
+            var ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -682,7 +682,7 @@ namespace VSSample
         }
     }";
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

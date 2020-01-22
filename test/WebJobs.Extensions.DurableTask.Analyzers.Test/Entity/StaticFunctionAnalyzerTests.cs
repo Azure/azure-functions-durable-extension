@@ -12,10 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class StaticFunctionAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = StaticFunctionAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.Severity;
+        private static readonly string DiagnosticId = StaticFunctionAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
 
-        private readonly string fix = @"
+        private readonly string ExpectedFix = @"
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
@@ -36,7 +36,7 @@ namespace ExternalInteraction
         [TestMethod]
         public void StaticFunction_NonIssue()
         {
-            VerifyCSharpDiagnostic(fix);
+            VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
@@ -59,20 +59,20 @@ namespace ExternalInteraction
             } 
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "RunOrchestrator"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 21)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix, allowNewCompilerDiagnostics: true);
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

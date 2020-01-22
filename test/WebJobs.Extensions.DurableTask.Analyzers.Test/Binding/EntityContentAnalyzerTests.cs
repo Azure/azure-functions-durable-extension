@@ -10,12 +10,12 @@ using TestHelper;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
 {
     [TestClass]
-    public class EntityContetAnalyzerTests : CodeFixVerifier
+    public class EntityContentAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = EntityContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = EntityContextAnalyzer.Severity;
+        private static readonly string DiagnosticId = EntityContextAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = EntityContextAnalyzer.Severity;
 
-        private readonly string fix = @"
+        private readonly string ExpectedFix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
@@ -35,7 +35,7 @@ namespace ExternalInteraction
         [TestMethod]
         public void EntityTrigger_NonIssue()
         {
-            VerifyCSharpDiagnostic(fix);
+            VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
@@ -57,20 +57,20 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "Object"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
             
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix);
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
@@ -92,20 +92,20 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "string"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
             
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix);
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
@@ -127,20 +127,20 @@ namespace ExternalInteraction
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "Tuple<int, string>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, fix);
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
