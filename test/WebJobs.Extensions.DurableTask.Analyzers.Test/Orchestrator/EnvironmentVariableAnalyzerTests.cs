@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = EnvironmentVariableAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = EnvironmentVariableAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
         public void environmentAllCalls()
         {
             Environment.GetEnvironmentVariable(""test"");

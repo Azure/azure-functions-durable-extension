@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly string DiagnosticId = DispatchClassNameAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = DispatchClassNameAnalyzer.Severity;
 
-        private readonly string ExpectedFix = @"
+        private const string ExpectedFix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity

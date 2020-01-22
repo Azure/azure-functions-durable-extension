@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly string DiagnosticId = StaticFunctionAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
 
-        private readonly string ExpectedFix = @"
+        private const string ExpectedFix = @"
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
@@ -25,7 +25,7 @@ namespace ExternalInteraction
     public static class HireEmployee
     {
         [FunctionName(""HireEmployee"")]
-        public static void RunOrchestrator(
+        public static void EntityAnalyzerTest(
             [EntityTrigger] IDurableEntityContext context,
             ILogger log)
             {
@@ -52,7 +52,7 @@ namespace ExternalInteraction
     public static class HireEmployee
     {
         [FunctionName(""HireEmployee"")]
-        public void RunOrchestrator(
+        public void EntityAnalyzerTest(
             [EntityTrigger] IDurableEntityContext context,
             ILogger log)
             {

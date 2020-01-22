@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = TimerAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = TimerAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
             public void timerAllCalls()
             {
                 Thread.Sleep(100);
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 }
     }";
 
-        private readonly string ExpectedFix = @"
+        private const string ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading;

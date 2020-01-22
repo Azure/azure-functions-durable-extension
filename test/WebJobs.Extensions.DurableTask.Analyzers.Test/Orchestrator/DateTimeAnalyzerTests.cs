@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = DateTimeAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = DateTimeAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
         public void dateTimeNow()
         {
             System.DateTime.Now;
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }
 }";
 
-        private readonly string ExpectedFix = @"
+        private const string ExpectedFix = @"
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;

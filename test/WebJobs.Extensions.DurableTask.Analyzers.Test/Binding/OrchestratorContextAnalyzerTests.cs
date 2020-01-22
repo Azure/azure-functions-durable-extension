@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
         private static readonly string DiagnosticId = OrchestratorContextAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = OrchestratorContextAnalyzer.Severity;
 
-        private readonly string v1ExpectedFix = @"
+        private const string V1ExpectedFix = @"
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +33,7 @@ namespace ExternalInteraction
     }
 }";
 
-        private readonly string v1BaseExpectedFix = @"
+        private const string V1BaseExpectedFix = @"
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -51,7 +51,7 @@ namespace ExternalInteraction
     }
 }";
 
-        private readonly string v2ExpectedFix = @"
+        private const string V2ExpectedFix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
@@ -73,15 +73,15 @@ namespace ExternalInteraction
         public void OrchestrationContext_V1_NonIssue()
         {
             SyntaxNodeUtils.version = DurableVersion.V1;
-            VerifyCSharpDiagnostic(v1ExpectedFix);
-            VerifyCSharpDiagnostic(v1BaseExpectedFix);
+            VerifyCSharpDiagnostic(V1ExpectedFix);
+            VerifyCSharpDiagnostic(V1BaseExpectedFix);
         }
 
         [TestMethod]
         public void OrchestrationContext_V2_NonIssue()
         {
             SyntaxNodeUtils.version = DurableVersion.V2;
-            VerifyCSharpDiagnostic(v2ExpectedFix);
+            VerifyCSharpDiagnostic(V2ExpectedFix);
         }
 
 
@@ -120,8 +120,8 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1ExpectedFix, 0);
-            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
+            VerifyCSharpFix(test, V1ExpectedFix, 0);
+            VerifyCSharpFix(test, V1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -159,8 +159,8 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1ExpectedFix, 0);
-            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
+            VerifyCSharpFix(test, V1ExpectedFix, 0);
+            VerifyCSharpFix(test, V1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -198,8 +198,8 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1ExpectedFix, 0);
-            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
+            VerifyCSharpFix(test, V1ExpectedFix, 0);
+            VerifyCSharpFix(test, V1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -237,8 +237,8 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v1ExpectedFix, 0);
-            VerifyCSharpFix(test, v1BaseExpectedFix, 1);
+            VerifyCSharpFix(test, V1ExpectedFix, 0);
+            VerifyCSharpFix(test, V1BaseExpectedFix, 1);
         }
 
         [TestMethod]
@@ -276,7 +276,7 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2ExpectedFix);
+            VerifyCSharpFix(test, V2ExpectedFix);
         }
 
         [TestMethod]
@@ -314,7 +314,7 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2ExpectedFix);
+            VerifyCSharpFix(test, V2ExpectedFix);
         }
 
         [TestMethod]
@@ -352,7 +352,7 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2ExpectedFix);
+            VerifyCSharpFix(test, V2ExpectedFix);
         }
 
         [TestMethod]
@@ -390,7 +390,7 @@ namespace ExternalInteraction
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
-            VerifyCSharpFix(test, v2ExpectedFix);
+            VerifyCSharpFix(test, V2ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

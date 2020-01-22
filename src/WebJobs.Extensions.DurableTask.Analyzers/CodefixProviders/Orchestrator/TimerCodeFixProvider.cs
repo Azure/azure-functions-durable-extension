@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(TimerCodeFixProvider)), Shared]
-    public class TimerCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class TimerCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixTimerInOrchestrator = new LocalizableResourceString(nameof(Resources.FixTimerInOrchestrator), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(invocationExpression) && durableVersion.Equals(DurableVersion.V2))
             {
-                if (TryGetDurableOrchestrationContextVariableName(invocationExpression, out string variableName))
+                if (CodeFixProviderUtils.TryGetDurableOrchestrationContextVariableName(invocationExpression, out string variableName))
                 {
                     var newExpression = "";
                     if (TryGetMillisecondsParameter(invocationExpression, out string milliseconds))

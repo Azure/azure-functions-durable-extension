@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = IOTypesAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = IOTypesAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
             public void allCalls(HttpClient httpClient, SqlConnection sqlConnection, CloudBlobClient cloudBlobClient, CloudQueueClient cloudQueueClient, 
                 CloudTableClient cloudTableClient, DocumentClient documentClient, WebRequest webRequest)
             {

@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(GuidCodeFixProvider)), Shared]
-    public class GuidCodeFixProvider: DurableFunctionsCodeFixProvider
+    public class GuidCodeFixProvider: CodeFixProvider
     {
         private static readonly LocalizableString FixGuidInOrchestrator = new LocalizableResourceString(nameof(Resources.FixGuidInOrchestrator), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
             {
-                if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
+                if (CodeFixProviderUtils.TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
                 {
                     context.RegisterCodeFix(
                     CodeAction.Create(FixGuidInOrchestrator.ToString(), c => ReplaceWithInvocationExpressionAsync(context.Document, expression, c, variableName + ".NewGuid()"), nameof(GuidCodeFixProvider)),

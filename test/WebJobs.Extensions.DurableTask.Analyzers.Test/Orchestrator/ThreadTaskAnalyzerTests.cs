@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = ThreadTaskAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = ThreadTaskAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
             public void threadTaskAllCalls()
             {
                 await System.Threading.Tasks.Task.Run(() => { });

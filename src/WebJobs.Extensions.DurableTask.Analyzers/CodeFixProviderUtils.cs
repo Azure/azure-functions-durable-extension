@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    public abstract class DurableFunctionsCodeFixProvider : CodeFixProvider
+    public static class CodeFixProviderUtils
     {
-        protected async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string identifierString)
+        public static async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string identifierString)
         {
             var newIdentifier = SyntaxFactory.IdentifierName(identifierString)
                 .WithLeadingTrivia(identifierNode.GetLeadingTrivia())
@@ -23,13 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return document.WithSyntaxRoot(newRoot);
         }
 
-        public override FixAllProvider GetFixAllProvider()
-        {
-            // Disables fix-all support, according to the Roslyn analyzer analyzer
-            return null;
-        }
-
-        protected static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out string variableName)
+        public static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out string variableName)
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {

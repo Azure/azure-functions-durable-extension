@@ -15,13 +15,18 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassNameCodeFixProvider)), Shared]
-    public class ClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class ClassNameCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixEntityFunctionName = new LocalizableResourceString(nameof(Resources.FixEntityFunctionName), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
             get { return ImmutableArray.Create(ClassNameAnalyzer.DiagnosticId); }
+        }
+
+        public sealed override FixAllProvider GetFixAllProvider()
+        {
+            return WellKnownFixAllProviders.BatchFixer;
         }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -48,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        protected async Task<Document> ReplaceAttributeArgumentAsync(Document document, SyntaxNode attributeArgumentNode, CancellationToken cancellationToken, string expressionString)
+        private static async Task<Document> ReplaceAttributeArgumentAsync(Document document, SyntaxNode attributeArgumentNode, CancellationToken cancellationToken, string expressionString)
         {
             var newAttributeArgument = SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression(expressionString));
 

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = GuidAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = GuidAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
         public void guidAllCalls()
         {
             Guid.NewGuid();
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }
 }";
 
-        private readonly string ExpectedFix = @"
+        private const string ExpectedFix = @"
     using System;
     using Microsoft.Azure.WebJobs;
     using Microsoft.Azure.WebJobs.Extensions.DurableTask;

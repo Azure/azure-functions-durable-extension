@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
         private static readonly string DiagnosticId = EntityContextAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = EntityContextAnalyzer.Severity;
 
-        private readonly string ExpectedFix = @"
+        private const string ExpectedFix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
