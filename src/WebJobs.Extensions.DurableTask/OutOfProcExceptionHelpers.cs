@@ -13,6 +13,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private const string OutOfProcDataLabel = "\n\n$OutOfProcData$:";
 
+        /* Extracts <friendly-message> from exceptions with messages of the following form
+         * ------------------------------------------------------------------------------
+         * Result: Failure
+         * Message: <friendly-message>\n\n
+         * $OutOfProcData$<out-of-proc-data-as-json>
+         * Stack:<stack-trace>
+         */
         public static bool TryGetExceptionWithFriendlyMessage(Exception ex, out Exception friendlyMessageException)
         {
             if (!TryGetFullOutOfProcMessage(ex, out string outOfProcMessage))
@@ -36,6 +43,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return true;
         }
 
+        /* Extracts <out-of-proc-data-as-json> from exceptions with messages of the following form
+         * ------------------------------------------------------------------------------
+         * Result: Failure
+         * Message: <friendly-message>\n\n
+         * $OutOfProcData$<out-of-proc-data-as-json>
+         * Stack:<stack-trace>
+         */
         public static bool TryExtractOutOfProcStateJson(Exception ex, out string stateJson)
         {
             if (!TryGetFullOutOfProcMessage(ex, out string outOfProcMessage))
@@ -59,6 +73,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        /*
+         * T
+         * 
+         */
         private static bool TryGetFullOutOfProcMessage(Exception ex, out string message)
         {
             if (!IsOutOfProcException(ex))
