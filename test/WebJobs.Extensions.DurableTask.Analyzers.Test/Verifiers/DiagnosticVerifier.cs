@@ -157,7 +157,7 @@ namespace TestHelper
                 if (actual.Severity != expected.Severity)
                 {
                     Assert.IsTrue(false,
-                        string.Format("Expected diagnostic severity to be \"{0}\" was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
+                        string.Format("Expected diagnostic Severity to be \"{0}\" was \"{1}\"\r\n\r\nDiagnostic:\r\n    {2}\r\n",
                             expected.Severity, actual.Severity, FormatDiagnostics(analyzer, actual)));
                 }
 

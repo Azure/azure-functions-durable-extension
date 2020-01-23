@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     [TestClass]
     public class NameAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = NameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = NameAnalyzer.Severity;
+        private static readonly string DiagnosticId = NameAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = NameAnalyzer.Severity;
 
         [TestMethod]
         public void Argument_NonIssueCalls()
@@ -131,17 +131,17 @@ namespace VSSample
         }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityNameAnalyzerCloseMessageFormat, "E1_SayHey", "E1_SayHello"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 23, 69)
                      }
             };
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -175,17 +175,17 @@ namespace VSSample
             }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityNameAnalyzerMissingMessageFormat, "E1_SayHello"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 23, 69)
                      }
             };
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
 

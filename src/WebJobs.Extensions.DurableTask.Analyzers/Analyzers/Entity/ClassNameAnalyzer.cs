@@ -45,10 +45,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                         if (!ClassNameMatchesFunctionName(classSymbol, functionName))
                         {
-                            var diagnosticClassName = Diagnostic.Create(Rule, classSymbol.Locations[0], className, functionName);
                             var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), className, functionName);
-
-                            context.ReportDiagnostic(diagnosticClassName);
+                            
                             context.ReportDiagnostic(diagnosticAttribute);
                         }
                     }
