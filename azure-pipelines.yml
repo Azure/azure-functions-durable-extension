@@ -103,7 +103,7 @@ jobs:
 
     - task: VSBuild@1
       inputs:
-        solution: 'WebJobs.Extensions.DurableTask.Analyzers.sln'
+        solution: '$(solution)'
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 
