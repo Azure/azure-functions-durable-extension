@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(StaticFunctionCodeFixProvider)), Shared]
-    public class StaticFunctionCodeFixProvider: DurableFunctionsCodeFixProvider
+    public class StaticFunctionCodeFixProvider: CodeFixProvider
     {
         private static readonly LocalizableString FixEntityFunctionStaticModifier = new LocalizableResourceString(nameof(Resources.FixEntityFunctionStaticModifier), Resources.ResourceManager, typeof(Resources));
 

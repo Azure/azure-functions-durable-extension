@@ -11,8 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     [TestClass]
     public class InterfaceContentAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = InterfaceContentAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = InterfaceContentAnalyzer.Severity;
+        private static readonly string DiagnosticId = InterfaceContentAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = InterfaceContentAnalyzer.Severity;
 
         [TestMethod]
         public void InterfaceContentAnalyzer_NonIssue()
@@ -69,18 +69,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
         {
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = Resources.EntityInterfaceContentAnalyzerNoMethodsMessageFormat,
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 19, 9)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -111,18 +111,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             public static void methodTest();
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityInterfaceContentAnalyzerMessageFormat, "public string PropertyTest {get; set};"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

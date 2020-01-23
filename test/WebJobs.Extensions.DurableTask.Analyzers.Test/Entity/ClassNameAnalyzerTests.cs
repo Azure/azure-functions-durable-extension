@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -13,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class ClassNameAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = ClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ClassNameAnalyzer.Severity;
+        private static readonly string DiagnosticId = ClassNameAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = ClassNameAnalyzer.Severity;
 
         [TestMethod]
         public void ClassName_NonIssue()
@@ -121,23 +120,33 @@ namespace ExternalInteraction
             {
             }
 }";
-            var expectedResults = new DiagnosticResult[2];
-            expectedResults[0] = new DiagnosticResult
-            {
-                Id = diagnosticId,
-                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
-                Severity = severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 25)
-                     }
-            };
 
-            expectedResults[1] = new DiagnosticResult
+            var ExpectedFix = @"
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
+
+namespace ExternalInteraction
+{
+    public static class HireEmployee
+    {
+        [FunctionName(nameof(HireEmployee))]
+        public static async Task<Application> RunOrchestrator(
+            [EntityTrigger] IDurableEntityContext context,
+            ILogger log)
             {
-                Id = diagnosticId,
+            }
+}";
+            var expectedResults = new DiagnosticResult
+            {
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 23)
@@ -145,6 +154,8 @@ namespace ExternalInteraction
             };
             
             VerifyCSharpDiagnostic(test, expectedResults);
+            
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
