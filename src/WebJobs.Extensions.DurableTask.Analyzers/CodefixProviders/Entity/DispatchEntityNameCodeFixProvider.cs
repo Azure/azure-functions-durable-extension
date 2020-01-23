@@ -14,13 +14,13 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassNameCodeFixProvider)), Shared]
-    public class DispatchClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class DispatchEntityNameCodeFixProvider : DurableFunctionsCodeFixProvider
     {
         private static readonly LocalizableString FixDispatchEntityCall = new LocalizableResourceString(nameof(Resources.FixEntityFunctionName), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(DispatchClassNameAnalyzer.DiagnosticId); }
+            get { return ImmutableArray.Create(DispatchEntityNameAnalyzer.DiagnosticId); }
         }
 
         public sealed override FixAllProvider GetFixAllProvider()
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var className = classSymbol.Name.ToString();
 
                 context.RegisterCodeFix(
-                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(DispatchClassNameCodeFixProvider)),
+                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(DispatchEntityNameCodeFixProvider)),
                 diagnostic);
             }
         }

@@ -58,7 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindEntityCalls(SyntaxNodeAnalysisContext context)
         {
-            if (context.Node is MemberAccessExpressionSyntax expression)
+            var expression = context.Node as MemberAccessExpressionSyntax;
+            if (expression != null && SyntaxNodeUtils.IsInsideFunction(expression))
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("SignalEntityAsync"))

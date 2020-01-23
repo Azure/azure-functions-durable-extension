@@ -179,29 +179,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
+        ///   Looks up a localized string similar to DispatchAsync must be used with the entity name, equal to the name of the function it&apos;s used in..
         /// </summary>
-        public static string DispatchClassNameAnalyzerDescription {
+        public static string DispatchEntityNameAnalyzerDescription {
             get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerDescription", resourceCulture);
+                return ResourceManager.GetString("DispatchEntityNameAnalyzerDescription", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be called with the entity class &apos;{1}&apos; it&apos;s used in..
+        ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be used with the entity name, &apos;{1}&apos;..
         /// </summary>
-        public static string DispatchClassNameAnalyzerMessageFormat {
+        public static string DispatchEntityNameAnalyzerMessageFormat {
             get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerMessageFormat", resourceCulture);
+                return ResourceManager.GetString("DispatchEntityNameAnalyzerMessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
+        ///   Looks up a localized string similar to DispatchAsync must be used with the entity name, equal to the name of the function it&apos;s used in..
         /// </summary>
-        public static string DispatchClassNameAnalyzerTitle {
+        public static string DispatchEntityNameAnalyzerTitle {
             get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerTitle", resourceCulture);
+                return ResourceManager.GetString("DispatchEntityNameAnalyzerTitle", resourceCulture);
             }
         }
         

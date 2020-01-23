@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -90,6 +91,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
+        internal static bool IsInsideFunction(SyntaxNode node)
+        {
+            return TryGetFunctionNameParameterNode(node, out SyntaxNode functionAttribute);
+        }
+
         internal static bool TryGetClassSymbol(SyntaxNode node, SemanticModel semanticModel, out INamedTypeSymbol classSymbol)
         {
             var currNode = node.IsKind(SyntaxKind.ClassDeclaration) ? node : node.Parent;
@@ -108,9 +114,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetFunctionNameParameterNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
+        internal static bool TryGetFunctionNameParameterNode(SyntaxNode node, out SyntaxNode attributeArgument)
         {
-            if (TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+            if (TryGetFunctionAttribute(node, out SyntaxNode functionAttribute))
             {
                 return TryGetFunctionName(functionAttribute, out attributeArgument);
             }

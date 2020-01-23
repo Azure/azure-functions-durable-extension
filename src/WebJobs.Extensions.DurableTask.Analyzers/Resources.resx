@@ -157,14 +157,14 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="DeterministicAnalyzerMessageFormat" xml:space="preserve">
     <value>'{0}' violates the orchestrator deterministic code constraint.</value>
   </data>
-  <data name="DispatchClassNameAnalyzerDescription" xml:space="preserve">
-    <value>DispatchAsync must be called with the entity class it's used in.</value>
+  <data name="DispatchEntityNameAnalyzerDescription" xml:space="preserve">
+    <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
   </data>
-  <data name="DispatchClassNameAnalyzerMessageFormat" xml:space="preserve">
-    <value>DispatchAsync was used with '{0}' but must be called with the entity class '{1}' it's used in.</value>
+  <data name="DispatchEntityNameAnalyzerMessageFormat" xml:space="preserve">
+    <value>DispatchAsync was used with '{0}' but must be used with the entity name, '{1}'.</value>
   </data>
-  <data name="DispatchClassNameAnalyzerTitle" xml:space="preserve">
-    <value>DispatchAsync must be called with the entity class it's used in.</value>
+  <data name="DispatchEntityNameAnalyzerTitle" xml:space="preserve">
+    <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
   </data>
   <data name="EntityClassNameAnalyzerDescription" xml:space="preserve">
     <value>Entity class name and entity function name must match.</value>

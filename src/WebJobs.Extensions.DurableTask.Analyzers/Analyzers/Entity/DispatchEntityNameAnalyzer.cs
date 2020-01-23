@@ -10,13 +10,13 @@ using System.Collections.Immutable;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(Microsoft.CodeAnalysis.LanguageNames.CSharp)]
-    public class DispatchClassNameAnalyzer: DiagnosticAnalyzer
+    public class DispatchEntityNameAnalyzer: DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DF0307";
 
-        private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DispatchClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.DispatchEntityNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DispatchEntityNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DispatchEntityNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Entity;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
@@ -33,20 +33,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void AnalyzeDispatchEntityName(SyntaxNodeAnalysisContext context)
         {
-            if (context.Node is MemberAccessExpressionSyntax expression)
+            var expression = context.Node as MemberAccessExpressionSyntax;
+            if (expression != null && SyntaxNodeUtils.IsInsideFunction(expression))
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
                 {
                     if (SyntaxNodeUtils.TryGetTypeArgumentIdentifierNode(expression, out SyntaxNode identifierNode))
                     {
-                        if (SyntaxNodeUtils.TryGetClassSymbol(expression, context.SemanticModel, out INamedTypeSymbol classSymbol))
+                        if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(expression, out SyntaxNode functionNameNode))
                         {
-                            var className = classSymbol.Name.ToString();
-                            
-                            if (!string.Equals(className, identifierNode.ToString()))
+                            var identifierName = identifierNode.ToString();
+                            var functionName = functionNameNode.ToString().Trim('"');
+                            if (!string.Equals(identifierName, functionName) &&
+                                !string.Equals(identifierName, "nameof(" + functionName + ")"))
                             {
-                                var diagnostic = Diagnostic.Create(Rule, identifierNode.GetLocation(), identifierNode, className);
+                                var diagnostic = Diagnostic.Create(Rule, identifierNode.GetLocation(), identifierNode, functionName);
 
                                 context.ReportDiagnostic(diagnostic);
                             }

@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
             var invocationExpression = context.Node as InvocationExpressionSyntax;
-            if (IsCallActivityInvocation(invocationExpression))
+            if (SyntaxNodeUtils.IsInsideFunction(invocationExpression) && IsCallActivityInvocation(invocationExpression))
             {
                 if (!TryGetFunctionNameFromCallActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
                 {

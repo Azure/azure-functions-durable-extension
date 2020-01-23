@@ -13,8 +13,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class DispatchEntityNameAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = DispatchClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = DispatchClassNameAnalyzer.Severity;
+        private readonly string diagnosticId = DispatchEntityNameAnalyzer.DiagnosticId;
+        private readonly DiagnosticSeverity severity = DispatchEntityNameAnalyzer.Severity;
 
         [TestMethod]
         public void DispatchCall_NonIssue()
@@ -168,12 +168,12 @@ using Microsoft.Extensions.Logging;
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new DispatchClassNameCodeFixProvider();
+            return new DispatchEntityNameCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new DispatchClassNameAnalyzer();
+            return new DispatchEntityNameAnalyzer();
         }
     }
 }
