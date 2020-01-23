@@ -13,70 +13,75 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private const string OutOfProcDataLabel = "\n\n$OutOfProcData$:";
 
-        public static bool IsRpcException(Exception ex)
+        public static bool TryGetExceptionWithFriendlyMessage(Exception ex, out Exception friendlyMessageException)
         {
-            // This is a best effort approach to detect when using RpcException
-            return ex.Message != null
-                && ex.Message.StartsWith(ResultLabel)
-                && ex.Message.Contains(MessageLabel)
-                && ex.Message.Contains(StackTraceLabel);
-        }
-
-        public static Exception GetExceptionWithFriendlyMessage(Exception ex)
-        {
-            if (!IsRpcException(ex))
+            if (!TryGetFullOutOfProcMessage(ex, out string outOfProcMessage))
             {
-                return ex;
+                friendlyMessageException = null;
+                return false;
             }
 
-            string friendlyMessage = ExtractFriendlyMessage(ex);
-            return new Exception(friendlyMessage, ex);
-        }
-
-        public static string ExtractOutOfProcStateJson(Exception ex)
-        {
-            if (!IsRpcException(ex))
-            {
-                throw new ArgumentException($"Exception with message {ex.Message} does not match the RpcException schema");
-            }
-
-            string outOfProcMessage = GetFullOutOfProcMessage(ex);
+            string friendlyMessage;
             int jsonIndex = outOfProcMessage.IndexOf(OutOfProcDataLabel);
             if (jsonIndex == -1)
             {
-                return string.Empty;
+                friendlyMessage = outOfProcMessage;
+            }
+            else
+            {
+                friendlyMessage = outOfProcMessage.Substring(0, jsonIndex);
+            }
+
+            friendlyMessageException = new Exception(friendlyMessage, ex);
+            return true;
+        }
+
+        public static bool TryExtractOutOfProcStateJson(Exception ex, out string stateJson)
+        {
+            if (!TryGetFullOutOfProcMessage(ex, out string outOfProcMessage))
+            {
+                stateJson = null;
+                return false;
+            }
+
+            int jsonIndex = outOfProcMessage.IndexOf(OutOfProcDataLabel);
+            if (jsonIndex == -1)
+            {
+                stateJson = null;
+                return false;
             }
             else
             {
                 int jsonStart = jsonIndex + OutOfProcDataLabel.Length;
                 int jsonLength = outOfProcMessage.Length - jsonStart;
-                return outOfProcMessage.Substring(jsonStart, jsonLength);
+                stateJson = outOfProcMessage.Substring(jsonStart, jsonLength);
+                return true;
             }
         }
 
-        private static string GetFullOutOfProcMessage(Exception ex)
+        private static bool TryGetFullOutOfProcMessage(Exception ex, out string message)
         {
-            string rpcExceptionMessage = ex.Message;
+            if (!IsOutOfProcException(ex))
+            {
+                message = null;
+                return false;
+            }
 
+            string rpcExceptionMessage = ex.Message;
             int messageStart = rpcExceptionMessage.IndexOf(MessageLabel) + MessageLabel.Length;
             int messageEnd = rpcExceptionMessage.IndexOf(StackTraceLabel);
-            return rpcExceptionMessage.Substring(messageStart, messageEnd - messageStart);
+            message = rpcExceptionMessage.Substring(messageStart, messageEnd - messageStart);
+            return true;
         }
 
-        private static string ExtractFriendlyMessage(Exception ex)
+        private static bool IsOutOfProcException(Exception ex)
         {
-            string outOfProcMessage = GetFullOutOfProcMessage(ex);
-            int jsonIndex = outOfProcMessage.IndexOf(OutOfProcDataLabel);
-            if (jsonIndex == -1)
-            {
-                return outOfProcMessage;
-            }
-            else
-            {
-                return outOfProcMessage.Substring(0, jsonIndex);
-            }
+            // This is a best effort approach to detect when using RpcException from Azure Functions.
+            // See https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script/Workers/Rpc/MessageExtensions/RpcException.cs
+            return ex.Message != null
+                && ex.Message.StartsWith(ResultLabel)
+                && ex.Message.Contains(MessageLabel)
+                && ex.Message.Contains(StackTraceLabel);
         }
-
-
     }
 }

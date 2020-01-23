@@ -80,64 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
-            object returnValue = null;
-            try
-            {
-                Task invokeTask = this.functionInvocationCallback();
-                if (invokeTask is Task<object> resultTask)
-                {
-                    // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
-                    // Possible performance implications; may need revisiting.
-                    returnValue = orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask;
-                }
-                else
-                {
-                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
-                }
-            }
-            catch (Exception e)
-            {
-                if (OutOfProcExceptionHelpers.IsRpcException(e.InnerException))
-                {
-                    returnValue = OutOfProcExceptionHelpers.ExtractOutOfProcStateJson(e.InnerException);
-                }
-
-                if (string.IsNullOrEmpty(returnValue as string))
-                {
-                    string exceptionDetails = e.ToString();
-                    this.config.TraceHelper.FunctionFailed(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        exceptionDetails,
-                        FunctionType.Orchestrator,
-                        this.context.IsReplaying);
-
-                    if (!this.context.IsReplaying)
-                    {
-                        this.context.AddDeferredTask(
-                            () => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
-                                this.context.HubName,
-                                this.context.Name,
-                                this.context.InstanceId,
-                                exceptionDetails,
-                                this.context.IsReplaying));
-                    }
-
-                    var orchestrationException = new OrchestrationFailureException(
-                        $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
-                        Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
-
-                    this.context.OrchestrationException = 
-                        ExceptionDispatchInfo.Capture(orchestrationException);
-
-                    throw orchestrationException;
-                }
-            }
-            finally
-            {
-                this.context.IsCompleted = true;
-            }
+            object returnValue = await this.InvokeFunctionAsync(orchestratorInfo);
 
             if (returnValue != null)
             {
@@ -186,6 +129,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return serializedOutput;
+        }
+
+        private async Task<object> InvokeFunctionAsync(RegisteredFunctionInfo orchestratorInfo)
+        {
+            try
+            {
+                Task invokeTask = this.functionInvocationCallback();
+                if (invokeTask is Task<object> resultTask)
+                {
+                    // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
+                    // Possible performance implications; may need revisiting.
+                    return orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask;
+                }
+                else
+                {
+                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
+                }
+            }
+            catch (Exception e)
+            {
+                if (OutOfProcExceptionHelpers.TryExtractOutOfProcStateJson(e.InnerException, out string returnValue)
+                    && !string.IsNullOrEmpty(returnValue))
+                {
+                    return returnValue;
+                }
+
+                string exceptionDetails = e.ToString();
+                this.config.TraceHelper.FunctionFailed(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.InstanceId,
+                    exceptionDetails,
+                    FunctionType.Orchestrator,
+                    this.context.IsReplaying);
+
+                if (!this.context.IsReplaying)
+                {
+                    this.context.AddDeferredTask(
+                        () => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                            this.context.HubName,
+                            this.context.Name,
+                            this.context.InstanceId,
+                            exceptionDetails,
+                            this.context.IsReplaying));
+                }
+
+                var orchestrationException = new OrchestrationFailureException(
+                    $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                    Utils.SerializeCause(e, MessagePayloadDataConverter.ErrorConverter));
+
+                this.context.OrchestrationException =
+                    ExceptionDispatchInfo.Capture(orchestrationException);
+
+                throw orchestrationException;
+            }
+            finally
+            {
+                this.context.IsCompleted = true;
+            }
         }
 
         public override string GetStatus()
