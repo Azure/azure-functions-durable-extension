@@ -73,10 +73,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        /*
-         * T
-         * 
-         */
         private static bool TryGetFullOutOfProcMessage(Exception ex, out string message)
         {
             if (!IsOutOfProcException(ex))
