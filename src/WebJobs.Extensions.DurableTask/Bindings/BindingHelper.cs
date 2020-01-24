@@ -36,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
                 BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                 RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
+                RpcBaseUrl = this.config.HttpApiHandler.GetRpcBaseUrl(),
             };
             return JsonConvert.SerializeObject(payload);
         }
@@ -94,6 +95,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("requiredQueryStringParameters")]
             public string RequiredQueryStringParameters { get; set; }
+
+            [JsonProperty("rpcBaseUrl")]
+            public string RpcBaseUrl { get; set; }
         }
     }
 }

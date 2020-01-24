@@ -61,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new LoggerFactory(),
                 TestHelpers.GetTestNameResolver(),
                 serviceFactory,
+                new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory());
         }
     }

@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
+        IDisposable,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
@@ -88,6 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
+        /// <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
@@ -96,6 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
+            IHostLifetime hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
@@ -140,6 +144,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+
+            // The RPC server is started when the extension is initialized.
+            // The RPC server is stopped when the host has finished shutting down.
+            hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
         }
 
 #if FUNCTIONS_V1
@@ -149,8 +157,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
             IConnectionStringResolver connectionStringResolver,
+            IHostLifetime shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandlerFactory)
+            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
         }
@@ -241,6 +250,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+
+            // The RPC server needs to be started sometime before any functions can be triggered
+            // and this is the latest point in the pipeline available to us.
+            this.StartLocalRcpServer();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            this.HttpApiHandler?.Dispose();
+        }
+
+        private void StartLocalRcpServer()
+        {
+#if !FUNCTIONS_V1
+            bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
+            if (!shouldEnable.HasValue)
+            {
+                // Default behavior is to only start the local RPC server for non-.NET function languages.
+                // We'll enable it if it's non-.NET or if the FUNCTIONS_WORKER_RUNTIME value isn't present.
+                string functionsWorkerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+                shouldEnable = !string.Equals(functionsWorkerRuntime, "dotnet", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // This is only applicable to Functions 2.0 and above
+            if (shouldEnable == true)
+            {
+                this.HttpApiHandler.StartLocalHttpServer();
+            }
+#endif
+        }
+
+        private void StopLocalRcpServer()
+        {
+            this.HttpApiHandler.StopLocalHttpServer();
         }
 
         private void ResolveAppSettingOptions()
