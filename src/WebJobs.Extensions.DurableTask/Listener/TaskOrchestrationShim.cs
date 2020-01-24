@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.TraceAndSendExceptionNotification(result.Exception.ToString());
                 var orchestrationException = new OrchestrationFailureException(
-                    $"Orchestrator function '{this.context.Name}' failed: {result.Exception.ToString()}",
+                    $"Orchestrator function '{this.context.Name}' failed: {result.Exception.Message}",
                     Utils.SerializeCause(result.Exception, MessagePayloadDataConverter.ErrorConverter));
 
                 this.context.OrchestrationException =
