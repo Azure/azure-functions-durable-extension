@@ -29,7 +29,7 @@ namespace TestHelper
         private static readonly MetadataReference DurableFunctionsReference = MetadataReference.CreateFromFile(typeof(IDurableActivityContext).Assembly.Location);
         private static readonly MetadataReference ILoggerReference = MetadataReference.CreateFromFile(typeof(ILogger).Assembly.Location);
 
-        internal static string DefaultFilePathPrefix = "Test";
+        internal static string DefaultFilePathPreFix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
         internal static string VisualBasicDefaultExt = "vb";
         internal static string TestProjectName = "TestProject";
@@ -150,7 +150,7 @@ namespace TestHelper
         /// <returns>A Project created out of the Documents created from the source strings</returns>
         private static Project CreateProject(string[] sources, string language = LanguageNames.CSharp)
         {
-            string fileNamePrefix = DefaultFilePathPrefix;
+            string fileNamePreFix = DefaultFilePathPreFix;
             string fileExt = language == LanguageNames.CSharp ? CSharpDefaultFileExt : VisualBasicDefaultExt;
 
             var projectId = ProjectId.CreateNewId(debugName: TestProjectName);
@@ -171,7 +171,7 @@ namespace TestHelper
             int count = 0;
             foreach (var source in sources)
             {
-                var newFileName = fileNamePrefix + count + "." + fileExt;
+                var newFileName = fileNamePreFix + count + "." + fileExt;
                 var documentId = DocumentId.CreateNewId(projectId, debugName: newFileName);
                 solution = solution.AddDocument(documentId, newFileName, SourceText.From(source));
                 count++;

@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -13,20 +12,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class StaticFunctionAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = StaticFunctionAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.Severity;
+        private static readonly string DiagnosticId = StaticFunctionAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
 
-        [TestMethod]
-        public void StaticFunction_NonIssue()
-        {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
+        private const string ExpectedFix = @"
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -34,26 +25,26 @@ namespace ExternalInteraction
     public static class HireEmployee
     {
         [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
+        public static void EntityAnalyzerTest(
             [EntityTrigger] IDurableEntityContext context,
             ILogger log)
             {
-            }
+            } 
+    }
 }";
-            VerifyCSharpDiagnostic(test);
+
+        [TestMethod]
+        public void StaticFunction_NonIssue()
+        {
+            VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
         public void StaticFunction_NonStatic()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -61,24 +52,27 @@ namespace ExternalInteraction
     public static class HireEmployee
     {
         [FunctionName(""HireEmployee"")]
-        public async Task<Application> RunOrchestrator(
+        public void EntityAnalyzerTest(
             [EntityTrigger] IDurableEntityContext context,
             ILogger log)
             {
-            }
+            } 
+    }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "RunOrchestrator"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "EntityAnalyzerTest"),
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 40)
+                            new DiagnosticResultLocation("Test0.cs", 11, 21)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

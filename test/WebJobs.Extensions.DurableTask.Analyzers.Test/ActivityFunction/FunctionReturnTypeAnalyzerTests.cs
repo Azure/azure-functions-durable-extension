@@ -14,8 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     [TestClass]
     public class FunctionReturnTypeAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = FunctionReturnTypeAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = FunctionReturnTypeAnalyzer.Severity;
+        private static readonly string DiagnosticId = FunctionReturnTypeAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = FunctionReturnTypeAnalyzer.Severity;
 
         [TestMethod]
         public void Argument_NonIssueCalls()
@@ -118,17 +118,17 @@ namespace VSSample
         }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "string", "System.Threading.Tasks.Task<int>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 23, 23)
                      }
             };
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -168,17 +168,17 @@ namespace VSSample
         }
     }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "System.Threading.Tasks.Task", "System.Threading.Tasks.Task<string>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 23, 35)
                      }
             };
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
 

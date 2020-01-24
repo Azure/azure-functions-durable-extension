@@ -14,8 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     [TestClass]
     public class MethodAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = MethodAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = MethodAnalyzer.Severity;
+        private static readonly string DiagnosticId = MethodAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = MethodAnalyzer.Severity;
 
         [TestMethod]
         public void MethodCallsInOrchestrator_NonIssueCalls()
@@ -91,30 +91,30 @@ namespace VSSample
     }
 }";
 
-            var expectedResults = new DiagnosticResult[2];
-            expectedResults[0] = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult[2];
+            expectedDiagnostics[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
-            expectedResults[1] = new DiagnosticResult
+            expectedDiagnostics[1] = new DiagnosticResult
             {
                 Id = DateTimeAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 24, 28)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expectedResults);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -155,41 +155,41 @@ namespace VSSample
     }
 }";
 
-            var expectedResults = new DiagnosticResult[3];
-            expectedResults[0] = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult[3];
+            expectedDiagnostics[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
-            expectedResults[1] = new DiagnosticResult
+            expectedDiagnostics[1] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "IndirectCall()"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 24, 13)
                         }
             };
 
-            expectedResults[2] = new DiagnosticResult
+            expectedDiagnostics[2] = new DiagnosticResult
             {
                 Id = DateTimeAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 30, 28)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expectedResults);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
@@ -225,41 +225,41 @@ namespace VSSample
     }
 }";
 
-            var expectedResults = new DiagnosticResult[3];
-            expectedResults[0] = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult[3];
+            expectedDiagnostics[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 17, 17)
                         }
             };
 
-            expectedResults[1] = new DiagnosticResult
+            expectedDiagnostics[1] = new DiagnosticResult
             {
                 Id = DateTimeAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 24, 28)
                         }
             };
 
-            expectedResults[2] = new DiagnosticResult
+            expectedDiagnostics[2] = new DiagnosticResult
             {
                 Id = EnvironmentVariableAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "Environment.GetEnvironmentVariable"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 25, 13)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expectedResults);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

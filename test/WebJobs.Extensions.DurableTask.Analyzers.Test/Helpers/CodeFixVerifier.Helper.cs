@@ -9,16 +9,16 @@ using System.Threading;
 namespace TestHelper
 {
     /// <summary>
-    /// Diagnostic Producer class with extra methods dealing with applying codefixes
+    /// Diagnostic Producer class with extra methods dealing with applying codeFixes
     /// All methods are static
     /// </summary>
     public abstract partial class CodeFixVerifier : DiagnosticVerifier
     {
         /// <summary>
         /// Apply the inputted CodeAction to the inputted document.
-        /// Meant to be used to apply codefixes.
+        /// Meant to be used to apply codeFixes.
         /// </summary>
-        /// <param name="document">The Document to apply the fix on</param>
+        /// <param name="document">The Document to apply the Fix on</param>
         /// <param name="codeAction">A CodeAction that will be applied to the Document.</param>
         /// <returns>A Document with the changes from the CodeAction</returns>
         private static Document ApplyFix(Document document, CodeAction codeAction)
