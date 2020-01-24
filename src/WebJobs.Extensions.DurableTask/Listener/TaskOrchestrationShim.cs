@@ -169,7 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                 }
 
-                string exceptionDetails = e.ToString();
                 return new OrchestrationInvocationResult
                 {
                     Exception = e,
