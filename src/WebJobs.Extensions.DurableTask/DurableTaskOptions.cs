@@ -40,6 +40,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ControlQueueBatchSize { get; set; } = 32;
 
         /// <summary>
+        /// Gets or set the number of control queue messages that can be buffered in memory
+        /// at a time, at which point the dispatcher will wait before dequeuing any additional
+        /// messages. The default is 64.
+        /// </summary>
+        /// <remarks>This has historically always been fixed to 64, but increasing it may increase
+        /// throughput.</remarks>
+        public int ControlQueueBufferThreshold { get; set; } = 64;
+
+        /// <summary>
         /// Gets or sets the partition count for the control queue.
         /// </summary>
         /// <remarks>
@@ -273,6 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
             sb.Append(nameof(this.PartitionCount)).Append(": ").Append(this.PartitionCount).Append(", ");
             sb.Append(nameof(this.ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
+            sb.Append(nameof(this.ControlQueueBufferThreshold)).Append(": ").Append(this.ControlQueueBufferThreshold).Append(", ");
             sb.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
             sb.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
             sb.Append(nameof(this.FetchLargeMessagesAutomatically)).Append(": ").Append(this.FetchLargeMessagesAutomatically).Append(", ");
@@ -333,6 +343,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ControlQueueBatchSize <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.ControlQueueBatchSize)} must be a non-negative integer.");
+            }
+
+            if (this.ControlQueueBufferThreshold < 1 || this.ControlQueueBufferThreshold > 1000)
+            {
+                throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
             }
 
             if (this.PartitionCount < 1 || this.PartitionCount > 16)
