@@ -82,8 +82,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationInvocationResult result = await this.InvokeFunctionAsync(orchestratorInfo);
 
-            // If there was an exception and no return value to process, simply handle exception now.
-            if (result.ReturnValue == null && result.Exception != null)
+            // In-process exceptions can be handled now, out-of-proc exceptions can only be handled
+            // after replaying their actions.
+            if (!orchestratorInfo.IsOutOfProc && result.WasInProcessExceptionThrown())
             {
                 this.TraceAndSendExceptionNotification(result.Exception.ToString());
                 var orchestrationException = new OrchestrationFailureException(
@@ -93,6 +94,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.OrchestrationException =
                     ExceptionDispatchInfo.Capture(orchestrationException);
 
+                // TODO: Make sure we understand the full implications of throwing an exception here. Does an exception get
+                // set on the FunctionResult object in DurableTaskExtension.OrchestratorMiddleware, or does the
+                // TryExecuteAsync() method throw an exception. If it's the latter, it complicates how we handle
+                // user thrown exceptions vs. Functions runtime exceptions, which we need to differentiate between for PRs
+                // like https://github.com/Azure/azure-functions-durable-extension/pull/1139/files
                 throw orchestrationException;
             }
 
@@ -152,7 +158,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                if (OutOfProcExceptionHelpers.TryExtractOutOfProcStateJson(e.InnerException, out string returnValue)
+                if (orchestratorInfo.IsOutOfProc
+                    && OutOfProcExceptionHelpers.TryExtractOutOfProcStateJson(e.InnerException, out string returnValue)
                     && !string.IsNullOrEmpty(returnValue))
                 {
                     return new OrchestrationInvocationResult()
@@ -243,6 +250,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
                     exceptionDetails);
                 this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
+
+                // TODO: Make sure we understand the full implications of throwing an exception here. Does an exception get
+                // set on the FunctionResult object in DurableTaskExtension.OrchestratorMiddleware, or does the
+                // TryExecuteAsync() method throw an exception. If it's the latter, it complicates how we handle
+                // user thrown exceptions vs. Functions runtime exceptions, which we need to differentiate between for PRs
+                // like https://github.com/Azure/azure-functions-durable-extension/pull/1139/files
                 throw orchestrationException;
             }
 
@@ -320,6 +333,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public object ReturnValue { get; set; }
 
             public Exception Exception { get; set; }
+
+            // If an in-process orchestration invocation encounter an exception,
+            // it will not have a return value
+            public bool WasInProcessExceptionThrown()
+            {
+                return this.ReturnValue == null && this.Exception != null;
+            }
         }
 
         private class OutOfProcOrchestratorState
