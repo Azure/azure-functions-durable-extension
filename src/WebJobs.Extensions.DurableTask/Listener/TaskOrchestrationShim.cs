@@ -233,7 +233,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema.");
             }
 
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(result.ToString());
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
