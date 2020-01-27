@@ -36,8 +36,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
                 BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                 RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
-                RpcBaseUrl = this.config.HttpApiHandler.GetRpcBaseUrl(),
             };
+
+            if (this.config.Options.LocalRpcEndpointEnabled != false)
+            {
+                // If this field is missing, the out-of-proc SDK is expected to either fail
+                // or it can revert to the behavior of calling the external APIs.
+                payload.RpcBaseUrl = this.config.HttpApiHandler.GetRpcBaseUrl();
+            }
+
             return JsonConvert.SerializeObject(payload);
         }
 

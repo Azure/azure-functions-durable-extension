@@ -139,9 +139,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task BindToDurableClientAsString()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task BindToDurableClientAsString(bool localRcpEnabled)
         {
             Uri testNotificationUrl = new Uri("https://durable.edu/runtime/webhooks/durabletask?code=abcdefg");
 
@@ -149,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameof(this.BindToDurableClientAsString),
                 enableExtendedSessions: false,
-                localRpcEndpointEnabled: true,
+                localRpcEndpointEnabled: localRcpEnabled,
                 notificationUrl: testNotificationUrl))
             {
                 await host.StartAsync();
@@ -184,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 //   },
                 //   "baseUrl": "https://durable.edu/runtime/webhooks/durabletask/",
                 //   "requiredQueryStringParameters": "code=abcdefg",
-                //   "rpcBaseUrl": "http://127.0.0.1:17071/durabletask/"
+                //   "rpcBaseUrl": "http://127.0.0.1:17071/durabletask/" (or null)
                 // }
 
                 Assert.True(outerJson.TryGetValue("taskHubName", out JToken taskHubName));
@@ -258,41 +260,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(testNotificationUrl.Query.Trim('?'), (string)requiredQueryStringParameters);
 
                 Assert.True(outerJson.TryGetValue("rpcBaseUrl", out JToken rpcBaseUrl));
-                Assert.True(Uri.TryCreate((string)rpcBaseUrl, UriKind.Absolute, out Uri rpcBaseUri));
-                Assert.True(rpcBaseUri.IsLoopback);
-                Assert.Equal("http", rpcBaseUri.Scheme);
-                Assert.Equal("/durabletask/", rpcBaseUri.AbsolutePath);
-            }
-        }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task BindToDurableClientRequiresLocalRpc()
-        {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.BindToDurableClientRequiresLocalRpc),
-                enableExtendedSessions: false,
-                localRpcEndpointEnabled: false,
-                notificationUrl: null))
-            {
-                await host.StartAsync();
-
-                // The binding is expected to fail if the local RPC endpoint is disabled.
-                FunctionInvocationException exception =
-                    Assert.Throws<FunctionInvocationException>(() =>
-                    {
-                        string[] jsonRef = new string[1];
-                        var args = new Dictionary<string, object> { { "jsonRef", jsonRef } };
-                        host.CallAsync(nameof(ClientFunctions.GetDurableClientConfigJson), args).GetAwaiter().GetResult();
-                    });
-
-                InvalidOperationException inner = Assert.IsType<InvalidOperationException>(exception.GetBaseException());
-                Assert.Equal(
-                    "The durable client binding requires the durable extension local RPC endpoint to be enabled and running.",
-                    inner.Message);
-
-                await host.StopAsync();
+                if (localRcpEnabled)
+                {
+                    Assert.True(Uri.TryCreate((string)rpcBaseUrl, UriKind.Absolute, out Uri rpcBaseUri));
+                    Assert.True(rpcBaseUri.IsLoopback);
+                    Assert.Equal("http", rpcBaseUri.Scheme);
+                    Assert.Equal("/durabletask/", rpcBaseUri.AbsolutePath);
+                }
+                else
+                {
+                    Assert.Equal(JTokenType.Null, rpcBaseUrl.Type);
+                }
             }
         }
 
