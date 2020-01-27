@@ -44,13 +44,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            ArgumentAnalyzer argumentAnalyzer = new ArgumentAnalyzer();
-            NameAnalyzer nameAnalyzer = new NameAnalyzer();
-            FunctionReturnTypeAnalyzer returnTypeAnalyzer = new FunctionReturnTypeAnalyzer();
-
-            argumentAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
-            nameAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
-            returnTypeAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
+            ArgumentAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
+            NameAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
+            FunctionReturnTypeAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
         }
 
         public void FindActivityCall(SyntaxNodeAnalysisContext context)
@@ -164,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var attribute = context.Node as AttributeSyntax;
             if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
-                if (!TryGetFunctionName(attribute, out string functionName))
+                if (!SyntaxNodeUtils.TryGetFunctionNameAndNode(attribute, out SyntaxNode attributeArgument, out string functionName))
                 {
                     //Do not store ActivityFunctionDefinition if there is no function name
                     return;
@@ -187,18 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     ReturnType = returnTypeName
                 });
             }
-        }
-
-        private bool TryGetFunctionName(AttributeSyntax attributeExpression, out string functionName)
-        {
-            if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(attributeExpression, out SyntaxNode attributeArgument))
-            {
-                functionName = attributeArgument.ToString().Trim('"');
-                return true;
-            }
-
-            functionName = null;
-            return false;
         }
 
         private static bool TryGetReturnType(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol returnType)

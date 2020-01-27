@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor NotAMethodRule = new DiagnosticDescriptor(DiagnosticId, Title, NotAMethodMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
         public static readonly DiagnosticDescriptor NoMethodsRule = new DiagnosticDescriptor(DiagnosticId, Title, NoMethodsMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
+        public static void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
         {
             var interfaceDeclaration = entityInterface.InterfaceDeclaration;
             var interfaceChildNodes = interfaceDeclaration.ChildNodes();

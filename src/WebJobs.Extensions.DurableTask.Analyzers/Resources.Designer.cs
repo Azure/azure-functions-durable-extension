@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity class name and entity function name must match..
+        ///   Looks up a localized string similar to Entity function name must match an existing entity class name..
         /// </summary>
         public static string EntityClassNameAnalyzerDescription {
             get {
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Class name &apos;{0}&apos; and entity function name &apos;{1}&apos; do not match..
+        ///   Looks up a localized string similar to Function name &apos;{0}&apos; doesn&apos;t have an entity class with the same name defined..
         /// </summary>
         public static string EntityClassNameAnalyzerMessageFormat {
             get {
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity class name and entity function name must match..
+        ///   Looks up a localized string similar to Entity function name must match an existing entity class name..
         /// </summary>
         public static string EntityClassNameAnalyzerTitle {
             get {
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity functions must be static..
+        ///   Looks up a localized string similar to Entity functions in an entity class must be static..
         /// </summary>
         public static string EntityStaticAnalyzerDescription {
             get {
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity functions must be static..
+        ///   Looks up a localized string similar to Entity functions in an entity class must be static..
         /// </summary>
         public static string EntityStaticAnalyzerTitle {
             get {

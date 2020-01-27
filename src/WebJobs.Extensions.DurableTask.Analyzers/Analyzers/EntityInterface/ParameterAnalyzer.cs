@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
 
-        public void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
+        public static void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
         {
             var interfaceChildNodes = entityInterface.InterfaceDeclaration.ChildNodes();
             foreach (var node in interfaceChildNodes)

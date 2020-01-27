@@ -167,13 +167,13 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
   </data>
   <data name="EntityClassNameAnalyzerDescription" xml:space="preserve">
-    <value>Entity class name and entity function name must match.</value>
+    <value>Entity function name must match an existing entity class name.</value>
   </data>
   <data name="EntityClassNameAnalyzerMessageFormat" xml:space="preserve">
-    <value>Class name '{0}' and entity function name '{1}' do not match.</value>
+    <value>Function name '{0}' doesn't have an entity class with the same name defined.</value>
   </data>
   <data name="EntityClassNameAnalyzerTitle" xml:space="preserve">
-    <value>Entity class name and entity function name must match.</value>
+    <value>Entity function name must match an existing entity class name.</value>
   </data>
   <data name="EntityContextAnalyzerDescription" xml:space="preserve">
     <value>EntityTrigger attribute must be used with an IDurableEntityContext.</value>
@@ -216,13 +216,13 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;.</value>
   </data>
   <data name="EntityStaticAnalyzerDescription" xml:space="preserve">
-    <value>Entity functions must be static.</value>
+    <value>Entity functions in an entity class must be static.</value>
   </data>
   <data name="EntityStaticAnalyzerMessageFormat" xml:space="preserve">
     <value>Entity function '{0}' is not marked static.</value>
   </data>
   <data name="EntityStaticAnalyzerTitle" xml:space="preserve">
-    <value>Entity functions must be static.</value>
+    <value>Entity functions in an entity class must be static.</value>
   </data>
   <data name="EnvironmentVariableAnalyzerTitle" xml:space="preserve">
     <value>Environment variables must be accessed in a deterministic way inside an orchestrator function.</value>

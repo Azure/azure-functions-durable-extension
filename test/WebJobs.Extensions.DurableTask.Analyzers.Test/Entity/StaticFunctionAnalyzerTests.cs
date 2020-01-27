@@ -16,22 +16,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
 
         private const string ExpectedFix = @"
-using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Extensions.Logging;
 
-namespace ExternalInteraction
-{
-    public static class HireEmployee
+ public class MyEmptyEntity : IMyEmptyEntity
     {
-        [FunctionName(""HireEmployee"")]
-        public static void EntityAnalyzerTest(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            } 
-    }
-}";
+        [FunctionName(""MyEmptyEntity"")]
+        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyEmptyEntity>();
+    }";
 
         [TestMethod]
         public void StaticFunction_NonIssue()
@@ -43,26 +34,18 @@ namespace ExternalInteraction
         public void StaticFunction_NonStatic()
         {
             var test = @"
-using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Extensions.Logging;
 
-namespace ExternalInteraction
-{
-    public static class HireEmployee
+ public class MyEmptyEntity : IMyEmptyEntity
     {
-        [FunctionName(""HireEmployee"")]
-        public void EntityAnalyzerTest(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            } 
-    }
-}";
+        [FunctionName(""MyEmptyEntity"")]
+        public Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyEmptyEntity>();
+    }";
+
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "EntityAnalyzerTest"),
+                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "Run"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -82,7 +65,7 @@ namespace ExternalInteraction
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new StaticFunctionAnalyzer();
+            return new DispatchEntityNameAnalyzer();
         }
     }
 }

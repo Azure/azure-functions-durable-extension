@@ -66,6 +66,7 @@ namespace ExternalInteraction
             {
             }
 }";
+
             VerifyCSharpDiagnostic(test);
         }
 
@@ -93,6 +94,7 @@ namespace ExternalInteraction
             {
             }
 }";
+
             VerifyCSharpDiagnostic(test);
         }
 
@@ -145,7 +147,7 @@ namespace ExternalInteraction
             var expectedResults = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
+                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HelloWorld"),
                 Severity = Severity,
                 Locations =
                  new[] {

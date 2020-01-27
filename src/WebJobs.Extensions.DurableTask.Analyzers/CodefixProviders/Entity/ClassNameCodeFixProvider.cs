@@ -43,9 +43,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
-            if (SyntaxNodeUtils.TryGetClassSymbol(attributeArgument, semanticModel, out INamedTypeSymbol classSymbol))
+            if (SyntaxNodeUtils.TryGetClassName(attributeArgument, out string className))
             {
-                var className = "nameof(" + classSymbol.Name.ToString() + ")";
+                className = "nameof(" + className + ")";
 
                 context.RegisterCodeFix(
                 CodeAction.Create(FixEntityFunctionName.ToString(), cancellationToken => ReplaceAttributeArgumentAsync(context.Document, attributeArgument, cancellationToken, className), nameof(ClassNameCodeFixProvider)),
