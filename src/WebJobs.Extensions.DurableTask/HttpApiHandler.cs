@@ -73,7 +73,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config = config;
             this.dataConverter = this.config.DataConverter;
             this.logger = logger;
-            this.localHttpListener = new LocalHttpListener(config);
+
+            // The listen URL must not include the path.
+            var listenUri = new Uri(InternalRpcUri.GetLeftPart(UriPartial.Authority));
+            this.localHttpListener = new LocalHttpListener(
+                config,
+                listenUri,
+                this.HandleRequestAsync);
         }
 
         public void Dispose()
@@ -1011,7 +1017,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void StartLocalHttpServer()
+#if !FUNCTIONS_V1
+        internal async Task StartLocalHttpServerAsync()
         {
             if (!this.localHttpListener.IsListening)
             {
@@ -1022,11 +1029,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     message: $"Opening local RPC endpoint: {InternalRpcUri}",
                     writeToUserLogs: true);
 
-                this.localHttpListener.Start(InternalRpcUri, this.HandleRequestAsync);
+                await this.localHttpListener.StartAsync();
             }
         }
 
-        internal void StopLocalHttpServer()
+        internal async Task StopLocalHttpServerAsync()
         {
             if (this.localHttpListener.IsListening)
             {
@@ -1037,9 +1044,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     message: $"Closing local RPC endpoint: {InternalRpcUri}",
                     writeToUserLogs: true);
 
-                this.localHttpListener.Stop();
+                await this.localHttpListener.StopAsync();
             }
         }
+#endif
 
         private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
         {

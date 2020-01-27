@@ -145,9 +145,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
+#if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
             hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+#endif
         }
 
 #if FUNCTIONS_V1
@@ -251,9 +253,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
+#if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
             this.StartLocalRcpServer();
+#endif
         }
 
         /// <inheritdoc />
@@ -262,9 +266,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler?.Dispose();
         }
 
+#if !FUNCTIONS_V1
         private void StartLocalRcpServer()
         {
-#if !FUNCTIONS_V1
             bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
             if (!shouldEnable.HasValue)
             {
@@ -277,15 +281,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // This is only applicable to Functions 2.0 and above
             if (shouldEnable == true)
             {
-                this.HttpApiHandler.StartLocalHttpServer();
+                this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
             }
-#endif
         }
 
         private void StopLocalRcpServer()
         {
-            this.HttpApiHandler.StopLocalHttpServer();
+            this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
         }
+#endif
 
         private void ResolveAppSettingOptions()
         {
