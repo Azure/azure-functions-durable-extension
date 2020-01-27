@@ -46,6 +46,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if !FUNCTIONS_V1
             await this.localWebHost?.StartAsync();
+#else
+            // no-op: this is dummy code to make build warnings go away
+            await Task.Yield();
 #endif
             this.IsListening = true;
         }
@@ -54,6 +57,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
 #if !FUNCTIONS_V1
             await this.localWebHost?.StopAsync();
+#else
+            // no-op: this is dummy code to make build warnings go away
+            await Task.Yield();
 #endif
             this.IsListening = false;
         }
