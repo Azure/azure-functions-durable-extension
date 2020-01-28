@@ -37,10 +37,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             var identifierNode = root.FindNode(diagnosticSpan);
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
-            if (SyntaxNodeUtils.TryGetClassName(identifierNode, out string className))
+            if (SyntaxNodeUtils.TryGetFunctionNameAndNode(identifierNode, out SyntaxNode functionAttribute, out string functionName))
             {
                 context.RegisterCodeFix(
-                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(DispatchEntityNameCodeFixProvider)),
+                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, functionName), nameof(DispatchEntityNameCodeFixProvider)),
                 diagnostic);
             }
         }

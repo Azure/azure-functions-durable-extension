@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TestHelper;
@@ -123,31 +122,10 @@ namespace ExternalInteraction
             }
 }";
 
-            var ExpectedFix = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-
-namespace ExternalInteraction
-{
-    public static class HireEmployee
-    {
-        [FunctionName(nameof(HireEmployee))]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            }
-}";
             var expectedResults = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HelloWorld"),
+                Message = string.Format(Resources.EntityClassNameAnalyzerCloseMessageFormat, "HelloWorld", "HireEmployee"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -156,13 +134,6 @@ namespace ExternalInteraction
             };
             
             VerifyCSharpDiagnostic(test, expectedResults);
-            
-            VerifyCSharpFix(test, ExpectedFix);
-        }
-
-        protected override CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            return new ClassNameCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

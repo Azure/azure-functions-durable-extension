@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static void ReportProblems(CompilationAnalysisContext context, SyntaxNode methodDeclaration)
         {
             var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword)).FirstOrDefault();
-            if (staticKeyword == null)
+            if (staticKeyword == null || staticKeyword.IsKind(SyntaxKind.None))
             {
                 if (IsInEntityClass(methodDeclaration))
                 {

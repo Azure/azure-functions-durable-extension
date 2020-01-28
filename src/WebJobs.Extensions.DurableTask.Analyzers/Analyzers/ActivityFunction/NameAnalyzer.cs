@@ -37,7 +37,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
                 else if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
                 {
-                    cac.ReportDiagnostic(Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, GetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName))));
+                    var closestName = SyntaxNodeUtils.GetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName));
+
+                    cac.ReportDiagnostic(Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName));
                 }
             }
         }

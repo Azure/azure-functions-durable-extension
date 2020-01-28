@@ -36,8 +36,20 @@ namespace VSSample
 {
     public static class HelloSequence
     {
+        public static async Task<List<string>> NonFunctionWrongReturnType(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<int>(""E1_SayHello"", ""Tokyo""));
+                outputs.Add(await context.CallActivityAsync<int>(""E1_SayHey"", ""Tokyo""));
+                outputs.Add(await context.CallActivityAsync<int>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
+            
+                return outputs;
+            }
+
         [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static async Task<List<string>> CorrectReturnType(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 var outputs = new List<string>();

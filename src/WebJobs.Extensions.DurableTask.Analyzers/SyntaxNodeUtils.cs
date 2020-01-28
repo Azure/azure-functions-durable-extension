@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -25,7 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             version = versionTwoInterface != null ? DurableVersion.V2 : DurableVersion.V1;
             return (DurableVersion)version;
         }
-        
+
+        public static string GetClosestString(string name, IEnumerable<string> availableNames)
+        {
+            return availableNames.OrderBy(x => x.LevenshteinDistance(name)).First();
+        }
+
         internal static bool IsInsideOrchestrator(SyntaxNode node)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))

@@ -206,6 +206,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Function named &apos;{0}&apos; doesn&apos;t have an entity class with the same name defined. Did you mean &apos;{1}&apos;?.
+        /// </summary>
+        public static string EntityClassNameAnalyzerCloseMessageFormat {
+            get {
+                return ResourceManager.GetString("EntityClassNameAnalyzerCloseMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Entity function name must match an existing entity class name..
         /// </summary>
         public static string EntityClassNameAnalyzerDescription {
@@ -217,9 +226,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         /// <summary>
         ///   Looks up a localized string similar to Function name &apos;{0}&apos; doesn&apos;t have an entity class with the same name defined..
         /// </summary>
-        public static string EntityClassNameAnalyzerMessageFormat {
+        public static string EntityClassNameAnalyzerMissingMessageFormat {
             get {
-                return ResourceManager.GetString("EntityClassNameAnalyzerMessageFormat", resourceCulture);
+                return ResourceManager.GetString("EntityClassNameAnalyzerMissingMessageFormat", resourceCulture);
             }
         }
         

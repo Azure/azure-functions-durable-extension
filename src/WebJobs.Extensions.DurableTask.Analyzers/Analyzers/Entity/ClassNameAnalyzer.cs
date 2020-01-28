@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -16,7 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public const string DiagnosticId = "DF0305";
 
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString CloseMessageFormat = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerCloseMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString MissingMessageFormat = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerMissingMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Entity;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
@@ -24,9 +26,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private List<string> classNames = new List<string>();
         private List<SyntaxNode> entityTriggerAttributes = new List<SyntaxNode>();
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
+        public static readonly DiagnosticDescriptor ClassNameCloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor ClassNameMissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(ClassNameCloseRule, ClassNameMissingRule); } }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -47,9 +50,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (SyntaxNodeUtils.TryGetFunctionNameAndNode(entityTrigger, out SyntaxNode attributeArgument, out string functionName))
                 {
-                    if (!classNames.Contains(functionName))
+                    if (!classNames.Any())
                     {
-                        var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), functionName);
+                        var diagnosticAttribute = Diagnostic.Create(ClassNameMissingRule, attributeArgument.GetLocation(), functionName);
+
+                        context.ReportDiagnostic(diagnosticAttribute);
+                    }
+                    else if (!classNames.Contains(functionName))
+                    {
+                        var closestString = SyntaxNodeUtils.GetClosestString(functionName, classNames);
+
+                        var diagnosticAttribute = Diagnostic.Create(ClassNameCloseRule, attributeArgument.GetLocation(), functionName, closestString);
 
                         context.ReportDiagnostic(diagnosticAttribute);
                     }

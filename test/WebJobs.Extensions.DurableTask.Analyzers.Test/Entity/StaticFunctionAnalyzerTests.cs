@@ -49,7 +49,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 21)
+                            new DiagnosticResultLocation("Test0.cs", 7, 21)
                      }
             };
 
