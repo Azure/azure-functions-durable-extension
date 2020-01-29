@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The parent instance that called this operation.
         /// </summary>
-        [JsonProperty(PropertyName = "parentEx", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "parentExecution", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string ParentExecutionId { get; set; }
 
         /// <summary>

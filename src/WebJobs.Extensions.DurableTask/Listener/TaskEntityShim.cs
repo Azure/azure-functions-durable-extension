@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.Name,
                 this.context.InstanceId,
                 request.ParentInstanceId,
-                request.ParentExecutionId ?? "",
+                request.ParentExecutionId,
                 request.Id.ToString(),
                 isReplay: false);
 

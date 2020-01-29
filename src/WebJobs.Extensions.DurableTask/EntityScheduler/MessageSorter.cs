@@ -173,14 +173,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else if (receiveBuffer.ExecutionId != message.ParentExecutionId)
             {
                 // this message is from a new execution; release all buffered messages and start over
-                foreach (var kvp in receiveBuffer.Buffered)
+                if (receiveBuffer.Buffered != null)
                 {
-                    yield return kvp.Value;
+                    foreach (var kvp in receiveBuffer.Buffered)
+                    {
+                        yield return kvp.Value;
+                    }
+
+                    receiveBuffer.Buffered.Clear();
                 }
 
                 receiveBuffer.Last = DateTime.MinValue;
                 receiveBuffer.ExecutionId = message.ParentExecutionId;
-                receiveBuffer.Buffered.Clear();
             }
 
             if (message.Timestamp <= receiveBuffer.Last)

@@ -315,7 +315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(219, TaskHub, AppName, SlotName, FunctionName, InstanceId, RequestingInstanceId, RequestingExecutionId, RequestId, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(219, TaskHub, AppName, SlotName, FunctionName, InstanceId, RequestingInstanceId, RequestingExecutionId ?? "", RequestId, FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(220, Level = EventLevel.Informational)]
