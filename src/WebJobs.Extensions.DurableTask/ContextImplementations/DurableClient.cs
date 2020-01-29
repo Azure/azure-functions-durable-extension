@@ -382,12 +382,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (createdTimeFrom != null)
             {
-                condition.CreatedTimeFrom = (DateTime)createdTimeFrom;
+                condition.CreatedTimeFrom = createdTimeFrom.Value;
             }
 
             if (createdTimeTo != null)
             {
-                condition.CreatedTimeTo = (DateTime)createdTimeTo;
+                condition.CreatedTimeTo = createdTimeTo.Value;
             }
 
             if (runtimeStatus != null)
