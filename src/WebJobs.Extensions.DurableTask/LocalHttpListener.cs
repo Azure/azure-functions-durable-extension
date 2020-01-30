@@ -6,10 +6,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -32,10 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public bool IsListening { get; private set; }
 
-        public void Dispose()
-        {
-            this.localWebHost?.Dispose();
-        }
+        public void Dispose() => this.localWebHost.Dispose();
 
         public async Task StartAsync()
         {
@@ -45,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
 #if !FUNCTIONS_V1
-            await this.localWebHost?.StartAsync();
+            await this.localWebHost.StartAsync();
 #else
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async Task StopAsync()
         {
 #if !FUNCTIONS_V1
-            await this.localWebHost?.StopAsync();
+            await this.localWebHost.StopAsync();
 #else
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
@@ -83,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .Configure(a => a.Run(this.HandleRequestAsync))
                 .Build();
 #else
-            return null;
+            return new NoOpWebHost();
 #endif
         }
 
@@ -133,5 +132,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await responseStream.CopyToAsync(response.Body, 81920, context.RequestAborted);
             }
         }
+
+#if FUNCTIONS_V1
+        private class NoOpWebHost : IWebHost
+        {
+            public IFeatureCollection ServerFeatures => throw new NotImplementedException();
+
+            public IServiceProvider Services => throw new NotImplementedException();
+
+            public void Dispose() { }
+
+            public void Start() { }
+
+            public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+            public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        }
+#endif
     }
 }

@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
-            IHostLifetime hostLifetimeService,
+            IApplicationLifetimeWrapper hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
             IConnectionStringResolver connectionStringResolver,
-            IHostLifetime shutdownNotification,
+            IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
         {

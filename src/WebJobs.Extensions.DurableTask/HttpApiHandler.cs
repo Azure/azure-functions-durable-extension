@@ -1017,6 +1017,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal bool TryGetRpcBaseUrl(out Uri rpcBaseUrl)
+        {
+            if (this.config.Options.LocalRpcEndpointEnabled != false)
+            {
+                rpcBaseUrl = InternalRpcUri;
+                return true;
+            }
+
+            // The app owner explicitly disabled the local RPC endpoint.
+            rpcBaseUrl = null;
+            return false;
+        }
+
 #if !FUNCTIONS_V1
         internal async Task StartLocalHttpServerAsync()
         {

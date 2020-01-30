@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestHostShutdownNotificationService : IHostLifetime
+    internal class TestHostShutdownNotificationService : IApplicationLifetimeWrapper
     {
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
 

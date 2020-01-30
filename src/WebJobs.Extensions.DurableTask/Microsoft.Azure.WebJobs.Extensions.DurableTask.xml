@@ -1893,7 +1893,7 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IHostLifetime,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -2700,6 +2700,40 @@
             The HTTP URL for purging instance history by instance ID.
             </value>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper">
+            <summary>
+            Custom service interface for signaling the extension when the function app is starting up or shutting down.
+            </summary>
+            <remarks>
+            This interface is expected to be used as an injected service. We use a "wrapper" interface instead of
+            directly using the "real" <c>IApplicationLifetime</c> interface so that we can have an injected service
+            that is available in both .NET Core (Functions 2.0+) and .NET Framework (Functions 1.0).
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper.OnStarted">
+            <summary>
+            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect function app startup events.
+            </summary>
+            <value>
+            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app has started up.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper.OnStopping">
+            <summary>
+            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect function app stopping events.
+            </summary>
+            <value>
+            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app is beginning to shut down.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper.OnStopped">
+            <summary>
+            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect function app shutdown events.
+            </summary>
+            <value>
+            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app has completed shutting down.
+            </value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
             Interface defining methods to resolve connection strings.
@@ -2751,38 +2785,6 @@
             Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for error serialization.
             </summary>
             <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for error serialization.</returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IHostLifetime">
-            <summary>
-            Service interface for signaling the extension when the host is starting up or shutting down.
-            </summary>
-            <remarks>
-            This interface is expected to be used as an injected service.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IHostLifetime.OnStarted">
-            <summary>
-            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect host startup events.
-            </summary>
-            <value>
-            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the host has started up.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IHostLifetime.OnStopping">
-            <summary>
-            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect host stopping events.
-            </summary>
-            <value>
-            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the host is beginning to shut down.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IHostLifetime.OnStopped">
-            <summary>
-            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect host shutdown events.
-            </summary>
-            <value>
-            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the host has completed shutting down.
-            </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper">
             <summary>

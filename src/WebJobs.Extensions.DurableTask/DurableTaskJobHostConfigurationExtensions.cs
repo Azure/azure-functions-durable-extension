@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
-            serviceCollection.TryAddSingleton<IHostLifetime, HostLifecycleService>();
+            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 
             return builder;
         }
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
 
 #if !FUNCTIONS_V1
-        private class HostLifecycleService : IHostLifetime
+        private class HostLifecycleService : IApplicationLifetimeWrapper
         {
             private readonly IApplicationLifetime appLifetime;
 
