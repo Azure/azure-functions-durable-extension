@@ -482,7 +482,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DurableOrchestrationClientBase client = this.GetClient(request);
 
                 object input = null;
-                if (request.Content?.Headers?.ContentLength != 0)
+                if (request.Content != null && request.Content.Headers.ContentLength != 0)
                 {
                     string json = await request.Content.ReadAsStringAsync();
                     input = JsonConvert.DeserializeObject(json, MessagePayloadDataConverter.MessageSettings);
