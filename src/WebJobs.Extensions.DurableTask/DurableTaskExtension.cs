@@ -278,7 +278,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 shouldEnable = !string.Equals(functionsWorkerRuntime, "dotnet", StringComparison.OrdinalIgnoreCase);
             }
 
-            // This is only applicable to Functions 2.0 and above
             if (shouldEnable == true)
             {
                 this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();

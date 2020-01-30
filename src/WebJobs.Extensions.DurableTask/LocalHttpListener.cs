@@ -144,9 +144,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public void Start() { }
 
-            public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public Task StartAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
 
-            public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public Task StopAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
         }
 #endif
     }
