@@ -246,6 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
+        [Obsolete]
         public virtual Task<IList<OrchestrationState>> GetAllOrchestrationStatesWithFilters(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             throw this.GetNotImplementedException(nameof(this.GetAllOrchestrationStatesWithFilters));

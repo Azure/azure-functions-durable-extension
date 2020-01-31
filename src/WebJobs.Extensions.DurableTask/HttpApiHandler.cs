@@ -372,7 +372,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IList<DurableOrchestrationStatus> statusForAllInstances;
 
-            var context = await client.GetStatusAsync(condition, CancellationToken.None);
+            var context = await client.ListInstancesAsync(condition, CancellationToken.None);
             statusForAllInstances = context.DurableOrchestrationState.ToList();
             var nextContinuationToken = context.ContinuationToken;
 
