@@ -909,8 +909,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
         }
 
-        internal string GetRpcBaseUrl() => InternalRpcUri.OriginalString;
-
         internal string GetUniversalQueryStrings()
         {
             this.ThrowIfWebhooksNotConfigured();

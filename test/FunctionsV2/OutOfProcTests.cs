@@ -192,10 +192,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(outerJson.TryGetValue("taskHubName", out JToken taskHubName));
                 Assert.StartsWith(nameof(this.BindToDurableClientAsString), (string)taskHubName);
 
-                Func<JToken, string, string[], Uri> commonUriValidation = (
-                    JToken json,
-                    string fieldName,
-                    string[] requiredSegments) =>
+                // Local function that validates presence and format of the URL payloads.
+                void CommonUriValidation(JToken json, string fieldName, string[] requiredSegments)
                 {
                     Assert.Equal(JTokenType.Object, json.Type);
                     JObject jObj = (JObject)json;
@@ -203,58 +201,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Assert.True(Uri.TryCreate((string)fieldValue, UriKind.Absolute, out Uri uri));
                     Assert.StartsWith(testNotificationUrl.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path));
 
+                    if (fieldName != "baseUrl")
+                    {
+                        Assert.Contains(testNotificationUrl.Query.TrimStart('?'), uri.Query);
+                    }
+
                     foreach (string segment in requiredSegments)
                     {
                         Assert.Contains(segment, uri.OriginalString);
                     }
+                }
 
-                    return uri;
-                };
+                string[] creationUrlParams = new[] { "{functionName}", "{instanceId}" };
 
                 // Legacy payload validation
                 Assert.True(outerJson.TryGetValue("creationUrls", out JToken creationUrls));
-                Uri createNewInstancePostUri = commonUriValidation(
-                    creationUrls,
-                    "createNewInstancePostUri",
-                    new[] { "{functionName}", "{instanceId}" });
-
-                Uri createAndWaitOnNewInstancePostUri = commonUriValidation(
-                    creationUrls,
-                    "createAndWaitOnNewInstancePostUri",
-                    new[] { "{functionName}", "{instanceId}" });
+                CommonUriValidation(creationUrls, "createNewInstancePostUri", creationUrlParams);
+                CommonUriValidation(creationUrls, "createAndWaitOnNewInstancePostUri", creationUrlParams);
 
                 Assert.True(outerJson.TryGetValue("managementUrls", out JToken managementUrls));
                 Assert.Equal(JTokenType.Object, managementUrls.Type);
                 Assert.True(((JObject)managementUrls).TryGetValue("id", out JToken idValue));
                 Assert.Equal(JTokenType.String, idValue.Type);
+
                 string idPlaceholder = (string)idValue;
+                string[] managementUrlParams = new[] { idPlaceholder };
+                CommonUriValidation(managementUrls, "statusQueryGetUri", managementUrlParams);
+                CommonUriValidation(managementUrls, "sendEventPostUri", managementUrlParams);
+                CommonUriValidation(managementUrls, "terminatePostUri", managementUrlParams);
+                CommonUriValidation(managementUrls, "rewindPostUri", managementUrlParams);
+                CommonUriValidation(managementUrls, "purgeHistoryDeleteUri", managementUrlParams);
 
-                Uri statusQueryGetUri = commonUriValidation(
-                    managementUrls,
-                    "statusQueryGetUri",
-                    new[] { idPlaceholder });
-
-                Uri sendEventPostUri = commonUriValidation(
-                    managementUrls,
-                    "sendEventPostUri",
-                    new[] { idPlaceholder });
-
-                Uri terminatePostUri = commonUriValidation(
-                    managementUrls,
-                    "terminatePostUri",
-                    new[] { idPlaceholder });
-
-                Uri rewindPostUri = commonUriValidation(
-                    managementUrls,
-                    "rewindPostUri",
-                    new[] { idPlaceholder });
-
-                Uri purgeHistoryDeleteUri = commonUriValidation(
-                    managementUrls,
-                    "purgeHistoryDeleteUri",
-                    new[] { idPlaceholder });
-
-                commonUriValidation(outerJson, "baseUrl", new string[0]);
+                CommonUriValidation(outerJson, "baseUrl", new string[0]);
 
                 Assert.True(outerJson.TryGetValue("requiredQueryStringParameters", out JToken requiredQueryStringParameters));
                 Assert.Equal(testNotificationUrl.Query.Trim('?'), (string)requiredQueryStringParameters);
@@ -335,7 +313,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     string jsonString = client.DownloadString("http://localhost:17071/durabletask/instances");
 
-                    // The data doesn't matter, but the result should be an array
+                    // The result is expected to be an empty array
                     JArray array = JArray.Parse(jsonString);
                 }
 
