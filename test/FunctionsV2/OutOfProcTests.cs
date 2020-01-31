@@ -118,11 +118,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CommonUriValidation(managementUrls, "rewindPostUri", managementUrlParams);
                 CommonUriValidation(managementUrls, "purgeHistoryDeleteUri", managementUrlParams);
 
-                CommonUriValidation(outerJson, "baseUrl", new string[0]);
-
-                Assert.True(outerJson.TryGetValue("requiredQueryStringParameters", out JToken requiredQueryStringParameters));
-                Assert.Equal(testNotificationUrl.Query.Trim('?'), (string)requiredQueryStringParameters);
-
                 Assert.True(outerJson.TryGetValue("rpcBaseUrl", out JToken rpcBaseUrl));
 
                 if (localRcpEnabled)

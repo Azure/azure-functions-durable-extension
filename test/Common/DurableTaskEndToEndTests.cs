@@ -2659,44 +2659,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 argumentException.Message);
         }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task ValidateExtensionLifecycleLogs()
-        {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.ValidateExtensionLifecycleLogs),
-                false))
-            {
-                // simply starting and stopping should generate all the logs we need to check for
-                await host.StartAsync();
-                await Task.Delay(3000);
-                await host.StopAsync();
-            }
-
-            TestLogger testLogger = this.loggerProvider.CreatedLoggers.Single(
-                logger => logger.Category == TestHelpers.LogCategory);
-
-            // Ensure the basic startup/shutdown logs are present
-            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Starting task hub worker"));
-            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Task hub worker started"));
-            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Stopping task hub worker"));
-            Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains("Task hub worker stopped"));
-
-            // Ensure the configuration log is present and contains valid JSON.
-            // Expected format: "Durable extension configuration loaded: {json}. HubName: ..."
-            const string PrefixText = "Durable extension configuration loaded: ";
-            LogMessage configMessage = Assert.Single(testLogger.LogMessages, msg => msg.FormattedMessage.Contains(PrefixText));
-            string configMessageText = configMessage.FormattedMessage;
-            int start = configMessageText.IndexOf(PrefixText) + PrefixText.Length;
-            int end = configMessageText.IndexOf(". HubName: ", start);
-            Assert.NotEqual(-1, end);
-            string configJson = configMessageText.Substring(start, end - start);
-
-            // This will throw if the JSON is not valid
-            JObject.Parse(configJson);
-        }
-
         private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload
