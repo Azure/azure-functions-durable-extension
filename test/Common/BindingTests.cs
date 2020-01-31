@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.WindowsAzure.Storage;
@@ -37,6 +38,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 IDurableOrchestrationClient client = await host.GetOrchestrationClientBindingTest(this.output);
+
+                await host.StopAsync();
             }
         }
 
@@ -55,6 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 IDurableEntityClient client = await host.GetEntityClientBindingTest(this.output);
+
+                await host.StopAsync();
             }
         }
 
@@ -64,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         private async Task ActivityTriggerAsJObject(string storageProviderType)
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -90,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityTriggerAsPOCO(string storageProviderType)
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsPOCO), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsPOCO), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -117,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityTriggerAsNumber(string storageProviderType)
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -142,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaParameterName(string storageProviderType)
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -193,7 +198,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaPOCO(string storageProviderType)
         {
-            using (JobHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaPOCO), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaPOCO), false, storageProviderType))
             {
                 await host.StartAsync();
 

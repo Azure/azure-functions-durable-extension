@@ -131,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_SynchronousAPI_Returns200),
                 enableExtendedSessions: false,
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerCheckUserAgent();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_CheckUserAgentHeader),
                 enableExtendedSessions: false,
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerCheckAcceptHeader();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_CheckUserAgentHeader),
                 enableExtendedSessions: false,
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.Accepted);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousPatternDisabled),
                 enableExtendedSessions: false,
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_SynchronousAPI_ReturnsNotFound),
                 enableExtendedSessions: false,
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_MultipleHeadersAndContentTest),
                 enableExtendedSessions: false,
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_MultipleHeaderValuesTest),
                 enableExtendedSessions: false,
@@ -476,7 +476,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_OneHeaderAndContentTest),
                 enableExtendedSessions: false,
@@ -533,7 +533,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                                                                         headers: testHeaders);
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerWithRetryAfter(acceptedHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_RetryAfterTest),
                 enableExtendedSessions: false,
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandler(acceptedHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
                 enableExtendedSessions: false,
@@ -616,7 +616,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
                 enableExtendedSessions: false,
@@ -658,7 +658,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_SynchronousAPI_NoContentTypeTest),
                 enableExtendedSessions: false,
@@ -698,7 +698,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_SynchronousAPI_UrlEncodedTest),
                 enableExtendedSessions: false,
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                                                                                headers: asyncTestHeaders);
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerLongRunning(acceptedHttpResponseMessage);
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_LongRunning),
                 enableExtendedSessions: false,
@@ -788,7 +788,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForMultipleRequestsTwo();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
                 enableExtendedSessions: false,
@@ -899,7 +899,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerForTestingTokenSource();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
                 enableExtendedSessions: false,
@@ -965,7 +965,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
 
-            using (JobHost host = TestHelpers.GetJobHost(
+            using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
                 enableExtendedSessions: false,

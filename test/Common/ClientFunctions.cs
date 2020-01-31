@@ -76,5 +76,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             clientRef[0] = client;
         }
+
+        /// <summary>
+        /// Helper function for testing the JSON data that gets sent to out-of-proc client functions.
+        /// </summary>
+        [NoAutomaticTrigger]
+        public static void GetDurableClientConfigJson(
+            [DurableClient] string outOfProcJson,
+            string[] jsonRef)
+        {
+            jsonRef[0] = outOfProcJson;
+        }
     }
 }

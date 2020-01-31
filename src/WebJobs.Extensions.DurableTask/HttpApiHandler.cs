@@ -20,7 +20,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class HttpApiHandler
+    internal class HttpApiHandler : IDisposable
     {
         // Route segments. Note that these segments cannot start with `/` due to limitations with TemplateMatcher.
         private const string InstancesControllerSegment = "instances/";
@@ -61,15 +61,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
 
+        private static readonly Uri InternalRpcUri = new Uri("http://127.0.0.1:17071/durabletask/");
+
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter dataConverter;
+        private readonly LocalHttpListener localHttpListener;
 
         public HttpApiHandler(DurableTaskExtension config, ILogger logger)
         {
             this.config = config;
             this.dataConverter = this.config.DataConverter;
             this.logger = logger;
+
+            // The listen URL must not include the path.
+            var listenUri = new Uri(InternalRpcUri.GetLeftPart(UriPartial.Authority));
+            this.localHttpListener = new LocalHttpListener(
+                config,
+                listenUri,
+                this.HandleRequestAsync);
+        }
+
+        public void Dispose()
+        {
+            this.localHttpListener.Dispose();
         }
 
         internal HttpResponseMessage CreateCheckStatusResponse(
@@ -132,7 +147,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHub,
             string connectionName)
         {
-            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(null, instanceId, taskHub, connectionName);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(
+                null,
+                instanceId,
+                taskHub,
+                connectionName);
             return httpManagementPayload;
         }
 
@@ -193,9 +212,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                string path = request.RequestUri.AbsolutePath;
-                string basePath = this.config.Options.NotificationUrl.AbsolutePath;
-                path = path.Substring(basePath.Length);
+                string basePath;
+                if (request.RequestUri.IsLoopback && request.RequestUri.Port == InternalRpcUri.Port)
+                {
+                    basePath = InternalRpcUri.AbsolutePath;
+                }
+                else if (this.config.Options.NotificationUrl != null)
+                {
+                    basePath = this.config.Options.NotificationUrl.AbsolutePath;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Don't know how to handle request to {request.RequestUri}.");
+                }
+
+                string path = "/" + request.RequestUri.AbsolutePath.Substring(basePath.Length).Trim('/');
                 var routeValues = new RouteValueDictionary();
                 if (StartOrchestrationRoute.TryMatch(path, routeValues))
                 {
@@ -660,7 +691,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IDurableOrchestrationClient client = this.GetClient(request);
 
                 object input = null;
-                if (request.Content?.Headers?.ContentLength != 0)
+                if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
                     string json = await request.Content.ReadAsStringAsync();
                     input = JsonConvert.DeserializeObject(json, this.dataConverter.MessageSettings);
@@ -906,18 +937,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         private HttpManagementPayload GetClientResponseLinks(
-            HttpRequestMessage request,
-            string instanceId,
-            string taskHubName,
-            string connectionName,
-            bool returnInternalServerErrorOnFailure = false)
+             HttpRequestMessage request,
+             string instanceId,
+             string taskHubName,
+             string connectionName,
+             bool returnInternalServerErrorOnFailure = false)
         {
             this.ThrowIfWebhooksNotConfigured();
 
             Uri notificationUri = this.config.Options.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
-            // e.g. http://{host}/admin/extensions/DurableTaskExtension?code={systemKey}
+            // e.g. http://{host}/runtime/webhooks/durabletask?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string allInstancesPrefix = baseUrl + "/" + InstancesControllerSegment;
@@ -983,6 +1014,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("Webhooks are not configured");
             }
         }
+
+        internal bool TryGetRpcBaseUrl(out Uri rpcBaseUrl)
+        {
+            if (this.config.Options.LocalRpcEndpointEnabled != false)
+            {
+                rpcBaseUrl = InternalRpcUri;
+                return true;
+            }
+
+            // The app owner explicitly disabled the local RPC endpoint.
+            rpcBaseUrl = null;
+            return false;
+        }
+
+#if !FUNCTIONS_V1
+        internal async Task StartLocalHttpServerAsync()
+        {
+            if (!this.localHttpListener.IsListening)
+            {
+                this.config.TraceHelper.ExtensionInformationalEvent(
+                    this.config.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: string.Empty,
+                    message: $"Opening local RPC endpoint: {InternalRpcUri}",
+                    writeToUserLogs: true);
+
+                await this.localHttpListener.StartAsync();
+            }
+        }
+
+        internal async Task StopLocalHttpServerAsync()
+        {
+            if (this.localHttpListener.IsListening)
+            {
+                this.config.TraceHelper.ExtensionInformationalEvent(
+                    this.config.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: string.Empty,
+                    message: $"Closing local RPC endpoint: {InternalRpcUri}",
+                    writeToUserLogs: true);
+
+                await this.localHttpListener.StopAsync();
+            }
+        }
+#endif
 
         private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
         {
