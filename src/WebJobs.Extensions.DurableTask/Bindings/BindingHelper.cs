@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -35,6 +36,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreationUrls = this.config.HttpApiHandler.GetInstanceCreationLinks(),
                 ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
             };
+
+            if (this.config.HttpApiHandler.TryGetRpcBaseUrl(out Uri rpcBaseUrl))
+            {
+                // If an RPC URL is not available, the out-of-proc durable client SDK is expected to fail.
+                // In the case of JavaScript, however, the client SDK is expected to revert to legacy behavior.
+                payload.RpcBaseUrl = rpcBaseUrl.OriginalString;
+            }
+
             return JsonConvert.SerializeObject(payload);
         }
 
@@ -86,6 +95,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("managementUrls")]
             public HttpManagementPayload ManagementUrls { get; set; }
+
+            [JsonProperty("rpcBaseUrl")]
+            public string RpcBaseUrl { get; set; }
         }
     }
 }

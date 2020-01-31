@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
 
-        public static JobHost GetJobHost(
+        public static ITestHost GetJobHost(
             ILoggerProvider loggerProvider,
             string testName,
             bool enableExtendedSessions,
@@ -34,7 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
             string[] eventGridPublishEventTypes = null,
-            bool autoFetchLargeMessages = true)
+            bool autoFetchLargeMessages = true,
+            bool? localRpcEndpointEnabled = false)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 NotificationHandler = eventGridNotificationHandler,
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
                 FetchLargeMessagesAutomatically = autoFetchLargeMessages,
+                LocalRpcEndpointEnabled = localRpcEndpointEnabled,
             };
 
             if (eventGridRetryCount.HasValue)
@@ -74,7 +76,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
-            return PlatformSpecificHelpers.CreateJobHost(optionsWrapper, loggerProvider, testNameResolver);
+            return PlatformSpecificHelpers.CreateJobHost(
+                optionsWrapper,
+                loggerProvider,
+                testNameResolver);
         }
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
