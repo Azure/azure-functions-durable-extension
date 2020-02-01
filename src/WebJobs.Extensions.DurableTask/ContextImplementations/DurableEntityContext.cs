@@ -325,6 +325,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
+                ParentExecutionId = null, // for entities, message sorter persists across executions
                 Id = Guid.NewGuid(),
                 IsSignal = true,
                 Operation = operation,

@@ -554,7 +554,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string functionName,
             string instanceId,
-            string requestingInstance,
+            string requestingInstanceId,
+            string requestingExecutionId,
             string requestId,
             bool isReplay)
         {
@@ -566,7 +567,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                requestingInstance,
+                requestingInstanceId,
+                requestingExecutionId,
                 requestId,
                 FunctionType.Entity.ToString(),
                 ExtensionVersion,
@@ -575,8 +577,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ShouldLogEvent(isReplay: isReplay))
             {
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' granted lock to request {requestId} by instance {requestingInstance}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, functionType, requestId, requestingInstance, FunctionState.LockAcquired, hubName,
+                    "{instanceId}: Function '{functionName} ({functionType})' granted lock to request {requestId} by instance {requestingInstanceId}, execution {requestingExecutionId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, requestId, requestingInstanceId, requestingExecutionId, FunctionState.LockAcquired, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }

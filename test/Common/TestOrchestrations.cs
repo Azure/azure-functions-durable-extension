@@ -972,6 +972,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return string.Join(",", result.Select(kvp => kvp.Value));
         }
 
+        public static async Task<string> ThreeSuccessiveCalls([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var (entityId, count) = ctx.GetInput<(EntityId, int)>();
+
+            await ctx.CallEntityAsync(entityId, count.ToString());
+
+            count++;
+
+            if (count < 3)
+            {
+                ctx.ContinueAsNew((entityId, count));
+
+                return "continue as new";
+            }
+            else
+            {
+                return "ok";
+            }
+        }
+
         public static async Task<string> ContinueAsNew_Repro285([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var input = ctx.GetInput<int>();

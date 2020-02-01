@@ -269,7 +269,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
             var request = new RequestMessage()
             {
-                ParentInstanceId = null,
+                ParentInstanceId = null, // means this was sent by a client
+                ParentExecutionId = null,
                 Id = guid,
                 IsSignal = true,
                 Operation = operationName,

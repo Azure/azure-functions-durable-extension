@@ -559,6 +559,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
+                        ParentExecutionId = this.ExecutionId,
                         Id = guid,
                         IsSignal = oneWay,
                         Operation = operation,
@@ -975,6 +976,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Id = lockRequestId,
                 ParentInstanceId = this.InstanceId,
+                ParentExecutionId = this.ExecutionId,
                 LockSet = entities,
                 Position = 0,
             };
