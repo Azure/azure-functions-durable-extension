@@ -56,8 +56,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void AnalyzeDispatchAndFindMethodDeclarations(SyntaxNodeAnalysisContext context)
         {
-            var expression = context.Node as MemberAccessExpressionSyntax;
-            if (expression != null && SyntaxNodeUtils.IsInsideFunction(expression))
+            if (context.Node is MemberAccessExpressionSyntax expression &&
+                SyntaxNodeUtils.IsInsideFunction(expression))
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))

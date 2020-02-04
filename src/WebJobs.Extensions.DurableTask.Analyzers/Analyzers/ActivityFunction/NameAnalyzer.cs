@@ -27,19 +27,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return availableNames.OrderBy(x => x.LevenshteinDistance(name)).First();
         }
 
-        public static void ReportProblems(CompilationAnalysisContext cac, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
         {
             foreach (var node in calledFunctions)
             {
-                if (!availableFunctions.Any())
+                if(SyntaxNodeUtils.TryGetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
                 {
-                    cac.ReportDiagnostic(Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name));
-                }
-                else if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
-                {
-                    var closestName = SyntaxNodeUtils.GetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName));
+                    var diagnostic = Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName);
 
-                    cac.ReportDiagnostic(Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName));
+                    context.ReportDiagnostic(diagnostic);
+                }
+                else
+                {
+                    var diagnostic = Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name);
+
+                    context.ReportDiagnostic(diagnostic);
                 }
             }
         }

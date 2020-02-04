@@ -37,8 +37,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             ClassNameAnalyzer classNameAnalyzer = new ClassNameAnalyzer();
             context.RegisterCompilationStartAction(compilation =>
             {
-                compilation.RegisterSyntaxNodeAction(classNameAnalyzer.FindClassDeclarations, SyntaxKind.ClassDeclaration);
-                compilation.RegisterSyntaxNodeAction(classNameAnalyzer.FindEntityTriggers, SyntaxKind.Attribute);
+                compilation.RegisterSyntaxNodeAction(classNameAnalyzer.FindClassDeclaration, SyntaxKind.ClassDeclaration);
+                compilation.RegisterSyntaxNodeAction(classNameAnalyzer.FindEntityTrigger, SyntaxKind.Attribute);
 
                 compilation.RegisterCompilationEndAction(classNameAnalyzer.ReportDiagnostics);
             });
@@ -50,25 +50,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (SyntaxNodeUtils.TryGetFunctionNameAndNode(entityTrigger, out SyntaxNode attributeArgument, out string functionName))
                 {
-                    if (!classNames.Any())
+                    if (SyntaxNodeUtils.TryGetClosestString(functionName, classNames, out string closestName))
                     {
-                        var diagnosticAttribute = Diagnostic.Create(ClassNameMissingRule, attributeArgument.GetLocation(), functionName);
+                        var diagnostic = Diagnostic.Create(ClassNameCloseRule, attributeArgument.GetLocation(), functionName, closestName);
 
-                        context.ReportDiagnostic(diagnosticAttribute);
+                        context.ReportDiagnostic(diagnostic);
                     }
-                    else if (!classNames.Contains(functionName))
+                    else
                     {
-                        var closestString = SyntaxNodeUtils.GetClosestString(functionName, classNames);
+                        var diagnostic = Diagnostic.Create(ClassNameMissingRule, attributeArgument.GetLocation(), functionName);
 
-                        var diagnosticAttribute = Diagnostic.Create(ClassNameCloseRule, attributeArgument.GetLocation(), functionName, closestString);
-
-                        context.ReportDiagnostic(diagnosticAttribute);
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
         }
 
-        private void FindClassDeclarations(SyntaxNodeAnalysisContext context)
+        private void FindClassDeclaration(SyntaxNodeAnalysisContext context)
         {
             if (context.Node is ClassDeclarationSyntax classDeclaration)
             {
@@ -77,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private void FindEntityTriggers(SyntaxNodeAnalysisContext context)
+        private void FindEntityTrigger(SyntaxNodeAnalysisContext context)
         {
             var attribute = context.Node as AttributeSyntax;
             if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))

@@ -26,9 +26,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
 
-        public static string GetClosestString(string name, IEnumerable<string> availableNames)
+        public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
         {
-            return availableNames.OrderBy(x => x.LevenshteinDistance(name)).First();
+            closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
+            return closestString != null;
         }
 
         internal static bool IsInsideOrchestrator(SyntaxNode node)

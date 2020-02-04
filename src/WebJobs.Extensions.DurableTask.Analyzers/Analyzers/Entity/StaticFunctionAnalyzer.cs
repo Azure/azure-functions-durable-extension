@@ -29,9 +29,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     var methodName = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).FirstOrDefault();
 
-                    var diagnostic = Diagnostic.Create(Rule, methodName.GetLocation(), methodName);
+                    if (methodName != null)
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, methodName.GetLocation(), methodName);
 
-                    context.ReportDiagnostic(diagnostic);
+                        context.ReportDiagnostic(diagnostic);
+                    }
                 }
             }
         }

@@ -28,7 +28,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var functionDefinition = availableFunctions.Where(x => x.FunctionName == node.Name).SingleOrDefault();
                     if (functionDefinition.InputType != node.ParameterType)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Rule, node.ParameterNode.GetLocation(), node.Name, functionDefinition.InputType, node.ParameterType));
+                        var diagnostic = Diagnostic.Create(Rule, node.ParameterNode.GetLocation(), node.Name, functionDefinition.InputType, node.ParameterType);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
