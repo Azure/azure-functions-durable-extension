@@ -31,17 +31,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var node in calledFunctions)
             {
-                if(SyntaxNodeUtils.TryGetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
                 {
-                    var diagnostic = Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName);
+                    if (SyntaxNodeUtils.TryGetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                    {
+                        var diagnostic = Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName);
 
-                    context.ReportDiagnostic(diagnostic);
-                }
-                else
-                {
-                    var diagnostic = Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name);
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                    else
+                    {
+                        var diagnostic = Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name);
 
-                    context.ReportDiagnostic(diagnostic);
+                        context.ReportDiagnostic(diagnostic);
+                    }
                 }
             }
         }

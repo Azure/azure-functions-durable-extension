@@ -50,17 +50,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (SyntaxNodeUtils.TryGetFunctionNameAndNode(entityTrigger, out SyntaxNode attributeArgument, out string functionName))
                 {
-                    if (SyntaxNodeUtils.TryGetClosestString(functionName, classNames, out string closestName))
+                    if (!classNames.Contains(functionName))
                     {
-                        var diagnostic = Diagnostic.Create(ClassNameCloseRule, attributeArgument.GetLocation(), functionName, closestName);
+                        if (SyntaxNodeUtils.TryGetClosestString(functionName, classNames, out string closestName))
+                        {
+                            var diagnostic = Diagnostic.Create(ClassNameCloseRule, attributeArgument.GetLocation(), functionName, closestName);
 
-                        context.ReportDiagnostic(diagnostic);
-                    }
-                    else
-                    {
-                        var diagnostic = Diagnostic.Create(ClassNameMissingRule, attributeArgument.GetLocation(), functionName);
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        else
+                        {
+                            var diagnostic = Diagnostic.Create(ClassNameMissingRule, attributeArgument.GetLocation(), functionName);
 
-                        context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
             }
