@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -19,7 +17,6 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -29,11 +26,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
     [Extension("DurableTask", "DurableTask")]
 #endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
+        IDisposable,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
@@ -62,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
 
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
         /// </summary>
@@ -82,11 +80,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
         /// <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
+        /// <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IConnectionStringResolver connectionStringResolver)
+            IConnectionStringResolver connectionStringResolver,
+            IApplicationLifetimeWrapper hostLifetimeService)
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -102,11 +102,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             this.isOptionsConfigured = true;
+
+#if !FUNCTIONS_V1
+            // The RPC server is started when the extension is initialized.
+            // The RPC server is stopped when the host has finished shutting down.
+            hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+#endif
         }
 
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="DurableOrchestrationClient"/>,
         /// <see cref="DurableOrchestrationContext"/>, and <see cref="DurableActivityContext"/> instances.
@@ -186,11 +193,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
             this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+
+#if !FUNCTIONS_V1
+            // The RPC server needs to be started sometime before any functions can be triggered
+            // and this is the latest point in the pipeline available to us.
+            this.StartLocalRcpServer();
+#endif
         }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            this.HttpApiHandler?.Dispose();
+        }
+
+#if !FUNCTIONS_V1
+        private void StartLocalRcpServer()
+        {
+            bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
+            if (!shouldEnable.HasValue)
+            {
+                // Default behavior is to only start the local RPC server for non-.NET function languages.
+                // We'll enable it if it's non-.NET or if the FUNCTIONS_WORKER_RUNTIME value isn't present.
+                string functionsWorkerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+                shouldEnable = !string.Equals(functionsWorkerRuntime, "dotnet", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (shouldEnable == true)
+            {
+                this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
+            }
+        }
+
+        private void StopLocalRcpServer()
+        {
+            this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
+        }
+#endif
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
-#if !NETSTANDARD2_0
+#if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
 
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);

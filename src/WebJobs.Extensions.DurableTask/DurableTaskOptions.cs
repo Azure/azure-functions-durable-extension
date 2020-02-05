@@ -264,6 +264,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
+        /// </summary>
+        /// <remarks>
+        /// The local RPC endpoint is intended to allow out-of-process functions to make direct calls into this
+        /// extension. This is primarily intended to support instance management APIs used by the durable client
+        /// binding. The following values are allowed:
+        /// <list type="table">
+        ///   <item>
+        ///     <term>null</term>
+        ///     <description>(Default) The local RPC endpoint is enabled only for non-.NET function apps.</description>
+        ///   </item>
+        ///   <item>
+        ///     <term>true</term>
+        ///     <description>A local RPC endpoint will be enabled and listen at <c>http://127.0.0.1:17071/durabletask/</c>.</description>
+        ///   </item>
+        ///   <item>
+        ///     <term>false</term>
+        ///     <description>The local RPC endpoint will be disabled.</description>
+        ///   </item>
+        /// </list>
+        /// </remarks>
+        public bool? LocalRpcEndpointEnabled { get; set; }
+
         internal string GetDebugString()
         {
             var sb = new StringBuilder(4096);

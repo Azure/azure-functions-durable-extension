@@ -75,19 +75,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal(status["id"], TestConstants.InstanceId);
+            Assert.Equal((string)status["id"], TestConstants.InstanceId);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["statusQueryGetUri"]);
+                (string)status["statusQueryGetUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["sendEventPostUri"]);
+                (string)status["sendEventPostUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["terminatePostUri"]);
+                (string)status["terminatePostUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["purgeHistoryDeleteUri"]);
+                (string)status["purgeHistoryDeleteUri"]);
         }
 
         [Fact]
@@ -204,16 +204,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["id"], TestConstants.RandomInstanceId);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["statusQueryGetUri"]);
+                (string)status["statusQueryGetUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["sendEventPostUri"]);
+                (string)status["sendEventPostUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["terminatePostUri"]);
+                (string)status["terminatePostUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                status["purgeHistoryDeleteUri"]);
+                (string)status["purgeHistoryDeleteUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
         }
 
@@ -859,7 +859,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new TestConnectionStringResolver())
+                    new TestConnectionStringResolver(),
+                    new TestHostShutdownNotificationService())
             {
             }
 

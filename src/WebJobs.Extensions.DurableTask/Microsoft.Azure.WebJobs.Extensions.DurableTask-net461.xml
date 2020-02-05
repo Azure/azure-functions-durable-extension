@@ -27,7 +27,7 @@
             Obsolete. Please use an alternate constructor overload.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -35,6 +35,7 @@
             <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
             <param name="connectionStringResolver">The resolver to use for looking up connection strings.</param>
+            <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
             <summary>
@@ -52,6 +53,9 @@
             Internal initialization call from the WebJobs host.
             </summary>
             <param name="context">Extension context provided by WebJobs.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Dispose">
+            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DeleteTaskHubAsync">
             <summary>
@@ -362,6 +366,30 @@
             </summary>
             <value>Maximum interval for polling control and work-item queues.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.LocalRpcEndpointEnabled">
+            <summary>
+            Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
+            </summary>
+            <remarks>
+            The local RPC endpoint is intended to allow out-of-process functions to make direct calls into this
+            extension. This is primarily intended to support instance management APIs used by the durable client
+            binding. The following values are allowed:
+            <list type="table">
+              <item>
+                <term>null</term>
+                <description>(Default) The local RPC endpoint is enabled only for non-.NET function apps.</description>
+              </item>
+              <item>
+                <term>true</term>
+                <description>A local RPC endpoint will be enabled and listen at <c>http://127.0.0.1:17071/durabletask/</c>.</description>
+              </item>
+              <item>
+                <term>false</term>
+                <description>The local RPC endpoint will be disabled.</description>
+              </item>
+            </list>
+            </remarks>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
@@ -449,6 +477,40 @@
             </summary>
             <value>
             The HTTP URL for purging instance history by instance ID.
+            </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper">
+            <summary>
+            Custom service interface for signaling the extension when the function app is starting up or shutting down.
+            </summary>
+            <remarks>
+            This interface is expected to be used as an injected service. We use a "wrapper" interface instead of
+            directly using the "real" <c>IApplicationLifetime</c> interface so that we can have an injected service
+            that is available in both .NET Core (Functions 2.0+) and .NET Framework (Functions 1.0).
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper.OnStarted">
+            <summary>
+            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect function app startup events.
+            </summary>
+            <value>
+            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app has started up.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper.OnStopping">
+            <summary>
+            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect function app stopping events.
+            </summary>
+            <value>
+            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app is beginning to shut down.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper.OnStopped">
+            <summary>
+            Gets a <see cref="T:System.Threading.CancellationToken"/> that can be used to detect function app shutdown events.
+            </summary>
+            <value>
+            A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app has completed shutting down.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
