@@ -508,6 +508,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TaskHubName = taskHubNameOverride ?? this.Options.HubName,
                 PartitionCount = this.Options.PartitionCount,
                 ControlQueueBatchSize = this.Options.ControlQueueBatchSize,
+                ControlQueueBufferThreshold = this.Options.ControlQueueBufferThreshold,
                 ControlQueueVisibilityTimeout = this.Options.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.Options.WorkItemQueueVisibilityTimeout,
                 MaxConcurrentTaskOrchestrationWorkItems = this.Options.MaxConcurrentOrchestratorFunctions,

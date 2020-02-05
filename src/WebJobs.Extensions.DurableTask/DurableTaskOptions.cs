@@ -40,6 +40,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int ControlQueueBatchSize { get; set; } = 32;
 
         /// <summary>
+        /// Gets or set the number of control queue messages that can be buffered in memory
+        /// at a time, at which point the dispatcher will wait before dequeuing any additional
+        /// messages. The default is 256. The maximum value is 1000.
+        /// </summary>
+        /// <remarks>
+        /// Increasing this value can improve orchestration throughput by pre-fetching more
+        /// orchestration messages from control queues. The downside is that it increases the
+        /// possibility of duplicate function executions if partition leases move between app
+        /// instances. This most often occurs when the number of app instances changes.
+        /// </remarks>
+        /// <value>A non-negative integer between 0 and 1000. The default value is <c>256</c>.</value>
+        public int ControlQueueBufferThreshold { get; set; } = 256;
+
+        /// <summary>
         /// Gets or sets the partition count for the control queue.
         /// </summary>
         /// <remarks>
@@ -297,6 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
             sb.Append(nameof(this.PartitionCount)).Append(": ").Append(this.PartitionCount).Append(", ");
             sb.Append(nameof(this.ControlQueueBatchSize)).Append(": ").Append(this.ControlQueueBatchSize).Append(", ");
+            sb.Append(nameof(this.ControlQueueBufferThreshold)).Append(": ").Append(this.ControlQueueBufferThreshold).Append(", ");
             sb.Append(nameof(this.ControlQueueVisibilityTimeout)).Append(": ").Append(this.ControlQueueVisibilityTimeout).Append(", ");
             sb.Append(nameof(this.WorkItemQueueVisibilityTimeout)).Append(": ").Append(this.WorkItemQueueVisibilityTimeout).Append(", ");
             sb.Append(nameof(this.FetchLargeMessagesAutomatically)).Append(": ").Append(this.FetchLargeMessagesAutomatically).Append(", ");
@@ -357,6 +372,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ControlQueueBatchSize <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.ControlQueueBatchSize)} must be a non-negative integer.");
+            }
+
+            if (this.ControlQueueBufferThreshold < 1 || this.ControlQueueBufferThreshold > 1000)
+            {
+                throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
             }
 
             if (this.PartitionCount < 1 || this.PartitionCount > 16)
