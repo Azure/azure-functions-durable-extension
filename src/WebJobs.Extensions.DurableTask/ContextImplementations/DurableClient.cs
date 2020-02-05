@@ -527,8 +527,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     hubName: taskHubName,
                     functionName: status.Name,
                     instanceId: instanceId,
-                    message: $"Cannot raise event for instance in {status.Status} state");
-                throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.Status} state");
+                    message: $"Cannot raise event for instance in {status.OrchestrationStatus} state");
+                throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.OrchestrationStatus} state");
             }
         }
 
