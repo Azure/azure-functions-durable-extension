@@ -2792,7 +2792,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
         /// <summary>
         /// Send a scheduled signal, then an immediate signal, and test delivery order.
         /// </summary>
