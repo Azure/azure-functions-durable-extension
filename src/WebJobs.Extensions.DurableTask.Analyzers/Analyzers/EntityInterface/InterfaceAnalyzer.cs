@@ -26,7 +26,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private List<EntityInterface> entityInterfacesList = new List<EntityInterface>();
         
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule, InterfaceContentAnalyzer.NoMethodsRule, InterfaceContentAnalyzer.NotAMethodRule, ParameterAnalyzer.Rule, EntityInterfaceReturnTypeAnalyzer.Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                  Rule,
+                  InterfaceContentAnalyzer.NoMethodsRule,
+                  InterfaceContentAnalyzer.NotAMethodRule,
+                  ParameterAnalyzer.Rule,
+                  EntityInterfaceReturnTypeAnalyzer.Rule);
+            }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -44,21 +55,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            InterfaceContentAnalyzer contentAnalyzer = new InterfaceContentAnalyzer();
-            ParameterAnalyzer parameterAnalyzer = new ParameterAnalyzer();
-            EntityInterfaceReturnTypeAnalyzer returnTypeAnalyzer = new EntityInterfaceReturnTypeAnalyzer();
-
             foreach (EntityInterface entityInterface in entityInterfacesList)
             {
-                contentAnalyzer.ReportProblems(context, entityInterface);
-                parameterAnalyzer.ReportProblems(context, entityInterface);
-                returnTypeAnalyzer.ReportProblems(context, entityInterface);
+                InterfaceContentAnalyzer.ReportProblems(context, entityInterface);
+                ParameterAnalyzer.ReportProblems(context, entityInterface);
+                EntityInterfaceReturnTypeAnalyzer.ReportProblems(context, entityInterface);
             }
         }
 
         public void FindEntityCalls(SyntaxNodeAnalysisContext context)
         {
-            if (context.Node is MemberAccessExpressionSyntax expression)
+            if (context.Node is MemberAccessExpressionSyntax expression &&
+                SyntaxNodeUtils.IsInsideFunction(expression))
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("SignalEntityAsync"))

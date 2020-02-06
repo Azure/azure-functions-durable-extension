@@ -179,34 +179,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
+        ///   Looks up a localized string similar to DispatchAsync must be used with the entity name, equal to the name of the function it&apos;s used in..
         /// </summary>
-        public static string DispatchClassNameAnalyzerDescription {
+        public static string DispatchEntityNameAnalyzerDescription {
             get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerDescription", resourceCulture);
+                return ResourceManager.GetString("DispatchEntityNameAnalyzerDescription", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be called with the entity class &apos;{1}&apos; it&apos;s used in..
+        ///   Looks up a localized string similar to DispatchAsync was used with &apos;{0}&apos; but must be used with the entity name, &apos;{1}&apos;..
         /// </summary>
-        public static string DispatchClassNameAnalyzerMessageFormat {
+        public static string DispatchEntityNameAnalyzerMessageFormat {
             get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerMessageFormat", resourceCulture);
+                return ResourceManager.GetString("DispatchEntityNameAnalyzerMessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DispatchAsync must be called with the entity class it&apos;s used in..
+        ///   Looks up a localized string similar to DispatchAsync must be used with the entity name, equal to the name of the function it&apos;s used in..
         /// </summary>
-        public static string DispatchClassNameAnalyzerTitle {
+        public static string DispatchEntityNameAnalyzerTitle {
             get {
-                return ResourceManager.GetString("DispatchClassNameAnalyzerTitle", resourceCulture);
+                return ResourceManager.GetString("DispatchEntityNameAnalyzerTitle", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity class name and entity function name must match..
+        ///   Looks up a localized string similar to Function named &apos;{0}&apos; doesn&apos;t have an entity class with the same name defined. Did you mean &apos;{1}&apos;?.
+        /// </summary>
+        public static string EntityClassNameAnalyzerCloseMessageFormat {
+            get {
+                return ResourceManager.GetString("EntityClassNameAnalyzerCloseMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Entity function name must match an existing entity class name..
         /// </summary>
         public static string EntityClassNameAnalyzerDescription {
             get {
@@ -215,16 +224,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Class name &apos;{0}&apos; and entity function name &apos;{1}&apos; do not match..
+        ///   Looks up a localized string similar to Function name &apos;{0}&apos; doesn&apos;t have an entity class with the same name defined..
         /// </summary>
-        public static string EntityClassNameAnalyzerMessageFormat {
+        public static string EntityClassNameAnalyzerMissingMessageFormat {
             get {
-                return ResourceManager.GetString("EntityClassNameAnalyzerMessageFormat", resourceCulture);
+                return ResourceManager.GetString("EntityClassNameAnalyzerMissingMessageFormat", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity class name and entity function name must match..
+        ///   Looks up a localized string similar to Entity function name must match an existing entity class name..
         /// </summary>
         public static string EntityClassNameAnalyzerTitle {
             get {
@@ -351,7 +360,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity functions must be static..
+        ///   Looks up a localized string similar to Entity functions in an entity class must be static..
         /// </summary>
         public static string EntityStaticAnalyzerDescription {
             get {
@@ -369,7 +378,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Entity functions must be static..
+        ///   Looks up a localized string similar to Entity functions in an entity class must be static..
         /// </summary>
         public static string EntityStaticAnalyzerTitle {
             get {

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
         {
             foreach (var node in calledFunctions)
             {
@@ -28,7 +28,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var functionDefinition = availableFunctions.Where(x => x.FunctionName == node.Name).SingleOrDefault();
                     if (functionDefinition.InputType != node.ParameterType)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Rule, node.ParameterNode.GetLocation(), node.Name, functionDefinition.InputType, node.ParameterType));
+                        var diagnostic = Diagnostic.Create(Rule, node.ParameterNode.GetLocation(), node.Name, functionDefinition.InputType, node.ParameterType);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }

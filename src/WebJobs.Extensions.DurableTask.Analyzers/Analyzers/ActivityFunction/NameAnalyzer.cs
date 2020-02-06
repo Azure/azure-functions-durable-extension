@@ -22,22 +22,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor MissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
 
-        private string GetClosestString(string name, IEnumerable<string> availableNames)
+        private static string GetClosestString(string name, IEnumerable<string> availableNames)
         {
             return availableNames.OrderBy(x => x.LevenshteinDistance(name)).First();
         }
 
-        public void ReportProblems(CompilationAnalysisContext cac, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
         {
             foreach (var node in calledFunctions)
             {
-                if (!availableFunctions.Any())
+                if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
                 {
-                    cac.ReportDiagnostic(Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name));
-                }
-                else if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
-                {
-                    cac.ReportDiagnostic(Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, GetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName))));
+                    if (SyntaxNodeUtils.TryGetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                    {
+                        var diagnostic = Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName);
+
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                    else
+                    {
+                        var diagnostic = Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name);
+
+                        context.ReportDiagnostic(diagnostic);
+                    }
                 }
             }
         }

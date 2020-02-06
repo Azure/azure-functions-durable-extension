@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -24,7 +25,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             version = versionTwoInterface != null ? DurableVersion.V2 : DurableVersion.V1;
             return (DurableVersion)version;
         }
-        
+
+        public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
+        {
+            closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
+            return closestString != null;
+        }
+
         internal static bool IsInsideOrchestrator(SyntaxNode node)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
@@ -90,36 +97,90 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetClassSymbol(SyntaxNode node, SemanticModel semanticModel, out INamedTypeSymbol classSymbol)
+        internal static bool IsInsideFunction(SyntaxNode node)
+        {
+            return TryGetFunctionNameAndNode(node, out SyntaxNode functionAttribute, out string functionName);
+        }
+
+        internal static bool TryGetClassName(SyntaxNode node, out string className)
         {
             var currNode = node.IsKind(SyntaxKind.ClassDeclaration) ? node : node.Parent;
             while (!currNode.IsKind(SyntaxKind.ClassDeclaration))
             {
                 if (currNode.IsKind(SyntaxKind.CompilationUnit))
                 {
-                    classSymbol = null;
+                    className = null;
                     return false;
                 }
                 currNode = currNode.Parent;
             }
 
             var classDeclaration = (ClassDeclarationSyntax)currNode;
-            classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
+            className = classDeclaration.Identifier.ToString();
             return true;
         }
 
-        internal static bool TryGetFunctionNameParameterNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
+        internal static bool TryGetFunctionNameAndNode(SyntaxNode node, out SyntaxNode attributeArgument, out string functionName)
         {
-            if (TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+            if (TryGetFunctionAttribute(node, out SyntaxNode functionAttribute))
             {
-                return TryGetFunctionName(functionAttribute, out attributeArgument);
+                if (TryGetFunctionNameAttributeArgument(functionAttribute, out attributeArgument))
+                {
+                    if (TryGetFunctionName(attributeArgument, out functionName))
+                    {
+                        return true;
+                    }
+                }
             }
 
             attributeArgument = null;
+            functionName = null;
             return false;
         }
 
-        private static bool TryGetFunctionName(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
+        private static bool TryGetFunctionName(SyntaxNode attributeArgument, out string functionName)
+        {
+            var stringLiteralExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.StringLiteralExpression)).FirstOrDefault();
+            if (stringLiteralExpression != null)
+            {
+                var stringLiteralToken = stringLiteralExpression.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
+                if (stringLiteralToken != null)
+                {
+                    functionName = stringLiteralToken.ValueText;
+                    return true;
+                }
+            }
+
+            var invocationExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
+            if (invocationExpression != null)
+            {
+                var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+                if (argumentList != null)
+                {
+                    var argument = argumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument)).FirstOrDefault();
+                    if (argument != null)
+                    {
+                        var identifierName = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                        if (identifierName != null)
+                        {
+                            functionName = identifierName.ToString();
+                            var lastIndex = functionName.LastIndexOf('.');
+                            if (lastIndex != -1)
+                            {
+                                functionName = functionName.Substring(lastIndex);
+                            }
+
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            functionName = null;
+            return false;
+        }
+
+        private static bool TryGetFunctionNameAttributeArgument(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
         {
             var attributeArgumentListSyntax = ((AttributeSyntax)functionAttribute).ArgumentList;
             if (attributeArgumentListSyntax != null)

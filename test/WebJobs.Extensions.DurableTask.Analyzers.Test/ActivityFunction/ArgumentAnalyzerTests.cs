@@ -34,8 +34,23 @@ namespace VSSample
 {
     public static class HelloSequence
     {
+        public static async Task<List<string>> NotInsideFunctionWrongInput(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", 100));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", 100));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", 100));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", 100));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", 100));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", 100));
+            
+                return outputs;
+            }
+
         [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static async Task<List<string>> CorrectInput(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 var outputs = new List<string>();

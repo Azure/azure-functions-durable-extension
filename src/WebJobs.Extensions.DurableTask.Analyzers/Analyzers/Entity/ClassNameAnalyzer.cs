@@ -5,7 +5,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -15,59 +17,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public const string DiagnosticId = "DF0305";
 
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString CloseMessageFormat = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerCloseMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString MissingMessageFormat = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerMissingMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityClassNameAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Entity;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        private List<string> classNames = new List<string>();
+        private List<SyntaxNode> entityTriggerAttributes = new List<SyntaxNode>();
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
+        public static readonly DiagnosticDescriptor ClassNameCloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor ClassNameMissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(ClassNameCloseRule, ClassNameMissingRule); } }
 
         public override void Initialize(AnalysisContext context)
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(AnalyzeAttributeClassName, SyntaxKind.Attribute);
+            ClassNameAnalyzer classNameAnalyzer = new ClassNameAnalyzer();
+            context.RegisterCompilationStartAction(compilation =>
+            {
+                compilation.RegisterSyntaxNodeAction(classNameAnalyzer.FindClassDeclaration, SyntaxKind.ClassDeclaration);
+                compilation.RegisterSyntaxNodeAction(classNameAnalyzer.FindEntityTrigger, SyntaxKind.Attribute);
+
+                compilation.RegisterCompilationEndAction(classNameAnalyzer.ReportDiagnostics);
+            });
         }
 
-        private static void AnalyzeAttributeClassName(SyntaxNodeAnalysisContext context)
+        private void ReportDiagnostics(CompilationAnalysisContext context)
         {
-            var attribute = context.Node as AttributeSyntax;
-            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
+            foreach (AttributeSyntax entityTrigger in entityTriggerAttributes)
             {
-                if (SyntaxNodeUtils.TryGetFunctionNameParameterNode(attribute, out SyntaxNode attributeArgument))
+                if (SyntaxNodeUtils.TryGetFunctionNameAndNode(entityTrigger, out SyntaxNode attributeArgument, out string functionName))
                 {
-                    var functionName = attributeArgument.ToString().Trim('"');
-                    if (SyntaxNodeUtils.TryGetClassSymbol(attribute, context.SemanticModel, out INamedTypeSymbol classSymbol))
+                    if (!classNames.Contains(functionName))
                     {
-                        var className = classSymbol.Name.ToString();
-
-                        if (!ClassNameMatchesFunctionName(classSymbol, functionName))
+                        if (SyntaxNodeUtils.TryGetClosestString(functionName, classNames, out string closestName))
                         {
-                            var diagnosticAttribute = Diagnostic.Create(Rule, attributeArgument.GetLocation(), className, functionName);
-                            
-                            context.ReportDiagnostic(diagnosticAttribute);
+                            var diagnostic = Diagnostic.Create(ClassNameCloseRule, attributeArgument.GetLocation(), functionName, closestName);
+
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        else
+                        {
+                            var diagnostic = Diagnostic.Create(ClassNameMissingRule, attributeArgument.GetLocation(), functionName);
+
+                            context.ReportDiagnostic(diagnostic);
                         }
                     }
                 }
             }
         }
 
-        private static bool ClassNameMatchesFunctionName(INamedTypeSymbol classSymbol, string functionName)
+        private void FindClassDeclaration(SyntaxNodeAnalysisContext context)
         {
-            var classNameWithNamespce = classSymbol.ToString();
-            var className = classSymbol.Name.ToString();
-
-            var nameOfNamespace = "nameof(" + classNameWithNamespce + ")";
-            var nameOfClassName = "nameof(" + className + ")";
-
-            if (string.Equals(className, functionName) || string.Equals(nameOfClassName, functionName) || string.Equals(nameOfNamespace, functionName))
+            if (context.Node is ClassDeclarationSyntax classDeclaration)
             {
-                return true;
+                var className = classDeclaration.Identifier.ToString();
+                classNames.Add(className);
             }
+        }
 
-            return false;
+        private void FindEntityTrigger(SyntaxNodeAnalysisContext context)
+        {
+            var attribute = context.Node as AttributeSyntax;
+            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
+            {
+                entityTriggerAttributes.Add(attribute);
+            }
         }
     }
 }

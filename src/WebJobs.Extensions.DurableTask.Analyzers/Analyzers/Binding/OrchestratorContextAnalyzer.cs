@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindOrchestrationTriggers(SyntaxNodeAnalysisContext context)
         {
-            if (context.Node is AttributeSyntax attribute)
+            if (SyntaxNodeUtils.IsInsideFunction(context.Node) && context.Node is AttributeSyntax attribute)
             {
                 var semanticModel = context.SemanticModel;
                 version = SyntaxNodeUtils.GetDurableVersion(semanticModel);

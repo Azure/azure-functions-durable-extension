@@ -34,8 +34,19 @@ namespace VSSample
 {
     public static class HelloSequence
     {
+        public static async Task<List<string>> NonFunctionInvalidNames(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<string>(""NotAFunction"", ""Tokyo""));
+                outputs.Add(await context.CallActivityAsync<string>(""DefinitelyNotAFunction"", new Object()));
+            
+                return outputs;
+            }
+
         [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static async Task<List<string>> CorrectNames(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 var outputs = new List<string>();

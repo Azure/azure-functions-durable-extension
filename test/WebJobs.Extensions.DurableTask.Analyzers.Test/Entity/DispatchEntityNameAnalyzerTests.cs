@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class DispatchEntityNameAnalyzerTests : CodeFixVerifier
     {
-        private static readonly string DiagnosticId = DispatchClassNameAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = DispatchClassNameAnalyzer.Severity;
+        private static readonly string DiagnosticId = DispatchEntityNameAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = DispatchEntityNameAnalyzer.Severity;
 
         private const string ExpectedFix = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -44,7 +44,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "Object", "MyEmptyEntity"),
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "Object", "MyEmptyEntity"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -71,7 +71,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "string", "MyEmptyEntity"),
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "string", "MyEmptyEntity"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -98,7 +98,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "ILogger", "MyEmptyEntity"),
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "ILogger", "MyEmptyEntity"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -125,7 +125,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "Tuple<int, string>", "MyEmptyEntity"),
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "Tuple<int, string>", "MyEmptyEntity"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -140,12 +140,12 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new DispatchClassNameCodeFixProvider();
+            return new DispatchEntityNameCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new DispatchClassNameAnalyzer();
+            return new DispatchEntityNameAnalyzer();
         }
     }
 }
