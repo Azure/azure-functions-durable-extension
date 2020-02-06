@@ -2542,7 +2542,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates launching orchestrations from entities.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_EntityFireAndForget(bool extendedSessions)
@@ -2617,7 +2617,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// At the end, it validates that all of the appends are reflected in the final state.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
@@ -2751,6 +2751,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Assert.Equal(i, intlist[i]);
                 }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates calling an entity from successive incarnations of an orchestration.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_ContinueAsNewBetweenCalls(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_ContinueAsNewBetweenCalls),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+
+                var orchestratorClient = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.ThreeSuccessiveCalls),
+                    (entityId, 0),
+                    this.output);
+
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 3 ? null : "expect 3 calls");
+
+                var status = await orchestratorClient.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                Assert.Equal("ok", (string)status?.Output);
 
                 await host.StopAsync();
             }

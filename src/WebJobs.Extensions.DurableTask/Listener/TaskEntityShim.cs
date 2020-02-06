@@ -235,6 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.Name,
                 this.context.InstanceId,
                 request.ParentInstanceId,
+                request.ParentExecutionId,
                 request.Id.ToString(),
                 isReplay: false);
 
@@ -252,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // send lock acquisition completed response back to originating orchestration instance
-                var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
+                var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
                 this.context.SendLockResponseMessage(target, request.Id);
             }
         }
@@ -339,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // send response
             if (!request.IsSignal)
             {
-                var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId };
+                var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
                 var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
                 this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
             }
@@ -412,6 +413,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var target = new OrchestrationInstance()
                     {
                         InstanceId = request.ParentInstanceId,
+                        ExecutionId = request.ParentExecutionId,
                     };
                     var responseMessage = new ResponseMessage()
                     {
@@ -428,6 +430,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var request = new RequestMessage()
                 {
                     ParentInstanceId = this.context.InstanceId,
+                    ParentExecutionId = null, // for entities, message sorter persists across executions
                     Id = Guid.NewGuid(),
                     IsSignal = true,
                     Operation = signal.Name,
