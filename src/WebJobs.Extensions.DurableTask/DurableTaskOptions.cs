@@ -302,6 +302,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         public bool? LocalRpcEndpointEnabled { get; set; }
 
+        /// <summary>
+        ///  States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
+        /// </summary>
+        public OverridableStates OverridableExistingInstanceStates { get; set; } = OverridableStates.AnyState;
+
         internal string GetDebugString()
         {
             var sb = new StringBuilder(4096);
