@@ -122,14 +122,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 response.Headers[header.Key] = header.Value.ToArray();
             }
 
-            foreach (KeyValuePair<string, IEnumerable<string>> header in responseMessage.Content.Headers)
+            if (responseMessage.Content != null)
             {
-                response.Headers[header.Key] = header.Value.ToArray();
-            }
+                foreach (KeyValuePair<string, IEnumerable<string>> header in responseMessage.Content.Headers)
+                {
+                    response.Headers[header.Key] = header.Value.ToArray();
+                }
 
-            using (Stream responseStream = await responseMessage.Content.ReadAsStreamAsync())
-            {
-                await responseStream.CopyToAsync(response.Body, 81920, context.RequestAborted);
+                using (Stream responseStream = await responseMessage.Content.ReadAsStreamAsync())
+                {
+                    await responseStream.CopyToAsync(response.Body, 81920, context.RequestAborted);
+                }
             }
         }
 
