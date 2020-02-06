@@ -148,10 +148,15 @@
             <summary>
             Gets or set the number of control queue messages that can be buffered in memory
             at a time, at which point the dispatcher will wait before dequeuing any additional
-            messages. The default is 64.
+            messages. The default is 256. The maximum value is 1000.
             </summary>
-            <remarks>This has historically always been fixed to 64, but increasing it may increase
-            throughput.</remarks>
+            <remarks>
+            Increasing this value can improve orchestration throughput by pre-fetching more
+            orchestration messages from control queues. The downside is that it increases the
+            possibility of duplicate function executions if partition leases move between app
+            instances. This most often occurs when the number of app instances changes.
+            </remarks>
+            <value>A non-negative integer between 0 and 1000. The default value is <c>256</c>.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.PartitionCount">
             <summary>
@@ -398,6 +403,11 @@
               </item>
             </list>
             </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.OverridableExistingInstanceStates">
+            <summary>
+             States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
@@ -1933,6 +1943,24 @@
             <value>
             The name of the orchestrator function or <c>null</c> to use the function name.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.OverridableStates">
+            <summary>
+            Represents options for different states that an existing orchestrator can be in to be able to be overwritten by
+            an attempt to start a new instance with the same instance Id.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.AnyState">
+            <summary>
+            Option to start a new orchestrator instance with an existing instnace Id when the existing
+            instance is in any state.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.NonRunningStates">
+            <summary>
+            Option to only start a new orchestrator instance with an existing instance Id when the existing
+            instance is in a terminated, failed, or completed state.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.PurgeHistoryResult">
             <summary>

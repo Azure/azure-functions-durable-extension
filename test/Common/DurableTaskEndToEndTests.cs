@@ -2659,6 +2659,95 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 argumentException.Message);
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Dedupe_NotRunning_ThrowsException(bool extendedSessions)
+        {
+            var instanceId = "OverridableStatesThrowsExceptionNotRunningTest";
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                 this.loggerProvider,
+                 nameof(this.Dedupe_NotRunning_ThrowsException),
+                 extendedSessions,
+                 overridableStates: OverridableStates.NonRunningStates))
+            {
+                await host.StartAsync();
+
+                int initialValue = 0;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+
+                // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(this.output);
+
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+
+                // Perform some operations
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
+
+                // Make sure it's still running and didn't complete early (or fail).
+                var status = await client.GetStatusAsync();
+                Assert.True(
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
+
+                FunctionInvocationException exception =
+                    await Assert.ThrowsAsync<FunctionInvocationException>(async () =>
+                    {
+                        await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+                    });
+
+                Assert.Equal(
+                    "An Orchestration instance with the status Running already exists.",
+                    exception.InnerException.Message);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DedupeStates_Default_AnyState(bool extendedSessions)
+        {
+            var instanceId = "OverridableStatesDefaultAnyStateTest";
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DedupeStates_Default_AnyState),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                int initialValue = 0;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+
+                // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+                await client.WaitForStartupAsync(this.output);
+
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+
+                // Perform some operations
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
+
+                // Make sure it's still running and didn't complete early (or fail).
+                var status = await client.GetStatusAsync();
+                Assert.True(
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
+
+                await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+
+                await host.StopAsync();
+            }
+        }
+
         private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload
