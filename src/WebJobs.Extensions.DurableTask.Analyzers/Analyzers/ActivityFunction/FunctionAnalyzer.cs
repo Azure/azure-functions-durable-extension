@@ -107,9 +107,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private string GetReturnTypeNameFromCallActivityInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpression)
         {
-            if (SyntaxNodeUtils.TryGetTypeArgumentIdentifierNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode identifierNode))
+            if (SyntaxNodeUtils.TryGetTypeArgumentNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode typeNode))
             {
-                var returnType = context.SemanticModel.GetTypeInfo(identifierNode).Type;
+                var returnType = context.SemanticModel.GetTypeInfo(typeNode).Type;
                 return "System.Threading.Tasks.Task<" + GetQualifiedTypeName(returnType) + ">";
             }
 
@@ -147,9 +147,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     return typeInfo.ToString();
                 }
 
+                var arrayString = "";
+                if (typeInfo.Kind.Equals(SymbolKind.ArrayType))
+                {
+                    arrayString = "[]";
+                    typeInfo = ((IArrayTypeSymbol)typeInfo).ElementType;
+                }
+
                 if (!string.IsNullOrEmpty(typeInfo.Name))
                 {
-                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString();
+                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString() + arrayString;
                 }
             }
 

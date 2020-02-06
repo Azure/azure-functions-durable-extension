@@ -4,9 +4,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.ActivityFunction
@@ -55,6 +52,7 @@ namespace VSSample
                 var outputs = new List<string>();
 
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
+                outputs.Add(await context.CallActivityAsync<string[]>(""E1_SayHello_Array"", ""Tokyo""));
                 outputs.Add(await context.CallActivityAsync<Object>(""E1_SayHey"", ""Tokyo""));
                 outputs.Add(await context.CallActivityAsync<Tuple<string, int>>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync(""E1_SayHello_ReturnsString"", ""London""));
@@ -64,6 +62,13 @@ namespace VSSample
 
         [FunctionName(""E1_SayHello"")]
         public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""E1_SayHello_Array"")]
+        public static string[] SayHello([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return $""Hello {name}!"";

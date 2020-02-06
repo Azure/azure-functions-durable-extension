@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return inputType != null;
         }
 
-        internal static bool TryGetTypeArgumentIdentifierNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        internal static bool TryGetTypeArgumentNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
             var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
             if (genericName != null)
