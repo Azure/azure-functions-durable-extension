@@ -15,7 +15,7 @@ jobs:
     steps:
     - task: NuGetToolInstaller@0
       inputs:
-        restoreSolutions: '$(solution)'
+        restoreSolution: '$(solution)'
 
     - task: VSBuild@1
       inputs:
@@ -51,7 +51,7 @@ jobs:
     steps:
     - task: NuGetToolInstaller@0
       inputs:
-        restoreSolutions: '$(solution)'
+        restoreSolution: '$(solution)'
 
     - task: VSBuild@1
       inputs:
