@@ -92,7 +92,7 @@ namespace Microsoft.Azure.WebJobs
 
             var dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-            orchestratorFunctionName, DefaultVersion, instanceId, input, null, dedupeStatuses);
+                orchestratorFunctionName, DefaultVersion, instanceId, input, null, dedupeStatuses);
 
             this.traceHelper.FunctionScheduled(
                 this.hubName,

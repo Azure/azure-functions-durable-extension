@@ -2663,13 +2663,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task Dedupe_NotRunning_ThrowsException(bool extendedSessions)
+        public async Task Dedupe_NotRunningStates_ThrowsException(bool extendedSessions)
         {
             var instanceId = "OverridableStatesThrowsExceptionNotRunningTest";
 
             using (ITestHost host = TestHelpers.GetJobHost(
                  this.loggerProvider,
-                 nameof(this.Dedupe_NotRunning_ThrowsException),
+                 nameof(this.Dedupe_NotRunningStates_ThrowsException),
                  extendedSessions,
                  overridableStates: OverridableStates.NonRunningStates))
             {
@@ -2743,6 +2743,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
 
                 await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+
+                // Check that new instance overrode old instacne's counter value
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 0);
 
                 await host.StopAsync();
             }
