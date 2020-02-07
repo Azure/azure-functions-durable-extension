@@ -14,13 +14,8 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@0
-
-    - task: DotNetCoreCLI@2
       inputs:
-        command: 'restore'
-        projects: '**/**/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
+        restoreSolutions: '$(solution)'
 
     - task: VSBuild@1
       inputs:
@@ -55,13 +50,8 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@0
-
-    - task: DotNetCoreCLI@2
       inputs:
-        command: 'restore'
-        projects: '**/**/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
+        restoreSolutions: '$(solution)'
 
     - task: VSBuild@1
       inputs:
