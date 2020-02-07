@@ -2708,18 +2708,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DedupeStates_Default_AnyState(bool extendedSessions)
+        public async Task Dedupe_Default_AnyState()
         {
             var instanceId = "OverridableStatesDefaultAnyStateTest";
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DedupeStates_Default_AnyState),
-                extendedSessions))
+                nameof(this.Dedupe_Default_AnyState),
+                false))
             {
                 await host.StartAsync();
 
@@ -2734,7 +2732,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 2);
 
                 // Make sure it's still running and didn't complete early (or fail).
                 var status = await client.GetStatusAsync();
@@ -2745,7 +2744,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
 
                 // Check that new instance overrode old instacne's counter value
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 0);
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
 
                 await host.StopAsync();
             }
