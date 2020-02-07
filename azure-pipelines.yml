@@ -14,12 +14,15 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@0
+      inputs:
+        versionSpec: '5.3.0'
     
     - task: NuGetCommand@2
       inputs:
+        command: 'restore'
         restoreSolution: '$(solution)'
 
-    - task: VSBuild@1
+    - task: MSBuild@1
       inputs:
         solution: '$(solution)'
         platform: '$(buildPlatform)'
@@ -52,6 +55,8 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@0
+      inputs:
+        versionSpec: '5.3.0'
 
     - task: NuGetCommand@2
       inputs:
@@ -92,6 +97,8 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@0
+      inputs:
+        versionSpec: '5.3.0'
 
     - task: DotNetCoreCLI@2
       inputs:
