@@ -100,12 +100,9 @@ jobs:
       inputs:
         versionSpec: '5.3.0'
 
-    - task: DotNetCoreCLI@2
+    - task: NuGetCommand@2
       inputs:
-        command: 'restore'
-        projects: '**/**/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
+        restoreSolution: '$(solution)'
 
     - task: VSBuild@1
       inputs:
