@@ -404,6 +404,11 @@
             </list>
             </remarks>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.OverridableExistingInstanceStates">
+            <summary>
+             States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
@@ -1932,6 +1937,24 @@
             <value>
             The name of the orchestrator function or <c>null</c> to use the function name.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.OverridableStates">
+            <summary>
+            Represents options for different states that an existing orchestrator can be in to be able to be overwritten by
+            an attempt to start a new instance with the same instance Id.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.AnyState">
+            <summary>
+            Option to start a new orchestrator instance with an existing instnace Id when the existing
+            instance is in any state.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.OverridableStates.NonRunningStates">
+            <summary>
+            Option to only start a new orchestrator instance with an existing instance Id when the existing
+            instance is in a terminated, failed, or completed state.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.PurgeHistoryResult">
             <summary>

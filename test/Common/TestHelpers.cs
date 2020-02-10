@@ -35,7 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? maxQueuePollingInterval = null,
             string[] eventGridPublishEventTypes = null,
             bool autoFetchLargeMessages = true,
-            bool? localRpcEndpointEnabled = false)
+            bool? localRpcEndpointEnabled = false,
+            OverridableStates? overridableStates = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
@@ -74,8 +75,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableTaskOptions.MaxQueuePollingInterval = maxQueuePollingInterval.Value;
             }
 
+            if (overridableStates != null)
+            {
+                durableTaskOptions.OverridableExistingInstanceStates = (OverridableStates)overridableStates;
+            }
+
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
             var testNameResolver = new TestNameResolver(nameResolver);
+
             return PlatformSpecificHelpers.CreateJobHost(
                 optionsWrapper,
                 loggerProvider,

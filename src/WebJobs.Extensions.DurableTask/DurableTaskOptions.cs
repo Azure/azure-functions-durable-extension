@@ -302,10 +302,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         public bool? LocalRpcEndpointEnabled { get; set; }
 
+        /// <summary>
+        ///  States that will override an existing orchestrator when attempting to start a new orchestrator with the same instance Id.
+        /// </summary>
+        public OverridableStates OverridableExistingInstanceStates { get; set; } = OverridableStates.AnyState;
+
         internal string GetDebugString()
         {
             var sb = new StringBuilder(4096);
             sb.AppendLine("Initializing extension with the following settings:");
+            sb.Append(nameof(this.HubName)).Append(": ").Append(this.HubName).Append(", ");
             sb.Append(nameof(this.AzureStorageConnectionStringName)).Append(": ").Append(this.AzureStorageConnectionStringName).Append(", ");
             sb.Append(nameof(this.MaxConcurrentActivityFunctions)).Append(": ").Append(this.MaxConcurrentActivityFunctions).Append(", ");
             sb.Append(nameof(this.MaxConcurrentOrchestratorFunctions)).Append(": ").Append(this.MaxConcurrentOrchestratorFunctions).Append(", ");
@@ -329,6 +335,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.EventGridPublishRetryCount)).Append(": ").Append(this.EventGridPublishRetryCount).Append(", ");
                 sb.Append(nameof(this.EventGridPublishRetryInterval)).Append(": ").Append(this.EventGridPublishRetryInterval).Append(", ");
                 sb.Append(nameof(this.EventGridPublishRetryHttpStatus)).Append(": ").Append(string.Join(", ", this.EventGridPublishRetryHttpStatus ?? new int[0])).Append(", ");
+                sb.Append(nameof(this.EventGridPublishEventTypes)).Append(": ").Append(string.Join(", ", this.EventGridPublishEventTypes ?? new string[0])).Append(", ");
             }
 
             if (this.NotificationUrl != null)
@@ -344,8 +351,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 sb.Append(nameof(this.TrackingStoreNamePrefix)).Append(": ").Append(this.TrackingStoreNamePrefix).Append(", ");
             }
 
+            if (this.LocalRpcEndpointEnabled != null)
+            {
+                sb.Append(nameof(this.LocalRpcEndpointEnabled)).Append(": ").Append(this.LocalRpcEndpointEnabled).Append(", ");
+            }
+
             sb.Append(nameof(this.MaxQueuePollingInterval)).Append(": ").Append(this.MaxQueuePollingInterval).Append(", ");
-            sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents);
+            sb.Append(nameof(this.LogReplayEvents)).Append(": ").Append(this.LogReplayEvents).Append(", ");
+            sb.Append(nameof(this.OverridableExistingInstanceStates)).Append(": ").Append(this.OverridableExistingInstanceStates).Append(", ");
+            sb.Append(nameof(this.TraceInputsAndOutputs)).Append(": ").Append(this.TraceInputsAndOutputs).Append(", ");
+            sb.Append(nameof(this.CustomLifeCycleNotificationHelperType)).Append(": ").Append(this.CustomLifeCycleNotificationHelperType);
             return sb.ToString();
         }
 
