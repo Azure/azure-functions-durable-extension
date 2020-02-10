@@ -123,6 +123,9 @@
   <data name="ActivityArgumentAnalyzerMessageFormat" xml:space="preserve">
     <value>Activity function named '{0}' takes a '{1}' but was given a '{2}'.</value>
   </data>
+  <data name="ActivityArgumentAnalyzerMessageFormatNotUsed" xml:space="preserve">
+    <value>Activity function named '{0}' was given a '{2}'but the input is never used.</value>
+  </data>
   <data name="ActivityArgumentAnalyzerTitle" xml:space="preserve">
     <value>Activity function call is using the wrong argument type.</value>
   </data>

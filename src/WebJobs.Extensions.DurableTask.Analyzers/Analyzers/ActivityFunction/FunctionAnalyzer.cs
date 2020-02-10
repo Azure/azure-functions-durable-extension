@@ -214,7 +214,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext") 
                     || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"))
                 {
-                    TryGetInputTypeFromDurableContextCall(context, attributeExpression, out inputType);
+                    if (TryGetInputTypeFromDurableContextCall(context, attributeExpression, out ITypeSymbol inputTypeFromContext))
+                    {
+                        inputType = inputTypeFromContext;
+                    }
                 }
 
                 return inputType;

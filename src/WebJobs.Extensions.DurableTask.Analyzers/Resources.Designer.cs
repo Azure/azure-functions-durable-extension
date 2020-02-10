@@ -79,6 +79,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; was given a &apos;{2}&apos;but the input is never used..
+        /// </summary>
+        public static string ActivityArgumentAnalyzerMessageFormatNotUsed {
+            get {
+                return ResourceManager.GetString("ActivityArgumentAnalyzerMessageFormatNotUsed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Activity function call is using the wrong argument type..
         /// </summary>
         public static string ActivityArgumentAnalyzerTitle {
