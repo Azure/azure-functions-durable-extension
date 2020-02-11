@@ -2665,7 +2665,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task Dedupe_NotRunningStates_ThrowsException(bool extendedSessions)
         {
-            var instanceId = "OverridableStatesThrowsExceptionNotRunningTest";
+            var instanceId = Guid.NewGuid().ToString();
 
             using (ITestHost host = TestHelpers.GetJobHost(
                  this.loggerProvider,
