@@ -43,7 +43,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
 
     <!--Don't increase below versions without significantly testing on Functions V1. Increasing these versions increments
     some dependencies that have binding redirects in Functions V1.-->
