@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.WindowsAzure.Storage;
@@ -144,15 +145,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static string GetTaskHubErrorString(string hubName)
         {
-            return $"Task hub name '{hubName}' should contain only alphanumeric characters and have length between {MinTaskHubNameSize} and {MaxTaskHubNameSize}.";
+            return $"Task hub name '{hubName}' should contain only alphanumeric characters, start with a letter, and have length between {MinTaskHubNameSize} and {MaxTaskHubNameSize}.";
         }
 
         internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
         {
-            sanitizedHubName = new string(hubName.ToCharArray()
-                                .Where(char.IsLetterOrDigit)
+            // Only alphanumeric characters are valid.
+            var validHubNameCharacters = hubName.ToCharArray().Where(char.IsLetterOrDigit);
+
+            if (!validHubNameCharacters.Any())
+            {
+                sanitizedHubName = TaskHubPadding;
+                return false;
+            }
+
+            // Azure Table storage requires that the task hub does not start with
+            // a number. If it does, prepend "t" to the beginning.
+            if (char.IsNumber(validHubNameCharacters.First()))
+            {
+                validHubNameCharacters = validHubNameCharacters.Prepend('t');
+            }
+
+            sanitizedHubName = new string(validHubNameCharacters
                                 .Take(MaxTaskHubNameSize)
                                 .ToArray());
+
             if (sanitizedHubName.Length < MinTaskHubNameSize)
             {
                 sanitizedHubName = sanitizedHubName + TaskHubPadding;

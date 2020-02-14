@@ -4035,6 +4035,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Tests default and custom values for task hub name/>.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Task-Hub-Name-Test", "TaskHubNameTest")]
+        [InlineData("1TaskHubNameTest", "t1TaskHubNameTest")]
+        [InlineData("-taskhubnametest", "taskhubnametest")]
+        [InlineData("-1taskhubnametest", "t1taskhubnametest")]
+        public void TaskHubName_DefaultHubName_UseSanitized(string siteName, string expectedHubName)
+        {
+            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", siteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", "Production");
+
+                var options = new DurableTaskOptions();
+                options.LocalRpcEndpointEnabled = false;
+
+                using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
+                {
+                    Assert.Equal(expectedHubName, options.HubName);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
+                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
+            }
+        }
+
+        /// <summary>
         /// Tests that an attempt to use a default task hub name while in a test slot will throw an exception <see cref="InvalidOperationException"/>.
         /// </summary>
         [Fact]
