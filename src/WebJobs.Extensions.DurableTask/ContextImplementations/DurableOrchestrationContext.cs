@@ -240,21 +240,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             while (currStatusCode == HttpStatusCode.Accepted && req.AsynchronousPatternEnabled)
             {
-                Dictionary<string, StringValues> headersDictionary = new Dictionary<string, StringValues>(durableHttpResponse.Headers);
+                var headersDictionary = new Dictionary<string, StringValues>(
+                        durableHttpResponse.Headers,
+                        StringComparer.OrdinalIgnoreCase);
+
                 DateTime fireAt = default(DateTime);
                 if (headersDictionary.ContainsKey("Retry-After"))
                 {
-                    fireAt = this.InnerContext.CurrentUtcDateTime.AddSeconds(int.Parse(headersDictionary["Retry-After"]));
+                    fireAt = this.InnerContext
+                                .CurrentUtcDateTime
+                                .AddSeconds(int.Parse(headersDictionary["Retry-After"]));
                 }
                 else
                 {
-                    fireAt = this.InnerContext.CurrentUtcDateTime.AddMilliseconds(this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds);
+                    fireAt = this.InnerContext
+                                .CurrentUtcDateTime
+                                .AddMilliseconds(this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds);
                 }
 
                 this.IncrementActionsOrThrowException();
                 await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
 
-                DurableHttpRequest durableAsyncHttpRequest = this.CreateHttpRequestMessageCopy(req, durableHttpResponse.Headers["Location"]);
+                DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
+                    req,
+                    durableHttpResponse.Headers["Location"]);
                 durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest);
                 currStatusCode = durableHttpResponse.StatusCode;
             }
@@ -277,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return durableHttpResponse;
         }
 
-        private DurableHttpRequest CreateHttpRequestMessageCopy(DurableHttpRequest durableHttpRequest, string locationUri)
+        private DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
         {
             DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
                 method: HttpMethod.Get,
@@ -285,6 +294,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 headers: durableHttpRequest.Headers,
                 content: durableHttpRequest.Content,
                 tokenSource: durableHttpRequest.TokenSource);
+
+            // Do not copy over the x-functions-key header, as in many cases, the
+            // functions key used for the initial request will be a Function-level key
+            // and the status endpoint requires a master key.
+            if (newDurableHttpRequest.Headers.ContainsKey("x-functions-key"))
+            {
+                newDurableHttpRequest.Headers.Remove("x-functions-key");
+            }
 
             return newDurableHttpRequest;
         }

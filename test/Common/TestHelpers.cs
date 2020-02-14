@@ -182,7 +182,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
-            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            // Have to strip down test name to 40 characters to ensure task hub does
+            // not violate rules.
+            var strippedName = testName.Replace("_", "");
+            return strippedName.Length > 40 ? strippedName.Substring(0, 40) : strippedName
+                + (enableExtendedSessions ? "EX" : "")
+                + PlatformSpecificHelpers.VersionSuffix;
         }
 
         public static ITypeLocator GetTypeLocator()
