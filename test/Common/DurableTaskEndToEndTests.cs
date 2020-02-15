@@ -3985,8 +3985,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(argumentException);
             Assert.Equal(
                 argumentException.Message.Contains($"{taskHubName}V1")
-                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters and have length between 3 and 45."
-                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters and have length between 3 and 45.",
+                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45."
+                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
                 argumentException.Message);
         }
 
@@ -4043,6 +4043,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("1TaskHubNameTest", "t1TaskHubNameTest")]
         [InlineData("-taskhubnametest", "taskhubnametest")]
         [InlineData("-1taskhubnametest", "t1taskhubnametest")]
+        [InlineData("--------", "DefaultTaskHub")]
+        [InlineData("bb", "bbHub")]
         public void TaskHubName_DefaultHubName_UseSanitized(string siteName, string expectedHubName)
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
@@ -4162,7 +4164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(exception);
             Assert.Equal(
-                $"Task hub name '{taskHubName}' should contain only alphanumeric characters and have length between 3 and 45.",
+                $"Task hub name '{taskHubName}' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
                 exception.Message);
         }
 
@@ -4247,34 +4249,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TaskHubName_DefaultNameSiteWithDashes_UsesSanitizedHubName()
-        {
-            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
-            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
-
-            try
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "Test-Site-Name");
-                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", null);
-
-                var options = new DurableTaskOptions();
-
-                var expectedHubName = "TestSiteName";
-
-                using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
-                {
-                    Assert.Equal(expectedHubName, options.HubName);
-                }
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
-                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TaskHubName_DefaultNameSiteTooLong_UsesSanitizedHubName()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
@@ -4288,34 +4262,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var options = new DurableTaskOptions();
 
                 var expectedHubName = new string('a', 45);
-
-                using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
-                {
-                    Assert.Equal(expectedHubName, options.HubName);
-                }
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
-                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TaskHubName_DefaultNameSiteTooShort_UsesSanitizedHubName()
-        {
-            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
-            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
-
-            try
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", new string('b', 2));
-                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", null);
-
-                var options = new DurableTaskOptions();
-
-                var expectedHubName = "bbHub";
 
                 using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
                 {

@@ -155,7 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!validHubNameCharacters.Any())
             {
-                sanitizedHubName = TaskHubPadding;
+                sanitizedHubName = "DefaultTaskHub";
                 return false;
             }
 
