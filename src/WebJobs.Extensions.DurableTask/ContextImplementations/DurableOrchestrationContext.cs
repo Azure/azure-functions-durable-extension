@@ -245,16 +245,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         StringComparer.OrdinalIgnoreCase);
 
                 DateTime fireAt = default(DateTime);
-                if (headersDictionary.ContainsKey("Retry-After"))
+                if (headersDictionary.TryGetValue("Retry-After", out StringValues retryAfter))
                 {
-                    fireAt = this.InnerContext
-                                .CurrentUtcDateTime
-                                .AddSeconds(int.Parse(headersDictionary["Retry-After"]));
+                    fireAt = this.InnerContext.CurrentUtcDateTime
+                                .AddSeconds(int.Parse(retryAfter));
                 }
                 else
                 {
-                    fireAt = this.InnerContext
-                                .CurrentUtcDateTime
+                    fireAt = this.InnerContext.CurrentUtcDateTime
                                 .AddMilliseconds(this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds);
                 }
 
@@ -298,10 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key
             // and the status endpoint requires a master key.
-            if (newDurableHttpRequest.Headers.ContainsKey("x-functions-key"))
-            {
-                newDurableHttpRequest.Headers.Remove("x-functions-key");
-            }
+            newDurableHttpRequest.Headers.Remove("x-functions-key");
 
             return newDurableHttpRequest;
         }
