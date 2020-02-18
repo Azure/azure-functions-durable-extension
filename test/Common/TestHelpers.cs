@@ -49,8 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
             bool? localRpcEndpointEnabled = false,
-            DurableTaskOptions options = null,
-            string rawTaskHubName = null)
+            DurableTaskOptions options = null)
         {
             switch (storageProviderType)
             {
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options = new DurableTaskOptions();
             }
 
-            options.HubName = rawTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             options.Tracing = new TraceOptions()
             {
                 TraceInputsAndOutputs = true,
@@ -183,12 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
-            // Have to strip down test name to 40 characters to ensure task hub does
-            // not violate rules.
-            var strippedName = testName.Replace("_", "");
-            return strippedName.Length > 45 ? strippedName.Substring(0, 45) : strippedName
-                + (enableExtendedSessions ? "EX" : "")
-                + PlatformSpecificHelpers.VersionSuffix;
+            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
         }
 
         public static ITypeLocator GetTypeLocator()
