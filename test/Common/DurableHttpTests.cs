@@ -790,7 +790,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_AsynchronousAPI_MultipleAsyncCalls),
+                nameof(this.DurableHttpAsync_AsynchronousAPI_MultipleAsyncCalls).Substring(0, 40),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -941,7 +941,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_AsynchronousAPI_DoesNotReuseFunctionsKeyHeader),
+                nameof(this.DurableHttpAsync_AsynchronousAPI_DoesNotReuseFunctionsKeyHeader).Substring(0, 40),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
