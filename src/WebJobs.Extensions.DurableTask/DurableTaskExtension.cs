@@ -327,7 +327,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void TraceConfigurationSettings()
         {
-            this.Options.TraceConfiguration(this.TraceHelper);
+            this.Options.TraceConfiguration(
+                this.TraceHelper,
+                this.defaultDurabilityProvider.ConfigurationJson);
         }
 
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()

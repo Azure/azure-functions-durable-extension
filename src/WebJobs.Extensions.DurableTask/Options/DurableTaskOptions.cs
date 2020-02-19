@@ -195,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultHubName = hubName;
         }
 
-        internal void TraceConfiguration(EndToEndTraceHelper traceHelper)
+        internal void TraceConfiguration(EndToEndTraceHelper traceHelper, JObject storageProviderConfig)
         {
             // Clone the options to avoid making changes to the original.
             // We make updates to the clone rather than to JSON to ensure we're updating what we think we're updating.
@@ -222,6 +222,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+
+            if (storageProviderConfig.Count != 0)
+            {
+                configurationJson["storageProvider"] = storageProviderConfig;
+            }
 
             // This won't be exactly the same as what is declared in host.json because any unspecified values
             // will have been initialized with their defaults. We need the Functions runtime to handle tracing
