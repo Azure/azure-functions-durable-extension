@@ -63,11 +63,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 var returnTypeName = GetReturnTypeNameFromCallActivityInvocation(context, invocationExpression);
 
-                string inputTypeName = null;
+                var inputTypeName = "null";
                 if (TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode))
                 {
-                    var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
-                    inputTypeName = GetQualifiedTypeName(inputType);
+                    if (!inputNode.IsKind(SyntaxKind.NullLiteralExpression))
+                    {
+                        var inputType = context.SemanticModel.GetTypeInfo(inputNode).Type;
+                        inputTypeName = GetQualifiedTypeName(inputType);
+                    }
                 }
 
                 calledFunctions.Add(new ActivityFunctionCall
@@ -181,13 +184,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
 
                 var returnTypeName = GetQualifiedTypeName(returnType);
-                var inputType = GetActivityFunctionInputTypeName(context, attribute);
+                TryGetActivityFunctionInputTypeNameAndNode(context, attribute, out ITypeSymbol inputType, out SyntaxNode typeNode);
                 var inputTypeName = GetQualifiedTypeName(inputType);
 
                 availableFunctions.Add(new ActivityFunctionDefinition
                 {
                     FunctionName = functionName,
                     InputType = inputTypeName,
+                    InputTypeNode = typeNode,
                     ReturnType = returnTypeName
                 });
             }
@@ -205,11 +209,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private ITypeSymbol GetActivityFunctionInputTypeName(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression)
+        private bool TryGetActivityFunctionInputTypeNameAndNode(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol inputType, out SyntaxNode typeNode)
         {
-            if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out SyntaxNode inputTypeNode))
+            if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attributeExpression, out typeNode))
             {
-                var inputType = context.SemanticModel.GetTypeInfo(inputTypeNode).Type;
+                inputType = context.SemanticModel.GetTypeInfo(typeNode).Type;
                 if (inputType.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext") 
                     || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext") 
                     || inputType.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"))
@@ -220,10 +224,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
 
-                return inputType;
+                return true;
             }
 
-            return null;
+            inputType = null;
+            return false;
         }
 
         private static bool TryGetInputTypeFromDurableContextCall(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out ITypeSymbol inputTypeNode)

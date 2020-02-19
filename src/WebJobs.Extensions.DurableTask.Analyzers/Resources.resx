@@ -121,10 +121,10 @@
     <value>Activity function call specifies a parameter that doesn't match the function definition parameter.</value>
   </data>
   <data name="ActivityArgumentAnalyzerMessageFormat" xml:space="preserve">
-    <value>Activity function named '{0}' takes a '{1}' but was given a '{2}'.</value>
+    <value>Activity function named '{0}' takes '{1}' but was given '{2}'.</value>
   </data>
   <data name="ActivityArgumentAnalyzerMessageFormatNotUsed" xml:space="preserve">
-    <value>Activity function named '{0}' was given a '{2}'but the input is never used.</value>
+    <value>Activity function named '{0}' doesn't use an input. Pass null for the input parameter instead.</value>
   </data>
   <data name="ActivityArgumentAnalyzerTitle" xml:space="preserve">
     <value>Activity function call is using the wrong argument type.</value>

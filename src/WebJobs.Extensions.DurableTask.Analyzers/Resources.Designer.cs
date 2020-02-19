@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes a &apos;{1}&apos; but was given a &apos;{2}&apos;..
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes &apos;{1}&apos; but was given &apos;{2}&apos;..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormat {
             get {
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; was given a &apos;{2}&apos;but the input is never used..
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; doesn&apos;t use an input. Pass null for the input parameter instead..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormatNotUsed {
             get {

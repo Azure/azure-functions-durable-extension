@@ -26,6 +26,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
 
+        public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
+        {
+            return model.SyntaxTree == node.SyntaxTree
+                ? model
+                : model.Compilation.GetSemanticModel(node.SyntaxTree);
+        }
+
         public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
         {
             closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
