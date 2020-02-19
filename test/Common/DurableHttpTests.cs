@@ -784,13 +784,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_AsynchronousAPI_MultipleAsyncCalls(string storageProvider)
+        public async Task DurableHttp_AsyncAPI_MultipleCalls(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForMultipleRequestsTwo();
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_AsynchronousAPI_MultipleAsyncCalls).Substring(0, 40),
+                nameof(this.DurableHttp_AsyncAPI_MultipleCalls),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -935,15 +935,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_AsynchronousAPI_DoesNotReuseFunctionsKeyHeader(string storageProvider)
+        public async Task DurableHttp_AsyncAPI_PollIgnoresFunctionsKey(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerWithFunctionHeaderVerification();
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_AsynchronousAPI_DoesNotReuseFunctionsKeyHeader).Substring(0, 40),
+                nameof(this.DurableHttp_AsyncAPI_PollIgnoresFunctionsKey),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
+                httpAsyncSleepTime: 1000,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
             {
                 await host.StartAsync();
