@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class DurabilityProvider : IOrchestrationService, IOrchestrationServiceClient
     {
         internal const string NoConnectionDetails = "default";
+
+        private static readonly JObject EmptyConfig = new JObject();
 
         private readonly string name;
         private readonly IOrchestrationService innerService;
@@ -53,6 +56,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
         public virtual bool SupportsEntities => false;
+
+        /// <summary>
+        /// JSON representation of configuration to emit in telemetry.
+        /// </summary>
+        public virtual JObject ConfigurationJson => EmptyConfig;
 
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
