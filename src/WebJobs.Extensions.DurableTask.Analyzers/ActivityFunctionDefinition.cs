@@ -9,10 +9,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
     {
         public string FunctionName { get; set; }
 
-        public string InputType { get; set; }
+        public SyntaxNode ParameterNode { get; set; }
 
-        public SyntaxNode InputTypeNode { get; set; }
-
-        public string ReturnType { get; set; }
+        public SyntaxNode ReturnTypeNode { get; set; }
     }
 }

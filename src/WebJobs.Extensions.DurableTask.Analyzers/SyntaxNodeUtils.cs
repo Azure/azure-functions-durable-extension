@@ -62,6 +62,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
+        internal static bool TryGetMethodReturnTypeNode(SyntaxNode node, out SyntaxNode returnTypeNode)
+        {
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                returnTypeNode = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.ArrayType)).FirstOrDefault();
+                return true;
+            }
+
+            returnTypeNode = null;
+            return false;
+        }
+
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
@@ -242,6 +254,90 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return false;
+        }
+
+        internal static string GetQualifiedTypeName(ITypeSymbol typeInfo)
+        {
+            if (typeInfo != null)
+            {
+                if (typeInfo is INamedTypeSymbol)
+                {
+                    var tupleUnderlyingType = ((INamedTypeSymbol)typeInfo).TupleUnderlyingType;
+                    if (tupleUnderlyingType != null)
+                    {
+                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
+                    }
+
+                    return typeInfo.ToString();
+                }
+
+                var arrayString = "";
+                if (typeInfo.Kind.Equals(SymbolKind.ArrayType))
+                {
+                    arrayString = "[]";
+                    typeInfo = ((IArrayTypeSymbol)typeInfo).ElementType;
+                }
+
+                if (!string.IsNullOrEmpty(typeInfo.Name))
+                {
+                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString() + arrayString;
+                }
+            }
+
+            return "Unknown Type";
+        }
+
+        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, string invocationTypeName, ITypeSymbol functionType, string functionTypeName)
+        {
+            if (invocationType == null || invocationTypeName == null || functionType == null || functionTypeName == null)
+            {
+                return false;
+            }
+
+            return invocationTypeName.Equals(functionTypeName) || AreCompatibleIEnumerableTypes(invocationType, functionType);
+        }
+
+        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            if ((invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
+                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType)))
+                if (UnderlyingTypesMatch(invocationType, functionType))
+                {
+                    return ((invocationType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable")))
+                    && (functionType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable"))));
+                }
+
+            return false;
+        }
+
+        private static bool UnderlyingTypesMatch(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            if (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType) && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType))
+            {
+                return invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name);
+            }
+
+            return false;
+        }
+
+        private static bool TryGetUnderlyingType(ITypeSymbol type, out ITypeSymbol underlyingType)
+        {
+            if (type.Kind.Equals(SymbolKind.ArrayType))
+            {
+                underlyingType = ((IArrayTypeSymbol)type).ElementType;
+                return true;
+            }
+
+            if (type.Kind.Equals(SymbolKind.NamedType))
+            {
+                underlyingType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
+                return underlyingType != null;
+            }
+            else
+            {
+                underlyingType = null;
+                return false;
+            }
         }
     }
 }

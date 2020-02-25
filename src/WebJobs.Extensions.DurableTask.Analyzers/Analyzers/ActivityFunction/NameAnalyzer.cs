@@ -29,19 +29,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
         {
-            foreach (var node in calledFunctions)
+            foreach (var activityInvocation in calledFunctions)
             {
-                if (!availableFunctions.Select(x => x.FunctionName).Contains(node.Name))
+                if (!availableFunctions.Select(x => x.FunctionName).Contains(activityInvocation.Name))
                 {
-                    if (SyntaxNodeUtils.TryGetClosestString(node.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                    if (SyntaxNodeUtils.TryGetClosestString(activityInvocation.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
                     {
-                        var diagnostic = Diagnostic.Create(CloseRule, node.NameNode.GetLocation(), node.Name, closestName);
+                        var diagnostic = Diagnostic.Create(CloseRule, activityInvocation.NameNode.GetLocation(), activityInvocation.Name, closestName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
                     else
                     {
-                        var diagnostic = Diagnostic.Create(MissingRule, node.NameNode.GetLocation(), node.Name);
+                        var diagnostic = Diagnostic.Create(MissingRule, activityInvocation.NameNode.GetLocation(), activityInvocation.Name);
 
                         context.ReportDiagnostic(diagnostic);
                     }

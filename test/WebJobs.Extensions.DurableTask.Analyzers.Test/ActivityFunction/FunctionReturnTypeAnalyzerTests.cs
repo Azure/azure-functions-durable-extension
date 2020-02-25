@@ -38,9 +38,9 @@ namespace VSSample
             {
                 var outputs = new List<string>();
 
-                outputs.Add(await context.CallActivityAsync<int>(""E1_SayHello"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<int>(""E1_SayHey"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<int>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
+                await context.CallActivityAsync<int>(""E1_SayHello"", ""Tokyo"");
+                await context.CallActivityAsync<int>(""E1_SayHey"", ""Tokyo"");
+                await context.CallActivityAsync<int>(""E1_SayHello_Tuple"", (""Seattle"", 4));
             
                 return outputs;
             }
@@ -51,11 +51,11 @@ namespace VSSample
             {
                 var outputs = new List<string>();
 
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<string[]>(""E1_SayHello_Array"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<Object>(""E1_SayHey"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<Tuple<string, int>>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
-                outputs.Add(await context.CallActivityAsync(""E1_SayHello_ReturnsString"", ""London""));
+                await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo"");
+                await context.CallActivityAsync<string[]>(""E1_SayHello_Array"", ""Tokyo"");
+                await context.CallActivityAsync<Object>(""E1_SayHey"", ""Tokyo"");
+                await context.CallActivityAsync<Tuple<string, int>>(""E1_SayHello_Tuple"", (""Seattle"", 4));
+                await context.CallActivityAsync(""E1_SayHello_ReturnsString"", ""London"");
             
                 return outputs;
             }
@@ -138,7 +138,7 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "string", "System.Threading.Tasks.Task<int>"),
+                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
                 Severity = Severity,
                 Locations =
                  new[] {
@@ -173,7 +173,7 @@ namespace VSSample
             {
                 var outputs = new List<string>();
 
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Ben""));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""World""));
             
                 return outputs;
             }
@@ -188,7 +188,7 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "System.Threading.Tasks.Task", "System.Threading.Tasks.Task<string>"),
+                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "System.Threading.Tasks.Task", "string"),
                 Severity = Severity,
                 Locations =
                  new[] {

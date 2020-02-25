@@ -4,7 +4,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -23,40 +22,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
         public static readonly DiagnosticDescriptor InputNotUsedRule = new DiagnosticDescriptor(DiagnosticId, Title, InputNotUsedMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public static void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(CompilationAnalysisContext context, SemanticModel semanticModel, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
         {
-            foreach (var functionCall in calledFunctions)
+            foreach (var activityInvocation in calledFunctions)
             {
-                if (availableFunctions.Where(x => x.FunctionName == functionCall.Name).Any())
+                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).SingleOrDefault();
+                if (functionDefinition != null)
                 {
-                    var functionDefinition = availableFunctions.Where(x => x.FunctionName == functionCall.Name).SingleOrDefault();
-                    if (functionDefinition.InputType != functionCall.ParameterType)
+                    TryGetInvocationInputType(semanticModel, activityInvocation, out ITypeSymbol invocationInputType);
+                    TryGetDefinitionInputType(semanticModel, functionDefinition, out ITypeSymbol definitionInputType);
+
+                    var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationInputType);
+                    var definitionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionInputType);
+
+                    if (definitionInputType == null)
                     {
-                        if (functionDefinition.InputType.StartsWith("Microsoft.Azure.WebJobs"))
-                        {
-                            if (!functionCall.ParameterType.Equals("null"))
-                            {
-                                var notUsedDiagnostic = Diagnostic.Create(InputNotUsedRule, functionCall.ParameterNode.GetLocation(), functionDefinition.FunctionName);
+                        var diagnostic = Diagnostic.Create(InputNotUsedRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name);
 
-                                context.ReportDiagnostic(notUsedDiagnostic);
-                            }
-                        }
-                        else
-                        {
-                            var diagnostic = Diagnostic.Create(Rule, functionCall.ParameterNode.GetLocation(), functionCall.Name, functionDefinition.InputType, functionCall.ParameterType);
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                    else if (!SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, invocationTypeName, definitionInputType, definitionTypeName))
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name, definitionTypeName, invocationTypeName);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
         }
 
-        private static bool TryGetContextVariableNode(SyntaxNode identifierNode, out SyntaxToken identifierToken)
+        private static void TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
         {
-            var parameter = identifierNode.Parent;
-            identifierToken = parameter.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).FirstOrDefault();
-            return identifierToken != null;
+            var invocationInput = activityInvocation.ParameterNode;
+
+            invocationInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationInput).GetTypeInfo(invocationInput).Type;
+        }
+
+        private static void TryGetDefinitionInputType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionInputType)
+        {
+            var definitionInput = functionDefinition.ParameterNode;
+
+            if (FunctionParameterIsContext(semanticModel, definitionInput))
+            {
+                if (!TryGetInputFromDurableContextCall(semanticModel, definitionInput, out definitionInput))
+                {
+                    definitionInputType = null;
+                    return;
+                }
+            }
+
+            definitionInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, definitionInput).GetTypeInfo(definitionInput).Type;
+        }
+
+        private static bool FunctionParameterIsContext(SemanticModel semanticModel, SyntaxNode functionInput)
+        {
+            var parameterTypeName = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, functionInput).GetTypeInfo(functionInput).Type.ToString();
+
+            return (parameterTypeName.Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext")
+            || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
+            || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));
+        }
+
+        private static bool TryGetInputFromDurableContextCall(SemanticModel semanticModel, SyntaxNode definitionInput, out SyntaxNode inputFromContext)
+        {
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(definitionInput, out SyntaxNode methodDeclaration))
+            {
+                var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
+                foreach (var memberAccessExpression in memberAccessExpressionList)
+                {
+                    var identifierName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                    if (identifierName != null)
+                    {
+                        var identifierNameType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, identifierName).GetTypeInfo(identifierName).Type.Name;
+                        if (identifierNameType.Equals("IDurableActivityContext") || identifierNameType.Equals("DurableActivityContext"))
+                        {
+                            var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+                            if (genericName != null)
+                            {
+                                var typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).FirstOrDefault();
+                                if (typeArgumentList != null)
+                                {
+                                    inputFromContext = typeArgumentList.ChildNodes().First();
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            inputFromContext = null;
+            return false;
         }
     }
 }
