@@ -20,7 +20,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
 
-        public static void ReportProblems(CompilationAnalysisContext context, SemanticModel semanticModel, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(
+            CompilationAnalysisContext context, 
+            SemanticModel semanticModel, 
+            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
+            IEnumerable<ActivityFunctionCall> calledFunctions)
         {
             foreach (var activityInvocation in calledFunctions)
             {
@@ -33,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
                     var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
 
-                    if (!SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, invocationTypeName, definitionReturnType, functionTypeName))
+                    if (!InputMatchesOrTaskOrCompatibleType(invocationReturnType, invocationTypeName, definitionReturnType, functionTypeName))
                     {
                         var diagnostic = Diagnostic.Create(Rule, activityInvocation.InvocationExpression.GetLocation(), activityInvocation.Name, functionTypeName, invocationTypeName);
 
@@ -41,6 +45,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
+        }
+
+        private static bool InputMatchesOrTaskOrCompatibleType(ITypeSymbol invocationReturnType, string invocationTypeName, ITypeSymbol definitionReturnType, string functionTypeName)
+        {
+            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, invocationTypeName, definitionReturnType, functionTypeName) || DefinitionReturnsTask(invocationReturnType, definitionReturnType);
+        }
+
+        private static bool DefinitionReturnsTask(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
+        {
+            if (definitionReturnType.Name.Equals("Task") && definitionReturnType is INamedTypeSymbol namedType)
+            {
+                var taskTypeArgument = namedType.TypeArguments.FirstOrDefault();
+                if (taskTypeArgument != null)
+                {
+                    return invocationReturnType.Equals(taskTypeArgument);
+                }
+            }
+
+            return false;
         }
 
         private static void TryGetInvocationReturnType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationReturnType)

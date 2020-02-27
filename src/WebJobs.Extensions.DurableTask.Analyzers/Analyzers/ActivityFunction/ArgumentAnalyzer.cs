@@ -13,16 +13,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
     {
         public const string DiagnosticId = "DF0108";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
-        private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString MismatchMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString InputNotUsedMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerMessageFormatNotUsed), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Activity;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor MismatchRule = new DiagnosticDescriptor(DiagnosticId, Title, MismatchMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
         public static readonly DiagnosticDescriptor InputNotUsedRule = new DiagnosticDescriptor(DiagnosticId, Title, InputNotUsedMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public static void ReportProblems(CompilationAnalysisContext context, SemanticModel semanticModel, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(
+            CompilationAnalysisContext context, 
+            SemanticModel semanticModel, 
+            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
+            IEnumerable<ActivityFunctionCall> calledFunctions)
         {
             foreach (var activityInvocation in calledFunctions)
             {
@@ -37,13 +41,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                     if (definitionInputType == null)
                     {
-                        var diagnostic = Diagnostic.Create(InputNotUsedRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name);
+                        if (invocationInputType != null)
+                        {
+                            var diagnostic = Diagnostic.Create(InputNotUsedRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name);
 
-                        context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                     else if (!SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, invocationTypeName, definitionInputType, definitionTypeName))
                     {
-                        var diagnostic = Diagnostic.Create(Rule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name, definitionTypeName, invocationTypeName);
+                        var diagnostic = Diagnostic.Create(MismatchRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name, definitionTypeName, invocationTypeName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
@@ -79,8 +86,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var parameterTypeName = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, functionInput).GetTypeInfo(functionInput).Type.ToString();
 
             return (parameterTypeName.Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext")
-            || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
-            || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));
+                || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
+                || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));
         }
 
         private static bool TryGetInputFromDurableContextCall(SemanticModel semanticModel, SyntaxNode definitionInput, out SyntaxNode inputFromContext)

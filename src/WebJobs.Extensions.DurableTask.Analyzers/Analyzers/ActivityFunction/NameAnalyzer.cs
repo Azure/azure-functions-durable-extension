@@ -27,7 +27,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return availableNames.OrderBy(x => x.LevenshteinDistance(name)).First();
         }
 
-        public static void ReportProblems(CompilationAnalysisContext context, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(
+            CompilationAnalysisContext context, 
+            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
+            IEnumerable<ActivityFunctionCall> calledFunctions)
         {
             foreach (var activityInvocation in calledFunctions)
             {

@@ -71,7 +71,7 @@ namespace VSSample
         public static string[] SayHello([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
-            return $""Hello {name}!"";
+            return new [] { $@""Hello {name}!"" };
         }
 
         [FunctionName(""E1_SayHey"")]

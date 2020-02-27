@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -299,25 +300,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
         {
-            if ((invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
-                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType)))
-                if (UnderlyingTypesMatch(invocationType, functionType))
-                {
-                    return ((invocationType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable")))
+            if (AreArrayOrNamedTypes(invocationType, functionType) && UnderlyingTypesMatch(invocationType, functionType))
+            {
+                return ((invocationType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable")))
                     && (functionType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable"))));
-                }
+            }
 
             return false;
         }
 
+        private static bool AreArrayOrNamedTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            return (invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
+                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType));
+        }
+
         private static bool UnderlyingTypesMatch(ITypeSymbol invocationType, ITypeSymbol functionType)
         {
-            if (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType) && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType))
-            {
-                return invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name);
-            }
-
-            return false;
+            return (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType)
+                && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType)
+                && invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name));
         }
 
         private static bool TryGetUnderlyingType(ITypeSymbol type, out ITypeSymbol underlyingType)

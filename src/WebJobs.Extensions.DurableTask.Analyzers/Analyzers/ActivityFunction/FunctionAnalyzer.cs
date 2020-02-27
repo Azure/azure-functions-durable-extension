@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return ImmutableArray.Create(
                     NameAnalyzer.MissingRule,
                     NameAnalyzer.CloseRule,
-                    ArgumentAnalyzer.Rule,
+                    ArgumentAnalyzer.MismatchRule,
                     FunctionReturnTypeAnalyzer.Rule);
             }
         }
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 && SyntaxNodeUtils.IsInsideFunction(invocationExpression)
                 && IsActivityInvocation(invocationExpression))
             {
-                StoreSemanticModel(context);
+                SetSemanticModel(context);
 
                 if (!TryGetFunctionNameFromActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
                 {
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private void StoreSemanticModel(SyntaxNodeAnalysisContext context)
+        private void SetSemanticModel(SyntaxNodeAnalysisContext context)
         {
             if (this.semanticModel == null)
             {

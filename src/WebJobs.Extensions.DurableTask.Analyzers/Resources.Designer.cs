@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; doesn&apos;t use an input. Pass null for the input parameter instead..
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; doesn&apos;t use its input. Pass null for the input parameter instead..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormatNotUsed {
             get {
