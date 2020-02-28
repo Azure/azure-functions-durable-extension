@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var activityInvocation in calledFunctions)
             {
-                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).SingleOrDefault();
+                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).FirstOrDefault();
                 if (functionDefinition != null && activityInvocation.ReturnTypeNode != null)
                 {
                     TryGetInvocationReturnType(semanticModel, activityInvocation, out ITypeSymbol invocationReturnType);
