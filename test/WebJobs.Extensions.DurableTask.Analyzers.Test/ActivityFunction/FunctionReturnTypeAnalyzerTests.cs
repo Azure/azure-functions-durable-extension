@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
         private static readonly DiagnosticSeverity Severity = FunctionReturnTypeAnalyzer.Severity;
 
         [TestMethod]
-        public void Argument_NonIssueCalls()
+        public void ReturnType_NonIssueCalls()
         {
             var test = @"
 using System;

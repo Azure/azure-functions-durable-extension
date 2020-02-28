@@ -34,11 +34,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     TryGetInvocationReturnType(semanticModel, activityInvocation, out ITypeSymbol invocationReturnType);
                     TryGetDefinitionReturnType(semanticModel, functionDefinition, out ITypeSymbol definitionReturnType);
 
-                    var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
-                    var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
-
-                    if (!InputMatchesOrTaskOrCompatibleType(invocationReturnType, invocationTypeName, definitionReturnType, functionTypeName))
+                    if (!InputMatchesOrTaskOrCompatibleType(invocationReturnType, definitionReturnType))
                     {
+                        var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
+                        var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
+
                         var diagnostic = Diagnostic.Create(Rule, activityInvocation.InvocationExpression.GetLocation(), activityInvocation.Name, functionTypeName, invocationTypeName);
 
                         context.ReportDiagnostic(diagnostic);
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private static bool InputMatchesOrTaskOrCompatibleType(ITypeSymbol invocationReturnType, string invocationTypeName, ITypeSymbol definitionReturnType, string functionTypeName)
+        private static bool InputMatchesOrTaskOrCompatibleType(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
         {
-            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, invocationTypeName, definitionReturnType, functionTypeName) || DefinitionReturnsTask(invocationReturnType, definitionReturnType);
+            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType) || DefinitionReturnsTask(invocationReturnType, definitionReturnType);
         }
 
         private static bool DefinitionReturnsTask(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)

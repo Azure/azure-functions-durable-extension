@@ -33,23 +33,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).SingleOrDefault();
                 if (functionDefinition != null)
                 {
-                    TryGetInvocationInputType(semanticModel, activityInvocation, out ITypeSymbol invocationInputType);
-                    TryGetDefinitionInputType(semanticModel, functionDefinition, out ITypeSymbol definitionInputType);
+                    var isInvokedWithNonNullInput = TryGetInvocationInputType(semanticModel, activityInvocation, out ITypeSymbol invocationInputType);
+                    var functionDefinitionUsesInput = TryGetDefinitionInputType(semanticModel, functionDefinition, out ITypeSymbol definitionInputType);
 
-                    var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationInputType);
-                    var definitionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionInputType);
-
-                    if (definitionInputType == null)
+                    if (!functionDefinitionUsesInput)
                     {
-                        if (invocationInputType != null)
+                        if (isInvokedWithNonNullInput)
                         {
                             var diagnostic = Diagnostic.Create(InputNotUsedRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name);
 
                             context.ReportDiagnostic(diagnostic);
                         }
                     }
-                    else if (!SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, invocationTypeName, definitionInputType, definitionTypeName))
+                    else if (!SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, definitionInputType))
                     {
+                        var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationInputType);
+                        var definitionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionInputType);
+
                         var diagnostic = Diagnostic.Create(MismatchRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name, definitionTypeName, invocationTypeName);
 
                         context.ReportDiagnostic(diagnostic);
@@ -58,14 +58,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private static void TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
+        private static bool TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
         {
             var invocationInput = activityInvocation.ParameterNode;
 
             invocationInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationInput).GetTypeInfo(invocationInput).Type;
+
+            return invocationInputType != null;
         }
 
-        private static void TryGetDefinitionInputType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionInputType)
+        private static bool TryGetDefinitionInputType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionInputType)
         {
             var definitionInput = functionDefinition.ParameterNode;
 
@@ -74,11 +76,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 if (!TryGetInputFromDurableContextCall(semanticModel, definitionInput, out definitionInput))
                 {
                     definitionInputType = null;
-                    return;
+                    return false;
                 }
             }
 
             definitionInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, definitionInput).GetTypeInfo(definitionInput).Type;
+
+            return definitionInputType != null;
         }
 
         private static bool FunctionParameterIsContext(SemanticModel semanticModel, SyntaxNode functionInput)

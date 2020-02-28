@@ -261,9 +261,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (typeInfo != null)
             {
-                if (typeInfo is INamedTypeSymbol)
+                if (typeInfo is INamedTypeSymbol namedTypeInfo)
                 {
-                    var tupleUnderlyingType = ((INamedTypeSymbol)typeInfo).TupleUnderlyingType;
+                    var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
                     if (tupleUnderlyingType != null)
                     {
                         return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
@@ -288,14 +288,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return "Unknown Type";
         }
 
-        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, string invocationTypeName, ITypeSymbol functionType, string functionTypeName)
+        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, ITypeSymbol definitionType)
         {
-            if (invocationType == null || invocationTypeName == null || functionType == null || functionTypeName == null)
+            if (invocationType == null || definitionType == null)
             {
                 return false;
             }
 
-            return invocationTypeName.Equals(functionTypeName) || AreCompatibleIEnumerableTypes(invocationType, functionType);
+            return invocationType.Equals(definitionType)
+                || AreEqualTupleTypes(invocationType, definitionType)
+                || AreCompatibleIEnumerableTypes(invocationType, definitionType);
+        }
+
+        private static bool AreEqualTupleTypes(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        {
+            var invocationQualifiedName = GetQualifiedTypeName(invocationType);
+            var definitionQualifiedName = GetQualifiedTypeName(definitionType);
+
+            return invocationQualifiedName.Equals(definitionQualifiedName);
         }
 
         private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
