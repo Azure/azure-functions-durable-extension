@@ -33,6 +33,7 @@ namespace VSSample
 {
     public static class HelloSequence
     {
+        // Should not flag code on non function
         public static async Task<List<string>> NotInsideFunctionWrongInput(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -54,6 +55,7 @@ namespace VSSample
             {
                 var outputs = new List<string>();
 
+                // Testing different matching input types
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
@@ -61,12 +63,16 @@ namespace VSSample
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
 
+                // ArrayType and NamedType (IEnumerable types) match
                 string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
-                List<string> namedType = new List<string>();
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ArrayToNamed"", arrayType));
+                
+                // NamedType and NamedType (IEnumerable types) match
+                List<string> namedType = new List<string>();
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed"", namedType));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed_Direct"", namedType));
 
+                // null input when function input not used
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NotUsed"", null));
             
                 return outputs;
@@ -115,14 +121,14 @@ namespace VSSample
         [FunctionName(""E1_SayHello_ArrayToNamed"")]
         public static string SayHelloTuple([ActivityTrigger] IDurableActivityContext context)
         {
-            string name = context.GetInput<List<string>>();
+            string name = context.GetInput<IList<string>>();
             return $""Hello {name}!"";
         }
 
         [FunctionName(""E1_SayHello_NamedToNamed"")]
         public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
         {
-            string name = context.GetInput<List<string>>();
+            string name = context.GetInput<IList<string>>();
             return $""Hello {name}!"";
         }
 
@@ -143,7 +149,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void Argument_CallInputsIntFunctionTakesString_Context()
+        public void Argument_Mismatch_IntAndString_OffContext()
         {
             var test = @"
 using System;
@@ -194,7 +200,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void Argument_CallInputsIntFunctionTakesString()
+        public void Argument_Mismatch_IntAndString()
         {
             var test = @"
 using System;
@@ -244,7 +250,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void Argument_CallInputsStringArrayFunctionTakesString()
+        public void Argument_Mismatch_StringArrayAndString_IEnumerableTypes()
         {
             var test = @"
 using System;
@@ -295,7 +301,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void Argument_CallInputNotUsed()
+        public void Argument_InputNotUsed_NonNullInput()
         {
             var test = @"
 using System;
@@ -319,7 +325,7 @@ namespace VSSample
             {
                 var outputs = new List<string>();
 
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", arrayType));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""World""));
             
                 return outputs;
             }

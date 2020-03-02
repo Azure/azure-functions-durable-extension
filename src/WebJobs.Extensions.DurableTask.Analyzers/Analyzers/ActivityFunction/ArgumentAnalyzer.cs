@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierName != null)
                     {
                         var identifierNameType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, identifierName).GetTypeInfo(identifierName).Type.Name;
-                        if (identifierNameType.Equals("IDurableActivityContext") || identifierNameType.Equals("DurableActivityContext"))
+                        if (identifierNameType.Equals("IDurableActivityContext") || identifierNameType.Equals("DurableActivityContext") || identifierNameType.Equals("DurableActivityContextBase"))
                         {
                             var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
                             if (genericName != null)

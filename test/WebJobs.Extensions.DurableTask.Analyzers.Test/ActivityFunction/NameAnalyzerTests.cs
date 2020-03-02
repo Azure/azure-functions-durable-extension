@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
         private static readonly DiagnosticSeverity Severity = NameAnalyzer.Severity;
 
         [TestMethod]
-        public void Argument_NonIssueCalls()
+        public void Name_NonIssueCalls()
         {
             var test = @"
 using System;
@@ -34,6 +34,7 @@ namespace VSSample
 {
     public static class HelloSequence
     {
+        // Should not flag code on non function
         public static async Task<List<string>> NonFunctionInvalidNames(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -51,6 +52,7 @@ namespace VSSample
             {
                 var outputs = new List<string>();
 
+                // Matching names
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
