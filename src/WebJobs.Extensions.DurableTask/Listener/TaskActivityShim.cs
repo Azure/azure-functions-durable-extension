@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Executors;
 
@@ -19,15 +20,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension config;
         private readonly ITriggeredFunctionExecutor executor;
+        private readonly IApplicationLifetimeWrapper hostServiceLifetime;
         private readonly string activityName;
 
         public TaskActivityShim(
             DurableTaskExtension config,
             ITriggeredFunctionExecutor executor,
+            IApplicationLifetimeWrapper hostServiceLifetime,
             string activityName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this.hostServiceLifetime = hostServiceLifetime ?? throw new ArgumentNullException(nameof(hostServiceLifetime));
 
             if (string.IsNullOrEmpty(activityName))
             {
@@ -54,58 +58,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Activity,
                 isReplay: false);
 
-            FunctionResult result;
-            try
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteActivityFunction(
+                this.executor,
+                this.hostServiceLifetime,
+                triggerInput,
+                CancellationToken.None);
+
+            switch (result.ExecutionStatus)
             {
-                result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
-            }
-            catch (Exception e)
-            {
-                this.config.TraceHelper.FunctionAborted(
-                    this.config.Options.HubName,
-                    this.activityName,
-                    instanceId,
-                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {e}",
-                    functionType: FunctionType.Activity);
+                case WrappedFunctionResult.FunctionResultStatus.Success:
+                    string serializedOutput = inputContext.GetSerializedOutput();
+                    this.config.TraceHelper.FunctionCompleted(
+                        this.config.Options.HubName,
+                        this.activityName,
+                        instanceId,
+                        this.config.GetIntputOutputTrace(serializedOutput),
+                        continuedAsNew: false,
+                        functionType: FunctionType.Activity,
+                        isReplay: false);
 
-                // This will abort the execution and cause the message to go back onto the queue for re-processing
-                throw new SessionAbortedException(
-                    $"An internal error occurred while attempting to execute '{this.activityName}'.", e);
-            }
+                    return serializedOutput;
+                case WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError:
+                    this.config.TraceHelper.FunctionAborted(
+                        this.config.Options.HubName,
+                        this.activityName,
+                        instanceId,
+                        $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                        functionType: FunctionType.Activity);
 
-            if (!result.Succeeded)
-            {
-                // Flow the original activity function exception to the orchestration
-                // without the outer FunctionInvocationException.
-                Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
+                    // This will abort the execution and cause the message to go back onto the queue for re-processing
+                    throw new SessionAbortedException(
+                        $"An internal error occurred while attempting to execute '{this.activityName}'.", result.Exception);
+                case WrappedFunctionResult.FunctionResultStatus.UserCodeError:
+                    // Flow the original activity function exception to the orchestration
+                    // without the outer FunctionInvocationException.
+                    Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
 
-                this.config.TraceHelper.FunctionFailed(
-                    this.config.Options.HubName,
-                    this.activityName,
-                    instanceId,
-                    exceptionToReport?.ToString() ?? string.Empty,
-                    functionType: FunctionType.Activity,
-                    isReplay: false);
+                    this.config.TraceHelper.FunctionFailed(
+                        this.config.Options.HubName,
+                        this.activityName,
+                        instanceId,
+                        exceptionToReport?.ToString() ?? string.Empty,
+                        functionType: FunctionType.Activity,
+                        isReplay: false);
 
-                if (exceptionToReport != null)
-                {
                     throw new TaskFailureException(
-                        $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
-                        Utils.SerializeCause(exceptionToReport, this.config.DataConverter.ErrorConverter));
-                }
+                            $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
+                            Utils.SerializeCause(exceptionToReport, this.config.DataConverter.ErrorConverter));
+                default:
+                    throw new InvalidOperationException($"{nameof(TaskActivityShim.RunAsync)} does not handle the function execution status {result.ExecutionStatus}.");
             }
-
-            string serializedOutput = inputContext.GetSerializedOutput();
-            this.config.TraceHelper.FunctionCompleted(
-                this.config.Options.HubName,
-                this.activityName,
-                instanceId,
-                this.config.GetIntputOutputTrace(serializedOutput),
-                continuedAsNew: false,
-                functionType: FunctionType.Activity,
-                isReplay: false);
-
-            return serializedOutput;
         }
 
         public override string Run(TaskContext context, string input)
