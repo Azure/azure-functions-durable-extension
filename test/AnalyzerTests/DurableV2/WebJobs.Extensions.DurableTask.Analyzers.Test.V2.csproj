@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test</AssemblyName>
-    <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test</RootNamespace>
+    <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.V2</AssemblyName>
+    <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.V2</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj" />
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+    <ProjectReference Include="..\..\..\src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CommonAnalyzerTests\*\*.cs" />
   </ItemGroup>
 
 </Project>

@@ -7,11 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebJobs.Extensions.DurableTask.Analyzers.Vsix", "..\WebJobs.Extensions.DurableTask.Analyzers.Vsix\WebJobs.Extensions.DurableTask.Analyzers.Vsix.csproj", "{40044F63-396E-4480-BEEE-B06908579402}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test", "..\..\test\WebJobs.Extensions.DurableTask.Analyzers.Test\WebJobs.Extensions.DurableTask.Analyzers.Test.csproj", "{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test.V1", "..\..\test\AnalyzerTests\DurableV1\WebJobs.Extensions.DurableTask.Analyzers.Test.V1.csproj", "{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask", "..\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{129FA662-F006-45EA-833D-1F4F01C4B806}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BED112A8-9D92-4B23-8FC7-5DBBD42735FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test.V2", "..\..\test\AnalyzerTests\DurableV2\WebJobs.Extensions.DurableTask.Analyzers.Test.V2.csproj", "{AE5FDC83-BF4E-483C-92B6-1D9E8D77FF9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,16 +29,18 @@ Global
 		{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03EB5C8C-33D6-4914-8F8C-813FB81C15F0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{129FA662-F006-45EA-833D-1F4F01C4B806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{129FA662-F006-45EA-833D-1F4F01C4B806}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{129FA662-F006-45EA-833D-1F4F01C4B806}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{129FA662-F006-45EA-833D-1F4F01C4B806}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE5FDC83-BF4E-483C-92B6-1D9E8D77FF9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE5FDC83-BF4E-483C-92B6-1D9E8D77FF9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE5FDC83-BF4E-483C-92B6-1D9E8D77FF9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE5FDC83-BF4E-483C-92B6-1D9E8D77FF9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{129FA662-F006-45EA-833D-1F4F01C4B806} = {BED112A8-9D92-4B23-8FC7-5DBBD42735FE}
+		{BB8AA94B-0967-424D-BC4A-6912942B9412} = {6F86247C-CB21-4C06-AC3B-E7C4BF7F70E4}
+		{03EB5C8C-33D6-4914-8F8C-813FB81C15F0} = {0F8CCCDC-8E8C-4F54-AE86-99F5DF8DB9D8}
+		{AE5FDC83-BF4E-483C-92B6-1D9E8D77FF9E} = {0F8CCCDC-8E8C-4F54-AE86-99F5DF8DB9D8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {04E83E3C-6D05-4CE5-800E-7BCEDB6A9D61}
