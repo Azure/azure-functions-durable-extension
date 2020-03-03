@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         methodDeclarations.Add(methodDeclaration);
                     }
 
-                    if (SyntaxNodeUtils.TryGetTypeArgumentIdentifierNode(expression, out SyntaxNode identifierNode))
+                    if (SyntaxNodeUtils.TryGetTypeArgumentNode(expression, out SyntaxNode identifierNode))
                     {
                         if (SyntaxNodeUtils.TryGetFunctionNameAndNode(expression, out SyntaxNode attributeArgument, out string functionName))
                         {

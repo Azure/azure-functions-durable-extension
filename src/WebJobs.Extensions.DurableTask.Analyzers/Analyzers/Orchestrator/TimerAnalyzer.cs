@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, Title, V1MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
         public static readonly DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         private static DurableVersion version;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Delay")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
                         {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Sleep")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
                         {

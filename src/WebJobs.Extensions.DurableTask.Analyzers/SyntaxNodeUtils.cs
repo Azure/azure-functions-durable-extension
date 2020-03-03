@@ -26,6 +26,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
 
+        public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
+        {
+            return model.SyntaxTree == node.SyntaxTree
+                ? model
+                : model.Compilation.GetSemanticModel(node.SyntaxTree);
+        }
+
         public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
         {
             closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
@@ -52,6 +59,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
             }
 
+            return false;
+        }
+
+        internal static bool TryGetMethodReturnTypeNode(SyntaxNode node, out SyntaxNode returnTypeNode)
+        {
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                returnTypeNode = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.ArrayType)).FirstOrDefault();
+                return true;
+            }
+
+            returnTypeNode = null;
             return false;
         }
 
@@ -206,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return inputType != null;
         }
 
-        internal static bool TryGetTypeArgumentIdentifierNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        internal static bool TryGetTypeArgumentNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
             var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
             if (genericName != null)
@@ -235,6 +254,101 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return false;
+        }
+
+        internal static string GetQualifiedTypeName(ITypeSymbol typeInfo)
+        {
+            if (typeInfo != null)
+            {
+                if (typeInfo is INamedTypeSymbol namedTypeInfo)
+                {
+                    var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
+                    if (tupleUnderlyingType != null)
+                    {
+                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
+                    }
+
+                    return typeInfo.ToString();
+                }
+
+                var arrayString = "";
+                if (typeInfo.Kind.Equals(SymbolKind.ArrayType))
+                {
+                    arrayString = "[]";
+                    typeInfo = ((IArrayTypeSymbol)typeInfo).ElementType;
+                }
+
+                if (!string.IsNullOrEmpty(typeInfo.Name))
+                {
+                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString() + arrayString;
+                }
+            }
+
+            return "Unknown Type";
+        }
+
+        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        {
+            if (invocationType == null || definitionType == null)
+            {
+                return false;
+            }
+
+            return invocationType.Equals(definitionType)
+                || AreEqualTupleTypes(invocationType, definitionType)
+                || AreCompatibleIEnumerableTypes(invocationType, definitionType);
+        }
+
+        private static bool AreEqualTupleTypes(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        {
+            var invocationQualifiedName = GetQualifiedTypeName(invocationType);
+            var definitionQualifiedName = GetQualifiedTypeName(definitionType);
+
+            return invocationQualifiedName.Equals(definitionQualifiedName);
+        }
+
+        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            if (AreArrayOrNamedTypes(invocationType, functionType) && UnderlyingTypesMatch(invocationType, functionType))
+            {
+                return ((invocationType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable")))
+                    && (functionType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable"))));
+            }
+
+            return false;
+        }
+
+        private static bool AreArrayOrNamedTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            return (invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
+                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType));
+        }
+
+        private static bool UnderlyingTypesMatch(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            return (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType)
+                && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType)
+                && invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name));
+        }
+
+        private static bool TryGetUnderlyingType(ITypeSymbol type, out ITypeSymbol underlyingType)
+        {
+            if (type.Kind.Equals(SymbolKind.ArrayType))
+            {
+                underlyingType = ((IArrayTypeSymbol)type).ElementType;
+                return true;
+            }
+
+            if (type.Kind.Equals(SymbolKind.NamedType))
+            {
+                underlyingType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
+                return underlyingType != null;
+            }
+            else
+            {
+                underlyingType = null;
+                return false;
+            }
         }
     }
 }

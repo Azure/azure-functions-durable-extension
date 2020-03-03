@@ -61,7 +61,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private void AnalyzeMethod(SyntaxNodeAnalysisContext context)
         {
             var declaration = (MethodDeclarationSyntax)context.Node;
-            if (!SyntaxNodeUtils.IsInsideOrchestrator(declaration))
+            if (!SyntaxNodeUtils.IsInsideOrchestrator(declaration)
+                || !SyntaxNodeUtils.IsInsideFunction(declaration))
             {
                 return;
             }

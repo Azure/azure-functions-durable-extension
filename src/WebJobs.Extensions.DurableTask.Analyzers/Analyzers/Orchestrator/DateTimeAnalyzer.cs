@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Now" || identifierText == "UtcNow" || identifierText == "Today")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         //Covers both DateTime and DateTimeOffset
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.DateTime"))

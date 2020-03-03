@@ -29,9 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var identifierText = identifierName.Identifier.ValueText;
-                    var identifierNameSymbol = semanticModel.GetSymbolInfo(identifierName, context.CancellationToken).Symbol;
-                    var typeInfo = semanticModel.GetTypeInfo(identifierName);
+                    var typeInfo = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, identifierName).GetTypeInfo(identifierName);
                     if (typeInfo.Type != null)
                     {
                         var type = typeInfo.Type.ToString();

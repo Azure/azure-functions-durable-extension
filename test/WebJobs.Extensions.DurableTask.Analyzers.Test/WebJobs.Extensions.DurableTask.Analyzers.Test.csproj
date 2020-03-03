@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj" />
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.1.1" />
   </ItemGroup>
 
 </Project>
