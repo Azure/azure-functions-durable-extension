@@ -12,10 +12,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     public static class SyntaxNodeUtils
     {
+        public static DurableVersion? version;
+
         public static DurableVersion GetDurableVersion(SemanticModel semanticModel)
         {
+            if (version != null)
+            {
+                return (DurableVersion)version;
+            }
+
             var versionTwoInterface = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext");
-            return versionTwoInterface != null ? DurableVersion.V2 : DurableVersion.V1;
+            version = versionTwoInterface != null ? DurableVersion.V2 : DurableVersion.V1;
+            return (DurableVersion)version;
         }
 
         public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
