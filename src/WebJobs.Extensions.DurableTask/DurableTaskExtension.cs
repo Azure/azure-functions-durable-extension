@@ -164,6 +164,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
+
+            var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
         }
 
         /// <summary>
