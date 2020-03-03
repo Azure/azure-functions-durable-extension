@@ -109,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                     {
                         return new WrappedFunctionResult(
                             WrappedFunctionResult.FunctionResultStatus.UserCodeError,
-                            result.Exception)
+                            result.Exception);
                     }
                 } else
                 {
