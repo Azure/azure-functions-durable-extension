@@ -467,7 +467,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     StringValues stringValues;
                     if (testHeaders.TryGetValue(header.Key, out stringValues))
                     {
-                        stringValues.Append(header.Value);
+                        stringValues = StringValues.Concat(stringValues, header.Value);
                         testHeaders[header.Key] = stringValues;
                     }
                     else

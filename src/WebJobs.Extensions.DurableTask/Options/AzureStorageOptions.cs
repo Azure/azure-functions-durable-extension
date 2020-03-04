@@ -163,7 +163,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // a number. If it does, prepend "t" to the beginning.
             if (char.IsNumber(validHubNameCharacters.First()))
             {
-                validHubNameCharacters = validHubNameCharacters.Prepend('t');
+                validHubNameCharacters = validHubNameCharacters.ToList();
+                ((List<char>)validHubNameCharacters).Insert(0, 't');
             }
 
             sanitizedHubName = new string(validHubNameCharacters
