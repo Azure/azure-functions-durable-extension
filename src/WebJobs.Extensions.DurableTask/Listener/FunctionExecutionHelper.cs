@@ -111,11 +111,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                             WrappedFunctionResult.FunctionResultStatus.UserCodeError,
                             result.Exception);
                     }
-                } else
+                }
+                else
                 {
                     return new WrappedFunctionResult(WrappedFunctionResult.FunctionResultStatus.Success, null);
                 }
-            } 
+            }
             catch (Exception e)
             {
                 return new WrappedFunctionResult(
