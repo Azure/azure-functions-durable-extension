@@ -7,11 +7,11 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>2</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-test2</Version>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

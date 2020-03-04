@@ -68,6 +68,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public override string ToString()
         {
+            // The scheduler id could be null if the object was deserialized.
+            if (this.schedulerId == null)
+            {
+                this.schedulerId = GetSchedulerIdFromEntityId(this);
+            }
+
             return this.schedulerId;
         }
 
