@@ -321,6 +321,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
