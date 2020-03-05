@@ -11,6 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public struct EntityId : IEquatable<EntityId>, IComparable
     {
+        private string schedulerId;
+
         /// <summary>
         /// Create an entity id for an entity.
         /// </summary>
@@ -25,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.EntityName = entityName.ToLowerInvariant();
             this.EntityKey = entityKey ?? throw new ArgumentNullException(nameof(entityKey), "Invalid entity id: entity key must not be null.");
+            this.schedulerId = GetSchedulerId(this.EntityName, this.EntityKey);
         }
 
         /// <summary>
@@ -41,7 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal static string GetSchedulerIdFromEntityId(EntityId entityId)
         {
-            return $"@{entityId.EntityName}@{entityId.EntityKey}";
+            return GetSchedulerId(entityId.EntityName, entityId.EntityKey);
+        }
+
+        private static string GetSchedulerId(string entityName, string entityKey)
+        {
+            return $"@{entityName}@{entityKey}";
         }
 
         internal static string GetSchedulerIdPrefixFromEntityName(string entityName)
@@ -60,7 +68,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public override string ToString()
         {
-            return GetSchedulerIdFromEntityId(this);
+            // The scheduler id could be null if the object was deserialized.
+            if (this.schedulerId == null)
+            {
+                this.schedulerId = GetSchedulerIdFromEntityId(this);
+            }
+
+            return this.schedulerId;
         }
 
         /// <inheritdoc/>
@@ -72,21 +86,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public bool Equals(EntityId other)
         {
-            return (this.EntityName, this.EntityKey).Equals((other.EntityName, other.EntityKey));
+            return this.ToString().Equals(other.ToString());
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return (this.EntityName, this.EntityKey).GetHashCode();
+            return this.ToString().GetHashCode();
         }
 
         /// <inheritdoc/>
         public int CompareTo(object obj)
         {
             var other = (EntityId)obj;
-            return ((IComparable)(this.EntityKey, this.EntityName))
-                      .CompareTo((other.EntityKey, other.EntityName));
+            return this.ToString().CompareTo(other.ToString());
         }
     }
 }

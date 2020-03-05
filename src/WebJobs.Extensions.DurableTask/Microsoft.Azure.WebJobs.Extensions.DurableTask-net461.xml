@@ -955,6 +955,12 @@
             </summary>
             <remarks>
             <para>
+            A terminated instance will eventually transition into the <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Terminated"/> state.
+            However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
+            along with other operations for that instance. You can use the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)"/>
+            method to know when a terminated instance has actually reached the Terminated state.
+            </para>
+            <para>
             Terminating an orchestration instance has no effect on any in-flight activity function executions
             or sub-orchestrations that were started by the current orchestration instance.
             </para>
