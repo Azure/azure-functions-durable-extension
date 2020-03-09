@@ -59,7 +59,10 @@ namespace VSSample
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
-            
+                outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByClassName), ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(""SayHelloByMethodName"", ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByMethodName), ""Amsterdam""));
+
                 return outputs;
             }
 
@@ -100,6 +103,23 @@ namespace VSSample
         public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<(string, int)>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(nameof(SayHelloByMethodName))]
+        public static string SayHelloByMethodName([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+    }
+
+    public class SayHelloByClassName
+    {
+        [FunctionName(nameof(SayHelloByClassName))]
+        public string Run([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
     }
