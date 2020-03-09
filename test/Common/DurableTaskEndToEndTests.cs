@@ -4198,11 +4198,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEnum, this.output);
-                await client.WaitForCompletionAsync(this.output);
-                var status = client.GetStatusAsync();
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
-                Assert.Contains("Value2", status.Result.Output.ToString());
+                Assert.Contains("Value2", status.Output.ToString());
 
                 await host.StopAsync();
             }
