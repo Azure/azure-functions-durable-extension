@@ -140,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var dateTime = DateTime.Now;
             var cancelToken = CancellationToken.None;
             var durableOrchestrationContextBaseMock = new Mock<IDurableOrchestrationContext> { };
-            durableOrchestrationContextBaseMock.Setup(x => x.WaitForExternalEvent<object>(this.operationName, this.timeSpan)).Returns(this.taskFromTen);
+            durableOrchestrationContextBaseMock.Setup(x => x.WaitForExternalEvent<object>(this.operationName, this.timeSpan, CancellationToken.None)).Returns(this.taskFromTen);
             var result = durableOrchestrationContextBaseMock.Object.WaitForExternalEvent(this.operationName, this.timeSpan);
             var resultValue = await (Task<object>)result;
             resultValue.Should().Be(this.stateValueTen);

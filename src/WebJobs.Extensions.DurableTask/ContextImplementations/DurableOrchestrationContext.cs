@@ -341,20 +341,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout)
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
-            Action<TaskCompletionSource<T>> timedOutAction = cts =>
-                cts.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
-            return this.WaitForExternalEvent(name, timeout, timedOutAction);
+            Action<TaskCompletionSource<T>> timedOutAction = tcs =>
+                tcs.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
+            return this.WaitForExternalEvent(name, timeout, timedOutAction, cancelToken);
         }
 
         /// <inheritdoc/>
-        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
-            Action<TaskCompletionSource<T>> timedOutAction = cts => cts.TrySetResult(defaultValue);
-            return this.WaitForExternalEvent(name, timeout, timedOutAction);
+            Action<TaskCompletionSource<T>> timedOutAction = tcs => tcs.TrySetResult(defaultValue);
+            return this.WaitForExternalEvent(name, timeout, timedOutAction, cancelToken);
         }
 
         /// <inheritdoc />
@@ -869,7 +869,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction)
+        private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction, CancellationToken cancelToken)
         {
             if (!this.durabilityProvider.ValidateDelayTime(timeout, out string errorMessage))
             {
@@ -877,7 +877,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var tcs = new TaskCompletionSource<T>();
-            var cts = new CancellationTokenSource();
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
             var timeoutAt = this.InnerContext.CurrentUtcDateTime + timeout;
             var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
