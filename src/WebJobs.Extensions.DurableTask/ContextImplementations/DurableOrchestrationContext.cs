@@ -418,6 +418,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         string IDurableOrchestrationContext.StartNewOrchestration(string functionName, object input, string instanceId)
         {
+            // correlation
+#if NETSTANDARD2_0
+            var context = CorrelationTraceContext.Current;
+#endif
             this.ThrowIfInvalidAccess();
             var actualInstanceId = string.IsNullOrEmpty(instanceId) ? this.NewGuid().ToString() : instanceId;
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input, null);

@@ -12,7 +12,7 @@
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
     <LangVersion>7.3</LangVersion>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -52,19 +52,26 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.5" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.102" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.102" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
+
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
+      <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.102" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.102" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.12.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -73,8 +80,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.2" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.2.0"/>
   </ItemGroup>

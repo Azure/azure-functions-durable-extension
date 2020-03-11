@@ -17,6 +17,7 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -67,6 +68,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
 
+        private ITelemetryActivator telemetryActivator;
+
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
 
@@ -94,6 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
+        /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
@@ -103,7 +107,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
-            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
+            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null
+#if !FUNCTIONS_V1
+            ,
+            ITelemetryActivator telemetryActivator = null
+#endif
+            )
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -149,7 +158,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
             hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.telemetryActivator = telemetryActivator;
+            this.telemetryActivator?.Initialize();
 #endif
+
         }
 
 #if FUNCTIONS_V1
