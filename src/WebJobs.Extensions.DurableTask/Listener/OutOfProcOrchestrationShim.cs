@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -38,6 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WaitForExternalEvent = 6,
             CallEntity = 7,
             CallHttp = 8,
+            SignalEntity = 9,
+            Lock = 10,
         }
 
         internal async Task HandleOutOfProcExecutionAsync(JObject executionJson)
@@ -124,9 +127,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
                         case AsyncActionType.CallEntity:
-                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
-                            break;
+                            {
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
+                                break;
+                            }
+                        case AsyncActionType.SignalEntity:
+                            {
+                                // We do not add a task because this is 'fire and foreget'
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
+                                break;
+                            }
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
                             break;
@@ -136,6 +148,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CallHttp:
                             tasks.Add(this.context.CallHttpAsync(action.HttpRequest));
                             break;
+                        case AsyncActionType.Lock:
+                            {
+                                var entityIDs = action.InstanceIDs.Select(x =>
+                                    EntityId.GetEntityIdFromSchedulerId(x)).ToArray();
+                                tasks.Add(this.context.LockAsync(entityIDs));
+                                break;
+                            }
                         default:
                             break;
                     }
@@ -177,6 +196,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("input")]
             internal object Input { get; set; }
+
+            [JsonProperty("instanceIDs")]
+            internal string[] InstanceIDs { get; set; }
 
             [JsonProperty("fireAt")]
             internal DateTime FireAt { get; set; }
