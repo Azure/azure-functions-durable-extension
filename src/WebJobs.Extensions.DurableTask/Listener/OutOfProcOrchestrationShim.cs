@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             }
                         case AsyncActionType.SignalEntity:
                             {
-                                // We do not add a task because this is 'fire and foreget'
+                                // We do not add a task because this is 'fire and forget'
                                 var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
                                 this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
                                 break;
