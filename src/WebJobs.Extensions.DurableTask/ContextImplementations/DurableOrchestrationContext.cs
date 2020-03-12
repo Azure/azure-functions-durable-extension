@@ -370,6 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentNullException(nameof(retryOptions));
             }
+
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, retryOptions, input, null);
         }
 

@@ -40,7 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             CallEntity = 7,
             CallHttp = 8,
             SignalEntity = 9,
-            Lock = 10,
         }
 
         internal async Task HandleOutOfProcExecutionAsync(JObject executionJson)
@@ -132,6 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
                                 break;
                             }
+
                         case AsyncActionType.SignalEntity:
                             {
                                 // We do not add a task because this is 'fire and forget'
@@ -139,6 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
                                 break;
                             }
+
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
                             break;
@@ -148,13 +149,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CallHttp:
                             tasks.Add(this.context.CallHttpAsync(action.HttpRequest));
                             break;
-                        case AsyncActionType.Lock:
-                            {
-                                var entityIDs = action.InstanceIDs.Select(x =>
-                                    EntityId.GetEntityIdFromSchedulerId(x)).ToArray();
-                                tasks.Add(this.context.LockAsync(entityIDs));
-                                break;
-                            }
                         default:
                             break;
                     }
