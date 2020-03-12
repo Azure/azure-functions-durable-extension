@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -190,9 +189,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("input")]
             internal object Input { get; set; }
-
-            [JsonProperty("instanceIDs")]
-            internal string[] InstanceIDs { get; set; }
 
             [JsonProperty("fireAt")]
             internal DateTime FireAt { get; set; }
