@@ -53,12 +53,12 @@ namespace VSSample
                 var outputs = new List<string>();
 
                 // Matching names
-                //outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
-                //outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
-                //outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
-                //outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
-                //outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
-                //outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByClassName), ""Amsterdam""));
                 outputs.Add(await context.CallActivityAsync<string>(""SayHelloByMethodName"", ""Amsterdam""));
                 outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByMethodName), ""Amsterdam""));
