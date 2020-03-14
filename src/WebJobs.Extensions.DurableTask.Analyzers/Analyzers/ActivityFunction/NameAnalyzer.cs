@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var activityInvocation in calledFunctions)
             {
-                if (!availableFunctions.Select(x => GetCleanedFunctionName(x.FunctionName)).Contains(GetCleanedFunctionName(activityInvocation.Name)))
+                if (!availableFunctions.Select(x => x.FunctionName).Contains(activityInvocation.Name))
                 {
                     if (SyntaxNodeUtils.TryGetClosestString(activityInvocation.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
                     {
@@ -50,18 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
-        }
-
-        private static string GetCleanedFunctionName(string functionName)
-        {
-            const string nameofStart = "nameof(";
-            const string nameofEnd = ")";
-            if (functionName.StartsWith(nameofStart) && functionName.EndsWith(nameofEnd))
-            {
-                functionName = functionName.Substring(nameofStart.Length, functionName.Length - nameofStart.Length - nameofEnd.Length);
-            }
-
-            return functionName;
         }
     }
 }
