@@ -50,6 +50,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             void Delete();
         }
 
+        public interface IJob
+        {
+            void SetStartDate(DateTime date);
+
+            void SetEndDate(DateTime date);
+
+            Task<TimeSpan> GetDuration();
+
+            void Delete();
+        }
+
+        public interface IPrimaryJob : IJob
+        {
+            void SetId(string Id);
+
+            Task<string> GetId();
+        }
+
         [FunctionName(nameof(ChatRoom))]
         public static Task ChatRoomFunction([EntityTrigger] IDurableEntityContext context)
         {
@@ -60,6 +78,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static Task CounterFunction([EntityTrigger] IDurableEntityContext context)
         {
             return context.DispatchAsync<CounterWithProxy>();
+        }
+
+        [FunctionName(nameof(JobWithProxyMultiInterface))]
+        public static Task JobFunction([EntityTrigger] IDurableEntityContext context)
+        {
+            return context.DispatchAsync<JobWithProxyMultiInterface>();
         }
 
         [FunctionName(nameof(StorageBackedCounter))]
@@ -195,6 +219,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public void Delete()
             {
                 Entity.Current.DeleteState();
+            }
+        }
+
+        //-------------- An entity representing a job object with multiple interfaces -----------------
+        [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
+        public class JobWithProxyMultiInterface : IPrimaryJob
+        {
+            [JsonProperty("id")]
+            public string Id { get; private set; }
+
+            [JsonProperty("startDate")]
+            public DateTime StartDate { get; private set; }
+
+            [JsonProperty("endDate")]
+            public DateTime EndDate { get; private set; }
+
+            public void SetId(string Id) => this.Id = Id;
+
+            public void SetEndDate(DateTime date) => this.EndDate = date;
+
+            public void SetStartDate(DateTime date) => this.StartDate = date;
+
+            public Task<string> GetId() => Task.FromResult(this.Id);
+
+            public Task<TimeSpan> GetDuration() => Task.FromResult(this.EndDate - this.StartDate);
+
+            public void Delete()
+            {
+                Entity.Current.DeleteState();
+            }
+
+            public JobWithProxyMultiInterface()
+            {
+            }
+
+            [FunctionName(nameof(JobWithProxyMultiInterface))]
+            public static Task Run(
+            [EntityTrigger] IDurableEntityContext context)
+            {
+                return context.DispatchAsync<JobWithProxyMultiInterface>();
             }
         }
     }

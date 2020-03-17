@@ -1082,6 +1082,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result == 16;
         }
 
+        public static async Task<bool> EntityProxy_MultipleInterfaces([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var job = ctx.GetInput<EntityId>();
+
+            //var jobEntity = ctx.CreateEntityProxy<TestEntityClasses.IJob>(job);
+            var primaryJobEntity = ctx.CreateEntityProxy<TestEntityClasses.IPrimaryJob>(job);
+            var date = DateTime.MinValue;
+
+            // set start date
+            primaryJobEntity.SetStartDate(date);
+
+            // set job id
+            primaryJobEntity.SetId(ctx.InstanceId);
+
+            // set end date
+            primaryJobEntity.SetEndDate(date.AddMinutes(10));
+
+            var id = await primaryJobEntity.GetId();
+            var duration = await primaryJobEntity.GetDuration();
+
+            // destruct
+            primaryJobEntity.Delete();
+
+            return id == ctx.InstanceId && duration == TimeSpan.FromMinutes(10);
+        }
+
         public static async Task<bool> EntityProxy_NameResolve([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var entityKey = ctx.GetInput<string>();
