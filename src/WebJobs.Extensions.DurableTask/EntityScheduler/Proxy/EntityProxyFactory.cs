@@ -88,7 +88,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void BuildMethods(TypeBuilder typeBuilder, Type interfaceType)
         {
-            var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+            var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public).ToList();
+
+            // Interfaces can inherit from other interfaces, getting those methods too
+            var interfaces = interfaceType.GetInterfaces();
+            if (interfaces.Length > 0)
+            {
+                foreach (var inter in interfaces)
+                {
+                    methods.AddRange(inter.GetMethods(BindingFlags.Instance | BindingFlags.Public));
+                }
+            }
 
             var entityProxyMethods = typeof(EntityProxy).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance);
 
