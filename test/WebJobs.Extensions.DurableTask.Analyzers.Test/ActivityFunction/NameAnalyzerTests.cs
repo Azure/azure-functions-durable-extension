@@ -59,7 +59,10 @@ namespace VSSample
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
-            
+                outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByClassName), ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(""SayHelloByMethodName"", ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByMethodName), ""Amsterdam""));
+
                 return outputs;
             }
 
@@ -100,6 +103,23 @@ namespace VSSample
         public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<(string, int)>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(nameof(SayHelloByMethodName))]
+        public static string SayHelloByMethodName([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+    }
+
+    public class SayHelloByClassName
+    {
+        [FunctionName(nameof(SayHelloByClassName))]
+        public string Run([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
     }
@@ -148,6 +168,60 @@ namespace VSSample
             {
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityNameAnalyzerCloseMessageFormat, "E1_SayHey", "E1_SayHello"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 23, 69)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void Name_InvalidFunctionName_NameOfClassDoesNotMatchFunctionName()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public class HelloSequence
+    {
+        [FunctionName(""E1_HelloSequence"")]
+        public async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<string>(nameof(SayHello), 4));
+            
+                return outputs;
+            }
+    }
+
+    public class SayHello
+    {
+        [FunctionName(""SayHi"")]
+        public string Run([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityNameAnalyzerCloseMessageFormat, "SayHello", "SayHi"),
                 Severity = Severity,
                 Locations =
                  new[] {
