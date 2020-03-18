@@ -1086,21 +1086,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var job = ctx.GetInput<EntityId>();
 
-            //var jobEntity = ctx.CreateEntityProxy<TestEntityClasses.IJob>(job);
+            var jobEntity = ctx.CreateEntityProxy<TestEntityClasses.IJob>(job);
             var primaryJobEntity = ctx.CreateEntityProxy<TestEntityClasses.IPrimaryJob>(job);
             var date = DateTime.MinValue;
 
             // set start date
-            primaryJobEntity.SetStartDate(date);
+            jobEntity.SetStartDate(date);
 
             // set job id
             primaryJobEntity.SetId(ctx.InstanceId);
 
             // set end date
-            primaryJobEntity.SetEndDate(date.AddMinutes(10));
+            jobEntity.SetEndDate(date.AddMinutes(10));
 
             var id = await primaryJobEntity.GetId();
-            var duration = await primaryJobEntity.GetDuration();
+            var duration = await jobEntity.GetDuration();
 
             // destruct
             primaryJobEntity.Delete();
