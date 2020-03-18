@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
             }
 
-            innerContext.DataConverter = this.dataConverter;
+            innerContext.DataConverter = this.dataConverter.MessageConverter;
             this.context.InnerContext = innerContext;
             this.context.RawInput = serializedInput;
 

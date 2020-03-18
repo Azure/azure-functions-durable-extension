@@ -149,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await this.doneProcessingMessages.Task;
             }
 
-            innerContext.DataConverter = this.dataConverter;
+            innerContext.DataConverter = this.dataConverter.MessageConverter;
             this.Config.TraceHelper.FunctionStarting(
                 this.context.HubName,
                 this.context.Name,

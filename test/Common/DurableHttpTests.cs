@@ -892,7 +892,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
         /// when a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
-        // [Theory]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_AddsBearerToken(string storageProvider)
@@ -932,7 +932,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
         /// when a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
-        // [Theory]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttp_AsyncAPI_PollIgnoresFunctionsKey(string storageProvider)
@@ -1000,7 +1000,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// when a Bearer Token is added to the DurableHttpRequest object and follows the
         /// asynchronous pattern.
         /// </summary>
-        // [Theory]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_AddsBearerToken(string storageProvider)
