@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
 
         internal DurableClient(
             DurabilityProvider serviceClient,
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
 
-            this.client = new TaskHubClient(serviceClient, this.dataConverter);
+            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
             this.durabilityProvider = serviceClient;
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
@@ -278,10 +278,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (operationInput != null)
             {
-                request.SetInput(operationInput, this.dataConverter);
+                request.SetInput(operationInput, this.messageDataConverter);
             }
 
-            var jrequest = JToken.FromObject(request, this.dataConverter.MessageSerializer);
+            var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
             var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
             await client.RaiseEventAsync(instance, eventName, jrequest);
 
@@ -425,12 +425,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
-            string entityState = await provider.RetrieveSerializedEntityState(entityId, this.dataConverter.MessageSettings);
+            string entityState = await provider.RetrieveSerializedEntityState(entityId, this.messageDataConverter.JsonSettings);
 
             return new EntityStateResponse<T>()
             {
                 EntityExists = entityState != null,
-                EntityState = this.dataConverter.Deserialize<T>(entityState),
+                EntityState = this.messageDataConverter.Deserialize<T>(entityState),
             };
         }
 

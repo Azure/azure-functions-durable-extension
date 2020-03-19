@@ -20,14 +20,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskEntityShim shim;
 
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
+
+        private readonly MessagePayloadDataConverter errorDataConverter;
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
         public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
+            this.errorDataConverter = config.ErrorDataConverter;
             this.self = entity;
             this.shim = shim;
         }
@@ -157,13 +160,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         TInput IDurableEntityContext.GetInput<TInput>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput<TInput>(this.dataConverter);
+            return this.CurrentOperation.GetInput<TInput>(this.messageDataConverter);
         }
 
         object IDurableEntityContext.GetInput(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput(argumentType, this.dataConverter);
+            return this.CurrentOperation.GetInput(argumentType, this.messageDataConverter);
         }
 
         TState IDurableEntityContext.GetState<TState>(Func<TState> initializer)
@@ -181,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    result = this.dataConverter.Deserialize<TState>(this.State.EntityState);
+                    result = this.messageDataConverter.Deserialize<TState>(this.State.EntityState);
                 }
                 catch (Exception e)
                 {
@@ -269,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    this.State.EntityState = this.dataConverter.MessageConverter.Serialize(this.CurrentState);
+                    this.State.EntityState = this.messageDataConverter.Serialize(this.CurrentState);
                 }
                 catch (Exception e)
                 {
@@ -286,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     serializationErrorMessage = new ResponseMessage()
                     {
                         ExceptionType = serializationException.GetType().AssemblyQualifiedName,
-                        Result = this.dataConverter.ErrorConverter.Serialize(serializationException),
+                        Result = this.errorDataConverter.Serialize(serializationException),
                     };
                 }
 
@@ -333,7 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (input != null)
             {
-                request.SetInput(input, this.dataConverter);
+                request.SetInput(input, this.messageDataConverter);
             }
 
             this.SendOperationMessage(target, request);
@@ -384,7 +387,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
-            this.CurrentOperationResponse.SetResult(result, this.dataConverter);
+            this.CurrentOperationResponse.SetResult(result, this.messageDataConverter);
         }
 
         private void ThrowIfInvalidAccess()

@@ -11,64 +11,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class MessagePayloadDataConverter : JsonDataConverter
     {
-        private MessagePayloadDataConverter messageConverter;
-        private MessagePayloadDataConverter errorConverter;
-        private JsonSerializer messageSerializer;
-
-        public MessagePayloadDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory, IErrorSerializerSettingsFactory errorSerializerSettingsFactory)
-            : base(messageSerializerSettingsFactory.CreateJsonSerializerSettings())
-        {
-            this.MessageSettings = messageSerializerSettingsFactory.CreateJsonSerializerSettings();
-            this.ErrorSettings = errorSerializerSettingsFactory.CreateJsonSerializerSettings();
-        }
-
-        private MessagePayloadDataConverter(JsonSerializerSettings settings)
+        public MessagePayloadDataConverter(JsonSerializerSettings settings, bool isDefault)
             : base(settings)
         {
+            this.IsDefault = isDefault;
+            this.JsonSettings = settings;
+            this.JsonSerializer = JsonSerializer.Create(settings);
         }
 
-        internal JsonSerializerSettings MessageSettings { get; }
+        public bool IsDefault { get; }
 
-        internal JsonSerializerSettings ErrorSettings { get; }
+        internal JsonSerializerSettings JsonSettings { get; }
 
-        internal MessagePayloadDataConverter MessageConverter
-        {
-            get
-            {
-                if (this.messageConverter == null)
-                {
-                    this.messageConverter = new MessagePayloadDataConverter(this.MessageSettings);
-                }
-
-                return this.messageConverter;
-            }
-        }
-
-        internal MessagePayloadDataConverter ErrorConverter
-        {
-            get
-            {
-                if (this.errorConverter == null)
-                {
-                    this.errorConverter = new MessagePayloadDataConverter(this.ErrorSettings);
-                }
-
-                return this.errorConverter;
-            }
-        }
-
-        internal JsonSerializer MessageSerializer
-        {
-            get
-            {
-                if (this.messageSerializer == null)
-                {
-                    this.messageSerializer = JsonSerializer.Create(this.MessageSettings);
-                }
-
-                return this.messageSerializer;
-            }
-        }
+        internal JsonSerializer JsonSerializer { get; }
 
         /// <summary>
         /// JSON-serializes the specified object.
