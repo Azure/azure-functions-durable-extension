@@ -342,7 +342,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
             var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
-            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
+            this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
+            this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
