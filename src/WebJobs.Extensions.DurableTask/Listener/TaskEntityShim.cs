@@ -49,6 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal List<RequestMessage> OperationBatch => this.operationBatch;
 
+        public bool RollbackFailedOperations => this.context.Config.Options.RollbackEntityOperationsOnExceptions;
+
         public void AddOperationToBatch(RequestMessage operationMessage)
         {
             this.operationBatch.Add(operationMessage);
@@ -167,8 +169,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // (in which case we will abort the batch instead of committing it)
             if (this.context.InternalError == null)
             {
-                // try to serialize the updated entity state
-                bool writeBackSuccessful = this.context.TryWriteback(out var serializationErrorMessage);
+                bool writeBackSuccessful = true;
+                ResponseMessage serializationErrorMessage = null;
+
+                if (this.RollbackFailedOperations)
+                {
+                    // the state has already been written back, since it is
+                    // done right after each operation.
+                }
+                else
+                {
+                    // we are writing back the state here, after executing
+                    // the entire batch of operations.
+                    writeBackSuccessful = this.context.TryWriteback(out serializationErrorMessage);
+                }
 
                 // Send all buffered outgoing messages
                 this.context.SendOutbox(innerContext, writeBackSuccessful, serializationErrorMessage);
@@ -267,6 +281,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
 
+            bool operationFailed = false;
+            var initialOutboxPosition = this.context.OutboxPosition;
+
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
 
@@ -298,8 +315,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.CurrentOperationResponse.SetExceptionResult(
                     e,
                     this.context.CurrentOperation.Operation,
-                    this.EntityId,
                     this.dataConverter);
+
+                operationFailed = true;
+            }
+
+            if (this.RollbackFailedOperations)
+            {
+                // we write back the entity state after each successful operation
+                if (!operationFailed)
+                {
+                    if (!this.context.TryWriteback(out var errorResponseMessage))
+                    {
+                        // state serialization failed; create error response and roll back.
+                        this.context.CurrentOperationResponse = errorResponseMessage;
+                        operationFailed = true;
+                    }
+                }
+
+                if (operationFailed)
+                {
+                    // discard changes and don't send any signals
+                    this.context.Rollback(initialOutboxPosition);
+                }
             }
 
             // clear the async-local static context that is visible to the application code
@@ -310,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
 
-            if (!response.IsException)
+            if (!operationFailed)
             {
                 this.Config.TraceHelper.OperationCompleted(
                         this.context.HubName,
@@ -342,7 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
                 var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
-                this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
+                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
             }
         }
 
