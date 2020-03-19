@@ -193,7 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
             }
 
-            isDefault = messageSerializerSettingsFactory is MessageSerializerSettingsFactory ? true : false;
+            isDefault = messageSerializerSettingsFactory is MessageSerializerSettingsFactory;
 
             return new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
         }
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
             }
 
-            isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory ? true : false;
+            isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory;
 
             return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
         }

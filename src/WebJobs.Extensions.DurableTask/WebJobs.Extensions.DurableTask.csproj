@@ -63,8 +63,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.4" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.3" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
   </ItemGroup>
@@ -75,6 +73,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.4" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.3" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.2.0" />
   </ItemGroup>
