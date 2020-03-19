@@ -56,7 +56,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.14" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
@@ -73,10 +73,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.4" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.3" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.2.0"/>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.2.0" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->

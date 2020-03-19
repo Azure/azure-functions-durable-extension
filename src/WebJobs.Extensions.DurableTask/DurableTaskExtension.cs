@@ -131,17 +131,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
 
-            if (messageSerializerSettingsFactory == null)
-            {
-                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
-            }
-
-            if (errorSerializerSettingsFactory == null)
-            {
-                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
-            }
-
-            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
+            this.MessageDataConverter = this.CreateMessageDataConverter(messageSerializerSettingsFactory);
+            this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
@@ -190,7 +181,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
-        internal MessagePayloadDataConverter DataConverter { get; private set; }
+        internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
+
+        internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
+
+        private MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
+        {
+            bool isDefault;
+            if (messageSerializerSettingsFactory == null)
+            {
+                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            }
+
+            isDefault = messageSerializerSettingsFactory is MessageSerializerSettingsFactory;
+
+            return new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
+
+        private MessagePayloadDataConverter CreateErrorDataConverter(IErrorSerializerSettingsFactory errorSerializerSettingsFactory)
+        {
+            bool isDefault;
+            if (errorSerializerSettingsFactory == null)
+            {
+                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            }
+
+            isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory;
+
+            return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -323,7 +342,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
             var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
-            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
+            this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
+            this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
@@ -550,7 +570,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
-                                var requestMessage = this.DataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
+                                var requestMessage = this.MessageDataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
 
                                 IEnumerable<RequestMessage> deliverNow;
 
@@ -582,7 +602,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             else
                             {
                                 // we are receiving a lock release
-                                var message = this.DataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
+                                var message = this.MessageDataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
 
                                 if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {

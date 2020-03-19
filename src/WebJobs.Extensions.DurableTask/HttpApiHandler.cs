@@ -65,13 +65,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
         private readonly LocalHttpListener localHttpListener;
 
         public HttpApiHandler(DurableTaskExtension config, ILogger logger)
         {
             this.config = config;
-            this.dataConverter = this.config.DataConverter;
+            this.messageDataConverter = this.config.MessageDataConverter;
             this.logger = logger;
 
             // The listen URL must not include the path.
@@ -694,7 +694,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
                     string json = await request.Content.ReadAsStringAsync();
-                    input = JsonConvert.DeserializeObject(json, this.dataConverter.MessageSettings);
+                    input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
                 string id = await client.StartNewAsync(functionName, instanceId, input);

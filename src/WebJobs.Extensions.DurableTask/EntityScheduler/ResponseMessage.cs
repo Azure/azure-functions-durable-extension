@@ -27,17 +27,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                this.Result = dataConverter.MessageConverter.Serialize(result);
+                this.Result = dataConverter.Serialize(result);
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, MessagePayloadDataConverter dataConverter)
+        public void SetExceptionResult(Exception exception, string operation, MessagePayloadDataConverter errorDataConverter)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
             try
             {
-                this.Result = dataConverter.ErrorConverter.Serialize(exception);
+                this.Result = errorDataConverter.Serialize(exception);
             }
             catch (Exception)
             {
@@ -49,11 +49,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     : new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
 
                 this.ExceptionType = wrapper.GetType().AssemblyQualifiedName;
-                this.Result = dataConverter.ErrorConverter.Serialize(wrapper);
+                this.Result = errorDataConverter.Serialize(wrapper);
             }
         }
 
-        public T GetResult<T>(MessagePayloadDataConverter dataConverter)
+        public T GetResult<T>(MessagePayloadDataConverter messageDataConverter, MessagePayloadDataConverter errorDataConverter)
         {
             if (this.IsException)
             {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     var type = Type.GetType(this.ExceptionType, true);
-                    e = (Exception)dataConverter.ErrorConverter.Deserialize(this.Result, type);
+                    e = (Exception)errorDataConverter.Deserialize(this.Result, type);
                 }
                 catch
                 {
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return dataConverter.MessageConverter.Deserialize<T>(this.Result);
+                return messageDataConverter.Deserialize<T>(this.Result);
             }
         }
 

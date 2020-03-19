@@ -38,7 +38,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurabilityProvider durabilityProvider;
         private readonly int maxActionCount;
 
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
+        private readonly MessagePayloadDataConverter errorDataConverter;
 
         private int actionCount;
 
@@ -56,7 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
+            this.errorDataConverter = config.ErrorDataConverter;
             this.durabilityProvider = durabilityProvider;
             this.actionCount = 0;
             this.maxActionCount = config.Options.MaxOrchestrationActions;
@@ -147,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return default(T);
             }
 
-            return this.dataConverter.MessageConverter.Deserialize<T>(this.RawInput);
+            return this.messageDataConverter.Deserialize<T>(this.RawInput);
         }
 
         /// <summary>
@@ -175,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.serializedOutput = this.dataConverter.MessageConverter.Serialize(output);
+                    this.serializedOutput = this.messageDataConverter.Serialize(output);
                 }
             }
             else
@@ -196,7 +198,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Limit the custom status payload to 16 KB
             const int MaxCustomStatusPayloadSizeInKB = 16;
-            this.serializedCustomStatus = this.dataConverter.MessageConverter.Serialize(
+            this.serializedCustomStatus = this.messageDataConverter.Serialize(
                 customStatusObject,
                 MaxCustomStatusPayloadSizeInKB);
         }
@@ -579,7 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                     if (input != null)
                     {
-                        request.SetInput(input, this.dataConverter);
+                        request.SetInput(input, this.messageDataConverter);
                     }
 
                     this.SendEntityMessage(target, request);
@@ -722,7 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // can rethrow an exception if that was the result of the operation
-            return response.GetResult<TResult>(this.dataConverter);
+            return response.GetResult<TResult>(this.messageDataConverter, this.errorDataConverter);
         }
 
         internal Task<T> WaitForExternalEvent<T>(string name, string reason)
@@ -801,7 +803,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.pendingExternalEvents.Remove(name);
                     }
 
-                    object deserializedObject = this.dataConverter.MessageConverter.Deserialize(input, genericTypeArgument);
+                    object deserializedObject = this.messageDataConverter.Deserialize(input, genericTypeArgument);
 
                     if (deserializedObject is ResponseMessage responseMessage)
                     {
