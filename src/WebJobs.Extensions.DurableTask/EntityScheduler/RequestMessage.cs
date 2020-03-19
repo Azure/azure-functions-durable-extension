@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = dataConverter.MessageConverter.Serialize(obj);
+                    this.Input = dataConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return dataConverter.MessageConverter.Deserialize<T>(this.Input);
+                return dataConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return dataConverter.MessageConverter.Deserialize(this.Input, inputType);
+                return dataConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {

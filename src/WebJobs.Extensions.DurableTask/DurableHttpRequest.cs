@@ -169,8 +169,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    // Don't know how to serialize this - use default behavior
+                    // Don't know how to serialize this - use default behavior, forcing TypeNameHandling.Objects to correctly serialize ITokenSource
+                    var currTypeNameSetting = serializer.TypeNameHandling;
+                    serializer.TypeNameHandling = TypeNameHandling.Objects;
                     serializer.Serialize(writer, value);
+                    serializer.TypeNameHandling = currTypeNameSetting;
                 }
             }
         }

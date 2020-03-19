@@ -629,10 +629,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return sum;
         }
 
-        public static ComplexType ComplexTypeOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext context)
+        public static Task<ComplexType> ComplexTypeOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var input = context.GetInput<ComplexType>();
-            return input;
+            var activityOutput = context.CallActivityAsync<ComplexType>(nameof(TestActivities.ComplexTypeActivity), input);
+            return activityOutput;
         }
 
 #pragma warning disable 618

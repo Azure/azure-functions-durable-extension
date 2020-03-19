@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableEntityContext context;
 
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
 
         private readonly TaskCompletionSource<object> doneProcessingMessages
             = new TaskCompletionSource<object>();
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TaskEntityShim(DurableTaskExtension config, string schedulerId)
             : base(config)
         {
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
             this.SchedulerId = schedulerId;
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
             this.context = new DurableEntityContext(config, this.EntityId, this);
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return this.dataConverter.MessageConverter.Serialize(new EntityStatus()
+                return this.messageDataConverter.Serialize(new EntityStatus()
                 {
                     EntityExists = this.context.State.EntityExists,
                     QueueSize = this.context.State.Queue?.Count ?? 0,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     // a previous incarnation of this instance called continueAsNew
-                    this.context.State = this.dataConverter.Deserialize<SchedulerState>(serializedInput);
+                    this.context.State = this.messageDataConverter.Deserialize<SchedulerState>(serializedInput);
                 }
                 catch (Exception e)
                 {
@@ -147,6 +147,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // we are idle after a ContinueAsNew - the batch is empty.
                 // Wait for more messages to get here (via extended sessions)
                 await this.doneProcessingMessages.Task;
+            }
+
+            if (!this.messageDataConverter.IsDefault)
+            {
+                innerContext.DataConverter = this.messageDataConverter;
             }
 
             this.Config.TraceHelper.FunctionStarting(
@@ -299,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     e,
                     this.context.CurrentOperation.Operation,
                     this.EntityId,
-                    this.dataConverter);
+                    this.messageDataConverter);
             }
 
             // clear the async-local static context that is visible to the application code
@@ -341,7 +346,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!request.IsSignal)
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
-                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
+                var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
                 this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
             }
         }
