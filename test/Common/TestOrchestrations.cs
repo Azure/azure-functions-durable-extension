@@ -784,7 +784,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             try
             {
-
                 Assert.False(await ctx.CallEntityAsync<bool>(entityId, "exists"));
 
                 await Assert.ThrowsAsync<EntitySchedulerException>(() => entity.SetToUnserializable());
