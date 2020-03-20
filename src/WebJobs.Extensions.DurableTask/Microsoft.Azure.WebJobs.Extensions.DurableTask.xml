@@ -2558,7 +2558,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.EntityState">
             <summary>
-            The serialized entity state. This can be stale while CurrentStateView != null.
+            The last serialized entity state.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Queue">
@@ -3362,6 +3362,19 @@
             Preview setting for gracefully shutting down to prevent WebJob shutdowns from failing
             activities or orchestrations.
             </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.RollbackEntityOperationsOnExceptions">
+            <summary>
+            Controls whether an uncaught exception inside an entity operation should roll back the effects of the operation.
+            </summary>
+            <remarks>
+            The rollback undoes all internal effects of an operation
+            (sent signals, and state creation, deletion, or modification).
+            However, it does not roll back external effects (such as I/O that was performed).
+            This setting can affect serialization overhead: if true, the entity state is serialized
+            after each individual operation. If false, the entity state is serialized
+            only after an entire batch of operations completes.
+            </remarks>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
             <summary>
