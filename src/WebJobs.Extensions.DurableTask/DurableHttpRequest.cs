@@ -181,50 +181,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             private static JsonSerializer GetTokenSourceSerializer(JsonSerializer serializer)
             {
-                if (tokenSerializer == null)
+                if (tokenSerializer != null)
                 {
-                    if (serializer.TypeNameHandling == TypeNameHandling.Objects
+                    return tokenSerializer
+                }
+
+                if (serializer.TypeNameHandling == TypeNameHandling.Objects
                     || serializer.TypeNameHandling == TypeNameHandling.All)
-                    {
-                        tokenSerializer = serializer;
-                    }
+                {
+                    tokenSerializer = serializer;
+                    return tokenSerializer;
+                }
 
-                    // Make sure these are all the settings when updating Newtonsoft.Json
-                    tokenSerializer = new JsonSerializer
-                    {
-                        Context = serializer.Context,
-                        Culture = serializer.Culture,
-                        ContractResolver = serializer.ContractResolver,
-                        ConstructorHandling = serializer.ConstructorHandling,
-                        CheckAdditionalContent = serializer.CheckAdditionalContent,
-                        DateFormatHandling = serializer.DateFormatHandling,
-                        DateFormatString = serializer.DateFormatString,
-                        DateParseHandling = serializer.DateParseHandling,
-                        DateTimeZoneHandling = serializer.DateTimeZoneHandling,
-                        DefaultValueHandling = serializer.DefaultValueHandling,
-                        EqualityComparer = serializer.EqualityComparer,
-                        FloatFormatHandling = serializer.FloatFormatHandling,
-                        Formatting = serializer.Formatting,
-                        FloatParseHandling = serializer.FloatParseHandling,
-                        MaxDepth = serializer.MaxDepth,
-                        MetadataPropertyHandling = serializer.MetadataPropertyHandling,
-                        MissingMemberHandling = serializer.MissingMemberHandling,
-                        NullValueHandling = serializer.NullValueHandling,
-                        ObjectCreationHandling = serializer.ObjectCreationHandling,
-                        PreserveReferencesHandling = serializer.PreserveReferencesHandling,
-                        ReferenceResolver = serializer.ReferenceResolver,
-                        ReferenceLoopHandling = serializer.ReferenceLoopHandling,
-                        StringEscapeHandling = serializer.StringEscapeHandling,
-                        TraceWriter = serializer.TraceWriter,
+                // Make sure these are all the settings when updating Newtonsoft.Json
+                tokenSerializer = new JsonSerializer
+                {
+                    Context = serializer.Context,
+                    Culture = serializer.Culture,
+                    ContractResolver = serializer.ContractResolver,
+                    ConstructorHandling = serializer.ConstructorHandling,
+                    CheckAdditionalContent = serializer.CheckAdditionalContent,
+                    DateFormatHandling = serializer.DateFormatHandling,
+                    DateFormatString = serializer.DateFormatString,
+                    DateParseHandling = serializer.DateParseHandling,
+                    DateTimeZoneHandling = serializer.DateTimeZoneHandling,
+                    DefaultValueHandling = serializer.DefaultValueHandling,
+                    EqualityComparer = serializer.EqualityComparer,
+                    FloatFormatHandling = serializer.FloatFormatHandling,
+                    Formatting = serializer.Formatting,
+                    FloatParseHandling = serializer.FloatParseHandling,
+                    MaxDepth = serializer.MaxDepth,
+                    MetadataPropertyHandling = serializer.MetadataPropertyHandling,
+                    MissingMemberHandling = serializer.MissingMemberHandling,
+                    NullValueHandling = serializer.NullValueHandling,
+                    ObjectCreationHandling = serializer.ObjectCreationHandling,
+                    PreserveReferencesHandling = serializer.PreserveReferencesHandling,
+                    ReferenceResolver = serializer.ReferenceResolver,
+                    ReferenceLoopHandling = serializer.ReferenceLoopHandling,
+                    StringEscapeHandling = serializer.StringEscapeHandling,
+                    TraceWriter = serializer.TraceWriter,
 
-                        // Enforcing TypeNameHandling.Objects to make sure ITokenSource gets serialized/deserialized correctly
-                        TypeNameHandling = TypeNameHandling.Objects,
-                    };
+                    // Enforcing TypeNameHandling.Objects to make sure ITokenSource gets serialized/deserialized correctly
+                    TypeNameHandling = TypeNameHandling.Objects,
+                };
 
-                    foreach (var converter in serializer.Converters)
-                    {
-                        tokenSerializer.Converters.Add(converter);
-                    }
+                foreach (var converter in serializer.Converters)
+                {
+                    tokenSerializer.Converters.Add(converter);
                 }
 
                 return tokenSerializer;
