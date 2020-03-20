@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (tokenSerializer != null)
                 {
-                    return tokenSerializer
+                    return tokenSerializer;
                 }
 
                 if (serializer.TypeNameHandling == TypeNameHandling.Objects
