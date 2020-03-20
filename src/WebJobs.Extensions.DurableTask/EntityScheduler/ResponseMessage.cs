@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void SetExceptionResult(Exception exception, string operation, EntityId entity, MessagePayloadDataConverter errorDataConverter)
+        public void SetExceptionResult(Exception exception, string operation, MessagePayloadDataConverter errorDataConverter)
         {
             this.ExceptionType = exception.GetType().AssemblyQualifiedName;
 
@@ -44,7 +44,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // sometimes, exceptions cannot be serialized. In that case we create a serializable wrapper
                 // exception which lets the caller know something went wrong.
 
-                var wrapper = new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
+                var wrapper = string.IsNullOrEmpty(operation) ?
+                      new OperationErrorException($"{this.ExceptionType} while processing operations: {exception.Message}")
+                    : new OperationErrorException($"{this.ExceptionType} in operation '{operation}': {exception.Message}");
+
                 this.ExceptionType = wrapper.GetType().AssemblyQualifiedName;
                 this.Result = errorDataConverter.Serialize(wrapper);
             }

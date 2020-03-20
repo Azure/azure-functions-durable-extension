@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool EntityExists { get; set; }
 
         /// <summary>
-        /// The serialized entity state. This can be stale while CurrentStateView != null.
+        /// The last serialized entity state.
         /// </summary>
         [JsonProperty(PropertyName = "state", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string EntityState { get; set; }

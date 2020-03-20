@@ -49,7 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
             bool? localRpcEndpointEnabled = false,
-            DurableTaskOptions options = null)
+            DurableTaskOptions options = null,
+            bool rollbackEntityOperationsOnExceptions = true)
         {
             switch (storageProviderType)
             {
@@ -93,6 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.MaxConcurrentActivityFunctions = 200;
             options.NotificationHandler = eventGridNotificationHandler;
             options.LocalRpcEndpointEnabled = localRpcEndpointEnabled;
+            options.RollbackEntityOperationsOnExceptions = rollbackEntityOperationsOnExceptions;
 
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
