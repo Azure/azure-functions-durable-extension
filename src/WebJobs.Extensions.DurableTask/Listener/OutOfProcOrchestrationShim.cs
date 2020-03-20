@@ -38,6 +38,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WaitForExternalEvent = 6,
             CallEntity = 7,
             CallHttp = 8,
+            SignalEntity = 9,
+            ScheduledSignalEntity = 10,
         }
 
         internal async Task HandleOutOfProcExecutionAsync(JObject executionJson)
@@ -124,9 +126,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
                         case AsyncActionType.CallEntity:
-                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
-                            break;
+                            {
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
+                                break;
+                            }
+
+                        case AsyncActionType.SignalEntity:
+                            {
+                                // We do not add a task because this is 'fire and forget'
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
+                                break;
+                            }
+
+                        case AsyncActionType.ScheduledSignalEntity:
+                            {
+                                // We do not add a task because this is 'fire and forget'
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                this.context.SignalEntity(entityId, action.FireAt, action.EntityOperation, action.Input);
+                                break;
+                            }
+
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
                             break;

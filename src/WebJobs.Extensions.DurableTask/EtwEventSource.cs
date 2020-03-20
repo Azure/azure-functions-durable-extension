@@ -301,20 +301,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(218, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, Result ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(219, Level = EventLevel.Informational)]
+        [Event(219, Level = EventLevel.Informational, Version = 2)]
         public void EntityLockAcquired(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string RequestingInstance,
+            string RequestingInstanceId,
+            string RequestingExecutionId,
             string RequestId,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(219, TaskHub, AppName, SlotName, FunctionName, InstanceId, RequestingInstance, RequestId, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(219, TaskHub, AppName, SlotName, FunctionName, InstanceId, RequestingInstanceId, RequestingExecutionId ?? "", RequestId, FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(220, Level = EventLevel.Informational)]

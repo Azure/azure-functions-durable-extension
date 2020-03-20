@@ -171,6 +171,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <remarks>
         /// <para>
+        /// A terminated instance will eventually transition into the <see cref="OrchestrationRuntimeStatus.Terminated"/> state.
+        /// However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
+        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool)"/>
+        /// method to know when a terminated instance has actually reached the Terminated state.
+        /// </para>
+        /// <para>
         /// Terminating an orchestration instance has no effect on any in-flight activity function executions
         /// or sub-orchestrations that were started by the current orchestration instance.
         /// </para>
@@ -206,6 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
+        [Obsolete]
         Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -216,6 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
+        [Obsolete]
         Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -240,6 +248,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
+        [Obsolete]
         Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets the status of all orchestration instances with paging that match the specified conditions.
+        /// </summary>
+        /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
+        Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
     }
 }

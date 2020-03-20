@@ -223,12 +223,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         /// <param name="name">The name of the event to wait for.</param>
         /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received.</returns>
         /// <exception cref="TimeoutException">
         /// The external event was not received before the timeout expired.
         /// </exception>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout);
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken);
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
@@ -240,10 +241,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="name">The name of the event to wait for.</param>
         /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
         /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
         /// if the timeout expires.</returns>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue);
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken);
 
         /// <summary>
         /// Acquires one or more locks, for the specified entities.

@@ -20,13 +20,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.SignalEntityAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.SignalEntityAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.EntityInterface;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         private List<EntityInterface> entityInterfacesList = new List<EntityInterface>();
         
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule, InterfaceContentAnalyzer.NoMethodsRule, InterfaceContentAnalyzer.NotAMethodRule, ParameterAnalyzer.Rule, EntityInterfaceReturnTypeAnalyzer.Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                  Rule,
+                  InterfaceContentAnalyzer.NoMethodsRule,
+                  InterfaceContentAnalyzer.NotAMethodRule,
+                  ParameterAnalyzer.Rule,
+                  EntityInterfaceReturnTypeAnalyzer.Rule);
+            }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -44,22 +55,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            InterfaceContentAnalyzer contentAnalyzer = new InterfaceContentAnalyzer();
-            ParameterAnalyzer parameterAnalyzer = new ParameterAnalyzer();
-            EntityInterfaceReturnTypeAnalyzer returnTypeAnalyzer = new EntityInterfaceReturnTypeAnalyzer();
-
             foreach (EntityInterface entityInterface in entityInterfacesList)
             {
-                contentAnalyzer.ReportProblems(context, entityInterface);
-                parameterAnalyzer.ReportProblems(context, entityInterface);
-                returnTypeAnalyzer.ReportProblems(context, entityInterface);
+                InterfaceContentAnalyzer.ReportProblems(context, entityInterface);
+                ParameterAnalyzer.ReportProblems(context, entityInterface);
+                EntityInterfaceReturnTypeAnalyzer.ReportProblems(context, entityInterface);
             }
         }
 
         public void FindEntityCalls(SyntaxNodeAnalysisContext context)
         {
-            var expression = context.Node as MemberAccessExpressionSyntax;
-            if (expression != null)
+            if (context.Node is MemberAccessExpressionSyntax expression &&
+                SyntaxNodeUtils.IsInsideFunction(expression))
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("SignalEntityAsync"))

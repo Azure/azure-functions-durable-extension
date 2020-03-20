@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(OrchestratorContextCodeFixProvider)), Shared]
-    public class OrchestratorContextCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class OrchestratorContextCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixDurableOrchestrationContext = new LocalizableResourceString(nameof(Resources.FixDurableOrchestrationContext), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString FixDurableOrchestrationContextBase = new LocalizableResourceString(nameof(Resources.FixDurableOrchestrationContextBase), Resources.ResourceManager, typeof(Resources));
@@ -42,17 +42,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (durableVersion.Equals(DurableVersion.V1))
             {
                 context.RegisterCodeFix(
-                    CodeAction.Create(FixDurableOrchestrationContext.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "DurableOrchestrationContext"), nameof(OrchestratorContextCodeFixProvider) + nameof(FixDurableOrchestrationContext)),
+                    CodeAction.Create(FixDurableOrchestrationContext.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "DurableOrchestrationContext"), nameof(OrchestratorContextCodeFixProvider) + nameof(FixDurableOrchestrationContext)),
                     diagnostic);
 
                 context.RegisterCodeFix(
-                    CodeAction.Create(FixDurableOrchestrationContextBase.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "DurableOrchestrationContextBase"), nameof(OrchestratorContextCodeFixProvider) + nameof(FixDurableOrchestrationContextBase)),
+                    CodeAction.Create(FixDurableOrchestrationContextBase.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "DurableOrchestrationContextBase"), nameof(OrchestratorContextCodeFixProvider) + nameof(FixDurableOrchestrationContextBase)),
                     diagnostic);
             }
             else if (durableVersion.Equals(DurableVersion.V2))
             {
                 context.RegisterCodeFix(
-                    CodeAction.Create(FixIDurableOrchestrationContext.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableOrchestrationContext"), nameof(OrchestratorContextCodeFixProvider) + nameof(FixIDurableOrchestrationContext)),
+                    CodeAction.Create(FixIDurableOrchestrationContext.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableOrchestrationContext"), nameof(OrchestratorContextCodeFixProvider) + nameof(FixIDurableOrchestrationContext)),
                     diagnostic);
             }
         }

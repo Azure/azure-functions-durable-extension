@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
+        IDisposable,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
@@ -88,6 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
+        /// <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
@@ -96,6 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
+            IApplicationLifetimeWrapper hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
@@ -117,7 +121,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = orchestrationServiceFactory;
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
             this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
@@ -128,17 +131,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
 
-            if (messageSerializerSettingsFactory == null)
-            {
-                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
-            }
+            this.MessageDataConverter = this.CreateMessageDataConverter(messageSerializerSettingsFactory);
+            this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
-            if (errorSerializerSettingsFactory == null)
-            {
-                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
-            }
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
 
-            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
+#if !FUNCTIONS_V1
+            // The RPC server is started when the extension is initialized.
+            // The RPC server is stopped when the host has finished shutting down.
+            hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+#endif
         }
 
 #if FUNCTIONS_V1
@@ -148,8 +150,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             INameResolver nameResolver,
             IDurabilityProviderFactory orchestrationServiceFactory,
             IConnectionStringResolver connectionStringResolver,
+            IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, durableHttpMessageHandlerFactory)
+            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
         }
@@ -178,7 +181,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
-        internal MessagePayloadDataConverter DataConverter { get; private set; }
+        internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
+
+        internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
+
+        private MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
+        {
+            bool isDefault;
+            if (messageSerializerSettingsFactory == null)
+            {
+                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            }
+
+            isDefault = messageSerializerSettingsFactory is MessageSerializerSettingsFactory;
+
+            return new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
+
+        private MessagePayloadDataConverter CreateErrorDataConverter(IErrorSerializerSettingsFactory errorSerializerSettingsFactory)
+        {
+            bool isDefault;
+            if (errorSerializerSettingsFactory == null)
+            {
+                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            }
+
+            isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory;
+
+            return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -240,7 +271,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+
+#if !FUNCTIONS_V1
+            // The RPC server needs to be started sometime before any functions can be triggered
+            // and this is the latest point in the pipeline available to us.
+            this.StartLocalRcpServer();
+#endif
         }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            this.HttpApiHandler?.Dispose();
+        }
+
+#if !FUNCTIONS_V1
+        private void StartLocalRcpServer()
+        {
+            bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
+            if (!shouldEnable.HasValue)
+            {
+                // Default behavior is to only start the local RPC server for non-.NET function languages.
+                // We'll enable it if it's non-.NET or if the FUNCTIONS_WORKER_RUNTIME value isn't present.
+                string functionsWorkerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+                shouldEnable = !string.Equals(functionsWorkerRuntime, "dotnet", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (shouldEnable == true)
+            {
+                this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
+            }
+        }
+
+        private void StopLocalRcpServer()
+        {
+            this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
+        }
+#endif
 
         private void ResolveAppSettingOptions()
         {
@@ -273,13 +340,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
+            this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
 
         private void TraceConfigurationSettings()
         {
-            this.Options.TraceConfiguration(this.TraceHelper);
+            this.Options.TraceConfiguration(
+                this.TraceHelper,
+                this.defaultDurabilityProvider.ConfigurationJson);
         }
 
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
@@ -497,7 +570,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
-                                var requestMessage = this.DataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
+                                var requestMessage = this.MessageDataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
 
                                 IEnumerable<RequestMessage> deliverNow;
 
@@ -529,7 +602,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             else
                             {
                                 // we are receiving a lock release
-                                var message = this.DataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
+                                var message = this.MessageDataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
 
                                 if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {

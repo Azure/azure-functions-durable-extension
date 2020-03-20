@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -25,7 +25,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             version = versionTwoInterface != null ? DurableVersion.V2 : DurableVersion.V1;
             return (DurableVersion)version;
         }
-        
+
+        public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
+        {
+            return model.SyntaxTree == node.SyntaxTree
+                ? model
+                : model.Compilation.GetSemanticModel(node.SyntaxTree);
+        }
+
+        public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
+        {
+            closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
+            return closestString != null;
+        }
+
         internal static bool IsInsideOrchestrator(SyntaxNode node)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
@@ -49,10 +62,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static bool IsMarkedDeterministic(SyntaxNode node) => TryGetDeterministicAttribute(node, out _);
+        internal static bool TryGetMethodReturnTypeNode(SyntaxNode node, out SyntaxNode returnTypeNode)
+        {
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                returnTypeNode = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.ArrayType)).FirstOrDefault();
+                return true;
+            }
 
-
-        internal static bool TryGetDeterministicAttribute(SyntaxNode node, out SyntaxNode deterministicAttribute) => TryGetAttribute(node, "Deterministic", out deterministicAttribute);
+            returnTypeNode = null;
+            return false;
+        }
 
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
@@ -96,36 +116,90 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetClassSymbol(SyntaxNode node, SemanticModel semanticModel, out INamedTypeSymbol classSymbol)
+        internal static bool IsInsideFunction(SyntaxNode node)
+        {
+            return TryGetFunctionNameAndNode(node, out SyntaxNode functionAttribute, out string functionName);
+        }
+
+        internal static bool TryGetClassName(SyntaxNode node, out string className)
         {
             var currNode = node.IsKind(SyntaxKind.ClassDeclaration) ? node : node.Parent;
             while (!currNode.IsKind(SyntaxKind.ClassDeclaration))
             {
                 if (currNode.IsKind(SyntaxKind.CompilationUnit))
                 {
-                    classSymbol = null;
+                    className = null;
                     return false;
                 }
                 currNode = currNode.Parent;
             }
 
             var classDeclaration = (ClassDeclarationSyntax)currNode;
-            classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
+            className = classDeclaration.Identifier.ToString();
             return true;
         }
 
-        internal static bool TryGetFunctionNameParameterNode(AttributeSyntax attributeExpression, out SyntaxNode attributeArgument)
+        internal static bool TryGetFunctionNameAndNode(SyntaxNode node, out SyntaxNode attributeArgument, out string functionName)
         {
-            if (TryGetFunctionAttribute(attributeExpression, out SyntaxNode functionAttribute))
+            if (TryGetFunctionAttribute(node, out SyntaxNode functionAttribute))
             {
-                return TryGetFunctionName(functionAttribute, out attributeArgument);
+                if (TryGetFunctionNameAttributeArgument(functionAttribute, out attributeArgument))
+                {
+                    if (TryGetFunctionName(attributeArgument, out functionName))
+                    {
+                        return true;
+                    }
+                }
             }
 
             attributeArgument = null;
+            functionName = null;
             return false;
         }
 
-        private static bool TryGetFunctionName(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
+        private static bool TryGetFunctionName(SyntaxNode attributeArgument, out string functionName)
+        {
+            var stringLiteralExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.StringLiteralExpression)).FirstOrDefault();
+            if (stringLiteralExpression != null)
+            {
+                var stringLiteralToken = stringLiteralExpression.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
+                if (stringLiteralToken != null)
+                {
+                    functionName = stringLiteralToken.ValueText;
+                    return true;
+                }
+            }
+
+            var invocationExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
+            if (invocationExpression != null)
+            {
+                var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+                if (argumentList != null)
+                {
+                    var argument = argumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument)).FirstOrDefault();
+                    if (argument != null)
+                    {
+                        var identifierName = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                        if (identifierName != null)
+                        {
+                            functionName = identifierName.ToString();
+                            var lastIndex = functionName.LastIndexOf('.');
+                            if (lastIndex != -1)
+                            {
+                                functionName = functionName.Substring(lastIndex);
+                            }
+
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            functionName = null;
+            return false;
+        }
+
+        private static bool TryGetFunctionNameAttributeArgument(SyntaxNode functionAttribute, out SyntaxNode attributeArgument)
         {
             var attributeArgumentListSyntax = ((AttributeSyntax)functionAttribute).ArgumentList;
             if (attributeArgumentListSyntax != null)
@@ -151,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return inputType != null;
         }
 
-        internal static bool TryGetTypeArgumentIdentifierNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        internal static bool TryGetTypeArgumentNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
             var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
             if (genericName != null)
@@ -180,6 +254,101 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return false;
+        }
+
+        internal static string GetQualifiedTypeName(ITypeSymbol typeInfo)
+        {
+            if (typeInfo != null)
+            {
+                if (typeInfo is INamedTypeSymbol namedTypeInfo)
+                {
+                    var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
+                    if (tupleUnderlyingType != null)
+                    {
+                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
+                    }
+
+                    return typeInfo.ToString();
+                }
+
+                var arrayString = "";
+                if (typeInfo.Kind.Equals(SymbolKind.ArrayType))
+                {
+                    arrayString = "[]";
+                    typeInfo = ((IArrayTypeSymbol)typeInfo).ElementType;
+                }
+
+                if (!string.IsNullOrEmpty(typeInfo.Name))
+                {
+                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString() + arrayString;
+                }
+            }
+
+            return "Unknown Type";
+        }
+
+        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        {
+            if (invocationType == null || definitionType == null)
+            {
+                return false;
+            }
+
+            return invocationType.Equals(definitionType)
+                || AreEqualTupleTypes(invocationType, definitionType)
+                || AreCompatibleIEnumerableTypes(invocationType, definitionType);
+        }
+
+        private static bool AreEqualTupleTypes(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        {
+            var invocationQualifiedName = GetQualifiedTypeName(invocationType);
+            var definitionQualifiedName = GetQualifiedTypeName(definitionType);
+
+            return invocationQualifiedName.Equals(definitionQualifiedName);
+        }
+
+        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            if (AreArrayOrNamedTypes(invocationType, functionType) && UnderlyingTypesMatch(invocationType, functionType))
+            {
+                return ((invocationType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable")))
+                    && (functionType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable"))));
+            }
+
+            return false;
+        }
+
+        private static bool AreArrayOrNamedTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            return (invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
+                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType));
+        }
+
+        private static bool UnderlyingTypesMatch(ITypeSymbol invocationType, ITypeSymbol functionType)
+        {
+            return (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType)
+                && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType)
+                && invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name));
+        }
+
+        private static bool TryGetUnderlyingType(ITypeSymbol type, out ITypeSymbol underlyingType)
+        {
+            if (type.Kind.Equals(SymbolKind.ArrayType))
+            {
+                underlyingType = ((IArrayTypeSymbol)type).ElementType;
+                return true;
+            }
+
+            if (type.Kind.Equals(SymbolKind.NamedType))
+            {
+                underlyingType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
+                return underlyingType != null;
+            }
+            else
+            {
+                underlyingType = null;
+                return false;
+            }
         }
     }
 }

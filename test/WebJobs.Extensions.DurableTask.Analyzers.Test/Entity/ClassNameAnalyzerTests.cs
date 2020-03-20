@@ -2,10 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -13,8 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class ClassNameAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = ClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = ClassNameAnalyzer.severity;
+        private static readonly string DiagnosticId = ClassNameAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = ClassNameAnalyzer.Severity;
 
         [TestMethod]
         public void ClassName_NonIssue()
@@ -67,6 +65,7 @@ namespace ExternalInteraction
             {
             }
 }";
+
             VerifyCSharpDiagnostic(test);
         }
 
@@ -94,6 +93,7 @@ namespace ExternalInteraction
             {
             }
 }";
+
             VerifyCSharpDiagnostic(test);
         }
 
@@ -121,23 +121,12 @@ namespace ExternalInteraction
             {
             }
 }";
-            var expectedResults = new DiagnosticResult[2];
-            expectedResults[0] = new DiagnosticResult
-            {
-                Id = diagnosticId,
-                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
-                Severity = severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 25)
-                     }
-            };
 
-            expectedResults[1] = new DiagnosticResult
+            var expectedResults = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.EntityClassNameAnalyzerMessageFormat, "HireEmployee", "HelloWorld"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.EntityClassNameAnalyzerCloseMessageFormat, "HelloWorld", "HireEmployee"),
+                Severity = Severity,
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 23)
@@ -145,11 +134,6 @@ namespace ExternalInteraction
             };
             
             VerifyCSharpDiagnostic(test, expectedResults);
-        }
-
-        protected override CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            return new ClassNameCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
 
         internal DurableClient(
             DurabilityProvider serviceClient,
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
 
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
 
-            this.client = new TaskHubClient(serviceClient, this.dataConverter);
+            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
             this.durabilityProvider = serviceClient;
             this.traceHelper = config.TraceHelper;
             this.httpApiHandler = httpHandler;
@@ -262,14 +262,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+            if (this.client.Equals(client))
+            {
+                this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+            }
 
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
             var request = new RequestMessage()
             {
-                ParentInstanceId = null,
+                ParentInstanceId = null, // means this was sent by a client
+                ParentExecutionId = null,
                 Id = guid,
                 IsSignal = true,
                 Operation = operationName,
@@ -277,10 +281,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (operationInput != null)
             {
-                request.SetInput(operationInput, this.dataConverter);
+                request.SetInput(operationInput, this.messageDataConverter);
             }
 
-            var jrequest = JToken.FromObject(request, this.dataConverter.MessageSerializer);
+            var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
             var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
             await client.RaiseEventAsync(instance, eventName, jrequest);
 
@@ -358,28 +362,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken)
         {
-            IList<OrchestrationState> states = await this.DurabilityProvider.GetAllOrchestrationStates(cancellationToken);
-
-            var results = new List<DurableOrchestrationStatus>();
-            foreach (OrchestrationState state in states)
-            {
-                results.Add(ConvertOrchestrationStateToStatus(state));
-            }
-
-            return results;
+            return await this.GetAllStatusHelper(null, null, null, cancellationToken);
         }
 
         /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
-            IList<OrchestrationState> states = await this.DurabilityProvider.GetAllOrchestrationStatesWithFilters(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
-            var results = new List<DurableOrchestrationStatus>();
-            foreach (OrchestrationState state in states)
+            return await this.GetAllStatusHelper(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
+        }
+
+        private async Task<IList<DurableOrchestrationStatus>> GetAllStatusHelper(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
+        {
+            var condition = this.CreateConditionFromParameters(createdTimeFrom, createdTimeTo, runtimeStatus);
+
+            var response = await ((IDurableOrchestrationClient)this).ListInstancesAsync(condition, cancellationToken);
+
+            return (IList<DurableOrchestrationStatus>)response.DurableOrchestrationState;
+        }
+
+        private OrchestrationStatusQueryCondition CreateConditionFromParameters(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus)
+        {
+            var condition = new OrchestrationStatusQueryCondition();
+
+            if (createdTimeFrom != null)
             {
-                results.Add(ConvertOrchestrationStateToStatus(state));
+                condition.CreatedTimeFrom = createdTimeFrom.Value;
             }
 
-            return results;
+            if (createdTimeTo != null)
+            {
+                condition.CreatedTimeTo = createdTimeTo.Value;
+            }
+
+            if (runtimeStatus != null)
+            {
+                condition.RuntimeStatus = runtimeStatus;
+            }
+
+            return condition;
         }
 
         Task<EntityStateResponse<T>> IDurableEntityClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName)
@@ -408,12 +428,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
-            string entityState = await provider.RetrieveSerializedEntityState(entityId, this.dataConverter.MessageSettings);
+            string entityState = await provider.RetrieveSerializedEntityState(entityId, this.messageDataConverter.JsonSettings);
 
             return new EntityStateResponse<T>()
             {
                 EntityExists = entityState != null,
-                EntityState = this.dataConverter.Deserialize<T>(entityState),
+                EntityState = this.messageDataConverter.Deserialize<T>(entityState),
             };
         }
 
@@ -430,8 +450,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new PurgeHistoryResult(numInstancesDeleted);
         }
 
-        /// <inheritdoc />
         Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(
+            OrchestrationStatusQueryCondition condition,
+            CancellationToken cancellationToken)
+        {
+            return ((IDurableOrchestrationClient)this).ListInstancesAsync(condition, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.ListInstancesAsync(
             OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken)
         {
@@ -442,7 +469,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
             var condition = new OrchestrationStatusQueryCondition(query);
-            var result = await ((IDurableClient)this).GetStatusAsync(condition, cancellationToken);
+            var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
             var entityResult = new EntityQueryResult(result);
             return entityResult;
         }
@@ -503,8 +530,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     hubName: taskHubName,
                     functionName: status.Name,
                     instanceId: instanceId,
-                    message: $"Cannot raise event for instance in {status.Status} state");
-                throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.Status} state");
+                    message: $"Cannot raise event for instance in {status.OrchestrationStatus} state");
+                throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.OrchestrationStatus} state");
             }
         }
 

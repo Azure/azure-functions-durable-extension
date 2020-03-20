@@ -16,12 +16,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString NoMethodsMessageFormat = new LocalizableResourceString(nameof(Resources.EntityInterfaceContentAnalyzerNoMethodsMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityInterfaceContentAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.EntityInterface;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static DiagnosticDescriptor NotAMethodRule = new DiagnosticDescriptor(DiagnosticId, Title, NotAMethodMessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
-        public static DiagnosticDescriptor NoMethodsRule = new DiagnosticDescriptor(DiagnosticId, Title, NoMethodsMessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor NotAMethodRule = new DiagnosticDescriptor(DiagnosticId, Title, NotAMethodMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor NoMethodsRule = new DiagnosticDescriptor(DiagnosticId, Title, NoMethodsMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
+        public static void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
         {
             var interfaceDeclaration = entityInterface.InterfaceDeclaration;
             var interfaceChildNodes = interfaceDeclaration.ChildNodes();

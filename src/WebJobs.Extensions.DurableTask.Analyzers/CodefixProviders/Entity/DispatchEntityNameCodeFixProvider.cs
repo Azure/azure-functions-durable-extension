@@ -13,14 +13,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassNameCodeFixProvider)), Shared]
-    public class DispatchClassNameCodeFixProvider : DurableFunctionsCodeFixProvider
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(DispatchEntityNameCodeFixProvider)), Shared]
+    public class DispatchEntityNameCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixDispatchEntityCall = new LocalizableResourceString(nameof(Resources.FixEntityFunctionName), Resources.ResourceManager, typeof(Resources));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(DispatchClassNameAnalyzer.DiagnosticId); }
+            get { return ImmutableArray.Create(DispatchEntityNameAnalyzer.DiagnosticId); }
         }
 
         public sealed override FixAllProvider GetFixAllProvider()
@@ -37,12 +37,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             var identifierNode = root.FindNode(diagnosticSpan);
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
-            if (SyntaxNodeUtils.TryGetClassSymbol(identifierNode, semanticModel, out INamedTypeSymbol classSymbol))
+            if (SyntaxNodeUtils.TryGetFunctionNameAndNode(identifierNode, out SyntaxNode functionAttribute, out string functionName))
             {
-                var className = classSymbol.Name.ToString();
-
                 context.RegisterCodeFix(
-                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, className), nameof(DispatchClassNameCodeFixProvider)),
+                CodeAction.Create(FixDispatchEntityCall.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, functionName), nameof(DispatchEntityNameCodeFixProvider)),
                 diagnostic);
             }
         }

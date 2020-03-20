@@ -5,17 +5,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(TimerCodeFixProvider)), Shared]
-    public class TimerCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class TimerCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixTimerInOrchestrator = new LocalizableResourceString(nameof(Resources.FixTimerInOrchestrator), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(invocationExpression) && durableVersion.Equals(DurableVersion.V2))
             {
-                if (TryGetDurableOrchestrationContextVariableName(invocationExpression, out string variableName))
+                if (CodeFixProviderUtils.TryGetDurableOrchestrationContextVariableName(invocationExpression, out string variableName))
                 {
                     var newExpression = "";
                     if (TryGetMillisecondsParameter(invocationExpression, out string milliseconds))
@@ -56,35 +56,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                         if (TryGetCancellationTokenParameter(invocationExpression, semanticModel, out string cancellationToken))
                         {
-                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), " + cancellationToken + ")";
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), " + cancellationToken + ")";
                         }
                         else
                         {
-                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), CancellationToken.None)";
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.AddMilliseconds(" + milliseconds + "), CancellationToken.None)";
                         }
                     }
                     else if (TryGetTimespanParameter(invocationExpression, semanticModel, out string timeSpan))
                     {
                         if (TryGetCancellationTokenParameter(invocationExpression, semanticModel, out string cancellationToken))
                         {
-                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), " + cancellationToken + ")";
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), " + cancellationToken + ")";
                         }
                         else
                         {
-                            newExpression = "await " + variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), CancellationToken.None)";
+                            newExpression = variableName + ".CreateTimer(" + variableName + ".CurrentUtcDateTime.Add(" + timeSpan + "), CancellationToken.None)";
                         }
                     }
 
                     context.RegisterCodeFix(
-                    CodeAction.Create(FixTimerInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, newExpression), nameof(TimerCodeFixProvider)),
+                    CodeAction.Create(FixTimerInOrchestrator.ToString(), c => ReplaceWithAwaitExpressionAsync(context.Document, expression, c, newExpression), nameof(TimerCodeFixProvider)),
                     diagnostic);
                 }
             }
-            else if (SyntaxNodeUtils.IsMarkedDeterministic(invocationExpression))
-            {
-                context.RegisterCodeFix(
-                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(TimerCodeFixProvider)), diagnostic);
-            }
+        }
+
+        protected async Task<Document> ReplaceWithAwaitExpressionAsync(Document document, SyntaxNode expression, CancellationToken cancellationToken, string expressionString)
+        {
+            var newAwaitExpression = SyntaxFactory.AwaitExpression(
+                SyntaxFactory.Token(SyntaxKind.AwaitKeyword),
+                SyntaxFactory.ParseExpression(expressionString))
+                    .WithLeadingTrivia(expression.GetLeadingTrivia())
+                    .WithTrailingTrivia(expression.GetTrailingTrivia());
+
+            var root = await document.GetSyntaxRootAsync(cancellationToken);
+            var newRoot = root.ReplaceNode(expression, newAwaitExpression);
+            return document.WithSyntaxRoot(newRoot);
         }
 
         private bool TryGetInvocationExpression(SyntaxNode expression, out SyntaxNode invocationExpression)

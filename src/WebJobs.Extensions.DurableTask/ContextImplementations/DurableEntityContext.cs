@@ -20,19 +20,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly TaskEntityShim shim;
 
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
+
+        private readonly MessagePayloadDataConverter errorDataConverter;
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
         public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
+            this.errorDataConverter = config.ErrorDataConverter;
             this.self = entity;
             this.shim = shim;
         }
 
-        internal bool StateWasAccessed { get; set; }
+        // The last serialized checkpoint of the entity state is always stored in
+        // the fields this.State.EntityExists (a boolean) and this.State.EntityState (a string).
+        // The current state is determined by this.CurrentStateAccess and this.CurrentState.
+        internal enum StateAccess
+        {
+            NotAccessed, // current state is same as last checkpoint in this.State
+            Accessed, // current state is stored in this.CurrentState
+            Deleted, // current state is deleted
+        }
+
+        internal StateAccess CurrentStateAccess { get; set; }
 
         internal object CurrentState { get; set; }
 
@@ -74,9 +87,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             get
             {
                 this.ThrowIfInvalidAccess();
-                return this.State.EntityExists;
+                switch (this.CurrentStateAccess)
+                {
+                    case StateAccess.Accessed: return true;
+                    case StateAccess.Deleted: return false;
+                    default: return this.State.EntityExists;
+                }
             }
         }
+
+        internal int OutboxPosition => this.outbox.Count;
 
 #if !FUNCTIONS_V1
         public FunctionBindingContext FunctionBindingContext { get; set; }
@@ -144,44 +164,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void Rollback(int outboxPositionBeforeOperation)
+        {
+            // We discard the current state, which means we go back to the last serialized one
+            this.CurrentStateAccess = StateAccess.NotAccessed;
+            this.CurrentState = null;
+
+            // we also roll back the list of outgoing messages,
+            // so any signals sent by this operation are discarded.
+            this.outbox.RemoveRange(outboxPositionBeforeOperation, this.outbox.Count - outboxPositionBeforeOperation);
+        }
+
         void IDurableEntityContext.DeleteState()
         {
             this.ThrowIfInvalidAccess();
 
-            this.StateWasAccessed = false;
+            this.CurrentStateAccess = StateAccess.Deleted;
             this.CurrentState = null;
-            this.State.EntityExists = false;
-            this.State.EntityState = null;
         }
 
         TInput IDurableEntityContext.GetInput<TInput>()
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput<TInput>(this.dataConverter);
+            return this.CurrentOperation.GetInput<TInput>(this.messageDataConverter);
         }
 
         object IDurableEntityContext.GetInput(Type argumentType)
         {
             this.ThrowIfInvalidAccess();
-            return this.CurrentOperation.GetInput(argumentType, this.dataConverter);
+            return this.CurrentOperation.GetInput(argumentType, this.messageDataConverter);
         }
 
         TState IDurableEntityContext.GetState<TState>(Func<TState> initializer)
         {
             this.ThrowIfInvalidAccess();
 
-            if (this.StateWasAccessed)
+            if (this.CurrentStateAccess == StateAccess.Accessed)
             {
                 return (TState)this.CurrentState;
             }
 
             TState result;
 
-            if (this.State.EntityExists)
+            if (this.State.EntityExists && this.CurrentStateAccess != StateAccess.Deleted)
             {
                 try
                 {
-                    result = this.dataConverter.Deserialize<TState>(this.State.EntityState);
+                    result = this.messageDataConverter.Deserialize<TState>(this.State.EntityState);
                 }
                 catch (Exception e)
                 {
@@ -207,9 +236,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
+            this.CurrentStateAccess = StateAccess.Accessed;
             this.CurrentState = result;
-            this.StateWasAccessed = true;
-            this.State.EntityExists = true;
             return result;
         }
 
@@ -218,7 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            if (this.StateWasAccessed)
+            if (this.CurrentStateAccess == StateAccess.Accessed)
             {
                 return (TState)this.CurrentState;
             }
@@ -234,7 +262,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new EntitySchedulerException($"Failed to construct entity state object: {e.Message}", e);
             }
 
-            if (this.State.EntityExists)
+            if (this.State.EntityExists
+                && this.CurrentStateAccess != StateAccess.Deleted)
             {
                 try
                 {
@@ -246,9 +275,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
+            this.CurrentStateAccess = StateAccess.Accessed;
             this.CurrentState = result;
-            this.StateWasAccessed = true;
-            this.State.EntityExists = true;
             return result;
         }
 
@@ -257,19 +285,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ThrowIfInvalidAccess();
 
             this.CurrentState = o;
-            this.StateWasAccessed = true;
-            this.State.EntityExists = true;
+            this.CurrentStateAccess = StateAccess.Accessed;
         }
 
-        internal bool TryWriteback(out ResponseMessage serializationErrorMessage)
+        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, string operation = null)
         {
             serializationErrorMessage = null;
 
-            if (this.StateWasAccessed)
+            if (this.CurrentStateAccess == StateAccess.Deleted)
+            {
+                this.State.EntityState = null;
+                this.State.EntityExists = false;
+                this.CurrentStateAccess = StateAccess.NotAccessed;
+            }
+            else if (this.CurrentStateAccess == StateAccess.Accessed)
             {
                 try
                 {
-                    this.State.EntityState = this.dataConverter.MessageConverter.Serialize(this.CurrentState);
+                    this.State.EntityState = this.messageDataConverter.Serialize(this.CurrentState);
+                    this.State.EntityExists = true;
                 }
                 catch (Exception e)
                 {
@@ -279,19 +313,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     this.CaptureApplicationError(serializationException);
 
-                    // Since for all of the operations in the batch, their effect on the entity state
-                    // is lost, we don't want the calling orchestrations to think everything is o.k.
-                    // They should be notified, so we replace all non-error operation results
-                    // with an exception result.
-                    serializationErrorMessage = new ResponseMessage()
-                    {
-                        ExceptionType = serializationException.GetType().AssemblyQualifiedName,
-                        Result = this.dataConverter.ErrorConverter.Serialize(serializationException),
-                    };
+                    serializationErrorMessage = new ResponseMessage();
+                    serializationErrorMessage.SetExceptionResult(serializationException, operation, this.errorDataConverter);
                 }
 
                 this.CurrentState = null;
-                this.StateWasAccessed = false;
+                this.CurrentStateAccess = StateAccess.NotAccessed;
             }
 
             return serializationErrorMessage == null;
@@ -325,6 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
+                ParentExecutionId = null, // for entities, message sorter persists across executions
                 Id = Guid.NewGuid(),
                 IsSignal = true,
                 Operation = operation,
@@ -332,7 +360,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (input != null)
             {
-                request.SetInput(input, this.dataConverter);
+                request.SetInput(input, this.messageDataConverter);
             }
 
             this.SendOperationMessage(target, request);
@@ -383,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
-            this.CurrentOperationResponse.SetResult(result, this.dataConverter);
+            this.CurrentOperationResponse.SetResult(result, this.messageDataConverter);
         }
 
         private void ThrowIfInvalidAccess()
@@ -406,7 +434,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
                     eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
 
@@ -423,11 +450,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.outbox)
             {
-                if (message is RequestMessage requestMessage)
-                {
-                    this.State.MessageSorter.LabelOutgoingMessage(requestMessage, target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
-                }
-
                 this.outbox.Add(new ResultMessage()
                 {
                     Target = target,
@@ -486,7 +508,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     else if (message is ResultMessage resultMessage)
                     {
-                        // non-error result messages are replaced with the writeback failed response
+                        // Since for all of the operations in the batch, their effect on the entity state
+                        // is lost, we don't want the calling orchestrations to think everything is o.k.
+                        // They should be notified, so we replace all non-error operation results
+                        // with an exception result.
                         if (!writeBackSuccessful && !resultMessage.IsError)
                         {
                             resultMessage.EventContent = serializationErrorMessage;
@@ -508,6 +533,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     else if (message is OperationMessage operationMessage)
                     {
+                        if (!operationMessage.EventContent.ScheduledTime.HasValue)
+                        {
+                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                        }
+
                         this.Config.TraceHelper.SendingEntityMessage(
                             this.InstanceId,
                             this.ExecutionId,
@@ -553,7 +583,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public string EventName { get; set; }
 
-            public object EventContent { get; set; }
+            public RequestMessage EventContent { get; set; }
         }
 
         private class ResultMessage : OutgoingMessage

@@ -5,13 +5,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
-using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class TimerAnalyzer : DiagnosticAnalyzer
+    public class TimerAnalyzer
     {
         public const string DiagnosticId = "DF0103";
 
@@ -20,57 +18,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString V1MessageFormat = new LocalizableResourceString(nameof(Resources.V1TimerAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Orchestrator;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
-        
-        private static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
-        private static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
+
+        public static readonly DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, Title, V1MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         private static DurableVersion version;
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(V2Rule, V1Rule); } }
-
-        public override void Initialize(AnalysisContext context)
+        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierTask, SyntaxKind.IdentifierName);
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierThread, SyntaxKind.IdentifierName);
+            // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
+            return (AnalyzeIdentifierTask(method, context, semanticModel) |
+                AnalyzeIdentifierThread(method, context, semanticModel));
         }
 
-        private static void AnalyzeIdentifierTask(SyntaxNodeAnalysisContext context)
+        private static bool AnalyzeIdentifierTask(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            var diagnosedIssue = false;
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var semanticModel = context.SemanticModel;
-                version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
-
-                var identifierText = identifierName.Identifier.ValueText;
-                if (identifierText == "Delay")
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var memberAccessExpression = identifierName.Parent;
-                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                    version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    if (identifierText == "Delay")
                     {
-                        return;
-                    }
+                        var memberAccessExpression = identifierName.Parent;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
-                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
+                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        {
+                            if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                            {
+                                var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
 
-                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                    {
-                        var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+                                var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
 
-                        var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+                                context.ReportDiagnostic(diagnostic);
 
-                        context.ReportDiagnostic(diagnostic);
+                                diagnosedIssue = true;
+                            }
+                        }
                     }
                 }
             }
+
+            return diagnosedIssue;
         }
 
         private static SyntaxNode GetAwaitOrInvocationExpression(SyntaxNode memberAccessExpression)
@@ -85,40 +80,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return invocationExpression;
         }
 
-        private static void AnalyzeIdentifierThread(SyntaxNodeAnalysisContext context)
+        private static bool AnalyzeIdentifierThread(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            var diagnosedIssue = false;
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var semanticModel = context.SemanticModel;
-                version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
-
-                var identifierText = identifierName.Identifier.ValueText;
-                if (identifierText == "Sleep")
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var memberAccessExpression = identifierName.Parent;
-                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                    version = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    if (identifierText == "Sleep")
                     {
-                        return;
-                    }
+                        var memberAccessExpression = identifierName.Parent;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
-                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
+                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                        {
+                            if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                            {
+                                var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
 
-                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
-                    {
-                        var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+                                var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
 
-                        var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+                                context.ReportDiagnostic(diagnostic);
 
-                        context.ReportDiagnostic(diagnostic);
+                                diagnosedIssue = true;
+                            }
+                        }
                     }
                 }
             }
+
+            return diagnosedIssue;
         }
 
         private static bool TryGetRuleFromVersion(out DiagnosticDescriptor rule)

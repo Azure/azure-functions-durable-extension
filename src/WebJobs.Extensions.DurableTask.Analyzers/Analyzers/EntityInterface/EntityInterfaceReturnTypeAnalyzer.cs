@@ -2,9 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -15,28 +13,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.EntityInterfaceReturnTypeAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityInterfaceReturnTypeAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.EntityInterface;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
 
-        public void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
+        public static void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)
         {
             var childNodes = entityInterface.InterfaceDeclaration.ChildNodes();
             foreach (var node in childNodes)
             {
-                if (node.IsKind(SyntaxKind.MethodDeclaration))
+                if (SyntaxNodeUtils.TryGetMethodReturnTypeNode(node, out SyntaxNode returnTypeNode))
                 {
-                    var returnTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
-                    if (returnTypeNode != null)
+                    var returnType = returnTypeNode.ToString();
+                    if (!returnType.Equals("void") && !returnType.StartsWith("Task"))
                     {
-                        var returnType = returnTypeNode.ToString();
-                        if (!returnType.Equals("void") && !returnType.StartsWith("Task"))
-                        {
-                            var diagnostic = Diagnostic.Create(Rule, node.GetLocation(), returnType);
+                        var diagnostic = Diagnostic.Create(Rule, node.GetLocation(), returnType);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }

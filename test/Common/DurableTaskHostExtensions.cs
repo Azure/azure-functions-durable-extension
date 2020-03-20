@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class DurableTaskHostExtensions
     {
         public static async Task<TestDurableClient> StartOrchestratorAsync(
-            this JobHost host,
+            this ITestHost host,
             string functionName,
             object input,
             ITestOutputHelper output,
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static async Task<TestEntityClient> GetEntityClientAsync(
-            this JobHost host,
+            this ITestHost host,
             EntityId entityId,
             ITestOutputHelper output)
         {
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Helper function for the IDurableEntityClientBinding test. Gets an IDurableEntityClient.
         /// </summary>
         public static async Task<IDurableEntityClient> GetEntityClientBindingTest(
-            this JobHost host,
+            this ITestHost host,
             ITestOutputHelper output)
         {
             var startFunction = typeof(ClientFunctions)
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Helper function for the IDurableOrchestrationClientBinding test. Gets an IDurableOrchestrationClient.
         /// </summary>
         public static async Task<IDurableOrchestrationClient> GetOrchestrationClientBindingTest(
-            this JobHost host,
+            this ITestHost host,
             ITestOutputHelper output)
         {
             var startFunction = typeof(ClientFunctions)

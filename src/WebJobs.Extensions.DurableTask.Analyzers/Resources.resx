@@ -121,7 +121,10 @@
     <value>Activity function call specifies a parameter that doesn't match the function definition parameter.</value>
   </data>
   <data name="ActivityArgumentAnalyzerMessageFormat" xml:space="preserve">
-    <value>Activity function named '{0}' takes a '{1}' but was given a '{2}'.</value>
+    <value>Activity function named '{0}' takes '{1}' but was given '{2}'.</value>
+  </data>
+  <data name="ActivityArgumentAnalyzerMessageFormatNotUsed" xml:space="preserve">
+    <value>Activity function named '{0}' doesn't use its input. Pass null for the input parameter instead.</value>
   </data>
   <data name="ActivityArgumentAnalyzerTitle" xml:space="preserve">
     <value>Activity function call is using the wrong argument type.</value>
@@ -157,23 +160,26 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="DeterministicAnalyzerMessageFormat" xml:space="preserve">
     <value>'{0}' violates the orchestrator deterministic code constraint.</value>
   </data>
-  <data name="DispatchClassNameAnalyzerDescription" xml:space="preserve">
-    <value>DispatchAsync must be called with the entity class it's used in.</value>
+  <data name="DispatchEntityNameAnalyzerDescription" xml:space="preserve">
+    <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
   </data>
-  <data name="DispatchClassNameAnalyzerMessageFormat" xml:space="preserve">
-    <value>DispatchAsync was used with '{0}' but must be called with the entity class '{1}' it's used in.</value>
+  <data name="DispatchEntityNameAnalyzerMessageFormat" xml:space="preserve">
+    <value>DispatchAsync was used with '{0}' but must be used with the entity name, '{1}'.</value>
   </data>
-  <data name="DispatchClassNameAnalyzerTitle" xml:space="preserve">
-    <value>DispatchAsync must be called with the entity class it's used in.</value>
+  <data name="DispatchEntityNameAnalyzerTitle" xml:space="preserve">
+    <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
+  </data>
+  <data name="EntityClassNameAnalyzerCloseMessageFormat" xml:space="preserve">
+    <value>Function named '{0}' doesn't have an entity class with the same name defined. Did you mean '{1}'?</value>
   </data>
   <data name="EntityClassNameAnalyzerDescription" xml:space="preserve">
-    <value>Entity class name and entity function name must match.</value>
+    <value>Entity function name must match an existing entity class name.</value>
   </data>
-  <data name="EntityClassNameAnalyzerMessageFormat" xml:space="preserve">
-    <value>Class name '{0}' and entity function name '{1}' do not match.</value>
+  <data name="EntityClassNameAnalyzerMissingMessageFormat" xml:space="preserve">
+    <value>Function name '{0}' doesn't have an entity class with the same name defined.</value>
   </data>
   <data name="EntityClassNameAnalyzerTitle" xml:space="preserve">
-    <value>Entity class name and entity function name must match.</value>
+    <value>Entity function name must match an existing entity class name.</value>
   </data>
   <data name="EntityContextAnalyzerDescription" xml:space="preserve">
     <value>EntityTrigger attribute must be used with an IDurableEntityContext.</value>
@@ -216,13 +222,13 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;.</value>
   </data>
   <data name="EntityStaticAnalyzerDescription" xml:space="preserve">
-    <value>Entity functions must be static.</value>
+    <value>Entity functions in an entity class must be static.</value>
   </data>
   <data name="EntityStaticAnalyzerMessageFormat" xml:space="preserve">
     <value>Entity function '{0}' is not marked static.</value>
   </data>
   <data name="EntityStaticAnalyzerTitle" xml:space="preserve">
-    <value>Entity functions must be static.</value>
+    <value>Entity functions in an entity class must be static.</value>
   </data>
   <data name="EnvironmentVariableAnalyzerTitle" xml:space="preserve">
     <value>Environment variables must be accessed in a deterministic way inside an orchestrator function.</value>
@@ -276,10 +282,10 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>I/O operations are not allowed inside an orchestrator function.</value>
   </data>
   <data name="MethodAnalyzerMessageFormat" xml:space="preserve">
-    <value>Method call '{0}' violates the orchestrator deterministic code constraint. Method does not have the Deterministic attribute on the method declaration.</value>
+    <value>Method call '{0}' violates the orchestrator deterministic code constraint. Methods definied in source code that are used in an orchestrator must be deterministic.</value>
   </data>
-  <data name="MethodAttributeAnalyzerTitle" xml:space="preserve">
-    <value>Method calls in an orchestrator must be marked [Deterministic] on the method declaration.</value>
+  <data name="MethodAnalyzerTitle" xml:space="preserve">
+    <value>Methods definied in source code that are used in an orchestrator must be deterministic.</value>
   </data>
   <data name="SignalEntityAnalyzerDescription" xml:space="preserve">
     <value>SignalEntityAsync must use an Entity Interface.</value>

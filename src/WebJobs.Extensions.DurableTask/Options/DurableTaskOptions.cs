@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
-        public HttpOptions HttpSettings { get; set; }
+        public HttpOptions HttpSettings { get; set; } = new HttpOptions();
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, <see cref="IDurableOrchestrationClient"/>,
@@ -108,6 +108,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public Uri NotificationUrl { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
+        /// </summary>
+        /// <remarks>
+        /// The local RPC endpoint is intended to allow out-of-process functions to make direct calls into this
+        /// extension. This is primarily intended to support instance management APIs used by the durable client
+        /// binding. The following values are allowed:
+        /// <list type="table">
+        ///   <item>
+        ///     <term>null</term>
+        ///     <description>(Default) The local RPC endpoint is enabled only for non-.NET function apps.</description>
+        ///   </item>
+        ///   <item>
+        ///     <term>true</term>
+        ///     <description>A local RPC endpoint will be enabled and listen at <c>http://127.0.0.1:17071/durabletask/</c>.</description>
+        ///   </item>
+        ///   <item>
+        ///     <term>false</term>
+        ///     <description>The local RPC endpoint will be disabled.</description>
+        ///   </item>
+        /// </list>
+        /// </remarks>
+        public bool? LocalRpcEndpointEnabled { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>
@@ -158,6 +182,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public bool UseGracefulShutdown { get; set; } = false;
 
+        /// <summary>
+        /// Controls whether an uncaught exception inside an entity operation should roll back the effects of the operation.
+        /// </summary>
+        /// <remarks>
+        /// The rollback undoes all internal effects of an operation
+        /// (sent signals, and state creation, deletion, or modification).
+        /// However, it does not roll back external effects (such as I/O that was performed).
+        /// This setting can affect serialization overhead: if true, the entity state is serialized
+        /// after each individual operation. If false, the entity state is serialized
+        /// only after an entire batch of operations completes.
+        /// </remarks>
+        public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
@@ -171,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultHubName = hubName;
         }
 
-        internal void TraceConfiguration(EndToEndTraceHelper traceHelper)
+        internal void TraceConfiguration(EndToEndTraceHelper traceHelper, JObject storageProviderConfig)
         {
             // Clone the options to avoid making changes to the original.
             // We make updates to the clone rather than to JSON to ensure we're updating what we think we're updating.
@@ -198,6 +235,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+
+            if (storageProviderConfig.Count != 0)
+            {
+                configurationJson["storageProvider"] = storageProviderConfig;
+            }
 
             // This won't be exactly the same as what is declared in host.json because any unspecified values
             // will have been initialized with their defaults. We need the Functions runtime to handle tracing

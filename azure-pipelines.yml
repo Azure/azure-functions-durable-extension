@@ -43,7 +43,7 @@ jobs:
       vmImage: 'windows-latest'
 
     strategy:
-      parallel: 9
+      parallel: 8
 
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
@@ -79,11 +79,49 @@ jobs:
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
 
+  - job: DurableAnalyzerTests
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Debug'
+
+    steps:
+    - task: NuGetToolInstaller@0
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **/*Analyzers.Test.dll
+        distributionBatchType: basedOnExecutionTime
+        diagnosticsEnabled: true
+        rerunFailedTests: true
+        rerunFailedThreshold: 10
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
     
   - job: PublishPipelineArtifact
     dependsOn:
       - FunctionsV1Tests
       - FunctionsV2Tests
+      - DurableAnalyzerTests
 
     pool: 
       vmImage: 'windows-latest'

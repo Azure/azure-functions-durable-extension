@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -13,72 +12,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class StaticFunctionAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = StaticFunctionAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = StaticFunctionAnalyzer.severity;
+        private static readonly string DiagnosticId = StaticFunctionAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
+
+        private const string ExpectedFix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+ public class MyEmptyEntity : IMyEmptyEntity
+    {
+        [FunctionName(""MyEmptyEntity"")]
+        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyEmptyEntity>();
+    }";
 
         [TestMethod]
         public void StaticFunction_NonIssue()
         {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-
-namespace ExternalInteraction
-{
-    public static class HireEmployee
-    {
-        [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
-            {
-            }
-}";
-            VerifyCSharpDiagnostic(test);
+            VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
         public void StaticFunction_NonStatic()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace ExternalInteraction
-{
-    public static class HireEmployee
+ public class MyEmptyEntity : IMyEmptyEntity
     {
-        [FunctionName(""HireEmployee"")]
-        public async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
+        [FunctionName(""MyEmptyEntity"")]
+        public Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyEmptyEntity>();
+    }";
+
+            var expectedDiagnostics = new DiagnosticResult
             {
-            }
-}";
-            var expected = new DiagnosticResult
-            {
-                Id = diagnosticId,
-                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "RunOrchestrator"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.EntityStaticAnalyzerMessageFormat, "Run"),
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 40)
+                            new DiagnosticResultLocation("Test0.cs", 7, 21)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
@@ -88,7 +65,7 @@ namespace ExternalInteraction
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new StaticFunctionAnalyzer();
+            return new DispatchEntityNameAnalyzer();
         }
     }
 }

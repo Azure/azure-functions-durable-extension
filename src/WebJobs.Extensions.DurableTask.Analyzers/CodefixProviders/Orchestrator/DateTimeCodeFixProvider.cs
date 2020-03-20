@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(DateTimeCodeFixProvider)), Shared]
-    public class DateTimeCodeFixProvider : DurableFunctionsCodeFixProvider
+    public class DateTimeCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixDateTimeInOrchestrator = new LocalizableResourceString(nameof(Resources.FixDateTimeInOrchestrator), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString FixDeterministicAttribute = new LocalizableResourceString(nameof(Resources.FixDeterministicAttribute), Resources.ResourceManager, typeof(Resources));
@@ -38,16 +38,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
             {
-                if (TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
+                if (CodeFixProviderUtils.TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
                 {
                     context.RegisterCodeFix(
-                    CodeAction.Create(FixDateTimeInOrchestrator.ToString(), c => ReplaceWithIdentifierAsync(context.Document, expression, c, variableName + ".CurrentUtcDateTime"), nameof(DateTimeCodeFixProvider)), diagnostic);
+                    CodeAction.Create(FixDateTimeInOrchestrator.ToString(), c => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, expression, c, variableName + ".CurrentUtcDateTime"), nameof(DateTimeCodeFixProvider)), diagnostic);
                 }
-            }
-            else if (SyntaxNodeUtils.IsMarkedDeterministic(expression))
-            {
-                context.RegisterCodeFix(
-                CodeAction.Create(FixDeterministicAttribute.ToString(), c => RemoveDeterministicAttributeAsync(context.Document, expression, c), nameof(DateTimeCodeFixProvider)), diagnostic);
             }
         }
     }

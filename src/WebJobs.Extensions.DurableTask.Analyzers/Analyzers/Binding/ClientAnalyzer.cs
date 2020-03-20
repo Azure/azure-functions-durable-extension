@@ -21,10 +21,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString V2MessageFormat = new LocalizableResourceString(nameof(Resources.V2ClientAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString V2Description = new LocalizableResourceString(nameof(Resources.V2ClientAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Binding;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, severity, isEnabledByDefault: true, description: V1Description);
-        private static DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, severity, isEnabledByDefault: true, description: V2Description);
+        private static readonly DiagnosticDescriptor V1Rule = new DiagnosticDescriptor(DiagnosticId, V1Title, V1MessageFormat, Category, Severity, isEnabledByDefault: true, description: V1Description);
+        private static readonly DiagnosticDescriptor V2Rule = new DiagnosticDescriptor(DiagnosticId, V2Title, V2MessageFormat, Category, Severity, isEnabledByDefault: true, description: V2Description);
 
         private static DurableVersion version;
 
@@ -63,16 +63,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool AttributeMatchesVersionClientBinding(AttributeSyntax attribute)
         {
-            var attributeString = attribute.ToString();
-
-            if (version == DurableVersion.V1 && string.Equals(attributeString, "OrchestrationClient"))
+            if (attribute != null)
             {
-                return true;
-            }
+                var attributeString = attribute.ToString();
 
-            if (version == DurableVersion.V2 && string.Equals(attributeString, "DurableClient"))
-            {
-                return true;
+                if (version == DurableVersion.V1 && string.Equals(attributeString, "OrchestrationClient"))
+                {
+                    return true;
+                }
+
+                if (version == DurableVersion.V2 && string.Equals(attributeString, "DurableClient"))
+                {
+                    return true;
+                }
             }
 
             return false;

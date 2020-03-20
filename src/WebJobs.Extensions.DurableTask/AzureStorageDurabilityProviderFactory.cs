@@ -66,7 +66,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
-                this.defaultStorageProvider = new AzureStorageDurabilityProvider(defaultService, this.defaultConnectionName);
+                this.defaultStorageProvider = new AzureStorageDurabilityProvider(
+                    defaultService,
+                    this.defaultConnectionName,
+                    this.azureStorageOptions);
             }
 
             return this.defaultStorageProvider;
@@ -94,7 +97,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                innerClient = new AzureStorageDurabilityProvider(new AzureStorageOrchestrationService(settings), connectionName);
+                innerClient = new AzureStorageDurabilityProvider(
+                    new AzureStorageOrchestrationService(settings),
+                    connectionName,
+                    this.azureStorageOptions);
             }
 
             return innerClient;

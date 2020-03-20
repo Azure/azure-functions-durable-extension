@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class DurabilityProvider : IOrchestrationService, IOrchestrationServiceClient
     {
         internal const string NoConnectionDetails = "default";
+
+        private static readonly JObject EmptyConfig = new JObject();
 
         private readonly string name;
         private readonly IOrchestrationService innerService;
@@ -53,6 +56,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
         public virtual bool SupportsEntities => false;
+
+        /// <summary>
+        /// JSON representation of configuration to emit in telemetry.
+        /// </summary>
+        public virtual JObject ConfigurationJson => EmptyConfig;
 
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
@@ -246,6 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
+        [Obsolete]
         public virtual Task<IList<OrchestrationState>> GetAllOrchestrationStatesWithFilters(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             throw this.GetNotImplementedException(nameof(this.GetAllOrchestrationStatesWithFilters));

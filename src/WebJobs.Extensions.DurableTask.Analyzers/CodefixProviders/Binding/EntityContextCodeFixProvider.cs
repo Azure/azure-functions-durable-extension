@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(EntityContextCodeFixProvider)), Shared]
-    public class EntityContextCodeFixProvider: DurableFunctionsCodeFixProvider
+    public class EntityContextCodeFixProvider: CodeFixProvider
     {
         private static readonly LocalizableString FixIDurableEntityContext = new LocalizableResourceString(nameof(Resources.FixIDurableEntityContext), Resources.ResourceManager, typeof(Resources));
 
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var identifierNode = root.FindNode(diagnosticSpan);
 
             context.RegisterCodeFix(
-            CodeAction.Create(FixIDurableEntityContext.ToString(), cancellationToken => ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableEntityContext"), nameof(EntityContextCodeFixProvider)),
+            CodeAction.Create(FixIDurableEntityContext.ToString(), cancellationToken => CodeFixProviderUtils.ReplaceWithIdentifierAsync(context.Document, identifierNode, cancellationToken, "IDurableEntityContext"), nameof(EntityContextCodeFixProvider)),
             diagnostic);
         }
     }

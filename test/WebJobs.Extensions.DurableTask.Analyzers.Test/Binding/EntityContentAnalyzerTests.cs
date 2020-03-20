@@ -5,28 +5,18 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
 {
     [TestClass]
-    public class EntityContetAnalyzerTests : CodeFixVerifier
+    public class EntityContentAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = EntityContextAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = EntityContextAnalyzer.severity;
+        private static readonly string DiagnosticId = EntityContextAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = EntityContextAnalyzer.Severity;
 
-        [TestMethod]
-        public void EntityTrigger_NonIssue()
-        {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+        private const string ExpectedFix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -39,21 +29,20 @@ namespace ExternalInteraction
             ILogger log)
             {
             }
+    }
 }";
-            VerifyCSharpDiagnostic(test);
+
+        [TestMethod]
+        public void EntityTrigger_NonIssue()
+        {
+            VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
         public void EntityTrigger_Object()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -66,32 +55,29 @@ namespace ExternalInteraction
             ILogger log)
             {
             }
+    }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "Object"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
             
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
         public void EntityTrigger_String()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -104,32 +90,29 @@ namespace ExternalInteraction
             ILogger log)
             {
             }
+    }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "string"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
             
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
         public void EntityTrigger_Tuple()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace ExternalInteraction
@@ -142,19 +125,22 @@ namespace ExternalInteraction
             ILogger log)
             {
             }
+    }
 }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.EntityContextAnalyzerMessageFormat, "Tuple<int, string>"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 29)
+                            new DiagnosticResultLocation("Test0.cs", 11, 29)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()

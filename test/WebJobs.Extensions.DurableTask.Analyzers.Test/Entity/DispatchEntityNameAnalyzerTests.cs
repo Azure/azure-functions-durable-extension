@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
@@ -13,21 +12,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     [TestClass]
     public class DispatchEntityNameAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = DispatchClassNameAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = DispatchClassNameAnalyzer.severity;
+        private static readonly string DiagnosticId = DispatchEntityNameAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = DispatchEntityNameAnalyzer.Severity;
 
-        [TestMethod]
-        public void DispatchCall_NonIssue()
-        {
-            var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+        private const string ExpectedFix = @"
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
@@ -35,145 +24,128 @@ using Microsoft.Extensions.Logging;
         public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyEmptyEntity>();
     }";
 
-            VerifyCSharpDiagnostic(test);
+        [TestMethod]
+        public void DispatchCall_NonIssue()
+        {
+            VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
         public void DispatchCall_Object()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
         [FunctionName(""MyEmptyEntity"")]
         public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<Object>();
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "Object", "MyEmptyEntity"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "Object", "MyEmptyEntity"),
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
         public void DispatchCall_String()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
         [FunctionName(""MyEmptyEntity"")]
         public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<string>();
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "string", "MyEmptyEntity"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "string", "MyEmptyEntity"),
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected); 
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
         public void DispatchCall_ILogger()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
         [FunctionName(""MyEmptyEntity"")]
         public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<ILogger>();
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "ILogger", "MyEmptyEntity"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "ILogger", "MyEmptyEntity"),
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         [TestMethod]
         public void DispatchCall_Tuple()
         {
             var test = @"
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
     {
         [FunctionName(""MyEmptyEntity"")]
         public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<Tuple<int, string>>();
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
-                Message = string.Format(Resources.DispatchClassNameAnalyzerMessageFormat, "Tuple<int, string>", "MyEmptyEntity"),
-                Severity = severity,
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "Tuple<int, string>", "MyEmptyEntity"),
+                Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 96)
+                            new DiagnosticResultLocation("Test0.cs", 7, 96)
                      }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new DispatchClassNameCodeFixProvider();
+            return new DispatchEntityNameCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new DispatchClassNameAnalyzer();
+            return new DispatchEntityNameAnalyzer();
         }
     }
 }

@@ -10,41 +10,20 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    public abstract class DurableFunctionsCodeFixProvider : CodeFixProvider
+    public static class CodeFixProviderUtils
     {
-        protected async Task<Document> RemoveDeterministicAttributeAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken)
+        public static async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string identifierString)
         {
-            var root = await document.GetSyntaxRootAsync(cancellationToken);
-            if (SyntaxNodeUtils.TryGetDeterministicAttribute(identifierNode, out SyntaxNode deterministicAttribute))
-            {
-                var newRoot = root.RemoveNode(deterministicAttribute, SyntaxRemoveOptions.KeepExteriorTrivia);
-                return document.WithSyntaxRoot(newRoot);
-            }
+            var newIdentifier = SyntaxFactory.IdentifierName(identifierString)
+                .WithLeadingTrivia(identifierNode.GetLeadingTrivia())
+                .WithTrailingTrivia(identifierNode.GetTrailingTrivia());
 
-            return document;
-        }
-
-        protected async Task<Document> ReplaceWithIdentifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken, string expression)
-        {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var newRoot = root.ReplaceNode(identifierNode, SyntaxFactory.IdentifierName(expression));
+            var newRoot = root.ReplaceNode(identifierNode, newIdentifier);
             return document.WithSyntaxRoot(newRoot);
         }
 
-        protected async Task<Document> ReplaceWithExpressionAsync(Document document, SyntaxNode oldExpression, CancellationToken cancellationToken, string newExpression)
-        {
-            var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var newRoot = root.ReplaceNode(oldExpression, SyntaxFactory.ParseExpression(newExpression, 0, null, false));
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        public override FixAllProvider GetFixAllProvider()
-        {
-            // Disables fix-all support, according to the Roslyn analyzer analyzer
-            return null;
-        }
-
-        protected static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out string variableName)
+        public static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out string variableName)
         {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {

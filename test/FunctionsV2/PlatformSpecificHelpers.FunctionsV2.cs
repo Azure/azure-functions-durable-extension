@@ -2,6 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string TestCategory = "Functions" + VersionSuffix;
         public const string FlakeyTestCategory = TestCategory + "_Flakey";
 
-        public static JobHost CreateJobHost(
+        public static ITestHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
             string storageProvider,
             ILoggerProvider loggerProvider,
@@ -59,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     })
                 .Build();
 
-            return (JobHost)host.Services.GetService<IJobHost>();
+            return new FunctionsV2HostWrapper(host);
         }
 
         private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider)
@@ -93,6 +96,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             builder.Services.AddSingleton<IDurabilityProviderFactory, EmulatorDurabilityProviderFactory>();
             return builder;
+        }
+
+        private class FunctionsV2HostWrapper : ITestHost
+        {
+            private readonly IHost innerHost;
+            private readonly JobHost innerWebJobsHost;
+
+            public FunctionsV2HostWrapper(IHost innerHost)
+            {
+                this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
+                this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
+            }
+
+            public Task CallAsync(string methodName, IDictionary<string, object> args)
+                => this.innerWebJobsHost.CallAsync(methodName, args);
+
+            public Task CallAsync(MethodInfo method, IDictionary<string, object> args)
+                => this.innerWebJobsHost.CallAsync(method, args);
+
+            public void Dispose() => this.innerHost.Dispose();
+
+            public Task StartAsync() => this.innerHost.StartAsync();
+
+            public async Task StopAsync()
+            {
+                try
+                {
+                    await this.innerHost.StopAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore
+                }
+            }
         }
     }
 }

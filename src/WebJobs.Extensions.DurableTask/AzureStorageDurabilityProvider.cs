@@ -10,6 +10,9 @@ using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using AzureStorage = DurableTask.AzureStorage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -23,12 +26,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly AzureStorageOrchestrationService serviceClient;
         private readonly string connectionName;
+        private readonly JObject storageOptionsJson;
 
-        public AzureStorageDurabilityProvider(AzureStorageOrchestrationService service, string connectionName)
+        public AzureStorageDurabilityProvider(
+            AzureStorageOrchestrationService service,
+            string connectionName,
+            AzureStorageOptions options)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
             this.connectionName = connectionName;
+            this.storageOptionsJson = JObject.FromObject(
+                options,
+                new JsonSerializer
+                {
+                    Converters = { new StringEnumConverter() },
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                });
         }
 
         public override bool SupportsEntities => true;
@@ -37,6 +51,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The app setting containing the Azure Storage connection string.
         /// </summary>
         public override string ConnectionName => this.connectionName;
+
+        public override JObject ConfigurationJson => this.storageOptionsJson;
 
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)
@@ -57,6 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
+        [Obsolete]
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStatesWithFilters(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             return await this.serviceClient.GetOrchestrationStateAsync(createdTimeFrom, createdTimeTo, runtimeStatus.Select(x => (OrchestrationStatus)x), cancellationToken);

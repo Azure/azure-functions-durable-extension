@@ -44,6 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string ParentInstanceId { get; set; }
 
         /// <summary>
+        /// The parent instance that called this operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "parentExecution", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string ParentExecutionId { get; set; }
+
+        /// <summary>
         /// Optionally, a scheduled time at which to start the operation.
         /// </summary>
         [JsonProperty(PropertyName = "due", DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -87,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = dataConverter.MessageConverter.Serialize(obj);
+                    this.Input = dataConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -100,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return dataConverter.MessageConverter.Deserialize<T>(this.Input);
+                return dataConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -112,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return dataConverter.MessageConverter.Deserialize(this.Input, inputType);
+                return dataConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {
@@ -124,11 +130,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.IsLockRequest)
             {
-                return $"[Request lock {this.Id} by {this.ParentInstanceId}, position {this.Position}]";
+                return $"[Request lock {this.Id} by {this.ParentInstanceId} {this.ParentExecutionId}, position {this.Position}]";
             }
             else
             {
-                return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId}]";
+                return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId} {this.ParentExecutionId}]";
             }
         }
     }

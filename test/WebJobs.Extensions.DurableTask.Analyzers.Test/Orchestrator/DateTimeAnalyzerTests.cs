@@ -13,10 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     [TestClass]
     public class DateTimeAnalyzerTests : CodeFixVerifier
     {
-        private readonly string diagnosticId = DateTimeAnalyzer.DiagnosticId;
-        private readonly DiagnosticSeverity severity = DateTimeAnalyzer.severity;
+        private static readonly string DiagnosticId = DateTimeAnalyzer.DiagnosticId;
+        private static readonly DiagnosticSeverity Severity = DateTimeAnalyzer.Severity;
 
-        private readonly string allTests = @"
+        private const string allTests = @"
         public void dateTimeNow()
         {
             System.DateTime.Now;
@@ -29,8 +29,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }
 }";
 
+        private const string ExpectedFix = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""E1_HelloSequence"")]
+            public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.CurrentUtcDateTime;
+            }
+        }
+    }";
+
         [TestMethod]
-        public void DateTimeInMethod_NonIssueCalls()
+        public void DateTime_InMethod_NonIssueCalls()
         {
             var test = @"
     using System;
@@ -39,6 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class DateTimeNowExample
         {
+            [FunctionName(""E1_HelloSequence"")]
             " + allTests;
 
             VerifyCSharpDiagnostic(test);
@@ -57,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName('E1_HelloSequence')]
+            [FunctionName(""E1_HelloSequence"")]
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -65,18 +85,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -92,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName('E1_HelloSequence')]
+            [FunctionName(""E1_HelloSequence"")]
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -100,18 +122,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -127,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName('E1_HelloSequence')]
+            [FunctionName(""E1_HelloSequence"")]
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -135,18 +159,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Today"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -162,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName('E1_HelloSequence')]
+            [FunctionName(""E1_HelloSequence"")]
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -170,18 +196,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -197,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName('E1_HelloSequence')]
+            [FunctionName(""E1_HelloSequence"")]
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -205,18 +233,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
@@ -232,7 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName('E1_HelloSequence')]
+            [FunctionName(""E1_HelloSequence"")]
             public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
@@ -240,103 +270,130 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             }
         }
     }";
-            var expected = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Today"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
-            VerifyCSharpDiagnostic(test, expected);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 
         [TestMethod]
-        public void DateTimeInMethod_DeterministicAttribute_All()
+        public void DateTime_InMethod_OrchestratorCall_All()
         {
             var test = @"
-    using System;
-    using Microsoft.Azure.WebJobs;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-     namespace VSSample
+namespace VSSample
+{
+    public static class HelloSequence
     {
-        public static class DateTimeNowExample
+        [FunctionName(""E1_HelloSequence"")]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                DirectCall();
+            
+                return ""Hello"";
+            }
+
+        public static string DirectCall()
         {
-            [Deterministic]
             " + allTests;
 
 
-            var expectedResults = new DiagnosticResult[6];
-            expectedResults[0] = new DiagnosticResult
+            var expectedDiagnostics = new DiagnosticResult[7];
+            expectedDiagnostics[0] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = MethodAnalyzer.DiagnosticId,
+                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 17, 17)
+                        }
+            };
+
+            expectedDiagnostics[1] = new DiagnosticResult
+            {
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 13, 13)
+                            new DiagnosticResultLocation("Test0.cs", 27, 13)
                         }
             };
 
-            expectedResults[1] = new DiagnosticResult
+            expectedDiagnostics[2] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.UtcNow"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 14, 13)
+                            new DiagnosticResultLocation("Test0.cs", 28, 13)
                         }
             };
 
-            expectedResults[2] = new DiagnosticResult
+            expectedDiagnostics[3] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "System.DateTime.Today"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 13)
+                            new DiagnosticResultLocation("Test0.cs", 29, 13)
                         }
             };
 
-            expectedResults[3] = new DiagnosticResult
+            expectedDiagnostics[4] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 16, 4)
+                            new DiagnosticResultLocation("Test0.cs", 30, 4)
                         }
             };
 
-            expectedResults[4] = new DiagnosticResult
+            expectedDiagnostics[5] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.UtcNow"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 4)
+                            new DiagnosticResultLocation("Test0.cs", 31, 4)
                         }
             };
 
-            expectedResults[5] = new DiagnosticResult
+            expectedDiagnostics[6] = new DiagnosticResult
             {
-                Id = diagnosticId,
+                Id = DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Today"),
-                Severity = severity,
+                Severity = Severity,
                 Locations =
                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 18, 13)
+                            new DiagnosticResultLocation("Test0.cs", 32, 13)
                        }
             };
 
-            VerifyCSharpDiagnostic(test, expectedResults);
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
@@ -346,7 +403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new DateTimeAnalyzer();
+            return new OrchestratorAnalyzer();
         }
     }
 }

@@ -15,27 +15,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.ActivityReturnTypeAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.ActivityReturnTypeAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Activity;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
 
-        public void ReportProblems(CompilationAnalysisContext cac, IEnumerable<ActivityFunctionDefinition> availableFunctions, IEnumerable<ActivityFunctionCall> calledFunctions)
+        public static void ReportProblems(
+            CompilationAnalysisContext context, 
+            SemanticModel semanticModel, 
+            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
+            IEnumerable<ActivityFunctionCall> calledFunctions)
         {
-            foreach (var node in calledFunctions)
+            foreach (var activityInvocation in calledFunctions)
             {
-                var functionDefinition = availableFunctions.Where(x => x.FunctionName == node.Name).SingleOrDefault();
-                if (functionDefinition != null)
+                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).FirstOrDefault();
+                if (functionDefinition != null && activityInvocation.ReturnTypeNode != null)
                 {
-                    // Functions can always return Task, regardless of function definition return type
-                    if (functionDefinition.ReturnType != node.ExpectedReturnType &&
-                        node.ExpectedReturnType != "System.Threading.Tasks.Task")
+                    TryGetInvocationReturnType(semanticModel, activityInvocation, out ITypeSymbol invocationReturnType);
+                    TryGetDefinitionReturnType(semanticModel, functionDefinition, out ITypeSymbol definitionReturnType);
+
+                    if (!InputMatchesOrTaskOrCompatibleType(invocationReturnType, definitionReturnType))
                     {
-                        if ($"System.Threading.Tasks.Task<{functionDefinition.ReturnType}>" != node.ExpectedReturnType)
-                            cac.ReportDiagnostic(Diagnostic.Create(Rule, node.InvocationExpression.GetLocation(), node.Name, functionDefinition.ReturnType, node.ExpectedReturnType));
+                        var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
+                        var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
+
+                        var diagnostic = Diagnostic.Create(Rule, activityInvocation.InvocationExpression.GetLocation(), activityInvocation.Name, functionTypeName, invocationTypeName);
+
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
+        }
+
+        private static bool InputMatchesOrTaskOrCompatibleType(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
+        {
+            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType) || DefinitionReturnsTask(invocationReturnType, definitionReturnType);
+        }
+
+        private static bool DefinitionReturnsTask(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
+        {
+            if (definitionReturnType.Name.Equals("Task") && definitionReturnType is INamedTypeSymbol namedType)
+            {
+                var taskTypeArgument = namedType.TypeArguments.FirstOrDefault();
+                if (taskTypeArgument != null)
+                {
+                    return invocationReturnType.Equals(taskTypeArgument);
+                }
+            }
+
+            return false;
+        }
+
+        private static void TryGetInvocationReturnType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationReturnType)
+        {
+            var invocationReturnNode = activityInvocation.ReturnTypeNode;
+
+            invocationReturnType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationReturnNode).GetTypeInfo(invocationReturnNode).Type;
+        }
+
+        private static void TryGetDefinitionReturnType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionReturnType)
+        {
+            var definitionReturnNode = functionDefinition.ReturnTypeNode;
+
+            definitionReturnType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, definitionReturnNode).GetTypeInfo(definitionReturnNode).Type;
         }
     }
 }

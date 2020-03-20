@@ -36,5 +36,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
             return d[baseLength, comparisonLength];
         }
+
+        public static string GetCleanedFunctionName(this string functionName)
+        {
+            const string nameofStart = "nameof(";
+            const string nameofEnd = ")";
+            if (functionName.StartsWith(nameofStart) && functionName.EndsWith(nameofEnd))
+            {
+                functionName = functionName.Substring(nameofStart.Length, functionName.Length - nameofStart.Length - nameofEnd.Length);
+            }
+            else
+            {
+                functionName = functionName.Trim('"');
+            }
+
+            return functionName;
+        }
     }
 }

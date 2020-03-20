@@ -3,15 +3,12 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class StaticFunctionAnalyzer : DiagnosticAnalyzer
+    public class StaticFunctionAnalyzer
     {
         public const string DiagnosticId = "DF0306";
 
@@ -19,36 +16,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.EntityStaticAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.EntityStaticAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Entity;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
-
-        public override void Initialize(AnalysisContext context)
+        public static void ReportProblems(CompilationAnalysisContext context, SyntaxNode methodDeclaration)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(AnalyzeAttributeClassName, SyntaxKind.Attribute);
-        }
-        
-        private static void AnalyzeAttributeClassName(SyntaxNodeAnalysisContext context)
-        {
-            var attribute = context.Node as AttributeSyntax;
-            if (SyntaxNodeUtils.IsEntityTriggerAttribute(attribute))
+            var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword)).FirstOrDefault();
+            if (staticKeyword == null || staticKeyword.IsKind(SyntaxKind.None))
             {
-                if (SyntaxNodeUtils.TryGetMethodDeclaration(attribute, out SyntaxNode methodDeclaration))
+                if (IsInEntityClass(methodDeclaration))
                 {
-                    var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword));
-                    if (!staticKeyword.Any())
+                    var methodName = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).FirstOrDefault();
+
+                    if (methodName != null)
                     {
-                        var methodName = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).First();
                         var diagnostic = Diagnostic.Create(Rule, methodName.GetLocation(), methodName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
+        }
+
+        private static bool IsInEntityClass(SyntaxNode methodDeclaration)
+        {
+            if (SyntaxNodeUtils.TryGetFunctionNameAndNode(methodDeclaration, out SyntaxNode attributeArgument, out string functionName))
+            {
+                if (SyntaxNodeUtils.TryGetClassName(methodDeclaration, out string className))
+                {
+                    if (string.Equals(className, functionName))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

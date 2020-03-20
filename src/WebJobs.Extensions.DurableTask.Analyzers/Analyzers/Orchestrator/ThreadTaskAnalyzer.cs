@@ -5,13 +5,12 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class ThreadTaskAnalyzer : DiagnosticAnalyzer
+    public class ThreadTaskAnalyzer
     {
         public const string DiagnosticId = "DF0104";
 
@@ -19,140 +18,139 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Orchestrator;
-        public const DiagnosticSeverity severity = DiagnosticSeverity.Warning;
+        public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
-
-        public override void Initialize(AnalysisContext context)
+        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierTask, SyntaxKind.IdentifierName);
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierTaskFactory, SyntaxKind.IdentifierName);
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierThread, SyntaxKind.IdentifierName);
-            context.RegisterSyntaxNodeAction(AnalyzeIdentifierTaskContinueWith, SyntaxKind.IdentifierName);
+            // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
+            return (AnalyzeIdentifierTask(method, context, semanticModel) |
+                AnalyzeIdentifierTaskFactory(method, context, semanticModel) |
+                AnalyzeIdentifierTaskContinueWith(method, context, semanticModel) |
+                AnalyzeIdentifierThread(method, context, semanticModel));
         }
 
-        private static void AnalyzeIdentifierTask(SyntaxNodeAnalysisContext context)
+        private static bool AnalyzeIdentifierTask(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            var diagnosedIssue = false;
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierText = identifierName.Identifier.ValueText;
-                if (identifierText == "Run" || identifierText == "Factory.StartNew")
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var memberAccessExpression = identifierName.Parent;
-                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
-
-                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    if (identifierText == "Run" || identifierText == "Factory.StartNew")
                     {
-                        return;
+                        var memberAccessExpression = identifierName.Parent;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
+
+                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+
+                            context.ReportDiagnostic(diagnostic);
+
+                            diagnosedIssue = true;
+                        }
                     }
-
-                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
-
-                    var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
-
-                    context.ReportDiagnostic(diagnostic);
                 }
             }
+
+            return diagnosedIssue;
         }
 
-        private static void AnalyzeIdentifierTaskFactory(SyntaxNodeAnalysisContext context)
+        private static bool AnalyzeIdentifierTaskFactory(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            var diagnosedIssue = false;
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierText = identifierName.Identifier.ValueText;
-                if (identifierText == "StartNew")
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var memberAccessExpression = identifierName.Parent;
-                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
-
-                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    if (identifierText == "StartNew")
                     {
-                        return;
+                        var memberAccessExpression = identifierName.Parent;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
+
+                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+
+                            context.ReportDiagnostic(diagnostic);
+
+                            diagnosedIssue = true;
+                        }
                     }
-
-                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
-
-                    var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
-
-                    context.ReportDiagnostic(diagnostic);
                 }
             }
+
+            return diagnosedIssue;
         }
 
-        private static void AnalyzeIdentifierThread(SyntaxNodeAnalysisContext context)
+        private static bool AnalyzeIdentifierThread(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            var diagnosedIssue = false;
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierText = identifierName.Identifier.ValueText;
-                if (identifierText == "Start")
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var memberAccessExpression = identifierName.Parent;
-                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
-
-                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    if (identifierText == "Start")
                     {
-                        return;
+                        var memberAccessExpression = identifierName.Parent;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
+
+                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+
+                            context.ReportDiagnostic(diagnostic);
+
+                            diagnosedIssue = true;
+                        }
                     }
-
-                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
-
-                    var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
-
-                    context.ReportDiagnostic(diagnostic);
                 }
             }
+
+            return diagnosedIssue;
         }
 
-        private void AnalyzeIdentifierTaskContinueWith(SyntaxNodeAnalysisContext context)
+        private static bool AnalyzeIdentifierTaskContinueWith(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
         {
-            var identifierName = context.Node as IdentifierNameSyntax;
-            if (identifierName != null)
+            var diagnosedIssue = false;
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
             {
-                var identifierText = identifierName.Identifier.ValueText;
-                if (identifierText == "ContinueWith")
+                if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    var memberAccessExpression = identifierName.Parent;
-                    var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
-
-                    if (memberSymbol == null || !memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                    var identifierText = identifierName.Identifier.ValueText;
+                    if (identifierText == "ContinueWith")
                     {
-                        return;
+                        var memberAccessExpression = identifierName.Parent;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
+
+                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        {
+                            if (!HasExecuteSynchronously(identifierName))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+
+                                context.ReportDiagnostic(diagnostic);
+
+                                diagnosedIssue = true;
+                            }
+                        }
                     }
-
-                    if (HasExecuteSynchronously(identifierName))
-                    {
-                        return;
-                    }
-
-                    if (!SyntaxNodeUtils.IsInsideOrchestrator(identifierName) && !SyntaxNodeUtils.IsMarkedDeterministic(identifierName))
-                    {
-                        return;
-                    }
-
-                    var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
-
-                    context.ReportDiagnostic(diagnostic);
                 }
             }
+
+            return diagnosedIssue;
         }
 
-        private bool HasExecuteSynchronously(SyntaxNode node)
+        private static bool HasExecuteSynchronously(SyntaxNode node)
         {
             if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out SyntaxNode invocationExpression))
             {
