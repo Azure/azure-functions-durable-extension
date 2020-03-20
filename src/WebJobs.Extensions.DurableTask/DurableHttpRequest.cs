@@ -129,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
-                this.CreateTokenSourceSerializer(serializer);
+                var safeTokenSerializer = GetTokenSourceSerializer(serializer);
 
                 JToken json = JToken.ReadFrom(reader);
                 if (json.Type == JTokenType.Null)
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else if (jsonObject.TryGetValue("$type", StringComparison.Ordinal, out JToken clrTypeValue))
                 {
                     Type runtimeType = Type.GetType((string)clrTypeValue, throwOnError: true);
-                    return jsonObject.ToObject(runtimeType, tokenSerializer);
+                    return jsonObject.ToObject(runtimeType, safeTokenSerializer);
                 }
                 else
                 {
@@ -174,12 +174,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else
                 {
                     // Don't know how to serialize this - use default behavior, forcing TypeNameHandling.Objects to correctly serialize ITokenSource
-                    this.CreateTokenSourceSerializer(serializer);
-                    tokenSerializer.Serialize(writer, value);
+                    var safeTokenSerializer = GetTokenSourceSerializer(serializer);
+                    safeTokenSerializer.Serialize(writer, value);
                 }
             }
 
-            private void CreateTokenSourceSerializer(JsonSerializer serializer)
+            private static JsonSerializer GetTokenSourceSerializer(JsonSerializer serializer)
             {
                 if (tokenSerializer == null)
                 {
@@ -187,7 +187,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     || serializer.TypeNameHandling == TypeNameHandling.All)
                     {
                         tokenSerializer = serializer;
-                        return;
                     }
 
                     // Make sure these are all the settings when updating Newtonsoft.Json
@@ -218,14 +217,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         StringEscapeHandling = serializer.StringEscapeHandling,
                         TraceWriter = serializer.TraceWriter,
 
-                        // Enforcing TypeNameHandling.Objects to make suire ITokenSource gets serialized/deserialized correctly
+                        // Enforcing TypeNameHandling.Objects to make sure ITokenSource gets serialized/deserialized correctly
                         TypeNameHandling = TypeNameHandling.Objects,
                     };
+
                     foreach (var converter in serializer.Converters)
                     {
                         tokenSerializer.Converters.Add(converter);
                     }
                 }
+
+                return tokenSerializer;
             }
         }
     }
