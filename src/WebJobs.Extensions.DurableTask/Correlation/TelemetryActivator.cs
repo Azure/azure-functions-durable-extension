@@ -81,11 +81,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private void SetUpTelemetryClient()
         {
-            var module = new DependencyTrackingTelemetryModule();
-            // Currently it seems have a problem https://github.com/microsoft/ApplicationInsights-dotnet-server/issues/536
-            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
-            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
-
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
@@ -99,8 +94,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             config.TelemetryInitializers.Add(telemetryInitializer);
 
             config.InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-
-            module.Initialize(config);
 
             this.telemetryClient = new TelemetryClient(config);
         }
