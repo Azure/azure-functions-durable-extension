@@ -252,6 +252,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
 
+            // We add a binding rule to support the now deprecated `orchestrationClient` binding
+            // A cleaner solution would be to have the prior rule have an OR-style selector between
+            // DurableClientAttribute and OrchestrationClientAttribute, but it's unclear if that's
+            // possible (for now).
+#pragma warning disable CS0618 // Type or member is obsolete
+            var backwardsCompRule = context.AddBindingRule<OrchestrationClientAttribute>()
+#pragma warning restore CS0618 // Type or member is obsolete
+                .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
+                .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
+                .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
+
+            backwardsCompRule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
+            backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
+            backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
+            backwardsCompRule.BindToInput<IDurableClient>(this.GetClient);
+
             string storageConnectionString = null;
             var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
             if (providerFactory != null)
