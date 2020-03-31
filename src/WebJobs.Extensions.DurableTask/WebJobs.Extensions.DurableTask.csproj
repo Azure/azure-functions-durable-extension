@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
+    <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Telemetry</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>2</MinorVersion>
@@ -52,19 +52,19 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.5" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.102" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.102" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.2" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.14" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
 
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-      <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.102" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.102" />
+      <PackageReference Include="Microsoft.Azure.DurableTask.Core.Telemetry" Version="2.2.3-alpha" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage.Telemetry" Version="1.7.4-alpha" />
   </ItemGroup>
 
   <ItemGroup>
