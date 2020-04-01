@@ -1,4 +1,6 @@
-﻿
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using DurableTask.Core.Settings;
 #if NETSTANDARD2_0
 using System;
@@ -12,7 +14,6 @@ using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
 
-
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
     /// <summary>
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// This source is based on W3COperationCorrelationTelemetryInitializer.cs
     /// 1. Modified with CorrelationTraceContext.Current
     /// 2. Avoid to be overriden when it is RequestTelemetry
-    /// Original Source is here <see cref="https://github.com/microsoft/ApplicationInsights-dotnet-server/blob/2.8.0/Src/Common/W3C/W3COperationCorrelationTelemetryInitializer.cs"/>
+    /// Original Source is here https://github.com/microsoft/ApplicationInsights-dotnet-server/blob/2.8.0/Src/Common/W3C/W3COperationCorrelationTelemetryInitializer.cs.
     /// </summary>
     [Obsolete("Not ready for public consumption.")]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -57,14 +58,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         internal const string DefaultVersion = "00";
 
         /// <summary>
-        /// Default sampled flag value: may be recorded, not requested
+        /// Default sampled flag value: may be recorded, not requested.
         /// </summary>
         internal const string TraceFlagRecordedAndNotRequested = "02";
 
-        /// <summary>Recorded and requested sampled flag value</summary>
+        /// <summary>Recorded and requested sampled flag value.</summary>
         internal const string TraceFlagRecordedAndRequested = "03";
 
-        /// <summary>Requested trace flag</summary>
+        /// <summary>Requested trace flag.</summary>
         internal const byte RequestedTraceFlag = 1;
 
         /// <summary>Legacy root Id tag name.</summary>
@@ -74,27 +75,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         internal const string LegacyRequestIdProperty = "ai_legacyRequestId";
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public DurableTaskCorrelationTelemetryInitializer()
+        {
+            this.ExcludeComponentCorrelationHttpHeadersOnDomains = new HashSet<string>();
+        }
+
+        /// <summary>
         /// Set of suppress telemetry tracking if you add Host name on this.
         /// </summary>
         public HashSet<string> ExcludeComponentCorrelationHttpHeadersOnDomains { get; set; }
 
         /// <summary>
-        /// Constructor 
-        /// </summary>
-        public DurableTaskCorrelationTelemetryInitializer()
-        {
-            ExcludeComponentCorrelationHttpHeadersOnDomains = new HashSet<string>();
-        }
-
-        /// <summary>
-        /// Initializes telemety item.
+        /// Initializes telemetry item.
         /// </summary>
         /// <param name="telemetry">Telemetry item.</param>
         public void Initialize(ITelemetry telemetry)
         {
-            if (IsSuppressedTelemetry(telemetry))
+            if (this.IsSuppressedTelemetry(telemetry))
             {
-                SuppressTelemetry(telemetry);
+                this.SuppressTelemetry(telemetry);
                 return;
             }
 
@@ -206,7 +207,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             if (initializeFromCurrent)
             {
                 if (string.IsNullOrEmpty(opTelemetry.Id))
+                {
                     opTelemetry.Id = traceParent.SpanId;
+                }
 
                 if (string.IsNullOrEmpty(context.ParentSpanId))
                 {
@@ -232,6 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             // TODO change the strategy.
             telemetry.Context.Operation.Id = "suppressed";
             telemetry.Context.Operation.ParentId = "suppressed";
+
             // Context. Properties.  ai_legacyRequestId , ai_legacyRequestId
             foreach (var key in telemetry.Context.Properties.Keys)
             {
@@ -255,7 +259,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 if (!string.IsNullOrEmpty(dTelemetry.CommandName))
                 {
                     var host = new Uri(dTelemetry.CommandName).Host;
-                    if (ExcludeComponentCorrelationHttpHeadersOnDomains.Contains(host)) return true;
+                    if (this.ExcludeComponentCorrelationHttpHeadersOnDomains.Contains(host))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -276,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 return;
             }
 
-            // Requests and dependnecies are initialized from the current Activity 
+            // Requests and dependencies are initialized from the Activity.Current.
             // (i.e. telemetry.Id = current.Id). Activity is created for such requests specifically
             // Traces, exceptions, events on the other side are children of current activity
             // There is one exception - SQL DiagnosticSource where current Activity is a parent

@@ -1395,10 +1395,19 @@
             Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instead.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator">
+            <summary>
+            ITelemetryActivator is an interface.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator.Initialize">
+            <summary>
+            Initialize is initialize the telemetry client.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel">
             <summary>
             A stub of <see cref="T:Microsoft.ApplicationInsights.Channel.ITelemetryChannel"/>.
-            This is the copy of the https://github.com/Microsoft/ApplicationInsights-dotnet/Test/TestFramework/Shared/StubTelemetryClient
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.#ctor">
@@ -1426,6 +1435,16 @@
             Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnFlush">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush"/> method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnDispose">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose"/> method.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)">
             <summary>
             Implements the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method by invoking the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend"/> callback.
@@ -1441,14 +1460,41 @@
             Implements  the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Flush" /> method.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.StringExtensions">
             <summary>
-            ITelemetryActivator is an interface.
+            StringExtensions are the extension method parse string into <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent"></see> object.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator.Initialize">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.StringExtensions.ToTraceParent(System.String)">
             <summary>
-            Initialize is initialize the telemetry client.
+            Convert a traceParent string to TraceParent object.
+            </summary>
+            <param name="traceparent">string representations of traceParent.</param>
+            <returns>TraceParent object.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent">
+            <summary>
+            Represents a traceParent that is defined W3C TraceContext.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.Version">
+            <summary>
+            Gets or sets the Version of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.TraceId">
+            <summary>
+            Gets or sets the TraceId of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.SpanId">
+            <summary>
+            Gets or sets the SpanId of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.TraceFlags">
+            <summary>
+            Gets or sets the TraceFlags of the traceParent.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DeterministicAttribute">

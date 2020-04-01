@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.ApplicationInsights.Channel;
@@ -7,7 +10,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
     /// <summary>
     /// A stub of <see cref="ITelemetryChannel"/>.
-    /// This is the copy of the https://github.com/Microsoft/ApplicationInsights-dotnet/Test/TestFramework/Shared/StubTelemetryClient
     /// </summary>
     public sealed class NoOpTelemetryChannel : ITelemetryChannel
     {
@@ -41,8 +43,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         public Action<ITelemetry> OnSend { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked by the <see cref="Flush"/> method.
+        /// </summary>
         public Action OnFlush { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked by the <see cref="Dispose"/> method.
+        /// </summary>
         public Action OnDispose { get; set; }
 
         /// <summary>

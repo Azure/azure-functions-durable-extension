@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using DurableTask.Core;
@@ -69,14 +72,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 },
                 (TraceContextBase dependencyTraceContext) =>
                 {
-                    dependencyTraceContext.Stop();var dependencyTelemetry = dependencyTraceContext.CreateDependencyTelemetry();
+                    dependencyTraceContext.Stop();
+                    var dependencyTelemetry = dependencyTraceContext.CreateDependencyTelemetry();
                     this.telemetryClient.TrackDependency(dependencyTelemetry);
                 },
                 (Exception e) =>
                 {
                     this.telemetryClient.TrackException(e);
-                }
-            );
+                });
         }
 
         private void SetUpTelemetryClient()
@@ -99,15 +102,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         }
     }
 #endif
-
-    /// <summary>
-    /// ITelemetryActivator is an interface.
-    /// </summary>
-    public interface ITelemetryActivator
-    {
-        /// <summary>
-        /// Initialize is initialize the telemetry client.
-        /// </summary>
-        void Initialize();
-    }
 }

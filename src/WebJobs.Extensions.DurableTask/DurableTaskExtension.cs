@@ -59,7 +59,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-
+#pragma warning disable CS0169
+        private readonly ITelemetryActivator telemetryActivator;
+#pragma warning restore CS0169
         private readonly bool isOptionsConfigured;
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
@@ -67,8 +69,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
-
-        private ITelemetryActivator telemetryActivator;
 
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.isOptionsConfigured = false;
         }
 #endif
-
+#pragma warning disable CS1572
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
@@ -98,6 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+#pragma warning restore CS1572
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
@@ -109,10 +110,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null
 #if !FUNCTIONS_V1
-            ,
-            ITelemetryActivator telemetryActivator = null
+#pragma warning disable SA1113, SA1001, SA1115
+            ,ITelemetryActivator telemetryActivator = null
+#pragma warning restore SA1113, SA1001, SA1115
 #endif
+#pragma warning disable SA1009, SA1111
             )
+#pragma warning restore SA1009, SA1111
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();

@@ -49,7 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int httpAsyncSleepTime = 500,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-
             IMessageSerializerSettingsFactory serializerSettings = null,
             bool? localRpcEndpointEnabled = false,
             DurableTaskOptions options = null,

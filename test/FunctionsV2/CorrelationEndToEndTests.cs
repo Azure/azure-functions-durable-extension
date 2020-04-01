@@ -22,11 +22,6 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    [CollectionDefinition("Non-Parallel Collection", DisableParallelization = true)]
-    public class NonParallelCollectionDefinitionClass
-    {
-    }
-
     [Collection("Non-Parallel Collection")]
     public class CorrelationEndToEndTests
     {
@@ -53,11 +48,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var result = await
-                ExecuteOrchestrationWithExceptionAsync(orchestrationFunctionNames, "SingleOrchestration","world",
-                    extendedSessions, protocol);
+                this.ExecuteOrchestrationWithExceptionAsync(
+                    orchestrationFunctionNames,
+                    "SingleOrchestration",
+                    "world",
+                    extendedSessions,
+                    protocol);
             var actual = result.Item1;
             Assert.Equal(5, actual.Count);
-            Assert.Equal(0, result.Item2.Count);
+            Assert.Empty(result.Item2);
             Assert.Equal(
                 new (Type, string)[]
                 {
@@ -65,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     (typeof(DependencyTelemetry), TraceConstants.Client),
                     (typeof(RequestTelemetry), $"{TraceConstants.Orchestrator} SayHelloWithActivity"),
                     (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} Hello"),
-                    (typeof(RequestTelemetry), $"{TraceConstants.Activity} Hello")
+                    (typeof(RequestTelemetry), $"{TraceConstants.Activity} Hello"),
                 }.ToList(), actual.Select(x => (x.GetType(), x.Name)).ToList());
         }
 
@@ -85,22 +84,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var counterEntityId = new EntityId("Counter", Guid.NewGuid().ToString());
 
             var result = await
-                ExecuteOrchestrationWithExceptionAsync(orchestrationFunctionNames, nameof(this.AllOrchestrationActivityActions), counterEntityId,
-                    extendedSessions, protocol);
+                this.ExecuteOrchestrationWithExceptionAsync(
+                    orchestrationFunctionNames,
+                    nameof(this.AllOrchestrationActivityActions),
+                    counterEntityId,
+                    extendedSessions,
+                    protocol);
             var actual = result.Item1;
             Assert.Equal(15, actual.Count);
-            Assert.Equal(1, result.Item2.Count); // Error inside of HttpActivity since the request set to null.
+            Assert.Single(result.Item2); // Error inside of HttpActivity since the request set to null.
             Assert.Equal(
                 new (Type, string)[]
                 {
                     (typeof(RequestTelemetry), $"{TraceConstants.Client}: "),  // start orchestration
                     (typeof(DependencyTelemetry), TraceConstants.Client),
                     (typeof(RequestTelemetry), $"{TraceConstants.Orchestrator} AllOrchestratorActivityActions"), // Orchestrator started
-                    (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} Hello"),   
+                    (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} Hello"),
                     (typeof(RequestTelemetry), $"{TraceConstants.Activity} Hello"), // Activity Hello Started
-                    (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} Hello"), 
+                    (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} Hello"),
                     (typeof(RequestTelemetry), $"{TraceConstants.Activity} Hello"),  // Activity Hello Started
-                    (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} SayHelloInline"), 
+                    (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} SayHelloInline"),
                     (typeof(RequestTelemetry), $"{TraceConstants.Orchestrator} SayHelloInline"),  // SubOrchestrator SayHelloInline Started
                     (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} SayHelloWithActivity"),
                     (typeof(RequestTelemetry), $"{TraceConstants.Orchestrator} SayHelloWithActivity"), // SubOrchestrator SayHelloWithActivity Started
@@ -112,8 +115,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         internal async Task<Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>>
-            ExecuteOrchestrationWithExceptionAsync(string[] orchestratorFunctionNames, string testName, object input,
-                bool extendedSessions, string protocol)
+            ExecuteOrchestrationWithExceptionAsync(
+                string[] orchestratorFunctionNames,
+                string testName,
+                object input,
+                bool extendedSessions,
+                string protocol)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             var sendAction = new Action<ITelemetry>(
@@ -126,31 +133,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Tracing = new TraceOptions()
                     {
-                        DistributedTracingProtocol = protocol
+                        DistributedTracingProtocol = protocol,
                     },
                 },
                 onSend: sendAction))
             {
                 await host.StartAsync();
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input , this.output);
-                var status = await client.WaitForCompletionAsync(this.output,timeout: TimeSpan.FromSeconds(90));
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
                 await host.StopAsync();
             }
 
-            var sendItemList = ConvertTo(sendItems);
+            var sendItemList = this.ConvertTo(sendItems);
             var operationTelemetryList = sendItemList.OfType<OperationTelemetry>();
             var exceptionTelemetryList = sendItemList.OfType<ExceptionTelemetry>().ToList();
-            var result = FilterOperationTelemetry(operationTelemetryList).ToList();
+            var result = this.FilterOperationTelemetry(operationTelemetryList).ToList();
             return new Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>(result.CorrelationSort(), exceptionTelemetryList);
         }
 
-        IEnumerable<OperationTelemetry> FilterOperationTelemetry(IEnumerable<OperationTelemetry> operationTelemetries)
+        private IEnumerable<OperationTelemetry> FilterOperationTelemetry(IEnumerable<OperationTelemetry> operationTelemetries)
         {
             return operationTelemetries.Where(
                 p => p.Name.Contains(TraceConstants.Activity) || p.Name.Contains(TraceConstants.Orchestrator) || p.Name.Contains(TraceConstants.Client) || p.Name.Contains("Operation"));
         }
 
-        List<ITelemetry> ConvertTo(ConcurrentQueue<ITelemetry> queue)
+        private List<ITelemetry> ConvertTo(ConcurrentQueue<ITelemetry> queue)
         {
             var converted = new List<ITelemetry>();
             while (!queue.IsEmpty)
@@ -166,6 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 
+#pragma warning disable SA1402
     public static class ListExtensions
     {
         public static List<OperationTelemetry> CorrelationSort(this List<OperationTelemetry> telemetries)
@@ -183,6 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var parent = sortedTelemetries.First();
             result.Add(parent);
             sortedTelemetries.RemoveOperationTelemetry(parent);
+
             // find the child recursively and remove the child and pass it as a parameter
             var sortedList = GetCorrelationSortedList(parent, sortedTelemetries);
             result.AddRange(sortedList);
@@ -209,7 +218,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return true;
         }
 
-        static List<OperationTelemetry> GetCorrelationSortedList(OperationTelemetry parent, List<OperationTelemetry> current)
+        private static List<OperationTelemetry> GetCorrelationSortedList(OperationTelemetry parent, List<OperationTelemetry> current)
         {
             var result = new List<OperationTelemetry>();
             if (current.Count != 0)
@@ -236,5 +245,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 
-
+    [CollectionDefinition("Non-Parallel Collection", DisableParallelization = true)]
+    public class NonParallelCollectionDefinitionClass
+    {
+    }
+#pragma warning restore SA1402
 }

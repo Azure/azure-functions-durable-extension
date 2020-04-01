@@ -1,9 +1,20 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
+    /// <summary>
+    /// StringExtensions are the extension method parse string into <see cref="TraceParent"></see> object.
+    /// </summary>
     public static class StringExtensions
     {
+        /// <summary>
+        /// Convert a traceParent string to TraceParent object.
+        /// </summary>
+        /// <param name="traceparent">string representations of traceParent.</param>
+        /// <returns>TraceParent object.</returns>
         public static TraceParent ToTraceParent(this string traceparent)
         {
             if (!string.IsNullOrEmpty(traceparent))
@@ -19,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     Version = substrings[0],
                     TraceId = substrings[1],
                     SpanId = substrings[2],
-                    TraceFlags = substrings[3]
+                    TraceFlags = substrings[3],
                 };
             }
 
