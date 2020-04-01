@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ITestOutputHelper output)
         {
             var startFunction = typeof(ClientFunctions)
-                .GetMethod(nameof(ClientFunctions.GetEntityClientBindingTest));
+                .GetMethod(nameof(ClientFunctions.GetEntityClientBindingBackCompTest));
 
             var clientRef = new IDurableEntityClient[1];
             var args = new Dictionary<string, object>
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ITestOutputHelper output)
         {
             var startFunction = typeof(ClientFunctions)
-                .GetMethod(nameof(ClientFunctions.GetOrchestrationClientBindingTest));
+                .GetMethod(nameof(ClientFunctions.GetOrchestrationClientBindingBackCompTest));
 
             var clientRef = new IDurableOrchestrationClient[1];
             var args = new Dictionary<string, object>
