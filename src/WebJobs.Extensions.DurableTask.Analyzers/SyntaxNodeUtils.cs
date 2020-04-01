@@ -199,15 +199,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var identifierName = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
                 if (identifierName != null)
                 {
-                    var identifierConst = semanticModel.GetConstantValue(identifierName);
-                    if(identifierConst.HasValue && identifierConst.Value is string identifierText)
+                    var constValue = semanticModel.GetConstantValue(identifierName);
+                    if (constValue.HasValue && constValue.Value is string constString)
                     {
-                        functionName = identifierText;
+                        functionName = constString;
                         return true;
                     }
                 }
             }
 
+            var simpleMemberAccessExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
+            if (simpleMemberAccessExpression != null)
+            {
+                var constValue = semanticModel.GetConstantValue(simpleMemberAccessExpression);
+                if (constValue.HasValue && constValue.Value is string constString)
+                {
+                    functionName = constString;
+                    return true;
+                }
+            }
+            
             functionName = null;
             return false;
         }
