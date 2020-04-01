@@ -3494,6 +3494,12 @@
             Boolean value specifying if the replay events should be logged.
             </value>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationClientAttribute">
+            <summary>
+            Deprecated attribute to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>.
+            Here for backwards compatibility. Please use the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> instead.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus">
             <summary>
             Represents the possible runtime execution status values for an orchestration instance.
