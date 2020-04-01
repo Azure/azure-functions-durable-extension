@@ -77,7 +77,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                IDurableOrchestrationClient client = await host.GetOrchestrationClientBindingBackCompTest(this.output);
+                var startFunction = typeof(ClientFunctions)
+                    .GetMethod(nameof(ClientFunctions.GetOrchestrationClientBindingBackCompTest));
+
+                var clientRef = new IDurableOrchestrationClient[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "clientRef", clientRef },
+                };
+
+                await host.CallAsync(startFunction, args);
+                IDurableOrchestrationClient client = clientRef[0];
 
                 await host.StopAsync();
             }
@@ -97,7 +107,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                IDurableEntityClient client = await host.GetEntityClientBindingBackCompTest(this.output);
+                var startFunction = typeof(ClientFunctions)
+                    .GetMethod(nameof(ClientFunctions.GetEntityClientBindingBackCompTest));
+                var clientRef = new IDurableEntityClient[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "clientRef", clientRef },
+                };
+                await host.CallAsync(startFunction, args);
+                IDurableEntityClient client = clientRef[0];
 
                 await host.StopAsync();
             }
