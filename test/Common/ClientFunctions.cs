@@ -78,6 +78,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Helper function for the IDurableOrchestrationClientBindingBackComp test. Gets an IDurableEntityClient.
+        /// </summary>
+        [NoAutomaticTrigger]
+        public static void GetEntityClientBindingBackCompTest(
+#pragma warning disable CS0618 // Type or member is obsolete
+            [OrchestrationClient] IDurableEntityClient client,
+#pragma warning restore CS0618 // Type or member is obsolete
+            IDurableEntityClient[] clientRef)
+        {
+            clientRef[0] = client;
+        }
+
+        /// <summary>
+        /// Helper function for the IDurableOrchestrationClientBindingBackComp test. Gets an IDurableOrchestrationClient.
+        /// </summary>
+        [NoAutomaticTrigger]
+        public static void GetOrchestrationClientBindingBackCompTest(
+#pragma warning disable CS0618 // Type or member is obsolete
+            [OrchestrationClient] IDurableOrchestrationClient client,
+#pragma warning restore CS0618 // Type or member is obsolete
+            IDurableOrchestrationClient[] clientRef)
+        {
+            clientRef[0] = client;
+        }
+
+        /// <summary>
         /// Helper function for testing the JSON data that gets sent to out-of-proc client functions.
         /// </summary>
 #pragma warning disable DF0203 // DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.

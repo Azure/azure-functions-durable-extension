@@ -63,6 +63,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// Tests OrchestrationClient attribute binds a client instance with the IDurableOrchestrationClient interface.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableOrchestrationClientBindingBackComp()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.IDurableOrchestrationClientBinding),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                IDurableOrchestrationClient client = await host.GetOrchestrationClientBindingBackCompTest(this.output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Tests OrchestrationClient attribute binds a client instance with the IDurableEntityClient interface.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableEntityClientBindingBackComp()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.IDurableEntityClientBinding),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                IDurableEntityClient client = await host.GetEntityClientBindingBackCompTest(this.output);
+
+                await host.StopAsync();
+            }
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]

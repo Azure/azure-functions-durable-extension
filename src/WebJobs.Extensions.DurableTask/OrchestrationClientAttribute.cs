@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [Binding]
-    [Obsolete("{OrchestrationClientAttribute is obsolete. Use DurableClientAttribute instead.")]
+    [Obsolete("OrchestrationClientAttribute is obsolete. Use DurableClientAttribute instead.")]
     public sealed class OrchestrationClientAttribute : DurableClientAttribute
     {
     }
