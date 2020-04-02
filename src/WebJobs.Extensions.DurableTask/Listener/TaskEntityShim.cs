@@ -151,8 +151,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
             var activity = Activity.Current;
             activity.AddTag("DurableFunctionsType", "Entity");
-            activity.AddTag("DurableFunctionsInstanceID", this.context.InstanceId);
-            activity.AddTag("DurableFunctionsStatus", this.GetStatus());
+            activity.AddTag("DurableEntityInstanceID", this.context.InstanceId);
+            activity.AddTag("DurableEntityStatus", this.GetStatus());
 #endif
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
