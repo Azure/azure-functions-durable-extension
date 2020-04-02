@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -48,6 +49,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
+#if !FUNCTIONS_V1
+            var activity = Activity.Current;
+            activity.AddTag("DurableFunctionsType", "Orchestration");
+            activity.AddTag("DurableOrchestrationInstanceID", this.context.InstanceId);
+            activity.AddTag("DurableFunctionStatus", this.context.GetSerializedCustomStatus());
+#endif
+
             if (this.FunctionInvocationCallback == null)
             {
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");

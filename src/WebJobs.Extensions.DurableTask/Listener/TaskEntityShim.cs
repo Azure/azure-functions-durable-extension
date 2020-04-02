@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Newtonsoft.Json;
@@ -147,6 +148,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
+#if !FUNCTIONS_V1
+            var activity = Activity.Current;
+            activity.AddTag("DurableFunctionsType", "Entity");
+            activity.AddTag("DurableFunctionsInstanceID", this.context.InstanceId);
+            activity.AddTag("DurableFunctionsStatus", this.GetStatus());
+#endif
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
