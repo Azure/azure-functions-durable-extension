@@ -49,13 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-#if !FUNCTIONS_V1
-            var activity = Activity.Current;
-            activity.AddTag("DurableFunctionsType", "Orchestration");
-            activity.AddTag("DurableOrchestrationInstanceID", this.context.InstanceId);
-            activity.AddTag("DurableFunctionStatus", this.context.GetSerializedCustomStatus());
-#endif
-
             if (this.FunctionInvocationCallback == null)
             {
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
@@ -186,6 +179,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
+#if !FUNCTIONS_V1
+            var activity = Activity.Current;
+            activity.AddTag("DurableFunctionsType", "Orchestration");
+            activity.AddTag("DurableOrchestrationInstanceId", this.context.InstanceId);
+            activity.AddTag("DurableFunctionState", this.context.GetSerializedCustomStatus());
+#endif
             return serializedOutput;
         }
     }

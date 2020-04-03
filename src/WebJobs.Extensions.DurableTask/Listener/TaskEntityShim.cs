@@ -148,12 +148,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-#if !FUNCTIONS_V1
-            var activity = Activity.Current;
-            activity.AddTag("DurableFunctionsType", "Entity");
-            activity.AddTag("DurableEntityInstanceID", this.context.InstanceId);
-            activity.AddTag("DurableEntityStatus", this.GetStatus());
-#endif
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
@@ -229,6 +223,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionType: FunctionType.Entity,
                     isReplay: false);
             }
+#if !FUNCTIONS_V1
+            var activity = Activity.Current;
+            string state = this.context.State.EntityExists ? $"has state ({this.context.State.EntityState.Length} characters)" : "no state";
+            activity.AddTag("DurableFunctionsType", "Entity");
+            activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
+            activity.AddTag("DurableFunctionsState", state);
+#endif
 
             // The return value is not used.
             return string.Empty;
