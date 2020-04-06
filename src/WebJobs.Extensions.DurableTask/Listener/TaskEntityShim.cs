@@ -228,13 +228,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /* activity may be null when running this repo's tests but does not appear
              * empty when actually running the samples
              */
-            if (activity != null)
+            /*if (activity != null)
             {
                 string state = this.context.State.EntityExists ? $"has state ({this.context.State.EntityState.Length} characters)" : "no state";
                 activity.AddTag("DurableFunctionsType", "Entity");
                 activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
                 activity.AddTag("DurableFunctionsState", state);
-            }
+            }*/
 #endif
 
             // The return value is not used.
