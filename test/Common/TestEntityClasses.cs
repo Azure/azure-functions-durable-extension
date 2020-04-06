@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public interface IPrimaryJob : IJob
         {
-            void SetId(string Id);
+            void SetId(string id);
 
             Task<string> GetId();
         }

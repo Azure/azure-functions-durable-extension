@@ -110,8 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return method;
             }
 
-            var methods = interfaces.SelectMany(i => i.GetMethods(bindingFlags));
-            return methods.FirstOrDefault(m => m.Name.Equals(context.OperationName));
+            return interfaces.Select(i => i.GetMethod(context.OperationName, bindingFlags)).FirstOrDefault(m => m != null);
         }
     }
 }
