@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
             var activity = Activity.Current;
             /* activity may be null when running this repo's tests but does not appear
-             * empty when actually running the samples
+             * empty when actually running the samples 
              */
             if (activity != null)
             {
