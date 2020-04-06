@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 calledFunctions.Add(new ActivityFunctionCall
                 {
-                    Name = functionNameNode.ToString().Trim('"'),
+                    Name = functionNameNode.ToString().GetCleanedFunctionName(),
                     NameNode = functionNameNode,
                     ParameterNode = inputNode,
                     ReturnTypeNode = returnTypeNode,

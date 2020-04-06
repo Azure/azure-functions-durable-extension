@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("TaskHub={TaskHub}, ConnectionName={ConnectionName}")]
     [Binding]
-    public sealed class DurableClientAttribute : Attribute, IEquatable<DurableClientAttribute>
+    public class DurableClientAttribute : Attribute, IEquatable<DurableClientAttribute>
     {
         /// <summary>
         /// Optional. Gets or sets the name of the task hub in which the orchestration data lives.

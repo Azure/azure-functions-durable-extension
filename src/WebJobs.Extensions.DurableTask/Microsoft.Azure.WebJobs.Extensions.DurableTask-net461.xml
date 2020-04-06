@@ -215,10 +215,10 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#WaitForExternalEvent``1(System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#WaitForExternalEvent``1(System.String,System.TimeSpan)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#WaitForExternalEvent``1(System.String,System.TimeSpan,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#WaitForExternalEvent``1(System.String,System.TimeSpan,``0,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#CallActivityAsync``1(System.String,System.Object)">
@@ -464,6 +464,56 @@
             <exception cref="T:System.TimeoutException">
             The external event was not received before the timeout expired.
             </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.WaitForExternalEvent(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> with the object parameter set to <c>null</c>.
+            </remarks>
+            <param name="context">The context object.</param>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
+            <returns>A durable task that completes when the external event is received.</returns>
+            <exception cref="T:System.TimeoutException">
+            The external event was not received before the timeout expired.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.WaitForExternalEvent``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,System.String,System.TimeSpan)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            </remarks>
+            <param name="context">The context object.</param>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+            <returns>A durable task that completes when the external event is received.</returns>
+            <exception cref="T:System.TimeoutException">
+            The external event was not received before the timeout expired.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.WaitForExternalEvent``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,System.String,System.TimeSpan,``0)">
+            <summary>
+            Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+            </summary>
+            <remarks>
+            External clients can raise events to a waiting orchestration instance using
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/>.
+            </remarks>
+            <param name="context">The context object.</param>
+            <param name="name">The name of the event to wait for.</param>
+            <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
+            <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+            <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+            <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
+            if the timeout expires.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.CallEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String)">
             <summary>
@@ -1243,7 +1293,7 @@
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,System.Threading.CancellationToken)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
             </summary>
@@ -1253,13 +1303,14 @@
             </remarks>
             <param name="name">The name of the event to wait for.</param>
             <param name="timeout">The duration after which to throw a TimeoutException.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received.</returns>
             <exception cref="T:System.TimeoutException">
             The external event was not received before the timeout expired.
             </exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.WaitForExternalEvent``1(System.String,System.TimeSpan,``0,System.Threading.CancellationToken)">
             <summary>
             Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
             </summary>
@@ -1270,6 +1321,7 @@
             <param name="name">The name of the event to wait for.</param>
             <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
             <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+            <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
             <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
             <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
             if the timeout expires.</returns>
@@ -2468,7 +2520,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.EntityState">
             <summary>
-            The serialized entity state. This can be stale while CurrentStateView != null.
+            The last serialized entity state.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Queue">
@@ -3244,6 +3296,19 @@
             activities or orchestrations.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.RollbackEntityOperationsOnExceptions">
+            <summary>
+            Controls whether an uncaught exception inside an entity operation should roll back the effects of the operation.
+            </summary>
+            <remarks>
+            The rollback undoes all internal effects of an operation
+            (sent signals, and state creation, deletion, or modification).
+            However, it does not roll back external effects (such as I/O that was performed).
+            This setting can affect serialization overhead: if true, the entity state is serialized
+            after each individual operation. If false, the entity state is serialized
+            only after an entire batch of operations completes.
+            </remarks>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
             <summary>
             Sets HubName to a value that is considered a default value.
@@ -3361,6 +3426,12 @@
             <value>
             Boolean value specifying if the replay events should be logged.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationClientAttribute">
+            <summary>
+            Deprecated attribute to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>.
+            Here for backwards compatibility. Please use the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> instead.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus">
             <summary>

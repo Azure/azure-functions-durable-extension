@@ -18,12 +18,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableOrchestrationContext context;
         private readonly OutOfProcOrchestrationShim outOfProcShim;
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly DurableTaskExtension config;
 
         public TaskOrchestrationShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string name)
             : base(config)
         {
-            this.dataConverter = config.DataConverter;
+            this.config = config;
             this.context = new DurableOrchestrationContext(config, durabilityProvider, name);
             this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
@@ -51,6 +51,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.FunctionInvocationCallback == null)
             {
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
+            }
+
+            if (!this.config.MessageDataConverter.IsDefault)
+            {
+                innerContext.DataConverter = this.config.MessageDataConverter;
             }
 
             this.context.InnerContext = innerContext;
@@ -113,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var orchestrationException = new OrchestrationFailureException(
                     $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
-                    Utils.SerializeCause(e, this.dataConverter.ErrorConverter));
+                    Utils.SerializeCause(e, this.config.ErrorDataConverter));
 
                 this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
 

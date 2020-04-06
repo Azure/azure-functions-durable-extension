@@ -114,6 +114,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class TokenSourceConverter : JsonConverter
         {
+            private static JsonSerializer tokenSerializer;
+
             private enum TokenSourceType
             {
                 None = 0,
@@ -127,6 +129,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
+                var safeTokenSerializer = GetTokenSourceSerializer(serializer);
+
                 JToken json = JToken.ReadFrom(reader);
                 if (json.Type == JTokenType.Null)
                 {
@@ -147,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else if (jsonObject.TryGetValue("$type", StringComparison.Ordinal, out JToken clrTypeValue))
                 {
                     Type runtimeType = Type.GetType((string)clrTypeValue, throwOnError: true);
-                    return jsonObject.ToObject(runtimeType, serializer);
+                    return jsonObject.ToObject(runtimeType, safeTokenSerializer);
                 }
                 else
                 {
@@ -169,9 +173,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    // Don't know how to serialize this - use default behavior
-                    serializer.Serialize(writer, value);
+                    // Don't know how to serialize this - use default behavior, forcing TypeNameHandling.Objects to correctly serialize ITokenSource
+                    var safeTokenSerializer = GetTokenSourceSerializer(serializer);
+                    safeTokenSerializer.Serialize(writer, value);
                 }
+            }
+
+            private static JsonSerializer GetTokenSourceSerializer(JsonSerializer serializer)
+            {
+                if (tokenSerializer != null)
+                {
+                    return tokenSerializer;
+                }
+
+                if (serializer.TypeNameHandling == TypeNameHandling.Objects
+                    || serializer.TypeNameHandling == TypeNameHandling.All)
+                {
+                    tokenSerializer = serializer;
+                    return tokenSerializer;
+                }
+
+                // Make sure these are all the settings when updating Newtonsoft.Json
+                tokenSerializer = new JsonSerializer
+                {
+                    Context = serializer.Context,
+                    Culture = serializer.Culture,
+                    ContractResolver = serializer.ContractResolver,
+                    ConstructorHandling = serializer.ConstructorHandling,
+                    CheckAdditionalContent = serializer.CheckAdditionalContent,
+                    DateFormatHandling = serializer.DateFormatHandling,
+                    DateFormatString = serializer.DateFormatString,
+                    DateParseHandling = serializer.DateParseHandling,
+                    DateTimeZoneHandling = serializer.DateTimeZoneHandling,
+                    DefaultValueHandling = serializer.DefaultValueHandling,
+                    EqualityComparer = serializer.EqualityComparer,
+                    FloatFormatHandling = serializer.FloatFormatHandling,
+                    Formatting = serializer.Formatting,
+                    FloatParseHandling = serializer.FloatParseHandling,
+                    MaxDepth = serializer.MaxDepth,
+                    MetadataPropertyHandling = serializer.MetadataPropertyHandling,
+                    MissingMemberHandling = serializer.MissingMemberHandling,
+                    NullValueHandling = serializer.NullValueHandling,
+                    ObjectCreationHandling = serializer.ObjectCreationHandling,
+                    PreserveReferencesHandling = serializer.PreserveReferencesHandling,
+                    ReferenceResolver = serializer.ReferenceResolver,
+                    ReferenceLoopHandling = serializer.ReferenceLoopHandling,
+                    StringEscapeHandling = serializer.StringEscapeHandling,
+                    TraceWriter = serializer.TraceWriter,
+
+                    // Enforcing TypeNameHandling.Objects to make sure ITokenSource gets serialized/deserialized correctly
+                    TypeNameHandling = TypeNameHandling.Objects,
+                };
+
+                foreach (var converter in serializer.Converters)
+                {
+                    tokenSerializer.Converters.Add(converter);
+                }
+
+                return tokenSerializer;
             }
         }
     }
