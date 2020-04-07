@@ -262,11 +262,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            if (this.client.Equals(client))
-            {
-                this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
-            }
-
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
