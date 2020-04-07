@@ -179,18 +179,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
-#if !FUNCTIONS_V1
-            var activity = Activity.Current;
+            //#if !FUNCTIONS_V1
+            //var activity = Activity.Current;
             /* activity may be null when running this repo's tests but does not appear
              * empty when actually running the samples
              */
             /*if (activity != null)
             {
                 activity.AddTag("DurableFunctionsType", "Orchestration");
-                activity.AddTag("DurableOrchestrationInstanceId", this.context.InstanceId);
-                activity.AddTag("DurableFunctionState", this.context.GetSerializedCustomStatus());
+                activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", this.context.GetSerializedCustomStatus());
             }*/
-#endif
+            //#endif
             return serializedOutput;
         }
     }
