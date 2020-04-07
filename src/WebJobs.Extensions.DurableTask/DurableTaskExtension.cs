@@ -463,7 +463,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunction(
                 info.Executor,
                 this.hostLifetimeService,
                 new TriggeredFunctionData
@@ -641,7 +641,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 3. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunction(
                 entityShim.GetFunctionInfo().Executor,
                 this.hostLifetimeService,
                 new TriggeredFunctionData

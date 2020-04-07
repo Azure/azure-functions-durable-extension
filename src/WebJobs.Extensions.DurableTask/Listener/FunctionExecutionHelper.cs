@@ -73,20 +73,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             }
         }
 
-        public static async Task<WrappedFunctionResult> ExecuteActivityFunction(
+        public static async Task<WrappedFunctionResult> ExecuteFunction(
             ITriggeredFunctionExecutor executor,
             IApplicationLifetimeWrapper hostServiceLifetime,
             TriggeredFunctionData triggerInput,
             CancellationToken cancellationToken)
         {
 #pragma warning disable CS0618 // InvokeHandler approved for use by this extension
-            if (triggerInput.InvokeHandler != null)
-            {
-                // Activity functions cannot use InvokeHandler, because the usage of InvokeHandler prevents the function from
-                // returning a value in the way that the Activity shim knows how to handle.
-                throw new ArgumentException(
-                    $"{nameof(ExecuteActivityFunction)} cannot be used when ${nameof(triggerInput)} has a value for ${nameof(TriggeredFunctionData.InvokeHandler)}");
-            }
+            //if (triggerInput.InvokeHandler != null)
+            //{
+            //    // Activity functions cannot use InvokeHandler, because the usage of InvokeHandler prevents the function from
+            //    // returning a value in the way that the Activity shim knows how to handle.
+            //    throw new ArgumentException(
+            //        $"{nameof(ExecuteFunction)} cannot be used when ${nameof(triggerInput)} has a value for ${nameof(TriggeredFunctionData.InvokeHandler)}");
+            //}
 #pragma warning restore CS0618
 
             try
@@ -95,11 +95,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 
                 if (!result.Succeeded)
                 {
-                    // Unfortunately, unlike with orchestrations and entities, we have no way
-                    // to know if we hit user code or not. Therefore we need to look at the exception
-                    // thrown by TryExecuteAsync to see if it is related to the host shutdown or not.
+                    // This is a best effort approach to determine if this is caused by an exception in
+                    // the webjobs pipeline. False positives are alright, as we still only
+                    // will abort the session when the host is performing a shutdown,
+                    // so it will just fail normally on the second execution.
                     if (IsHostStopping(hostServiceLifetime) &&
-                        IsHostShutdownRelatedException(result.Exception))
+                        IsHostRelatedException(result.Exception))
                     {
                         return new WrappedFunctionResult(
                              WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError,
@@ -125,11 +126,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             }
         }
 
-        private static bool IsHostShutdownRelatedException(Exception ex)
+        private static bool IsHostRelatedException(Exception ex)
         {
-            // Currently, we don't have much knowledge of what exceptions are caused by host shutdown.
-            // As we encounter more exceptions due to host shutdowns, we can add conditions here.
-            return false;
+            // We look at any exception thrown in the Microsoft.Azure.WebJobs namespace that is not
+            // an exception thrown by us, as we know there are many reasons that we could
+            // throw an exception that are unrelated to host shutdown.
+            return ex.Source.StartsWith("Microsoft.Azure.WebJobs") &&
+                !ex.Source.StartsWith("Microsoft.Azure.WebJobs.Extensions.DurableTask");
         }
 
         private static bool IsHostStopping(IApplicationLifetimeWrapper hostServiceLifetime)
