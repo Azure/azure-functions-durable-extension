@@ -223,19 +223,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionType: FunctionType.Entity,
                     isReplay: false);
             }
-            //#if !FUNCTIONS_V1
-            //var activity = Activity.Current;
-            /* activity may be null when running this repo's tests but does not appear
-             * empty when actually running the samples
-             */
-            /*if (activity != null)
-            {
-                string state = this.context.State.EntityExists ? $"has state ({this.context.State.EntityState.Length} characters)" : "no state";
-                activity.AddTag("DurableFunctionsType", "Entity");
-                activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
-                activity.AddTag("DurableFunctionsRuntimeStatus", state);
-            }*/
-            //#endif
 
             // The return value is not used.
             return string.Empty;
