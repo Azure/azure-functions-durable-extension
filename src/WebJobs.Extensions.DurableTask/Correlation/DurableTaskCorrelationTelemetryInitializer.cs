@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using DurableTask.Core.Settings;
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
