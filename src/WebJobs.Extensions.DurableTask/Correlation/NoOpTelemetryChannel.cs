@@ -4,10 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+#if !FUNCTIONS_V1
 using Microsoft.ApplicationInsights.Channel;
+#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
+#if !FUNCTIONS_V1
     /// <summary>
     /// A stub of <see cref="ITelemetryChannel"/>.
     /// </summary>
@@ -82,4 +85,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.OnFlush();
         }
     }
+#endif
 }

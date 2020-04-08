@@ -6,15 +6,17 @@ using System.Collections.Generic;
 using System.Text;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
+#if !FUNCTIONS_V1
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DependencyCollector;
 using Microsoft.ApplicationInsights.Extensibility;
+#endif
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
-#if NETSTANDARD2_0
+#if !FUNCTIONS_V1
     /// <summary>
     /// TelemetryActivator activates Distributed Tracing. This class only works for netstandard2.0.
     /// </summary>

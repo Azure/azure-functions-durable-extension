@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using DurableTask.Core;
+#if !FUNCTIONS_V1
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {

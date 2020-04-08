@@ -1405,61 +1405,6 @@
             Initialize is initialize the telemetry client.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel">
-            <summary>
-            A stub of <see cref="T:Microsoft.ApplicationInsights.Channel.ITelemetryChannel"/>.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.#ctor">
-            <summary>
-            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel"/> class.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.DeveloperMode">
-            <summary>
-            Gets or sets a value indicating whether this channel is in developer mode.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.EndpointAddress">
-            <summary>
-            Gets or sets a value indicating the channel's URI. To this URI the telemetry is expected to be sent.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.ThrowError">
-            <summary>
-            Gets or sets a value indicating whether to throw an error.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend">
-            <summary>
-            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnFlush">
-            <summary>
-            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush"/> method.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnDispose">
-            <summary>
-            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose"/> method.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)">
-            <summary>
-            Implements the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method by invoking the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend"/> callback.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose">
-            <summary>
-            Implements the <see cref="M:System.IDisposable.Dispose"/> method.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush">
-            <summary>
-            Implements  the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Flush" /> method.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.StringExtensions">
             <summary>
             StringExtensions are the extension method parse string into <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent"></see> object.
