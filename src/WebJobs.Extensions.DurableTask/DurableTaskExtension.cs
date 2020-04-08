@@ -144,9 +144,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
-            hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
 #else
-            this.hostLifetimeService = hostLifetimeService ?? new HostLifecycleService();
+            this.hostLifetimeService = HostLifecycleService.NoOp;
 #endif
         }
 
@@ -504,9 +504,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunction(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
                 info.Executor,
-                this.hostLifetimeService,
                 new TriggeredFunctionData
                 {
                     TriggerValue = context,
@@ -528,7 +527,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
-                CancellationToken.None);
+                this.hostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
             {
@@ -682,9 +681,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 3. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunction(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
                 entityShim.GetFunctionInfo().Executor,
-                this.hostLifetimeService,
                 new TriggeredFunctionData
                 {
                     TriggerValue = entityShim.Context,
@@ -716,7 +714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
-                CancellationToken.None);
+                this.hostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
             {

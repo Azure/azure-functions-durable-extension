@@ -7,7 +7,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 {
     internal class WrappedFunctionResult
     {
-        internal WrappedFunctionResult(
+        private WrappedFunctionResult(
             FunctionResultStatus status,
             Exception ex)
         {
@@ -25,5 +25,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
         internal Exception Exception { get; }
 
         internal FunctionResultStatus ExecutionStatus { get; }
+
+        public static WrappedFunctionResult Success()
+        {
+            return new WrappedFunctionResult(FunctionResultStatus.Success, null);
+        }
+
+        public static WrappedFunctionResult FunctionRuntimeFailure(Exception ex)
+        {
+            return new WrappedFunctionResult(FunctionResultStatus.FunctionsRuntimeError, ex);
+        }
+
+        public static WrappedFunctionResult UserCodeFailure(Exception ex)
+        {
+            return new WrappedFunctionResult(FunctionResultStatus.UserCodeError, ex);
+        }
     }
 }

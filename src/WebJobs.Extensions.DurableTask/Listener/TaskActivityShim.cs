@@ -58,11 +58,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Activity,
                 isReplay: false);
 
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunction(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteActivityFunction(
                 this.executor,
-                this.hostServiceLifetime,
                 triggerInput,
-                CancellationToken.None);
+                this.hostServiceLifetime.OnStopping);
 
             switch (result.ExecutionStatus)
             {
