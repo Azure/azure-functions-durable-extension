@@ -49,7 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            string status;
+#if !FUNCTIONS_V1
+            // for reporting the status of the orchestration on App Insights
+            OrchestrationRuntimeStatus status;
+#endif
             if (this.FunctionInvocationCallback == null)
             {
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
@@ -70,7 +73,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
-            status = "Running";
+#if !FUNCTIONS_V1
+            status = OrchestrationRuntimeStatus.Running;
+#endif
 
             var orchestratorInfo = this.Config.GetOrchestratorInfo(new FunctionName(this.context.Name));
 
@@ -108,8 +113,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     exceptionDetails,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
-                status = "Failed";
-
+#if !FUNCTIONS_V1
+                status = OrchestrationRuntimeStatus.Failed;
+#endif
                 if (!this.context.IsReplaying)
                 {
                     this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
@@ -172,8 +178,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
-            status = "Completed";
-
+#if !FUNCTIONS_V1
+            status = OrchestrationRuntimeStatus.Completed;
+#endif
             if (!this.context.IsReplaying)
             {
                 this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
@@ -184,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 #if !FUNCTIONS_V1
-            // Adding "Tags" to activity allows using App Insights to query current state of orchestrations 
+            // Adding "Tags" to activity allows using App Insights to query current state of orchestrations
             var activity = Activity.Current;
 
             // The activity may be null when running unit tests, but should be non-null otherwise
@@ -192,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 activity.AddTag("DurableFunctionsType", "Orchestrator");
                 activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
-                activity.AddTag("DurableFunctionsRuntimeStatus", status);
+                activity.AddTag("DurableFunctionsRuntimeStatus", Enum.GetName(status.GetType(), status));
             }
 #endif
 

@@ -148,7 +148,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            string status;
+#if !FUNCTIONS_V1
+            // for reporting the status of the entity on App Insights
+            OrchestrationRuntimeStatus statusAppInsights;
+#endif
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
@@ -168,8 +171,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Entity,
                 isReplay: false);
-            status = "Running";
-
+#if !FUNCTIONS_V1
+            statusAppInsights = OrchestrationRuntimeStatus.Running;
+#endif
             if (this.NumberEventsToReceive > 0)
             {
                 await this.doneProcessingMessages.Task;
@@ -213,8 +217,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     description,
                     functionType: FunctionType.Entity,
                     isReplay: false);
-                status = "Failed";
-
+#if !FUNCTIONS_V1
+                statusAppInsights = OrchestrationRuntimeStatus.Failed;
+#endif
             }
             else
             {
@@ -226,11 +231,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     continuedAsNew: true,
                     functionType: FunctionType.Entity,
                     isReplay: false);
-                status = "Completed";
+#if !FUNCTIONS_V1
+                statusAppInsights = OrchestrationRuntimeStatus.Completed;
+#endif
             }
 
 #if !FUNCTIONS_V1
-            // Adding "Tags" to activity allows using App Insights to query current state of entities 
+            // Adding "Tags" to activity allows using App Insights to query current state of entities
             var activity = Activity.Current;
 
             // The activity may be null when running unit tests, but should be non-null otherwise
@@ -238,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 activity.AddTag("DurableFunctionsType", "Entity");
                 activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
-                activity.AddTag("DurableFunctionsRuntimeStatus", status);
+                activity.AddTag("DurableFunctionsRuntimeStatus", Enum.GetName(statusAppInsights.GetType(), statusAppInsights));
             }
 #endif
 
