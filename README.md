@@ -16,6 +16,16 @@ Durable Functions can run anywhere that Azure Functions can run, including in th
 
 For a more detailed overview, including examples of what you can do with Durable Functions, see our [What is Durable Functions?](https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-overview) article.
 
+## NuGet Packages
+
+Durable Functions updates are published as NuGet packages.
+
+Package Name | NuGet
+---|---
+Microsoft.Azure.WebJobs.Extensions.DurableTask | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.WebJobs.Extensions.DurableTask.svg)](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask)
+Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers (C# only) | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.svg)](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers)
+
+
 ## Language support
 
 Durable Functions supports a subset of languages supported by Azure Functions:
@@ -32,10 +42,10 @@ Each language has its own language-specific SDK and programming model. Regardles
 
 ## Installation
 
-The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package. It can be referenced directly in a Visual Studio project or can be installed using the [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) command-line:
+The Durable Functions NuGet package can be referenced directly in a Visual Studio project or can be installed using the [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) command-line:
 
 ```bash
-func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v 2.1.0
+func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v 2.2.0
 ```
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.

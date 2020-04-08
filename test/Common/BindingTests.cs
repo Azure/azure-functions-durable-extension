@@ -63,6 +63,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// Tests OrchestrationClient attribute binds a client instance with the IDurableOrchestrationClient interface.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableOrchestrationClientBindingBackComp()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.IDurableOrchestrationClientBinding),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var startFunction = typeof(ClientFunctions)
+                    .GetMethod(nameof(ClientFunctions.GetOrchestrationClientBindingBackCompTest));
+
+                var clientRef = new IDurableOrchestrationClient[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "clientRef", clientRef },
+                };
+
+                await host.CallAsync(startFunction, args);
+                IDurableOrchestrationClient client = clientRef[0];
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Tests OrchestrationClient attribute binds a client instance with the IDurableEntityClient interface.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableEntityClientBindingBackComp()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.IDurableEntityClientBinding),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var startFunction = typeof(ClientFunctions)
+                    .GetMethod(nameof(ClientFunctions.GetEntityClientBindingBackCompTest));
+                var clientRef = new IDurableEntityClient[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "clientRef", clientRef },
+                };
+                await host.CallAsync(startFunction, args);
+                IDurableEntityClient client = clientRef[0];
+
+                await host.StopAsync();
+            }
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]

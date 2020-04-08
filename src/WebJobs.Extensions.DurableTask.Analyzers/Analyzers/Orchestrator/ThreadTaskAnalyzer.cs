@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Run" || identifierText == "Factory.StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
                         {
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
                         {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Start")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
                         {
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "ContinueWith")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
                         {

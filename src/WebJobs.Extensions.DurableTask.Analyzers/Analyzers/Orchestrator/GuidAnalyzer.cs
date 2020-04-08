@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         var memberAccessExpression = identifierName.Parent;
                         var invocationExpression = memberAccessExpression.Parent;
-                        var memberSymbol = semanticModel.GetSymbolInfo(memberAccessExpression).Symbol;
+                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
 
                         if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Guid"))
                         {

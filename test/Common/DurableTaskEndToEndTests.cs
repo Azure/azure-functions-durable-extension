@@ -1114,6 +1114,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates a CancellationToken-providing overload of WaitForExternalEvent.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForExternalEventWithCancellationToken()
+        {
+            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithCancellationToken) };
+            var extendedSessions = false;
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForExternalEventWithCancellationToken),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromSeconds(10);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
+                await client.WaitForStartupAsync(this.output);
+
+                await client.RaiseEventAsync("approval", this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.InRange(status.LastUpdatedTime - status.CreatedTime, TimeSpan.Zero, timeout);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates that orchestrations run concurrently of each other (up to 100 by default).
         /// </summary>
         [Theory]
@@ -2501,6 +2531,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates exception handling in entity operations.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, true, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, false, false)]
+        public async Task DurableEntity_CallFaultyEntity(bool extendedSessions, bool useClassBasedEntity, bool rollbackOnExceptions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.CallFaultyEntity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CallFaultyEntity),
+                extendedSessions,
+                rollbackEntityOperationsOnExceptions: rollbackOnExceptions))
+            {
+                await host.StartAsync();
+                var entityName = useClassBasedEntity ? "ClassBasedFaultyEntity" : "FunctionBasedFaultyEntity";
+                var entityId = new EntityId(entityName, Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (entityId, rollbackOnExceptions), this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates rollback of sent signals on exceptions.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public async Task DurableEntity_RollbackSignalsOnExceptions(bool extendedSessions, bool useClassBasedEntity)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_RollbackSignalsOnExceptions),
+                extendedSessions,
+                rollbackEntityOperationsOnExceptions: true))
+            {
+                await host.StartAsync();
+                var entityName = useClassBasedEntity ? "ClassBasedFaultyEntity" : "FunctionBasedFaultyEntity";
+                var entityKey = Guid.NewGuid().ToString();
+                var entityId = new EntityId(entityName, entityKey);
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.RollbackSignalsOnExceptions), entityId, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                var receiverEntityId = new EntityId(nameof(TestEntities.SchedulerEntity), entityKey);
+                TestEntityClient receiverClient = await host.GetEntityClientAsync(receiverEntityId, this.output);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+                var state = await receiverClient.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count >= 7 ? null : "expect 11 messages");
+                Assert.Equal(new string[] { "1:56", "2:100", "3:100", "4:10", "5:10", "6:10", "7:11" }, state);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates a simple entity scenario which sends a signal
         /// to a relay which forwards it to counter, and polls until the signal is delivered.
         /// </summary>
@@ -3241,6 +3349,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var counter = new EntityId(nameof(TestEntityClasses.CounterWithProxy), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_MultipleInterfaces(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy_MultipleInterfaces),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy_MultipleInterfaces),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.JobWithProxyMultiInterface), Guid.NewGuid().ToString());
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
 
@@ -4198,11 +4339,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 };
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEnum, this.output);
-                await client.WaitForCompletionAsync(this.output);
-                var status = client.GetStatusAsync();
+                var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.NotNull(status);
-                Assert.Contains("Value2", status.Result.Output.ToString());
+                Assert.Contains("Value2", status.Output.ToString());
 
                 await host.StopAsync();
             }

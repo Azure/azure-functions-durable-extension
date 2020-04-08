@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
-        public HttpOptions HttpSettings { get; set; }
+        public HttpOptions HttpSettings { get; set; } = new HttpOptions();
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, <see cref="IDurableOrchestrationClient"/>,
@@ -182,6 +182,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public bool UseGracefulShutdown { get; set; } = false;
 
+        /// <summary>
+        /// Controls whether an uncaught exception inside an entity operation should roll back the effects of the operation.
+        /// </summary>
+        /// <remarks>
+        /// The rollback undoes all internal effects of an operation
+        /// (sent signals, and state creation, deletion, or modification).
+        /// However, it does not roll back external effects (such as I/O that was performed).
+        /// This setting can affect serialization overhead: if true, the entity state is serialized
+        /// after each individual operation. If false, the entity state is serialized
+        /// only after an entire batch of operations completes.
+        /// </remarks>
+        public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
@@ -195,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultHubName = hubName;
         }
 
-        internal void TraceConfiguration(EndToEndTraceHelper traceHelper)
+        internal void TraceConfiguration(EndToEndTraceHelper traceHelper, JObject storageProviderConfig)
         {
             // Clone the options to avoid making changes to the original.
             // We make updates to the clone rather than to JSON to ensure we're updating what we think we're updating.
@@ -222,6 +235,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+
+            if (storageProviderConfig.Count != 0)
+            {
+                configurationJson["storageProvider"] = storageProviderConfig;
+            }
 
             // This won't be exactly the same as what is declared in host.json because any unspecified values
             // will have been initialized with their defaults. We need the Functions runtime to handle tracing
