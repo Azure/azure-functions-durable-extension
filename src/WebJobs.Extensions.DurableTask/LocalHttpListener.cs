@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private int GetAvailablePort()
         {
-            // If we are able to successfully start a listener looking on the default port without 
+            // If we are able to successfully start a listener looking on the default port without
             // an exception, we can use the default port. Otherwise, let the TcpListener class decide for us.
             try
             {
