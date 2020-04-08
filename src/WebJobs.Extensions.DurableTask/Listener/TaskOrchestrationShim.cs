@@ -110,7 +110,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying);
                 status = "Failed";
 
-
                 if (!this.context.IsReplaying)
                 {
                     this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
@@ -184,7 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.ContinuedAsNew,
                     this.context.IsReplaying));
             }
-
 #if !FUNCTIONS_V1
             // Adding "Tags" to activity allows using App Insights to query current state of orchestrations 
             var activity = Activity.Current;
@@ -193,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (activity != null)
             {
                 activity.AddTag("DurableFunctionsType", "Orchestrator");
-                activity.AddTag("DurableFunctionsInstanceId", context.InstanceId);
+                activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
                 activity.AddTag("DurableFunctionsRuntimeStatus", status);
             }
 #endif
