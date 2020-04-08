@@ -49,6 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
+            string status;
             if (this.FunctionInvocationCallback == null)
             {
                 throw new InvalidOperationException($"The {nameof(this.FunctionInvocationCallback)} has not been assigned!");
@@ -69,6 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
+            status = "Running";
 
             var orchestratorInfo = this.Config.GetOrchestratorInfo(new FunctionName(this.context.Name));
 
@@ -106,6 +108,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     exceptionDetails,
                     FunctionType.Orchestrator,
                     this.context.IsReplaying);
+                status = "Failed";
+
 
                 if (!this.context.IsReplaying)
                 {
@@ -169,6 +173,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
+            status = "Completed";
+
             if (!this.context.IsReplaying)
             {
                 this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
@@ -178,6 +184,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.ContinuedAsNew,
                     this.context.IsReplaying));
             }
+
+#if !FUNCTIONS_V1
+            // Adding "Tags" to activity allows using App Insights to query current state of orchestrations 
+            var activity = Activity.Current;
+
+            // The activity may be null when running unit tests, but should be non-null otherwise
+            if (activity != null)
+            {
+                activity.AddTag("DurableFunctionsType", "Orchestrator");
+                activity.AddTag("DurableFunctionsInstanceId", context.InstanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", status);
+            }
+#endif
 
             return serializedOutput;
         }
