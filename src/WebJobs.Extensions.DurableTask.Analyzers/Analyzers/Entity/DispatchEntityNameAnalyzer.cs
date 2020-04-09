@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                     if (SyntaxNodeUtils.TryGetTypeArgumentNode(expression, out SyntaxNode identifierNode))
                     {
-                        if (SyntaxNodeUtils.TryGetFunctionNameAndNode(context.SemanticModel, expression, out SyntaxNode attributeArgument, out string functionName))
+                        if (SyntaxNodeUtils.TryGetFunctionName(context.SemanticModel, expression, out string functionName))
                         {
                             var identifierName = identifierNode.ToString();
                             if (!string.Equals(identifierName, functionName))

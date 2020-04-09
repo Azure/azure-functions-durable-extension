@@ -60,19 +60,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void AnalyzeMethod(SyntaxNodeAnalysisContext context)
         {
-            var declaration = (MethodDeclarationSyntax)context.Node;
-            if (!SyntaxNodeUtils.IsInsideOrchestrator(declaration)
-                || !SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, declaration))
+            if (context.Node is MethodDeclarationSyntax declaration
+                && SyntaxNodeUtils.IsInsideOrchestrator(declaration)
+                && SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, declaration))
             {
-                return;
-            }
-            
-            if (this.semanticModel == null)
-            {
-                this.semanticModel = context.SemanticModel;
-            }
+                if (this.semanticModel == null)
+                {
+                    this.semanticModel = context.SemanticModel;
+                }
 
-            this.orchestratorMethodDeclarations.Add(declaration);
+                this.orchestratorMethodDeclarations.Add(declaration);
+            }
         }
     }
 }

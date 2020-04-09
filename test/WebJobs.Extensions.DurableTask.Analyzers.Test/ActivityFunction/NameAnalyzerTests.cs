@@ -34,6 +34,9 @@ namespace VSSample
 {
     public static class HelloSequence
     {
+        public const string FunctionName = ""SayHelloByConstFuncName"";
+        public const string FunctionNameWithClass = ""SayHelloByConstFuncNameWithClass"";
+
         // Should not flag code on non function
         public static async Task<List<string>> NonFunctionInvalidNames(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
@@ -62,6 +65,10 @@ namespace VSSample
                 outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByClassName), ""Amsterdam""));
                 outputs.Add(await context.CallActivityAsync<string>(""SayHelloByMethodName"", ""Amsterdam""));
                 outputs.Add(await context.CallActivityAsync<string>(nameof(SayHelloByMethodName), ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(""SayHelloByConstFuncName"", ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(""SayHelloByConstFuncNameWithClass"", ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(constantSayHelloByConstFuncName, ""Amsterdam""));
+                outputs.Add(await context.CallActivityAsync<string>(HelloSequence.constantSayHelloByConstFuncNameWithClass, ""Amsterdam""));
 
                 return outputs;
             }
@@ -83,13 +90,13 @@ namespace VSSample
         public static string SayHello([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<Object>();
-            return $""Hello Ben!"";
+            return $""Hello World!"";
         }
 
         [FunctionName(""E1_SayHello_Object_DirectInput"")]
         public static string SayHelloDirectInput([ActivityTrigger] Object name)
         {
-            return $""Hello Ben!"";
+            return $""Hello World!"";
         }
 
         [FunctionName(""E1_SayHello_Tuple"")]
@@ -107,6 +114,22 @@ namespace VSSample
         }
 
         [FunctionName(nameof(SayHelloByMethodName))]
+        public static string SayHelloByMethodName([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+
+        
+        //constant variable used as functionName
+        [FunctionName(FunctionName)]
+        public static string SayHelloByMethodName([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(HelloSequence.FunctionNameWithClass)]
         public static string SayHelloByMethodName([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
