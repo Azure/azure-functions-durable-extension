@@ -52,13 +52,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
+            var semanticModel = context.SemanticModel;
             if (context.Node is InvocationExpressionSyntax invocationExpression
-                && SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, invocationExpression)
+                && SyntaxNodeUtils.IsInsideFunction(semanticModel, invocationExpression)
                 && IsActivityInvocation(invocationExpression))
             {
                 SetSemanticModel(context);
 
-                if (!TryGetFunctionNameFromActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
+                if (!TryGetFunctionNameFromActivityInvocation(invocationExpression, out SyntaxNode functionNameNode, out string functionName))
                 {
                     //Do not store ActivityFunctionCall if there is no function name
                     return;
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 calledFunctions.Add(new ActivityFunctionCall
                 {
-                    Name = functionNameNode.ToString().GetCleanedFunctionName(),
+                    Name = functionName,
                     NameNode = functionNameNode,
                     ParameterNode = inputNode,
                     ReturnTypeNode = returnTypeNode,
@@ -101,10 +102,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private bool TryGetFunctionNameFromActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode)
+        private bool TryGetFunctionNameFromActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode, out string functionName)
         {
             functionNameNode = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
-            return functionNameNode != null;
+            if (functionNameNode != null)
+            {
+                SyntaxNodeUtils.TryGetFunctionName(semanticModel, functionNameNode, out functionName);
+                return functionName != null;
+            }
+
+            functionNameNode = null;
+            functionName = null;
+            return false;
         }
 
         private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
