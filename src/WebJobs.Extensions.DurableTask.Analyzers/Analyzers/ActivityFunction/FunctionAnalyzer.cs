@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
             if (context.Node is InvocationExpressionSyntax invocationExpression
-                && SyntaxNodeUtils.IsInsideFunction(invocationExpression)
+                && SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, invocationExpression)
                 && IsActivityInvocation(invocationExpression))
             {
                 SetSemanticModel(context);
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var attribute = context.Node as AttributeSyntax;
             if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
-                if (!SyntaxNodeUtils.TryGetFunctionNameAndNode(attribute, out SyntaxNode attributeArgument, out string functionName))
+                if (!SyntaxNodeUtils.TryGetFunctionNameAndNode(context.SemanticModel, attribute, out SyntaxNode attributeArgument, out string functionName))
                 {
                     //Do not store ActivityFunctionDefinition if there is no function name
                     return;

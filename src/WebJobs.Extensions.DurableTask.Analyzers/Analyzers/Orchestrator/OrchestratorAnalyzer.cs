@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             var declaration = (MethodDeclarationSyntax)context.Node;
             if (!SyntaxNodeUtils.IsInsideOrchestrator(declaration)
-                || !SyntaxNodeUtils.IsInsideFunction(declaration))
+                || !SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, declaration))
             {
                 return;
             }

@@ -25,7 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword)).FirstOrDefault();
             if (staticKeyword == null || staticKeyword.IsKind(SyntaxKind.None))
             {
-                if (IsInEntityClass(methodDeclaration))
+                SemanticModel semanticModel = context.Compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
+                if (IsInEntityClass(semanticModel, methodDeclaration))
                 {
                     var methodName = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).FirstOrDefault();
 
@@ -39,9 +40,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private static bool IsInEntityClass(SyntaxNode methodDeclaration)
+        private static bool IsInEntityClass(SemanticModel semanticModel, SyntaxNode methodDeclaration)
         {
-            if (SyntaxNodeUtils.TryGetFunctionNameAndNode(methodDeclaration, out SyntaxNode attributeArgument, out string functionName))
+            if (SyntaxNodeUtils.TryGetFunctionNameAndNode(semanticModel, methodDeclaration, out SyntaxNode attributeArgument, out string functionName))
             {
                 if (SyntaxNodeUtils.TryGetClassName(methodDeclaration, out string className))
                 {
