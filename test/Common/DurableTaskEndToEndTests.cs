@@ -3368,6 +3368,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_MultipleInterfaces(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy_MultipleInterfaces),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy_MultipleInterfaces),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.JobWithProxyMultiInterface), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task DurableEntity_EntityProxy_UsesBindings(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
@@ -4061,6 +4094,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(foo, output[0]);
                 await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MultipleHostsLocalRpcSameDevice()
+        {
+            ITestHost host1 = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.MultipleHostsLocalRpcSameDevice) + "1",
+                    false,
+                    localRpcEndpointEnabled: true);
+            await host1.StartAsync();
+            ITestHost host2 = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.MultipleHostsLocalRpcSameDevice) + "2",
+                    false,
+                    localRpcEndpointEnabled: true);
+            try
+            {
+                await host2.StartAsync();
+            }
+            catch (Exception)
+            {
+                Assert.True(false, "Could not start up two hosts on the same device in parallel");
+            }
+            finally
+            {
+                await host1.StopAsync();
+                host1.Dispose();
+                await host2.StopAsync();
+                host2.Dispose();
             }
         }
 

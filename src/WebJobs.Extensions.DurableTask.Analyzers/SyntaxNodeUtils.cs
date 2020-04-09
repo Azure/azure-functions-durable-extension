@@ -116,9 +116,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool IsInsideFunction(SyntaxNode node)
+        internal static bool IsInsideFunction(SemanticModel semanticModel, SyntaxNode node)
         {
-            return TryGetFunctionNameAndNode(node, out SyntaxNode functionAttribute, out string functionName);
+            return TryGetFunctionNameAndNode(semanticModel, node, out SyntaxNode functionAttribute, out string functionName);
         }
 
         internal static bool TryGetClassName(SyntaxNode node, out string className)
@@ -139,13 +139,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetFunctionNameAndNode(SyntaxNode node, out SyntaxNode attributeArgument, out string functionName)
+        internal static bool TryGetFunctionNameAndNode(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode attributeArgument, out string functionName)
         {
             if (TryGetFunctionAttribute(node, out SyntaxNode functionAttribute))
             {
                 if (TryGetFunctionNameAttributeArgument(functionAttribute, out attributeArgument))
                 {
-                    if (TryGetFunctionName(attributeArgument, out functionName))
+                    if (TryGetFunctionName(semanticModel, attributeArgument, out functionName))
                     {
                         return true;
                     }
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private static bool TryGetFunctionName(SyntaxNode attributeArgument, out string functionName)
+        private static bool TryGetFunctionName(SemanticModel semanticModel, SyntaxNode attributeArgument, out string functionName)
         {
             var stringLiteralExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.StringLiteralExpression)).FirstOrDefault();
             if (stringLiteralExpression != null)
@@ -195,6 +195,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
             }
 
+            {
+                var identifierName = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                if (identifierName != null)
+                {
+                    var constValue = semanticModel.GetConstantValue(identifierName);
+                    if (constValue.HasValue && constValue.Value is string constString)
+                    {
+                        functionName = constString;
+                        return true;
+                    }
+                }
+            }
+
+            var simpleMemberAccessExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
+            if (simpleMemberAccessExpression != null)
+            {
+                var constValue = semanticModel.GetConstantValue(simpleMemberAccessExpression);
+                if (constValue.HasValue && constValue.Value is string constString)
+                {
+                    functionName = constString;
+                    return true;
+                }
+            }
+            
             functionName = null;
             return false;
         }

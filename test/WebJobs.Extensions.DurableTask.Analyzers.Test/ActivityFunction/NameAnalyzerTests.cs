@@ -275,7 +275,99 @@ namespace VSSample
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
+        [TestMethod]
+        public void Name_InvalidFunctionName_Missing_UsingConst()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        public const string FunctionName = ""E1_HelloSequence"";
+        [FunctionName(FunctionName)]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Ben""));
+            
+                return outputs;
+            }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityNameAnalyzerMissingMessageFormat, "E1_SayHello"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 24, 69)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void Name_InvalidFunctionName_Missing_UsingConstAndClass()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class Consts
+    {
+        public const string FunctionName = ""E1_HelloSequence"";
+    }
+
+    public static class HelloSequence
+    {
+        [FunctionName(Consts.FunctionName)]
+        public static async Task<List<string>> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var outputs = new List<string>();
+
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Ben""));
+            
+                return outputs;
+            }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityNameAnalyzerMissingMessageFormat, "E1_SayHello"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 28, 69)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
