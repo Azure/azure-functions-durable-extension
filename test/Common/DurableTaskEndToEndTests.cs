@@ -4097,6 +4097,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MultipleHostsLocalRpcSameDevice()
+        {
+            ITestHost host1 = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.MultipleHostsLocalRpcSameDevice) + "1",
+                    false,
+                    localRpcEndpointEnabled: true);
+            await host1.StartAsync();
+            ITestHost host2 = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.MultipleHostsLocalRpcSameDevice) + "2",
+                    false,
+                    localRpcEndpointEnabled: true);
+            try
+            {
+                await host2.StartAsync();
+            }
+            catch (Exception)
+            {
+                Assert.True(false, "Could not start up two hosts on the same device in parallel");
+            }
+            finally
+            {
+                await host1.StopAsync();
+                host1.Dispose();
+                await host2.StopAsync();
+                host2.Dispose();
+            }
+        }
+
         /// <summary>
         /// End-to-end test which validates that bad input for task hub name throws instance of <see cref="ArgumentException"/>.
         /// </summary>
