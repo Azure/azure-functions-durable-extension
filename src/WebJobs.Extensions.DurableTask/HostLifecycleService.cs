@@ -11,7 +11,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
 #if !FUNCTIONS_V1
     internal class HostLifecycleService : IApplicationLifetimeWrapper
+#else
+    internal class HostLifecycleService
+#endif
     {
+        internal static readonly IApplicationLifetimeWrapper NoOp = new NoOpLifetimeWrapper();
+#if !FUNCTIONS_V1
         private readonly IApplicationLifetime appLifetime;
 
         public HostLifecycleService(IApplicationLifetime appLifetime)
@@ -24,11 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public CancellationToken OnStopping => this.appLifetime.ApplicationStopping;
 
         public CancellationToken OnStopped => this.appLifetime.ApplicationStopped;
-    }
-#else
-    internal class HostLifecycleService
-    {
-        internal static readonly IApplicationLifetimeWrapper NoOp = new NoOpLifetimeWrapper();
+#endif
 
         private class NoOpLifetimeWrapper : IApplicationLifetimeWrapper
         {
@@ -39,5 +40,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public CancellationToken OnStopped => CancellationToken.None;
         }
     }
-#endif
 }

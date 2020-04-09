@@ -60,7 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                 }
 
                 return WrappedFunctionResult.UserCodeFailure(result.Exception);
-
             }
             catch (Exception e)
             {

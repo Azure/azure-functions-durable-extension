@@ -62,9 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly bool isOptionsConfigured;
+        private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
+
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
-        private IApplicationLifetimeWrapper hostLifetimeService;
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
@@ -139,14 +140,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
-#if !FUNCTIONS_V1
             this.hostLifetimeService = hostLifetimeService;
 
+#if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
             this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
-#else
-            this.hostLifetimeService = HostLifecycleService.NoOp;
 #endif
         }
 
