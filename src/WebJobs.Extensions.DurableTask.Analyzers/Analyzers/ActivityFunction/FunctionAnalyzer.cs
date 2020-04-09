@@ -104,11 +104,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetFunctionNameFromActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode, out string functionName)
         {
-            functionNameNode = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
-            if (functionNameNode != null)
+            var functionArgument = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
+            if (functionArgument != null)
             {
-                SyntaxNodeUtils.TryGetFunctionName(semanticModel, functionNameNode, out functionName);
-                return functionName != null;
+                functionNameNode = functionArgument.ChildNodes().FirstOrDefault();
+                if (functionNameNode != null)
+                {
+                    SyntaxNodeUtils.TryParseFunctionName(semanticModel, functionNameNode, out functionName);
+                    return functionName != null;
+                }
             }
 
             functionNameNode = null;
@@ -137,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var attribute = context.Node as AttributeSyntax;
             if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
-                if (!SyntaxNodeUtils.TryGetFunctionNameAndNode(context.SemanticModel, attribute, out SyntaxNode attributeArgument, out string functionName))
+                if (!SyntaxNodeUtils.TryGetFunctionName(context.SemanticModel, attribute, out string functionName))
                 {
                     //Do not store ActivityFunctionDefinition if there is no function name
                     return;
