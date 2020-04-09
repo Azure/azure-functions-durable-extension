@@ -148,10 +148,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-#if !FUNCTIONS_V1
-            // for reporting the status of the entity on App Insights
-            OrchestrationRuntimeStatus statusAppInsights;
-#endif
+            // Supress "Variable is assigned but its value is never used" in Functions V1
+#pragma warning disable CS0219
+            OrchestrationRuntimeStatus statusAppInsights; // for reporting the status of the entity on App Insights
+#pragma warning restore CS0219
+
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
@@ -171,9 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Config.GetIntputOutputTrace(serializedInput),
                 FunctionType.Entity,
                 isReplay: false);
-#if !FUNCTIONS_V1
-            statusAppInsights = OrchestrationRuntimeStatus.Running;
-#endif
+
             if (this.NumberEventsToReceive > 0)
             {
                 await this.doneProcessingMessages.Task;
@@ -217,9 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     description,
                     functionType: FunctionType.Entity,
                     isReplay: false);
-#if !FUNCTIONS_V1
                 statusAppInsights = OrchestrationRuntimeStatus.Failed;
-#endif
             }
             else
             {
@@ -231,9 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     continuedAsNew: true,
                     functionType: FunctionType.Entity,
                     isReplay: false);
-#if !FUNCTIONS_V1
                 statusAppInsights = OrchestrationRuntimeStatus.Completed;
-#endif
             }
 
 #if !FUNCTIONS_V1
