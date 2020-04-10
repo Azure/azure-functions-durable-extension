@@ -118,23 +118,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
         }
 #endif
-
-#if !FUNCTIONS_V1
-        private class HostLifecycleService : IApplicationLifetimeWrapper
-        {
-            private readonly IApplicationLifetime appLifetime;
-
-            public HostLifecycleService(IApplicationLifetime appLifetime)
-            {
-                this.appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
-            }
-
-            public CancellationToken OnStarted => this.appLifetime.ApplicationStarted;
-
-            public CancellationToken OnStopping => this.appLifetime.ApplicationStopping;
-
-            public CancellationToken OnStopped => this.appLifetime.ApplicationStopped;
-        }
-#endif
     }
 }
