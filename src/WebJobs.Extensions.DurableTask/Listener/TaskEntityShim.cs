@@ -156,12 +156,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.messageDataConverter.IsDefault)
             {
-                innerContext.MessageDataConverter = this.config.MessageDataConverter;
+                innerContext.MessageDataConverter = this.messageDataConverter;
             }
 
             if (!this.errorDataConverter.IsDefault)
             {
-                innerContext.ErrorDataConverter = this.config.ErrorDataConverter;
+                innerContext.ErrorDataConverter = this.errorDataConverter;
             }
 
             this.Config.TraceHelper.FunctionStarting(
