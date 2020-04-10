@@ -46,11 +46,18 @@ namespace VSSample
         {
             string.ToUpper(""Method not defined in source code"");
             IndirectCall();
+            RecursiveCall();
             return ""Hi"";
         }
 
         public static Object IndirectCall()
         {
+            return new Object();
+        }
+
+        public static Object RecursiveCall()
+        {
+            RecursiveCall();
             return new Object();
         }
     }

@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         if (syntaxReference != null)
                         {
                             var declaration = syntaxReference.GetSyntax(context.CancellationToken);
-                            if (declaration != null)
+                            if (declaration != null && !methodDeclaration.Equals(declaration))
                             {
                                 methodInformationList.Add(new MethodInformation(declaration, invocation));
                             }

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool IsInEntityClass(SemanticModel semanticModel, SyntaxNode methodDeclaration)
         {
-            if (SyntaxNodeUtils.TryGetFunctionNameAndNode(semanticModel, methodDeclaration, out SyntaxNode attributeArgument, out string functionName))
+            if (SyntaxNodeUtils.TryGetFunctionName(semanticModel, methodDeclaration, out string functionName))
             {
                 if (SyntaxNodeUtils.TryGetClassName(methodDeclaration, out string className))
                 {
