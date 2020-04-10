@@ -57,7 +57,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData("")]
         [InlineData("@invalid")]
         [InlineData("/invalid")]
         [InlineData("invalid\\")]
