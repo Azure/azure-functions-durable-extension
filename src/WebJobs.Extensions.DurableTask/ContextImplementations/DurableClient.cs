@@ -106,7 +106,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+            if (this.ClientReferencesCurrentApp(this))
+            {
+                this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+            }
 
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -262,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            if (this.SignalEntityReferencesSameApp(durableClient))
+            if (this.ClientReferencesCurrentApp(durableClient))
             {
                 this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
             }
@@ -297,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 isReplay: false);
         }
 
-        private bool SignalEntityReferencesSameApp(DurableClient client)
+        private bool ClientReferencesCurrentApp(DurableClient client)
         {
             return this.TaskHubMatchesCurrentApp(client) && this.ConnectionNameMatchesCurrentApp(client);
         }
