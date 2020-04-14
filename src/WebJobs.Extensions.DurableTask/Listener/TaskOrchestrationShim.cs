@@ -91,6 +91,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Running;
+#if !FUNCTIONS_V1
+            this.ReportToAppInsights(status, this.context.InstanceId);
+#endif
 
             var orchestratorInfo = this.Config.GetOrchestratorInfo(new FunctionName(this.context.Name));
 
