@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -116,9 +117,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool IsInsideFunction(SyntaxNode node)
+        internal static bool IsInsideFunction(SemanticModel semanticModel, SyntaxNode node)
         {
-            return TryGetFunctionNameAndNode(node, out SyntaxNode functionAttribute, out string functionName);
+            return TryGetFunctionName(semanticModel, node, out string functionName);
         }
 
         internal static bool TryGetClassName(SyntaxNode node, out string className)
@@ -139,13 +140,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetFunctionNameAndNode(SyntaxNode node, out SyntaxNode attributeArgument, out string functionName)
+        public static bool TryGetFunctionName(SemanticModel semanticModel, SyntaxNode node, out string functionName)
+        {
+            return TryGetFunctionNameAndNode(semanticModel, node, out _, out functionName);
+        }
+
+        internal static bool TryGetFunctionNameAndNode(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode attributeArgument, out string functionName)
         {
             if (TryGetFunctionAttribute(node, out SyntaxNode functionAttribute))
             {
                 if (TryGetFunctionNameAttributeArgument(functionAttribute, out attributeArgument))
                 {
-                    if (TryGetFunctionName(attributeArgument, out functionName))
+                    if (TryParseFunctionName(semanticModel, attributeArgument.ChildNodes().FirstOrDefault(), out functionName))
                     {
                         return true;
                     }
@@ -157,23 +163,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private static bool TryGetFunctionName(SyntaxNode attributeArgument, out string functionName)
+        public static bool TryParseFunctionName(SemanticModel semanticModel, SyntaxNode node, out string functionName)
         {
-            var stringLiteralExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.StringLiteralExpression)).FirstOrDefault();
-            if (stringLiteralExpression != null)
+            if (TryGetFunctionNameInStringLiteral(node, out functionName))
             {
-                var stringLiteralToken = stringLiteralExpression.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
-                if (stringLiteralToken != null)
+                return true;
+            }
+
+            if (TryGetFunctionNameInNameOfOperator(node, out functionName))
+            {
+                return true;
+            }
+
+            if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
+            {
+                return true;
+            }
+            
+            functionName = null;
+            return false;
+        }
+
+        private static bool TryGetFunctionNameInConstant(SemanticModel semanticModel, SyntaxNode node, out string functionName)
+        {
+            if (node != null && (node.IsKind(SyntaxKind.IdentifierName) || node.IsKind(SyntaxKind.SimpleMemberAccessExpression)))
+            {
+                var constValue = semanticModel.GetConstantValue(node);
+                if (constValue.HasValue && constValue.Value is string constString)
                 {
-                    functionName = stringLiteralToken.ValueText;
+                    functionName = constString;
                     return true;
                 }
             }
 
-            var invocationExpression = attributeArgument.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
-            if (invocationExpression != null)
+            functionName = null;
+            return false;
+        }
+
+        private static bool TryGetFunctionNameInNameOfOperator(SyntaxNode node, out string functionName)
+        {
+            if (node != null && node.IsKind(SyntaxKind.InvocationExpression))
             {
-                var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+                var argumentList = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
                 if (argumentList != null)
                 {
                     var argument = argumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument)).FirstOrDefault();
@@ -192,6 +223,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                             return true;
                         }
                     }
+                }
+            }
+
+            functionName = null;
+            return false;
+        }
+
+        private static bool TryGetFunctionNameInStringLiteral(SyntaxNode node, out string functionName)
+        {
+            if (node != null && node.IsKind(SyntaxKind.StringLiteralExpression))
+            {
+                var stringLiteralToken = node.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
+                if (stringLiteralToken != null)
+                {
+                    functionName = stringLiteralToken.ValueText;
+                    return true;
                 }
             }
 

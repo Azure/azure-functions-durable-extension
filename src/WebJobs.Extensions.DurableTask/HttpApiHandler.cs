@@ -61,8 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
 
-        private static readonly Uri InternalRpcUri = new Uri("http://127.0.0.1:17071/durabletask/");
-
         private readonly DurableTaskExtension config;
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter messageDataConverter;
@@ -75,10 +73,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger = logger;
 
             // The listen URL must not include the path.
-            var listenUri = new Uri(InternalRpcUri.GetLeftPart(UriPartial.Authority));
             this.localHttpListener = new LocalHttpListener(
                 config,
-                listenUri,
                 this.HandleRequestAsync);
         }
 
@@ -213,9 +209,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             try
             {
                 string basePath;
-                if (request.RequestUri.IsLoopback && request.RequestUri.Port == InternalRpcUri.Port)
+                if (this.localHttpListener.IsListening
+                    && request.RequestUri.IsLoopback
+                    && request.RequestUri.Port == this.localHttpListener.InternalRpcUri.Port)
                 {
-                    basePath = InternalRpcUri.AbsolutePath;
+                    basePath = this.localHttpListener.InternalRpcUri.AbsolutePath;
                 }
                 else if (this.config.Options.NotificationUrl != null)
                 {
@@ -1019,7 +1017,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.config.Options.LocalRpcEndpointEnabled != false)
             {
-                rpcBaseUrl = InternalRpcUri;
+                rpcBaseUrl = this.localHttpListener.InternalRpcUri;
                 return true;
             }
 
@@ -1037,7 +1035,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.config.Options.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
-                    message: $"Opening local RPC endpoint: {InternalRpcUri}",
+                    message: $"Opening local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
                     writeToUserLogs: true);
 
                 await this.localHttpListener.StartAsync();
@@ -1052,7 +1050,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.config.Options.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
-                    message: $"Closing local RPC endpoint: {InternalRpcUri}",
+                    message: $"Closing local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
                     writeToUserLogs: true);
 
                 await this.localHttpListener.StopAsync();

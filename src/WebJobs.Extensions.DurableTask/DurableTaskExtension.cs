@@ -14,9 +14,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -60,6 +62,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly bool isOptionsConfigured;
+        private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
+
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
         private DurabilityProvider defaultDurabilityProvider;
@@ -136,10 +140,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
+            this.hostLifetimeService = hostLifetimeService;
+
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
-            hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
 #endif
         }
 
@@ -251,6 +257,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
+
+            // We add a binding rule to support the now deprecated `orchestrationClient` binding
+            // A cleaner solution would be to have the prior rule have an OR-style selector between
+            // DurableClientAttribute and OrchestrationClientAttribute, but it's unclear if that's
+            // possible (for now).
+#pragma warning disable CS0618 // Type or member is obsolete
+            var backwardsCompRule = context.AddBindingRule<OrchestrationClientAttribute>()
+#pragma warning restore CS0618 // Type or member is obsolete
+                .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
+                .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
+                .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
+
+            backwardsCompRule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
+            backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
+            backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
+            backwardsCompRule.BindToInput<IDurableClient>(this.GetClient);
 
             string storageConnectionString = null;
             var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
@@ -440,7 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException(message);
             }
 
-            return new TaskActivityShim(this, info.Executor, name);
+            return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
         }
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
@@ -481,7 +503,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            FunctionResult result = await info.Executor.TryExecuteAsync(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+                info.Executor,
                 new TriggeredFunctionData
                 {
                     TriggerValue = context,
@@ -503,7 +526,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
-                CancellationToken.None);
+                this.hostLifetimeService.OnStopping);
+
+            if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
+            {
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    context.FunctionName,
+                    context.InstanceId,
+                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                    functionType: FunctionType.Orchestrator);
+
+                // This will abort the execution and cause the message to go back onto the queue for re-processing
+                throw new SessionAbortedException(
+                    $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+            }
 
             if (!context.IsCompleted)
             {
@@ -643,11 +680,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 3. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            FunctionResult result = await entityShim.GetFunctionInfo().Executor.TryExecuteAsync(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+                entityShim.GetFunctionInfo().Executor,
                 new TriggeredFunctionData
                 {
                     TriggerValue = entityShim.Context,
-
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
@@ -676,7 +713,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
-                CancellationToken.None);
+                this.hostLifetimeService.OnStopping);
+
+            if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
+            {
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    entityContext.FunctionName,
+                    entityContext.InstanceId,
+                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                    functionType: FunctionType.Orchestrator);
+
+                // This will abort the execution and cause the message to go back onto the queue for re-processing
+                throw new SessionAbortedException(
+                    $"An internal error occurred while attempting to execute '{entityContext.FunctionName}'.", result.Exception);
+            }
 
             await entityContext.RunDeferredTasks();
 

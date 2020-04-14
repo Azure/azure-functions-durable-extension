@@ -12,9 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public CancellationToken OnStopped => this.cts.Token;
 
-        public CancellationToken OnStarted => throw new NotImplementedException();
+        public CancellationToken OnStarted => this.cts.Token;
 
-        public CancellationToken OnStopping => throw new NotImplementedException();
+        public CancellationToken OnStopping => this.cts.Token;
 
         public void SignalShutdown() => this.cts.Cancel();
     }

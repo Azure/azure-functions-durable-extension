@@ -106,7 +106,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+            if (this.ClientReferencesCurrentApp(this))
+            {
+                this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+            }
 
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -210,7 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.SignalEntityAsyncInternal(this.client, this.TaskHubName, entityId, null, operationName, operationInput);
+                return this.SignalEntityAsyncInternal(this, this.TaskHubName, entityId, null, operationName, operationInput);
             }
             else
             {
@@ -225,8 +228,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ConnectionName = connectionName,
                 };
 
-                TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
-                return this.SignalEntityAsyncInternal(taskHubClient, taskHubName, entityId, null, operationName, operationInput);
+                var durableClient = (DurableClient)this.config.GetClient(attribute);
+                return this.SignalEntityAsyncInternal(durableClient, taskHubName, entityId, null, operationName, operationInput);
             }
         }
 
@@ -235,7 +238,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(taskHubName))
             {
-                return this.SignalEntityAsyncInternal(this.client, this.TaskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
+                return this.SignalEntityAsyncInternal(this, this.TaskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
             }
             else
             {
@@ -250,19 +253,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ConnectionName = connectionName,
                 };
 
-                TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
-                return this.SignalEntityAsyncInternal(taskHubClient, taskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
+                var durableClient = (DurableClient)this.config.GetClient(attribute);
+                return this.SignalEntityAsyncInternal(durableClient, taskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
             }
         }
 
-        private async Task SignalEntityAsyncInternal(TaskHubClient client, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
+        private async Task SignalEntityAsyncInternal(DurableClient durableClient, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
         {
             if (operationName == null)
             {
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            if (this.client.Equals(client))
+            if (this.ClientReferencesCurrentApp(durableClient))
             {
                 this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
             }
@@ -286,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
             var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
-            await client.RaiseEventAsync(instance, eventName, jrequest);
+            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
                 hubName,
@@ -295,6 +298,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 reason: $"EntitySignal:{operationName}",
                 functionType: FunctionType.Entity,
                 isReplay: false);
+        }
+
+        private bool ClientReferencesCurrentApp(DurableClient client)
+        {
+            return this.TaskHubMatchesCurrentApp(client) && this.ConnectionNameMatchesCurrentApp(client);
+        }
+
+        private bool TaskHubMatchesCurrentApp(DurableClient client)
+        {
+            var taskHubName = this.config.Options.HubName;
+            return client.TaskHubName.Equals(taskHubName);
+        }
+
+        private bool ConnectionNameMatchesCurrentApp(DurableClient client)
+        {
+            var storageProvider = this.config.Options.StorageProvider;
+            if (storageProvider.TryGetValue("ConnectionStringName", out object connectionName))
+            {
+                var newConnectionName = client.DurabilityProvider.ConnectionName;
+                return newConnectionName.Equals(connectionName);
+            }
+
+            return false;
         }
 
         /// <inheritdoc />
