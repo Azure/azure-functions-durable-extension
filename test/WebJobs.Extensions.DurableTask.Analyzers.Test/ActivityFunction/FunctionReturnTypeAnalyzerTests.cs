@@ -56,16 +56,20 @@ namespace VSSample
                 await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo"");
                 await context.CallActivityAsync<string[]>(""E1_SayHello_Array"", ""Tokyo"");
                 await context.CallActivityAsync<Object>(""E1_SayHey"", ""Tokyo"");
-                await context.CallActivityAsync<Tuple<string, int>>(""E1_SayHello_Tuple"", (""Seattle"", 4));
+                Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
+                await context.CallActivityAsync<Tuple<string, int>>(""E1_SayHello_Tuple"", tuple);
+                await context.CallActivityAsync<(string, int)>(""E1_SayHello_ValueTuple"", (""Seattle"", 4));
+                await context.CallActivityAsync<ValueTuple<string, int>>(""E1_SayHello_ValueTuple"", (""Seattle"", 4));
 
                 // Should always be valid without specifying return type
                 await context.CallActivityAsync(""E1_SayHello_ReturnsString"", ""London"");
-
-                // ArrayType and NamedType (IEnumerable types) match
-                await context.CallActivityAsync<string[]>(""E1_SayHello_ArrayAndNamedType"", (""Seattle"", 4));
                 
                 // NamedType and NamedType (IEnumerable types) match
                 await context.CallActivityAsync<List<string>>(""E1_SayHello_NamedType"", ""London"");
+
+                // ArrayType and NamedType (IEnumerable types) match and Task return type
+                await context.CallActivityAsync<string[]>(""E1_SayHello_ArrayAndNamedType"", (""Seattle"", 4));
+                await context.CallActivityAsync<string[]>(""E1_SayHello_Task_ArrayAndNamedType"", (""Seattle"", 4));
 
                 // string and Task<string>
                 await context.CallActivityAsync<string>(""E1_SayHello_Task"", ""London"");
@@ -100,6 +104,12 @@ namespace VSSample
             return tuple;
         }
 
+        [FunctionName(""E1_SayHello_ValueTuple"")]
+        public static ValueTuple<string, int> SayHelloTuple([ActivityTrigger] ValueTuple<string, int> tuple)
+        {
+            return tuple;
+        }
+
         [FunctionName(""E1_SayHello_ReturnsString"")]
         public static string SayHelloDirectInput([ActivityTrigger] string name)
         {
@@ -107,7 +117,7 @@ namespace VSSample
         }
 
         [FunctionName(""E1_SayHello_ArrayAndNamedType"")]
-        public static List<string> SayHelloTuple([ActivityTrigger] Tuple<string, int> tuple)
+        public static List<string> SayHelloTuple([ActivityTrigger] ValueTuple<string, int> tuple)
         {
             return new List<string>();
         }
@@ -120,6 +130,12 @@ namespace VSSample
 
         [FunctionName(""E1_SayHello_Task"")]
         public static Task<string> SayHelloDirectInput([ActivityTrigger] string name)
+        {
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""E1_SayHello_Task_ArrayAndNamedType"")]
+        public static Task<List<string>> SayHelloDirectInput([ActivityTrigger] ValueTuple<string, int> tuple)
         {
             return $""Hello {name}!"";
         }

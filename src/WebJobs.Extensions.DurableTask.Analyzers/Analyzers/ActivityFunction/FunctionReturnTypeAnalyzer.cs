@@ -3,6 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -49,20 +50,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool InputMatchesOrTaskOrCompatibleType(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
         {
-            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType) || DefinitionReturnsTask(invocationReturnType, definitionReturnType);
-        }
-
-        private static bool DefinitionReturnsTask(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
-        {
-            if (definitionReturnType.Name.Equals("Task") && definitionReturnType is INamedTypeSymbol namedType)
+            if (TryGetTaskTypeArgument(definitionReturnType, out ITypeSymbol taskTypeArgument))
             {
-                var taskTypeArgument = namedType.TypeArguments.FirstOrDefault();
-                if (taskTypeArgument != null)
-                {
-                    return invocationReturnType.Equals(taskTypeArgument);
-                }
+                definitionReturnType = taskTypeArgument;
             }
 
+            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType);
+        }
+
+        private static bool TryGetTaskTypeArgument(ITypeSymbol returnType, out ITypeSymbol taskTypeArgument)
+        {
+            if (returnType.Name.Equals("Task") && returnType is INamedTypeSymbol namedType)
+            {
+                taskTypeArgument = namedType.TypeArguments.FirstOrDefault();
+                return taskTypeArgument != null;
+            }
+
+            taskTypeArgument = null;
             return false;
         }
 

@@ -175,7 +175,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
+            var newSemanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
+            if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
             {
                 return true;
             }
@@ -312,7 +313,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
                     if (tupleUnderlyingType != null)
                     {
-                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
+                        return $"({string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))})";
                     }
 
                     return typeInfo.ToString();

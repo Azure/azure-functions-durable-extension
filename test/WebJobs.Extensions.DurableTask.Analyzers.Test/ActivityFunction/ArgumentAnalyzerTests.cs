@@ -60,8 +60,11 @@ namespace VSSample
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
                 outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
+                Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", tuple));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", tuple));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ValueTuple"", (""Seattle"", 4)));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ValueTuple_OnContext"", (""Seattle"", 4)));
 
                 // ArrayType and NamedType (IEnumerable types) match
                 string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
@@ -104,7 +107,7 @@ namespace VSSample
             return $""Hello World!"";
         }
 
-        [FunctionName(""E1_SayHello_Tuple"")]
+       [FunctionName(""E1_SayHello_Tuple"")]
         public static string SayHelloTuple([ActivityTrigger] Tuple<string, int> tupleTest)
         {
             string name = tupleTest;
@@ -112,6 +115,20 @@ namespace VSSample
         }
 
         [FunctionName(""E1_SayHello_Tuple_OnContext"")]
+        public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<Tuple<string, int>>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""E1_SayHello_ValueTuple"")]
+        public static string SayHelloTuple([ActivityTrigger] ValueTuple<string, int> tupleTest)
+        {
+            string name = tupleTest;
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""E1_SayHello_ValueTuple_OnContext"")]
         public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<(string, int)>();
