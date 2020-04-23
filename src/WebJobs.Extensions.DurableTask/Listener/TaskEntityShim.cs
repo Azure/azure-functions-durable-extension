@@ -148,10 +148,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            // Supress "Variable is assigned but its value is never used" in Functions V1
-#pragma warning disable CS0219
-            OrchestrationRuntimeStatus statusAppInsights; // for reporting the status of the entity on App Insights
-#pragma warning restore CS0219
+#if !FUNCTIONS_V1
+            // Adding "Tags" to activity allows using App Insights to query current state of entities
+            var activity = Activity.Current;
+            OrchestrationRuntimeStatus status = OrchestrationRuntimeStatus.Running;
+
+            DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
+
+            // We have this a function in `TaskOrchestrationShim` via `TagActivity`. It would be
+            // good to use that here instead.
+
+            // The activity may be null when running unit tests, but should be non-null otherwise
+            if (activity != null)
+            {
+                activity.AddTag("DurableFunctionsType", "Entity");
+                activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", Enum.GetName(status.GetType(), status));
+            }
+#endif
 
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
@@ -216,7 +230,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     description,
                     functionType: FunctionType.Entity,
                     isReplay: false);
-                statusAppInsights = OrchestrationRuntimeStatus.Failed;
             }
             else
             {
@@ -228,21 +241,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     continuedAsNew: true,
                     functionType: FunctionType.Entity,
                     isReplay: false);
-                statusAppInsights = OrchestrationRuntimeStatus.Completed;
             }
-
-#if !FUNCTIONS_V1
-            // Adding "Tags" to activity allows using App Insights to query current state of entities
-            var activity = Activity.Current;
-
-            // The activity may be null when running unit tests, but should be non-null otherwise
-            if (activity != null)
-            {
-                activity.AddTag("DurableFunctionsType", "Entity");
-                activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
-                activity.AddTag("DurableFunctionsRuntimeStatus", Enum.GetName(statusAppInsights.GetType(), statusAppInsights));
-            }
-#endif
 
             // The return value is not used.
             return string.Empty;

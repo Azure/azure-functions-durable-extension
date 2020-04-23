@@ -1073,5 +1073,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return payload;
         }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
+        /// This metadata will show up in Application Insights, if enabled.
+        /// </summary>
+        internal static void TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus status, string instanceId, bool isEntity = false)
+        {
+            // Adding "Tags" to activity allows using Application Insights to query current state of orchestrations
+            Activity activity = Activity.Current;
+            string functionsType = isEntity ? "Entity" : "Orchestrator";
+
+            // The activity may be null when running unit tests, but should be non-null otherwise
+            if (activity != null)
+            {
+                string statusStr = Enum.GetName(status.GetType(), status);
+                activity.AddTag("DurableFunctionsType", functionsType);
+                activity.AddTag("DurableFunctionsInstanceId", instanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
+            }
+        }
+#endif
     }
 }

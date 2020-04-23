@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -47,22 +48,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.RaiseEvent(eventName, serializedEventData);
         }
 
-#if !FUNCTIONS_V1
-        public void ReportToAppInsights(OrchestrationRuntimeStatus status, string instanceId)
-        {
-            // Adding "Tags" to activity allows using App Insights to query current state of orchestrations
-            var activity = Activity.Current;
-
-            // The activity may be null when running unit tests, but should be non-null otherwise
-            if (activity != null)
-            {
-                activity.AddTag("DurableFunctionsType", "Orchestrator");
-                activity.AddTag("DurableFunctionsInstanceId", instanceId);
-                activity.AddTag("DurableFunctionsRuntimeStatus", Enum.GetName(status.GetType(), status));
-            }
-        }
-#endif
-
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
             // Supress "Variable is assigned but its value is never used" in Functions V1
@@ -92,7 +77,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Running;
 #if !FUNCTIONS_V1
-            this.ReportToAppInsights(status, this.context.InstanceId);
+            // On a replay, the orchestrator will either go into a 'Completed'
+            // state or a 'Failed' state. We want to avoid tagging them as
+            // 'Running' while replaying because this could result in
+            // Application Insights reporting the wrong status.
+            if (!innerContext.IsReplaying)
+            {
+                DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
+
+            }
 #endif
 
             var orchestratorInfo = this.Config.GetOrchestratorInfo(new FunctionName(this.context.Name));
@@ -149,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
 #if !FUNCTIONS_V1
-                this.ReportToAppInsights(status, this.context.InstanceId);
+                DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
 #endif
                 throw orchestrationException;
             }
@@ -209,7 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 #if !FUNCTIONS_V1
-            this.ReportToAppInsights(status, this.context.InstanceId);
+            DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
 #endif
             return serializedOutput;
         }
