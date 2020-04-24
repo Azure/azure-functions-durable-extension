@@ -154,14 +154,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationRuntimeStatus status = OrchestrationRuntimeStatus.Running;
 
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
-
-            // The activity may be null when running unit tests, but should be non-null otherwise
-            if (activity != null)
-            {
-                activity.AddTag("DurableFunctionsType", "Entity");
-                activity.AddTag("DurableFunctionsInstanceId", this.context.InstanceId);
-                activity.AddTag("DurableFunctionsRuntimeStatus", Enum.GetName(status.GetType(), status));
-            }
 #endif
 
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
