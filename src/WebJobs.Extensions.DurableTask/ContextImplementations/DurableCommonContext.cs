@@ -43,6 +43,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal TimeSpan EntityMessageReorderWindow { get; private set; }
 
+        internal bool ExecutorCalledBack { get; set; }
+
         internal void AddDeferredTask(Func<Task> function)
         {
             this.deferredTasks.Add(function);

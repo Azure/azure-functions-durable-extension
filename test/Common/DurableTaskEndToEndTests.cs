@@ -2014,6 +2014,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task HandleUncallableOrchestrator(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HandleUncallableOrchestrator),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(UnconstructibleClass.UncallableOrchestrator), null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+#if FUNCTIONS_V1
+                Assert.Equal("Orchestrator function 'UncallableOrchestrator' failed: Exception has been thrown by the target of an invocation.", status.Output.ToString());
+#else
+                Assert.Equal("Orchestrator function 'UncallableOrchestrator' failed: Exception of type 'System.Exception' was thrown.", status.Output.ToString());
+#endif
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task HandleUncallableFunctions(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HandleUncallableOrchestrator),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(UnconstructibleClass.UncallableEntity), Guid.NewGuid().ToString());
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.HandleUncallableFunctions), entityId, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
         /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
         /// </summary>

@@ -512,6 +512,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
+                        context.ExecutorCalledBack = true;
+
                         // 2. Configure the shim with the inner invoker to execute the user code.
                         shim.SetFunctionInvocationCallback(userCodeInvoker);
 
@@ -526,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
+                context,
                 this.hostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
@@ -688,6 +691,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
+                        entityContext.ExecutorCalledBack = true;
+
                         entityShim.SetFunctionInvocationCallback(userCodeInvoker);
 
                         // 3. Run all the operations in the batch
@@ -713,6 +718,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
+                entityContext,
                 this.hostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
