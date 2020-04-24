@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Newtonsoft.Json;
@@ -147,6 +148,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
+#if !FUNCTIONS_V1
+            // Adding "Tags" to activity allows using App Insights to query current state of entities
+            var activity = Activity.Current;
+            OrchestrationRuntimeStatus status = OrchestrationRuntimeStatus.Running;
+
+            DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
+#endif
+
             if (this.operationBatch.Count == 0 && this.lockRequest == null)
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
