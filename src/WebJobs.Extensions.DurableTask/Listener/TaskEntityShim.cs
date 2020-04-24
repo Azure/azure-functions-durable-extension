@@ -155,9 +155,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
 
-            // We have this a function in `TaskOrchestrationShim` via `TagActivity`. It would be
-            // good to use that here instead.
-
             // The activity may be null when running unit tests, but should be non-null otherwise
             if (activity != null)
             {
