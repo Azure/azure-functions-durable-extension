@@ -84,7 +84,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!innerContext.IsReplaying)
             {
                 DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
-
             }
 #endif
 
