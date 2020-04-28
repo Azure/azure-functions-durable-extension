@@ -116,13 +116,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializable input value for the orchestrator function.</param>
+        /// <param name="taskHubName">The TaskHubName of the target orchestrator.</param>
+        /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
         /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestratation instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input);
+        Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input, string taskHubName = null, string connectionName = null);
 
         /// <summary>
         /// Sends an event notification message to a waiting orchestration instance.

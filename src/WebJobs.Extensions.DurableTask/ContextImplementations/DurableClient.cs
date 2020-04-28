@@ -192,6 +192,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(eventName));
             }
 
+            var durableClient = GetDurableClient(taskHubName, connectionName);
+
             if (string.IsNullOrEmpty(connectionName))
             {
                 connectionName = this.attribute.ConnectionName;
@@ -211,59 +213,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, string operationName, object operationInput, string taskHubName, string connectionName)
         {
-            if (string.IsNullOrEmpty(taskHubName))
-            {
-                return this.SignalEntityAsyncInternal(this, this.TaskHubName, entityId, null, operationName, operationInput);
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(connectionName))
-                {
-                    connectionName = this.attribute.ConnectionName;
-                }
-
-                var attribute = new DurableClientAttribute
-                {
-                    TaskHub = taskHubName,
-                    ConnectionName = connectionName,
-                };
-
-                var durableClient = (DurableClient)this.config.GetClient(attribute);
-                return this.SignalEntityAsyncInternal(durableClient, taskHubName, entityId, null, operationName, operationInput);
-            }
+            return this.SignalEntityAsyncInternal(taskHubName, entityId, null, operationName, operationInput, taskHubName, connectionName);
         }
 
         /// <inheritdoc />
         Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, DateTime scheduledTimeUtc, string operationName, object operationInput, string taskHubName, string connectionName)
         {
-            if (string.IsNullOrEmpty(taskHubName))
-            {
-                return this.SignalEntityAsyncInternal(this, this.TaskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(connectionName))
-                {
-                    connectionName = this.attribute.ConnectionName;
-                }
-
-                var attribute = new DurableClientAttribute
-                {
-                    TaskHub = taskHubName,
-                    ConnectionName = connectionName,
-                };
-
-                var durableClient = (DurableClient)this.config.GetClient(attribute);
-                return this.SignalEntityAsyncInternal(durableClient, taskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
-            }
+            return this.SignalEntityAsyncInternal(taskHubName, entityId, scheduledTimeUtc, operationName, operationInput, taskHubName, connectionName);
         }
 
-        private async Task SignalEntityAsyncInternal(DurableClient durableClient, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
+        private async Task SignalEntityAsyncInternal(string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput, string taskHubName, string connectionName)
         {
             if (operationName == null)
             {
                 throw new ArgumentNullException(nameof(operationName));
             }
+
+            DurableClient durableClient = this.GetDurableClient(taskHubName, connectionName);
 
             if (this.ClientReferencesCurrentApp(durableClient))
             {
@@ -298,6 +264,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 reason: $"EntitySignal:{operationName}",
                 functionType: FunctionType.Entity,
                 isReplay: false);
+        }
+
+        private DurableClient GetDurableClient(string taskHubName, string connectionName)
+        {
+            if (string.IsNullOrEmpty(taskHubName))
+            {
+                connectionName = this.TaskHubName;
+            }
+
+            if (string.IsNullOrEmpty(connectionName))
+            {
+                connectionName = this.attribute.ConnectionName;
+            }
+
+            var attribute = new DurableClientAttribute
+            {
+                TaskHub = taskHubName,
+                ConnectionName = connectionName,
+            };
+
+            return (DurableClient)this.config.GetClient(attribute);
         }
 
         private bool ClientReferencesCurrentApp(DurableClient client)
