@@ -56,27 +56,27 @@ namespace VSSample
                 var outputs = new List<string>();
 
                 // Testing different matching input types
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
+                await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo"");
+                await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London"");
+                await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object());
+                await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object());
                 Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", tuple));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", tuple));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ValueTuple"", (""Seattle"", 4)));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ValueTuple_OnContext"", (""Seattle"", 4)));
+                await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", tuple);
+                await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", tuple);
+                await context.CallActivityAsync<string>(""E1_SayHello_ValueTuple"", (""Seattle"", 4));
+                await context.CallActivityAsync<string>(""E1_SayHello_ValueTuple_OnContext"", (""Seattle"", 4));
 
                 // ArrayType and NamedType (IEnumerable types) match
                 string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ArrayToNamed"", arrayType));
+                await context.CallActivityAsync<string>(""E1_SayHello_ArrayToNamed"", arrayType);
                 
                 // NamedType and NamedType (IEnumerable types) match
                 List<string> namedType = new List<string>();
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed"", namedType));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed_Direct"", namedType));
+                await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed"", namedType);
+                await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed_Direct"", namedType);
 
                 // null input when function input not used
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NotUsed"", null));
+                await context.CallActivityAsync<string>(""E1_SayHello_NotUsed"", null);
             
                 return outputs;
             }

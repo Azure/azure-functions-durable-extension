@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     TryGetInvocationReturnType(semanticModel, activityInvocation, out ITypeSymbol invocationReturnType);
                     TryGetDefinitionReturnType(semanticModel, functionDefinition, out ITypeSymbol definitionReturnType);
 
-                    if (!InputMatchesOrTaskOrCompatibleType(invocationReturnType, definitionReturnType))
+                    if (!IsValidReturnTypeForDefinition(invocationReturnType, definitionReturnType))
                     {
                         var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
                         var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private static bool InputMatchesOrTaskOrCompatibleType(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
+        private static bool IsValidReturnTypeForDefinition(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
         {
             if (TryGetTaskTypeArgument(definitionReturnType, out ITypeSymbol taskTypeArgument))
             {

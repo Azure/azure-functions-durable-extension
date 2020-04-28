@@ -343,8 +343,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return invocationType.Equals(definitionType)
-                || AreEqualTupleTypes(invocationType, definitionType)
                 || AreCompatibleIEnumerableTypes(invocationType, definitionType);
+                //|| AreEqualTupleTypes(invocationType, definitionType);
         }
 
         private static bool AreEqualTupleTypes(ITypeSymbol invocationType, ITypeSymbol definitionType)
