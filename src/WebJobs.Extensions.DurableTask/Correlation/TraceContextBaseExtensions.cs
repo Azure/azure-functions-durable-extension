@@ -1,19 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using DurableTask.Core;
-#if !FUNCTIONS_V1
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
-#if !FUNCTIONS_V1
-
     /// <summary>
     /// TraceContextBase extension methods.
     /// </summary>
@@ -54,5 +47,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return telemetry;
         }
     }
-#endif
 }

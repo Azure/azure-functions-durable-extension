@@ -1,14 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using DurableTask.Core.Settings;
-#if !FUNCTIONS_V1
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using DurableTask.Core;
+using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -25,11 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// </summary>
     [Obsolete("Not ready for public consumption.")]
     [EditorBrowsable(EditorBrowsableState.Never)]
-#if DEPENDENCY_COLLECTOR
-    public
-#else
     internal
-#endif
         class DurableTaskCorrelationTelemetryInitializer : ITelemetryInitializer
     {
         private const string RddDiagnosticSourcePrefix = "rdddsc";
@@ -320,5 +315,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         }
     }
 }
-
-#endif
