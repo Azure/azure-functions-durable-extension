@@ -8,7 +8,9 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
+#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+#endif
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -17,7 +17,9 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
+#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+#endif
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -59,9 +61,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
+#if !FUNCTIONS_V1
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
+#endif
         private readonly bool isOptionsConfigured;
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
@@ -107,16 +111,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IApplicationLifetimeWrapper hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-            IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
-            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null
 #if !FUNCTIONS_V1
+            IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable SA1113, SA1001, SA1115
-            ,ITelemetryActivator telemetryActivator = null
+            ITelemetryActivator telemetryActivator = null)
 #pragma warning restore SA1113, SA1001, SA1115
+#else
+            IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
-#pragma warning disable SA1009, SA1111
-            )
-#pragma warning restore SA1009, SA1111
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();

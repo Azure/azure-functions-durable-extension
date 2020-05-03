@@ -4,8 +4,8 @@
 using System;
 using System.Net.Http;
 using System.Threading;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 #if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
