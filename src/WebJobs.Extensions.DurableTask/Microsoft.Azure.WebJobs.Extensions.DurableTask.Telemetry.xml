@@ -3637,10 +3637,10 @@
             Boolean value specifying if the replay events should be logged.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingDisabled">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingEnabled">
             <summary>
-            Gets or sets a flag indicating whether to disable distributed tracing.
-            The default value is false.
+            Gets or sets a flag indicating whether to enable distributed tracing.
+            The default value is true.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingProtocol">

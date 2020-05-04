@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         {
             DurableTaskOptions durableTaskOptions = this.options.Value;
             CorrelationSettings.Current.EnableDistributedTracing =
-                !durableTaskOptions.Tracing.DistributedTracingDisabled;
+                durableTaskOptions.Tracing.DistributedTracingEnabled;
             CorrelationSettings.Current.Protocol =
                 durableTaskOptions.Tracing.DistributedTracingProtocol == Protocol.W3CTraceContext.ToString()
                     ? Protocol.W3CTraceContext
