@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
         private static readonly DiagnosticSeverity Severity = FunctionReturnTypeAnalyzer.Severity;
 
         [TestMethod]
-        public void ReturnType_NonIssueCalls()
+        public void ReturnType_NoDiagnosticTestCases()
         {
             var test = @"
 using System;
@@ -33,111 +33,143 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        // Should not flag code on non function
-        public static async Task<List<string>> NonFunctionWrongReturnType(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                var outputs = new List<string>();
-
-                await context.CallActivityAsync<int>(""E1_SayHello"", ""Tokyo"");
-                await context.CallActivityAsync<int>(""E1_SayHey"", ""Tokyo"");
-                await context.CallActivityAsync<int>(""E1_SayHello_Tuple"", (""Seattle"", 4));
+        // Testing that no diagnostics are produced when method does not have the FunctionName attribute present
+        public static async Task<string> NonFunctionWrongReturnType(
+        [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            // Incorrect return types on some test functions used below
+            await context.CallActivityAsync<int>(""Test_String"", ""Tokyo"");
+            await context.CallActivityAsync<int>(""Test_Object"", ""Tokyo"");
+            await context.CallActivityAsync<int>(""Test_Array"", new string[] { ""Minneapolis"" });
+            await context.CallActivityAsync<int>(""Test_Tuple"", (""Seattle"", 4));
             
-                return outputs;
-            }
+            return ""Hello World!"";
+        }
 
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> CorrectReturnType(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                var outputs = new List<string>();
+        [FunctionName(""ReturnTypeAnalyzerTestCases"")]
+        public static async Task<string> Run(
+        [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var outputs = new List<string>();
 
-                // Testing different matching return types
-                await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo"");
-                await context.CallActivityAsync<string[]>(""E1_SayHello_Array"", ""Tokyo"");
-                await context.CallActivityAsync<Object>(""E1_SayHey"", ""Tokyo"");
-                Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
-                await context.CallActivityAsync<Tuple<string, int>>(""E1_SayHello_Tuple"", tuple);
-                await context.CallActivityAsync<(string, int)>(""E1_SayHello_ValueTuple"", (""Seattle"", 4));
-                await context.CallActivityAsync<ValueTuple<string, int>>(""E1_SayHello_ValueTuple"", (""Seattle"", 4));
+            // Testing different matching return types
+            // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
 
-                // Should always be valid without specifying return type
-                await context.CallActivityAsync(""E1_SayHello_ReturnsString"", ""London"");
+            //await context.CallActivityAsync<string>(""Test_String"", ""Tokyo"");
+            //await context.CallActivityAsync<Object>(""Test_Object"", ""Tokyo"");
+            //await context.CallActivityAsync<string[]>(""Test_Array"", new string[] { ""Minneapolis"" });
+
+            // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
+
+            Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
+            //await context.CallActivityAsync<Tuple<string, int>>(""Test_Tuple"", tuple);
+            //await context.CallActivityAsync<(string, int)>(""Test_ValueTuple"", (""Seattle"", 4));
+            //await context.CallActivityAsync<ValueTuple<string, int>>(""Test_ValueTuple"", (""Seattle"", 4));
+            await context.CallActivityAsync<ValueTuple<string, int>>(""Test_ValueTuple_AltFormat"", (""Seattle"", 4));
                 
-                // NamedType and NamedType (IEnumerable types) match
-                await context.CallActivityAsync<List<string>>(""E1_SayHello_NamedType"", ""London"");
+            // Testing JsonArray compatible types (IEnumerable Typles)
+            // IArrayTypeSymbol (array) to INamedTypeSymbol (IList)
+                
+            await context.CallActivityAsync<string[]>(""Test_IList"", ""Seattle"");
 
-                // ArrayType and NamedType (IEnumerable types) match and Task return type
-                await context.CallActivityAsync<string[]>(""E1_SayHello_ArrayAndNamedType"", (""Seattle"", 4));
-                await context.CallActivityAsync<string[]>(""E1_SayHello_Task_ArrayAndNamedType"", (""Seattle"", 4));
+            // INamedTypeSymbol (List) to INamedTypeSymbol (IList)
+            await context.CallActivityAsync<List<string>>(""Test_IList"", ""London"");
 
-                // string and Task<string>
-                await context.CallActivityAsync<string>(""E1_SayHello_Task"", ""London"");
+            // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
+
+            await context.CallActivityAsync<Object>(""Test_ValueType"", ""Minneapolis"");
+            await context.CallActivityAsync<Object>(""Test_Char"", ""Minneapolis"");
+
+            // Task return types
+            await context.CallActivityAsync<string>(""Test_TaskString"", ""London"");
+            await context.CallActivityAsync<string[]>(""Test_TaskList"", ""London"");
             
-                return outputs;
-            }
+            // Testing no diagnostic on no specified return type
+            await context.CallActivityAsync(""Test_String"", ""London"");
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+            return ""Hello World!"";
+        }
+        
+        // Testing different matching return types
+        // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
+
+        [FunctionName(""Test_String"")]
+        public static string TestString([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_Array"")]
-        public static string[] SayHello([ActivityTrigger] IDurableActivityContext context)
-        {
-            string name = context.GetInput<string>();
-            return new [] { $@""Hello {name}!"" };
-        }
-
-        [FunctionName(""E1_SayHey"")]
-        public static Object SayHello([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Test_Object"")]
+        public static Object TestObject([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return new Object();
         }
 
-        [FunctionName(""E1_SayHello_Tuple"")]
-        public static Tuple<string, int> SayHelloTuple([ActivityTrigger] Tuple<string, int> tuple)
+        [FunctionName(""Test_Array"")]
+        public static string[] TestArray([ActivityTrigger] string[] input)
+        {
+            return input;
+        }
+
+        // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
+
+        [FunctionName(""Test_Tuple"")]
+        public static Tuple<string, int> TestTuple([ActivityTrigger] Tuple<string, int> tuple)
         {
             return tuple;
         }
 
-        [FunctionName(""E1_SayHello_ValueTuple"")]
-        public static ValueTuple<string, int> SayHelloTuple([ActivityTrigger] ValueTuple<string, int> tuple)
+        [FunctionName(""Test_ValueTuple"")]
+        public static ValueTuple<string, int> TestValueTuple([ActivityTrigger] ValueTuple<string, int> tuple)
         {
             return tuple;
         }
 
-        [FunctionName(""E1_SayHello_ReturnsString"")]
-        public static string SayHelloDirectInput([ActivityTrigger] string name)
+        [FunctionName(""Test_ValueTuple_AltFormat"")]
+        public static (string, int) TestValueTupleAltFormat([ActivityTrigger] ValueTuple<string, int> tuple)
         {
-            return $""Hello {name}!"";
+            return tuple;
         }
+        
+        // Testing JsonArray compatible types (IEnumerable Typles)
 
-        [FunctionName(""E1_SayHello_ArrayAndNamedType"")]
-        public static List<string> SayHelloTuple([ActivityTrigger] ValueTuple<string, int> tuple)
+        [FunctionName(""Test_IList"")]
+        public static IList<string> TestIList([ActivityTrigger] IDurableActivityContext context)
         {
+            string name = context.GetInput<string>();
             return new List<string>();
         }
 
-        [FunctionName(""E1_SayHello_NamedType"")]
-        public static IList<string> SayHelloDirectInput([ActivityTrigger] string name)
+        // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
+
+        [FunctionName(""Test_ValueType"")]
+        public static ValueType TestValueType([ActivityTrigger] string name)
         {
+            return new Char();
+        }
+
+        [FunctionName(""Test_Char"")]
+        public static Char TestChar([ActivityTrigger] string name)
+        {
+            return new Char();
+        }
+
+        // Task return types
+        
+        [FunctionName(""Test_TaskString"")]
+        public static Task<string> TestTaskString([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""Test_TaskList"")]
+        public static Task<List<string>> TestTaskList([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
             return new List<string>();
-        }
-
-        [FunctionName(""E1_SayHello_Task"")]
-        public static Task<string> SayHelloDirectInput([ActivityTrigger] string name)
-        {
-            return $""Hello {name}!"";
-        }
-
-        [FunctionName(""E1_SayHello_Task_ArrayAndNamedType"")]
-        public static Task<List<string>> SayHelloDirectInput([ActivityTrigger] ValueTuple<string, int> tuple)
-        {
-            return $""Hello {name}!"";
         }
     }
 }";
@@ -145,7 +177,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void ReturnType_Mismatch_StringAndInt()
+        public void ReturnType_ExpectsInt_ReturnsString()
         {
             var test = @"
 using System;
@@ -163,19 +195,17 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ReturnTypeAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                await context.CallActivityAsync<int>(""E1_SayHello"", ""test"");
+                await context.CallActivityAsync<int>(""Function_Returns_String"", ""test"");
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Function_Returns_String"")]
+        public static string FunctionReturnsString([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return $""Hello {name}!"";
@@ -185,18 +215,18 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
+                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "Function_Returns_String", "string", "int"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 23)
+                            new DiagnosticResultLocation("Test0.cs", 21, 23)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
-        public void ReturnType_Mismatch_IEnumerableTypes_StringAndList()
+        public void ReturnType_ExpectsString_ReturnsList()
         {
             var test = @"
 using System;
@@ -214,40 +244,38 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ReturnTypeAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                await context.CallActivityAsync<string>(""E1_SayHello"", ""test"");
+                await context.CallActivityAsync<string>(""Function_Returns_ListOfString"", ""test"");
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static List<string> SayHello([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Function_Returns_ListOfString"")]
+        public static List<string> FunctionReturnsListOfString([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
-            return $""Hello {name}!"";
+            return new List<string>() { name };
         }
     }
 }";
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "System.Collections.Generic.List<string>", "string"),
+                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "Function_Returns_ListOfString", "System.Collections.Generic.List<string>", "string"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 23)
+                            new DiagnosticResultLocation("Test0.cs", 21, 23)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
-        public void ReturnType_Mismatch_StringAndTask()
+        public void ReturnType_ExpectsString_ReturnsTask()
         {
             var test = @"
 using System;
@@ -265,19 +293,17 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ReturnTypeAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""World""));
+                await context.CallActivityAsync<string>(""Function_Returns_Task"", ""World"");
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static Task SayHello([ActivityTrigger] string name)
+        [FunctionName(""Function_Returns_Task"")]
+        public static Task FunctionReturnsTask([ActivityTrigger] string name)
         {
             return $""Hello {name}!"";
         }
@@ -286,11 +312,11 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "E1_SayHello", "System.Threading.Tasks.Task", "string"),
+                Message = string.Format(Resources.ActivityReturnTypeAnalyzerMessageFormat, "Function_Returns_Task", "System.Threading.Tasks.Task", "string"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 35)
+                            new DiagnosticResultLocation("Test0.cs", 21, 23)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);

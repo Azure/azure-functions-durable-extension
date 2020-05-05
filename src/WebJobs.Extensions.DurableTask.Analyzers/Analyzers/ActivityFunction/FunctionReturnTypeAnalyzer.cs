@@ -55,7 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 definitionReturnType = taskTypeArgument;
             }
 
-            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType);
+            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType)
+                || SyntaxNodeUtils.TypeNodeImplementsOrExtendsType(definitionReturnType, invocationReturnType.ToString());
         }
 
         private static bool TryGetTaskTypeArgument(ITypeSymbol returnType, out ITypeSymbol taskTypeArgument)
