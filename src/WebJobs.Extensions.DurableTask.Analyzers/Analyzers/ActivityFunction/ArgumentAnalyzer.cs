@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                             context.ReportDiagnostic(diagnostic);
                         }
                     }
-                    else if (!SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, definitionInputType))
+                    else if (!IsValidArgumentForDefinition(invocationInputType, definitionInputType))
                     {
                         var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationInputType);
                         var definitionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionInputType);
@@ -58,9 +59,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
+        private static bool IsValidArgumentForDefinition(ITypeSymbol invocationInputType, ITypeSymbol definitionInputType)
+        {
+            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, definitionInputType)
+                || SyntaxNodeUtils.TypeNodeImplementsOrExtendsType(invocationInputType, definitionInputType.ToString());
+        }
+
         private static bool TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
         {
             var invocationInput = activityInvocation.ParameterNode;
+
+            if (invocationInput == null)
+            {
+                invocationInputType = null;
+                return false;
+            }
 
             invocationInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationInput).GetTypeInfo(invocationInput).Type;
 
@@ -70,6 +83,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static bool TryGetDefinitionInputType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionInputType)
         {
             var definitionInput = functionDefinition.ParameterNode;
+
+            if (definitionInput == null)
+            {
+                definitionInputType = null;
+                return false;
+            }
 
             if (FunctionParameterIsContext(semanticModel, definitionInput))
             {
