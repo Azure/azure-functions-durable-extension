@@ -195,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 opTelemetry.Properties["w3c_tracestate"] = context.TraceState;
             }
 
-            TraceParent traceParent = context.TraceParent.ToTraceParent();
+            TraceParent traceParent = TraceParent.FromString(context.TraceParent);
 
             if (initializeFromCurrent)
             {
