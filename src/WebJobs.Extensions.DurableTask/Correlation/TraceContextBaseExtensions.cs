@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public static DependencyTelemetry CreateDependencyTelemetry(this TraceContextBase context)
         {
             var telemetry = new DependencyTelemetry { Name = context.OperationName };
-            telemetry.Start(); // TODO Check if it is necessary.
+            telemetry.Start();
             telemetry.Duration = context.Duration;
             telemetry.Timestamp = context.StartTime; // TimeStamp is the time of ending the Activity.
             telemetry.Id = context.TelemetryId;
