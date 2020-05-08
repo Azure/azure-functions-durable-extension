@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 var substrings = traceparent.Split('-');
                 if (substrings.Length != 4)
                 {
-                    throw new ArgumentException($"Traceparent doesn't respect the spec. {traceparent}");
+                    throw new ArgumentException($"Traceparent doesn't respect the spec. spec: {{version}}-{{traceId}}-{{spanId}}-{{traceFlags}} actual: {traceparent}");
                 }
 
                 return new TraceParent
