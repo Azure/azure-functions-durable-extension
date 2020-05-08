@@ -22,8 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// 2. Avoid to be overriden when it is RequestTelemetry
     /// Original Source is here https://github.com/microsoft/ApplicationInsights-dotnet-server/blob/2.8.0/Src/Common/W3C/W3COperationCorrelationTelemetryInitializer.cs.
     /// </summary>
-    [Obsolete("Not ready for public consumption.")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
     internal
         class DurableTaskCorrelationTelemetryInitializer : ITelemetryInitializer
     {

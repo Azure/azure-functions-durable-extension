@@ -85,9 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
             }
-#pragma warning disable 618
+
             var telemetryInitializer = new DurableTaskCorrelationTelemetryInitializer();
-#pragma warning restore 618
 
             telemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
             config.TelemetryInitializers.Add(telemetryInitializer);
