@@ -111,14 +111,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IApplicationLifetimeWrapper hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-#if !FUNCTIONS_V1
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+#if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable SA1113, SA1001, SA1115
             ITelemetryActivator telemetryActivator = null)
 #pragma warning restore SA1113, SA1001, SA1115
 #else
-            IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
         {
@@ -169,7 +168,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize();
 #endif
-
         }
 
 #if FUNCTIONS_V1

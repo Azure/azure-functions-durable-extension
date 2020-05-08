@@ -55,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     TraceFlags = substrings[3],
                 };
             }
+
             throw new ArgumentException(exceptionString);
         }
     }

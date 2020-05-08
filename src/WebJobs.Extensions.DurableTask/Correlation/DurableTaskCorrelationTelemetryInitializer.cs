@@ -229,6 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             // However, new implementation already supressed. Once it fully tested the logic, remove the suppression logic on this class.
             telemetry.Context.Operation.Id = "suppressed";
             telemetry.Context.Operation.ParentId = "suppressed";
+#pragma warning disable 618
 
             // Context. Properties.  ai_legacyRequestId , ai_legacyRequestId
             foreach (var key in telemetry.Context.Properties.Keys)
@@ -239,6 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     telemetry.Context.Properties[key] = "suppressed";
                 }
             }
+#pragma warning restore 618
 
             ((OperationTelemetry)telemetry).Id = "suppressed";
         }
@@ -249,10 +251,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             if (telemetry is DependencyTelemetry)
             {
                 DependencyTelemetry dTelemetry = telemetry as DependencyTelemetry;
-
+#pragma warning disable 618
                 if (!string.IsNullOrEmpty(dTelemetry.CommandName))
                 {
                     var host = new Uri(dTelemetry.CommandName).Host;
+#pragma warning restore 618
                     if (this.ExcludeComponentCorrelationHttpHeadersOnDomains.Contains(host))
                     {
                         return true;
