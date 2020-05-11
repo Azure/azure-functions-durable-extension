@@ -176,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <para>
         /// A terminated instance will eventually transition into the <see cref="OrchestrationRuntimeStatus.Terminated"/> state.
         /// However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
-        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool)"/>
+        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool, DurableClientConnectionDetails)"/>
         /// method to know when a terminated instance has actually reached the Terminated state.
         /// </para>
         /// <para>
@@ -197,6 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to rewind.</param>
         /// <param name="reason">The reason for rewinding the orchestration instance.</param>
+        /// <param name="connectionDetails">The storage account connection details.</param>
         /// <returns>A task that completes when the rewind message is enqueued.</returns>
         [Obsolete("This feature is in preview.")]
         Task RewindAsync(string instanceId, string reason, DurableClientConnectionDetails connectionDetails = null);
@@ -226,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
-        /// <param name="connectionDetails"></param>
+        /// <param name="connectionDetails">The storage account connection details.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
         Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, DurableClientConnectionDetails connectionDetails = null);
 
@@ -234,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets all the status of the orchestration instances.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-        /// <param name="connectionDetails"></param>
+        /// <param name="connectionDetails">The storage account connection details.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         [Obsolete]
         Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken), DurableClientConnectionDetails connectionDetails = null);
@@ -246,6 +247,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
         /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <param name="connectionDetails">The storage account connection details.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         [Obsolete]
         Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken), DurableClientConnectionDetails connectionDetails = null);
@@ -255,6 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <param name="connectionDetails">The storage account connection details.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         [Obsolete]
         Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken, DurableClientConnectionDetails connectionDetails = null);
