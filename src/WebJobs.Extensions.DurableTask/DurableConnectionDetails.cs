@@ -4,17 +4,17 @@
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// 
+    /// Storage account connection details to perform operations on orchestrator and entity functions across function apps.
     /// </summary>
-    public class DurableClientConnectionDetails
+    public class DurableConnectionDetails
     {
         /// <summary>
-        /// 
+        /// The task hub name associated with the target function.
         /// </summary>
         public string TaskHub { get; set; }
 
         /// <summary>
-        /// 
+        /// The connection name associated with the target function.
         /// </summary>
         public string ConnectionName { get; set; }
     }

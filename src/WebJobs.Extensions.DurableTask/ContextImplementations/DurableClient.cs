@@ -152,7 +152,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input, DurableClientConnectionDetails connectionDetails)
+        Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
+        {
+            return ((IDurableOrchestrationClient)this).StartNewAsync<T>(orchestratorFunctionName, instanceId, input, null);
+        }
+
+        /// <inheritdoc />
+        async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input, DurableConnectionDetails connectionDetails)
         {
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -216,9 +222,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new OrchestrationStatus[0];
         }
 
+        Task IDurableOrchestrationClient.RaiseEventAsync(string instanceId, string eventName, object eventData)
+        {
+            return ((IDurableOrchestrationClient)this).RaiseEventAsync(instanceId, eventName, eventData, null);
+        }
+
         /// <inheritdoc />
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
-        Task IDurableOrchestrationClient.RaiseEventAsync(string instanceId, string eventName, object eventData, DurableClientConnectionDetails connectionDetails)
+        Task IDurableOrchestrationClient.RaiseEventAsync(string instanceId, string eventName, object eventData, DurableConnectionDetails connectionDetails)
         {
             if (string.IsNullOrEmpty(eventName))
             {
@@ -242,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            var connectionDetails = new DurableClientConnectionDetails()
+            var connectionDetails = new DurableConnectionDetails()
             {
                 TaskHub = taskHubName,
                 ConnectionName = connectionName,
@@ -252,7 +263,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         private async Task RaiseEventInternalAsync(
-            DurableClientConnectionDetails connectionDetails,
+            DurableConnectionDetails connectionDetails,
             string instanceId,
             string eventName,
             object eventData)
@@ -293,7 +304,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason, DurableClientConnectionDetails connectionDetails)
+        Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
+        {
+            return ((IDurableOrchestrationClient)this).TerminateAsync(instanceId, reason, null);
+        }
+
+        /// <inheritdoc />
+        async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason, DurableConnectionDetails connectionDetails)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
 
@@ -327,7 +344,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task IDurableOrchestrationClient.RewindAsync(string instanceId, string reason, DurableClientConnectionDetails connectionDetails)
+        Task IDurableOrchestrationClient.RewindAsync(string instanceId, string reason)
+        {
+            return ((IDurableOrchestrationClient)this).RewindAsync(instanceId, reason, null);
+        }
+
+        /// <inheritdoc />
+        async Task IDurableOrchestrationClient.RewindAsync(string instanceId, string reason, DurableConnectionDetails connectionDetails)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
 
@@ -361,14 +384,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId, DurableClientConnectionDetails connectionDetails)
+        Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId)
+        {
+            return ((IDurableOrchestrationClient)this).PurgeInstanceHistoryAsync(instanceId, null);
+        }
+
+        /// <inheritdoc />
+        Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus)
+        {
+            return ((IDurableOrchestrationClient)this).PurgeInstanceHistoryAsync(createdTimeFrom, createdTimeTo, runtimeStatus, null);
+        }
+
+        /// <inheritdoc />
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId, DurableConnectionDetails connectionDetails)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
             return await durableClient.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
         }
 
         /// <inheritdoc />
-        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus, DurableClientConnectionDetails connectionDetails)
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus, DurableConnectionDetails connectionDetails)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
             int numInstancesDeleted = await durableClient.DurabilityProvider.PurgeHistoryByFilters(createdTimeFrom, createdTimeTo, runtimeStatus);
@@ -376,7 +411,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, DurableClientConnectionDetails connectionDetails)
+        Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
+        {
+            return ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput, null);
+        }
+
+        /// <inheritdoc />
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, DurableConnectionDetails connectionDetails)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
 
@@ -542,18 +583,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken, DurableClientConnectionDetails connectionDetails)
+        Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken)
+        {
+            return ((IDurableOrchestrationClient)this).GetStatusAsync(cancellationToken, null);
+        }
+
+        /// <inheritdoc />
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken, DurableConnectionDetails connectionDetails)
         {
             return await this.GetAllStatusHelper(connectionDetails, null, null, null, cancellationToken);
         }
 
         /// <inheritdoc />
-        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken, DurableClientConnectionDetails connectionDetails)
+        Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
+        {
+            return ((IDurableOrchestrationClient)this).GetStatusAsync(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken, null);
+        }
+
+        /// <inheritdoc />
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken, DurableConnectionDetails connectionDetails)
         {
             return await this.GetAllStatusHelper(connectionDetails, createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
         }
 
-        private async Task<IList<DurableOrchestrationStatus>> GetAllStatusHelper(DurableClientConnectionDetails connectionDetails, DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
+        private async Task<IList<DurableOrchestrationStatus>> GetAllStatusHelper(DurableConnectionDetails connectionDetails, DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             var condition = this.CreateConditionFromParameters(createdTimeFrom, createdTimeTo, runtimeStatus);
 
@@ -585,40 +638,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken)
+        {
+            return ((IDurableOrchestrationClient)this).GetStatusAsync(condition, cancellationToken, null);
+        }
+
+        /// <inheritdoc />
         Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.GetStatusAsync(
             OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken,
-            DurableClientConnectionDetails connectionDetails)
+            DurableConnectionDetails connectionDetails)
         {
             return ((IDurableOrchestrationClient)this).ListInstancesAsync(condition, cancellationToken, connectionDetails);
+        }
+
+        Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken)
+        {
+            return ((IDurableOrchestrationClient)this).ListInstancesAsync(condition, cancellationToken, null);
         }
 
         /// <inheritdoc />
         Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.ListInstancesAsync(
             OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken,
-            DurableClientConnectionDetails connectionDetails)
+            DurableConnectionDetails connectionDetails)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
             return durableClient.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
         }
 
         /// <inheritdoc />
-        Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, string operationName, object operationInput, DurableClientConnectionDetails connectionDetails)
-        {
-            return this.SignalEntityAsyncInternal(connectionDetails, entityId, null, operationName, operationInput);
-        }
-
-        /// <inheritdoc />
-        Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, DateTime scheduledTimeUtc, string operationName, object operationInput, DurableClientConnectionDetails connectionDetails)
-        {
-            return this.SignalEntityAsyncInternal(connectionDetails, entityId, scheduledTimeUtc, operationName, operationInput);
-        }
-
-        /// <inheritdoc />
         Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, string operationName, object operationInput, string taskHubName, string connectionName)
         {
-            var connectionDetails = new DurableClientConnectionDetails()
+            var connectionDetails = new DurableConnectionDetails()
             {
                 TaskHub = taskHubName,
                 ConnectionName = connectionName,
@@ -630,7 +682,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         Task IDurableEntityClient.SignalEntityAsync(EntityId entityId, DateTime scheduledTimeUtc, string operationName, object operationInput, string taskHubName, string connectionName)
         {
-            var connectionDetails = new DurableClientConnectionDetails()
+            var connectionDetails = new DurableConnectionDetails()
             {
                 TaskHub = taskHubName,
                 ConnectionName = connectionName,
@@ -639,7 +691,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.SignalEntityAsyncInternal(connectionDetails, entityId, scheduledTimeUtc, operationName, operationInput);
         }
 
-        private async Task SignalEntityAsyncInternal(DurableClientConnectionDetails connectionDetails, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
+        private async Task SignalEntityAsyncInternal(DurableConnectionDetails connectionDetails, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
         {
             if (operationName == null)
             {
@@ -684,15 +736,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<EntityStateResponse<T>> IDurableEntityClient.ReadEntityStateAsync<T>(EntityId entityId, DurableClientConnectionDetails connectionDetails)
-        {
-            return this.ReadEntityStateAsyncInternal<T>(connectionDetails, entityId);
-        }
-
-        /// <inheritdoc />
         Task<EntityStateResponse<T>> IDurableEntityClient.ReadEntityStateAsync<T>(EntityId entityId, string taskHubName, string connectionName)
         {
-            var connectionDetails = new DurableClientConnectionDetails
+            var connectionDetails = new DurableConnectionDetails
             {
                 TaskHub = taskHubName,
                 ConnectionName = connectionName,
@@ -701,7 +747,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.ReadEntityStateAsyncInternal<T>(connectionDetails, entityId);
         }
 
-        private async Task<EntityStateResponse<T>> ReadEntityStateAsyncInternal<T>(DurableClientConnectionDetails connectionDetails, EntityId entityId)
+        private async Task<EntityStateResponse<T>> ReadEntityStateAsyncInternal<T>(DurableConnectionDetails connectionDetails, EntityId entityId)
         {
             var durableClient = this.GetDurableClient(connectionDetails);
 
@@ -715,7 +761,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken, DurableClientConnectionDetails connectionDetails)
+        Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
+        {
+            return ((IDurableEntityClient)this).ListEntitiesAsync(query, cancellationToken, null);
+        }
+
+        /// <inheritdoc />
+        async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken, DurableConnectionDetails connectionDetails)
         {
             var condition = new OrchestrationStatusQueryCondition(query);
             var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken, connectionDetails);
@@ -723,7 +775,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return entityResult;
         }
 
-        private DurableClient GetDurableClient(DurableClientConnectionDetails connectionDetails)
+        private DurableClient GetDurableClient(DurableConnectionDetails connectionDetails)
         {
             var attribute = new DurableClientAttribute
             {
