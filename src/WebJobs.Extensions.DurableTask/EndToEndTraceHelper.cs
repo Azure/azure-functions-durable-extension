@@ -426,7 +426,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: isReplay);
 
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' received a '{eventName}' event. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: isReplay);
 
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' saved a '{eventName}' event to an in-memory queue. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
@@ -743,7 +743,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: isReplay);
-            if (this.ShouldLogEvent(isReplay: false))
+            if (this.ShouldLogEvent(isReplay))
             {
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' was resumed by a timer scheduled for '{expirationTime}'. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
