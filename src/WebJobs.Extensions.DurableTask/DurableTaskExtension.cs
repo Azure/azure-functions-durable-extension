@@ -66,7 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
-        private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
@@ -124,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = orchestrationServiceFactory;
-            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.DurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
@@ -190,6 +189,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
 
         internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
+
+        internal DurabilityProvider DurabilityProvider { get; private set; }
 
         private MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
@@ -290,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
-            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.DurabilityProvider, this, this);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
@@ -360,7 +361,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
-            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.DurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
             var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
@@ -374,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.Options.TraceConfiguration(
                 this.TraceHelper,
-                this.defaultDurabilityProvider.ConfigurationJson);
+                this.DurabilityProvider.ConfigurationJson);
         }
 
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
@@ -396,7 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
-            return this.defaultDurabilityProvider.DeleteAsync();
+            return this.DurabilityProvider.DeleteAsync();
         }
 
         /// <summary>
@@ -422,7 +423,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return new TaskOrchestrationShim(this, this.defaultDurabilityProvider, name);
+                return new TaskOrchestrationShim(this, this.DurabilityProvider, name);
             }
         }
 
@@ -738,7 +739,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetDefaultConnectionName()
         {
-            return this.defaultDurabilityProvider.ConnectionName;
+            return this.DurabilityProvider.ConnectionName;
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
@@ -998,7 +999,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             writeToUserLogs: true);
 
                         Stopwatch sw = Stopwatch.StartNew();
-                        await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
+                        await this.DurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
                         this.TraceHelper.ExtensionInformationalEvent(

@@ -398,5 +398,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             errorMessage = null;
             return true;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="durabilityProvider"></param>
+        /// <returns></returns>
+        public virtual bool ConnectionNameMatches(DurabilityProvider durabilityProvider)
+        {
+            return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
+        }
     }
 }

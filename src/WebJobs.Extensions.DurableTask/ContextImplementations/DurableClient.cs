@@ -809,14 +809,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
         {
-            var storageProvider = this.config.Options.StorageProvider;
-            if (storageProvider.TryGetValue("ConnectionStringName", out object connectionName))
-            {
-                var newConnectionName = client.DurabilityProvider.ConnectionName;
-                return newConnectionName.Equals(connectionName);
-            }
-
-            return false;
+            return this.config.DurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
         }
 
         internal static JToken ParseToJToken(string value)
