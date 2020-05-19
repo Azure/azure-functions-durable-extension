@@ -987,7 +987,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var result = await ctx.CallActivityAsync<int>(nameof(UnconstructibleClass.UncallableActivity), null);
             }
 #if FUNCTIONS_V1
-                catch (FunctionFailedException e) when (e.Message == "The activity function 'UncallableActivity' failed: \"Exception has been thrown by the target of an invocation.\". See the function execution logs for additional details.")
+            catch (FunctionFailedException e) when (e.Message == "The activity function 'UncallableActivity' failed: \"Exception has been thrown by the target of an invocation.\". See the function execution logs for additional details.")
 #else
             catch (FunctionFailedException e) when (e.Message == "The activity function 'UncallableActivity' failed: \"Exception of type 'System.Exception' was thrown.\". See the function execution logs for additional details.")
 #endif

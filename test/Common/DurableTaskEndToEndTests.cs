@@ -2049,7 +2049,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.HandleUncallableOrchestrator),
+                nameof(this.HandleUncallableFunctions),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
