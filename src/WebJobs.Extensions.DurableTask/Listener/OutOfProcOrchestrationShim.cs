@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
@@ -85,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
             if (execution.CustomStatus != null)
             {
-                ((IDurableOrchestrationContext)this.context).SetCustomStatus(execution.CustomStatus);
+                this.context.SetCustomStatus(execution.CustomStatus);
             }
 
             await this.ProcessAsyncActions(execution.Actions);
