@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly IConnectionStringResolver connectionStringResolver;
         private readonly string defaultConnectionName;
+        private readonly INameResolver nameResolver;
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
@@ -22,9 +23,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
-            IConnectionStringResolver connectionStringResolver)
+            IConnectionStringResolver connectionStringResolver,
+            INameResolver nameResolver)
         {
             this.options = options.Value;
+            this.nameResolver = nameResolver;
             this.azureStorageOptions = new AzureStorageOptions();
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
@@ -142,6 +145,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,
             };
+
+            // When running on App Service VMSS stamps, these environment variables are the best way
+            // to enure unqique worker names
+            string stamp = this.nameResolver.Resolve("WEBSITE_CURRENT_STAMPNAME");
+            string roleInstance = this.nameResolver.Resolve("RoleInstanceId");
+            if (!string.IsNullOrEmpty(stamp) && !string.IsNullOrEmpty(roleInstance))
+            {
+                settings.WorkerId = $"{stamp}:{roleInstance}";
+            }
 
             if (!string.IsNullOrEmpty(this.azureStorageOptions.TrackingStoreNamePrefix))
             {
