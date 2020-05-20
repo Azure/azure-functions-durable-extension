@@ -101,39 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
-            OrchestrationInvocationResult result = await this.InvokeFunctionAsync(orchestratorInfo);
-
-            // In-process exceptions can be handled now, out-of-proc exceptions can only be handled
-            // after replaying their actions.
-            if (!orchestratorInfo.IsOutOfProc && result.WasInProcessExceptionThrown())
-            {
-                this.TraceAndSendExceptionNotification(result.Exception.ToString());
-                var orchestrationException = new OrchestrationFailureException(
-                    $"Orchestrator function '{this.context.Name}' failed: {result.Exception.Message}",
-                    Utils.SerializeCause(result.Exception, innerContext.ErrorDataConverter));
-
-                this.context.OrchestrationException =
-                    ExceptionDispatchInfo.Capture(orchestrationException);
-
-                throw orchestrationException;
-            }
-
-            if (result.ReturnValue != null)
-            {
-                if (orchestratorInfo.IsOutOfProc)
-                {
-                    try
-                    {
-                        await this.outOfProcShim.HandleDurableTaskReplay(result);
-                    }
-                    catch (OrchestrationFailureException ex)
-                    {
-                        this.TraceAndSendExceptionNotification(ex.Details);
-                        this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
-                        throw ex;
-                    }
-                }
-            }
+            await this.InvokeFunctionAsync(orchestratorInfo, innerContext);
 
             // release any locks that were held by the orchestration
             // just in case the application code did not do so already
@@ -166,7 +134,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serializedOutput;
         }
 
-        private async Task<OrchestrationInvocationResult> InvokeFunctionAsync(RegisteredFunctionInfo orchestratorInfo)
+        private async Task InvokeFunctionAsync(
+            RegisteredFunctionInfo orchestratorInfo,
+            OrchestrationContext innerContext)
         {
             try
             {
@@ -175,10 +145,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
                     // Possible performance implications; may need revisiting.
-                    return new OrchestrationInvocationResult()
+                    object returnValue = orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask;
+                    if (returnValue != null)
                     {
-                        ReturnValue = orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask,
-                    };
+                        if (orchestratorInfo.IsOutOfProc)
+                        {
+                            await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
+                            {
+                                ReturnValue = returnValue,
+                            });
+                        } 
+                        else
+                        {
+                            this.context.SetOutput(returnValue);
+                        }
+                    }
                 }
                 else
                 {
@@ -191,17 +172,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     && OutOfProcExceptionHelpers.TryExtractOutOfProcStateJson(e.InnerException, out string returnValue)
                     && !string.IsNullOrEmpty(returnValue))
                 {
-                    return new OrchestrationInvocationResult()
+                    try
                     {
-                        ReturnValue = returnValue,
-                        Exception = e,
-                    };
-                }
+                        await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
+                        {
+                            ReturnValue = returnValue,
+                            Exception = e,
+                        });
 
-                return new OrchestrationInvocationResult
+                        // We know the above line will throw an exception, so this line should never be hit.
+                        throw new InvalidOperationException("Did not properly throw an exception during extension replay for out-of-process exception.");
+                    }
+                    catch (OrchestrationFailureException ex)
+                    {
+                        this.TraceAndSendExceptionNotification(ex.Details);
+                        this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
+                        throw ex;
+                    }
+                } 
+                else
                 {
-                    Exception = e,
-                };
+                    this.TraceAndSendExceptionNotification(e.ToString());
+                    var orchestrationException = new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                        Utils.SerializeCause(e, innerContext.ErrorDataConverter));
+
+                    this.context.OrchestrationException =
+                        ExceptionDispatchInfo.Capture(orchestrationException);
+
+#if !FUNCTIONS_V1
+                    DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Failed, this.context.InstanceId);
+#endif
+
+                    throw orchestrationException;
+                }
             }
             finally
             {
@@ -236,13 +240,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public object ReturnValue { get; set; }
 
             public Exception Exception { get; set; }
-
-            // If an in-process orchestration invocation encounter an exception,
-            // it will not have a return value
-            public bool WasInProcessExceptionThrown()
-            {
-                return this.ReturnValue == null && this.Exception != null;
-            }
         }
     }
 }
