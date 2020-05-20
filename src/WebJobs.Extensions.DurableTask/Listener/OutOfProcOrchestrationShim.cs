@@ -3,18 +3,21 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Not intended for public consumption.
     /// </summary>
-    public class OutOfProcOrchestrationShim
+    internal class OutOfProcOrchestrationShim
     {
         private readonly IDurableOrchestrationContext context;
 
@@ -42,9 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScheduledSignalEntity = 10,
         }
 
-        internal async Task HandleOutOfProcExecutionAsync(JObject executionJson)
+        public async Task HandleDurableTaskReplay(OrchestrationInvocationResult executionJson)
         {
-            bool moreWorkToDo = await this.ExecuteAsync(executionJson);
+            bool moreWorkToDo = await this.ScheduleDurableTaskEvents(executionJson);
             if (moreWorkToDo)
             {
                 // We must delay indefinitely to prevent the orchestration instance from completing.
@@ -57,22 +60,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Not intended for public consumption.
         /// </summary>
-        /// <param name="executionJson">The result of the out-of-proc execution.</param>
+        /// <param name="result">The result of the out-of-proc execution.</param>
         /// <returns><c>true</c> if there are more executions to process; <c>false</c> otherwise.</returns>
-        public async Task<bool> ExecuteAsync(JObject executionJson)
+        internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(executionJson.ToString());
+            var jObj = result.ReturnValue as JObject;
+            if (jObj == null && result.ReturnValue is string jsonText)
+            {
+                try
+                {
+                    jObj = JObject.Parse(jsonText);
+                }
+                catch
+                {
+                    throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                }
+            }
+
+            if (jObj == null)
+            {
+                throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+            }
+
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
             if (execution.CustomStatus != null)
             {
-                this.context.SetCustomStatus(execution.CustomStatus);
+                ((IDurableOrchestrationContext)this.context).SetCustomStatus(execution.CustomStatus);
             }
 
             await this.ProcessAsyncActions(execution.Actions);
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
-                throw new FunctionFailedException(
-                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}");
+                string exceptionDetails = $"Message: {execution.Error}, StackTrace: {result.Exception.StackTrace}";
+                throw new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
+                        exceptionDetails);
             }
 
             if (execution.IsDone)
