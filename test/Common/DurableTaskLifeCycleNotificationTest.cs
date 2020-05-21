@@ -416,7 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
         {
-            var testName = nameof(this.OrchestrationFailed);
+            var testName = nameof(this.OrchestrationFailedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";

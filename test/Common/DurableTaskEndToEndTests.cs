@@ -203,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.HelloWorldOrchestration_Inline),
+                nameof(this.ParentInstanceId_Not_Assigned_In_Orchestrator),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
@@ -1502,7 +1502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task SubOrchestration_Requires_Different_Id_Than_Parent(bool extendedSessions)
         {
-            const string TaskHub = nameof(this.SubOrchestration_ComplexType);
+            const string TaskHub = nameof(this.SubOrchestration_Requires_Different_Id_Than_Parent);
             using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, extendedSessions))
             {
                 await host.StartAsync();
@@ -1994,7 +1994,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.Orchestration_OnValidOrchestrator),
+                nameof(this.ThrowExceptionOnLongTimer),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
@@ -2033,7 +2033,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.Orchestration_OnUnregisteredActivity),
+                nameof(this.Orchestration_OnUnregisteredOrchestrator),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {

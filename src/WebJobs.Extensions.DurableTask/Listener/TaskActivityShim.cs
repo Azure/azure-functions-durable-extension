@@ -93,6 +93,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // without the outer FunctionInvocationException.
                     Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
 
+                    if (OutOfProcExceptionHelpers.TryGetExceptionWithFriendlyMessage(
+                        exceptionToReport,
+                        out Exception friendlyMessageException))
+                    {
+                        exceptionToReport = friendlyMessageException;
+                    }
+
                     this.config.TraceHelper.FunctionFailed(
                         this.config.Options.HubName,
                         this.activityName,

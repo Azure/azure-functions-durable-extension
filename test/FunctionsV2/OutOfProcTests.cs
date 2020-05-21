@@ -15,6 +15,7 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -67,7 +68,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            bool moreWork = await shim.ExecuteAsync(jsonObject);
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
+            {
+                ReturnValue = jsonObject,
+            };
+            bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             // The request should not have completed because one additional replay is needed
             // to handle the result of CallHttpAsync. However, this test doesn't care about
@@ -127,7 +132,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            await shim.ExecuteAsync(jsonObject);
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
+            {
+                ReturnValue = jsonObject,
+            };
+            bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             Assert.NotNull(request);
             Assert.Equal(HttpMethod.Get, request.Method);
