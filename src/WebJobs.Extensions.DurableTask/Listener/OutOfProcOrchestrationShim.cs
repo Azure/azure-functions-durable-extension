@@ -44,6 +44,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScheduledSignalEntity = 10,
         }
 
+        // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
+        // with user code.
         public async Task HandleDurableTaskReplay(OrchestrationInvocationResult executionJson)
         {
             bool moreWorkToDo = await this.ScheduleDurableTaskEvents(executionJson);
@@ -56,11 +58,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        /// <summary>
-        /// Not intended for public consumption.
-        /// </summary>
-        /// <param name="result">The result of the out-of-proc execution.</param>
-        /// <returns><c>true</c> if there are more executions to process; <c>false</c> otherwise.</returns>
         internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
             var jObj = result.ReturnValue as JObject;
@@ -78,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (jObj == null)
             {
-                throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
             }
 
             var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());

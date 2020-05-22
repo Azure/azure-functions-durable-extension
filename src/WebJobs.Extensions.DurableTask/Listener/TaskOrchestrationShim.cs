@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
-            await this.InvokeFunctionAsync(orchestratorInfo, innerContext);
+            await this.InvokeUserCodeAndHandleResults(orchestratorInfo, innerContext);
 
             // release any locks that were held by the orchestration
             // just in case the application code did not do so already
@@ -134,7 +134,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serializedOutput;
         }
 
-        private async Task InvokeFunctionAsync(
+        // Responsible for invoking the function, handling the exception, set the output, and if
+        // the function execution is out-of-process, handles the replay.
+        private async Task InvokeUserCodeAndHandleResults(
             RegisteredFunctionInfo orchestratorInfo,
             OrchestrationContext innerContext)
         {
@@ -179,9 +181,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             ReturnValue = returnValue,
                             Exception = e,
                         });
-
-                        // We know the above line will throw an exception, so this line should never be hit.
-                        throw new InvalidOperationException("Did not properly throw an exception during extension replay for out-of-process exception.");
                     }
                     catch (OrchestrationFailureException ex)
                     {
