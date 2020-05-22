@@ -25,13 +25,13 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     }";
 
         [TestMethod]
-        public void StaticFunction_NonIssue()
+        public void StaticFunction_NoDiagnosticTestCases()
         {
             VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
-        public void StaticFunction_NonStatic()
+        public void StaticFunction_NotStatic()
         {
             var test = @"
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly DiagnosticSeverity Severity = DispatchEntityNameAnalyzer.Severity;
 
         private const string ExpectedFix = @"
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -25,15 +26,17 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     }";
 
         [TestMethod]
-        public void DispatchCall_NonIssue()
+        public void DispatchCall_NoDiagnosticTestCases()
         {
             VerifyCSharpDiagnostic(ExpectedFix);
         }
 
+        // Tests SyntaxKind.IdentifierName
         [TestMethod]
-        public void DispatchCall_Object()
+        public void DispatchCall_UsingObject()
         {
             var test = @"
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -48,7 +51,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 7, 96)
+                            new DiagnosticResultLocation("Test0.cs", 8, 96)
                      }
             };
 
@@ -57,10 +60,12 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
             VerifyCSharpFix(test, ExpectedFix);
         }
 
+        // Tests SyntaxKind.PredefinedType
         [TestMethod]
-        public void DispatchCall_String()
+        public void DispatchCall_UsingString()
         {
             var test = @"
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -75,7 +80,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 7, 96)
+                            new DiagnosticResultLocation("Test0.cs", 8, 96)
                      }
             };
 
@@ -84,10 +89,99 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
             VerifyCSharpFix(test, ExpectedFix);
         }
 
+        // Tests SyntaxKind.GenericName
+        [TestMethod]
+        public void DispatchCall_UsingList()
+        {
+            var test = @"
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+ public class MyEmptyEntity : IMyEmptyEntity
+    {
+        [FunctionName(""MyEmptyEntity"")]
+        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<List<string>>();
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "List<string>", "MyEmptyEntity"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                     }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
+        }
+
+        // Tests SyntaxKind.ArrayType
+        [TestMethod]
+        public void DispatchCall_UsingArray()
+        {
+            var test = @"
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+ public class MyEmptyEntity : IMyEmptyEntity
+    {
+        [FunctionName(""MyEmptyEntity"")]
+        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<string[]>();
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "string[]", "MyEmptyEntity"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                     }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
+        }
+
+        // Tests SyntaxKind.TupleType
+        [TestMethod]
+        public void DispatchCall_UsingValueTuple()
+        {
+            var test = @"
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+ public class MyEmptyEntity : IMyEmptyEntity
+    {
+        [FunctionName(""MyEmptyEntity"")]
+        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<(string, int)>();
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "(string, int)", "MyEmptyEntity"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                     }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+
+            VerifyCSharpFix(test, ExpectedFix);
+        }
+
+        // Tests interface not defined in user code
         [TestMethod]
         public void DispatchCall_ILogger()
         {
             var test = @"
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -102,34 +196,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 7, 96)
-                     }
-            };
-
-            VerifyCSharpDiagnostic(test, expectedDiagnostics);
-
-            VerifyCSharpFix(test, ExpectedFix);
-        }
-
-        [TestMethod]
-        public void DispatchCall_Tuple()
-        {
-            var test = @"
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-
- public class MyEmptyEntity : IMyEmptyEntity
-    {
-        [FunctionName(""MyEmptyEntity"")]
-        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<Tuple<int, string>>();
-    }";
-            var expectedDiagnostics = new DiagnosticResult
-            {
-                Id = DiagnosticId,
-                Message = string.Format(Resources.DispatchEntityNameAnalyzerMessageFormat, "Tuple<int, string>", "MyEmptyEntity"),
-                Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 7, 96)
+                            new DiagnosticResultLocation("Test0.cs", 8, 96)
                      }
             };
 

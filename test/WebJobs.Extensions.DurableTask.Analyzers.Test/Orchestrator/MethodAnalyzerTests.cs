@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly DiagnosticSeverity Severity = MethodAnalyzer.Severity;
 
         [TestMethod]
-        public void MethodCallsInOrchestrator_NonIssueCalls()
+        public void MethodCallsInOrchestrator_NoDiagnosticTestCases()
         {
             var test = @"
 using System;

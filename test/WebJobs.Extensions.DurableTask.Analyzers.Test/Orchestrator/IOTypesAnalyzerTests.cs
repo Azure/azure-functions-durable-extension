@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }";
 
         [TestMethod]
-        public void IOTypes_NonIssueCalls()
+        public void IOTypes_NoDiagnosticTestCases()
         {
             var test = @"
     using System;

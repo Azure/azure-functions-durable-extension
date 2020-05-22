@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly string DiagnosticId = DateTimeAnalyzer.DiagnosticId;
         private static readonly DiagnosticSeverity Severity = DateTimeAnalyzer.Severity;
 
-        private const string allTests = @"
+        private const string allNonDiagnosticTestCases = @"
         public void dateTimeNow()
         {
             System.DateTime.Now;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }";
 
         [TestMethod]
-        public void DateTime_InMethod_NonIssueCalls()
+        public void DateTime_NotOrchestrator_NoDiagnosticTestCases()
         {
             var test = @"
     using System;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         public static class DateTimeNowExample
         {
             [FunctionName(""E1_HelloSequence"")]
-            " + allTests;
+            " + allNonDiagnosticTestCases;
 
             VerifyCSharpDiagnostic(test);
         }
@@ -312,7 +312,7 @@ namespace VSSample
 
         public static string DirectCall()
         {
-            " + allTests;
+            " + allNonDiagnosticTestCases;
 
 
             var expectedDiagnostics = new DiagnosticResult[7];

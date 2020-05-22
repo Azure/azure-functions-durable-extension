@@ -15,26 +15,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly DiagnosticSeverity Severity = ClassNameAnalyzer.Severity;
 
         [TestMethod]
-        public void ClassName_NonIssue()
+        public void ClassName_NoDiagnosticMatch()
         {
             var test = @"
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace ExternalInteraction
+namespace VSSample
 {
-    public static class HireEmployee
+    public static class HelloSequence
     {
-        [FunctionName(""HireEmployee"")]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
+        [FunctionName(""HelloSequence"")]
+        public static async Task<Application> Run(
+            [EntityTrigger] IDurableEntityContext context)
             {
             }
 }";
@@ -42,26 +36,20 @@ namespace ExternalInteraction
         }
 
         [TestMethod]
-        public void ClassName_NonIssue_NameOf()
+        public void ClassName_NoDiagnosticNameOf()
         {
             var test = @"
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace ExternalInteraction
+namespace VSSample
 {
-    public static class HireEmployee
+    public static class HelloSequence
     {
-        [FunctionName(nameof(HireEmployee))]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
+        [FunctionName(nameof(HelloSequence))]
+        public static async Task<Application> Run(
+            [EntityTrigger] IDurableEntityContext context)
             {
             }
 }";
@@ -70,26 +58,20 @@ namespace ExternalInteraction
         }
 
         [TestMethod]
-        public void ClassName_NonIssue_NameOf_Namespace()
+        public void ClassName_NoDiagnosticNameOfWithNamespace()
         {
             var test = @"
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace ExternalInteraction
+namespace VSSample
 {
-    public static class HireEmployee
+    public static class HelloSequence
     {
-        [FunctionName(nameof(ExternalInteraction.HireEmployee))]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
+        [FunctionName(nameof(VSSample.HelloSequence))]
+        public static async Task<Application> Run(
+            [EntityTrigger] IDurableEntityContext context)
             {
             }
 }";
@@ -102,22 +84,16 @@ namespace ExternalInteraction
         {
             var test = @"
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace ExternalInteraction
+namespace VSSample
 {
-    public static class HireEmployee
+    public static class HelloSequence
     {
         [FunctionName(""HelloWorld"")]
-        public static async Task<Application> RunOrchestrator(
-            [EntityTrigger] IDurableEntityContext context,
-            ILogger log)
+        public static async Task<Application> Run(
+            [EntityTrigger] IDurableEntityContext context)
             {
             }
 }";
@@ -125,11 +101,11 @@ namespace ExternalInteraction
             var expectedResults = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.EntityClassNameAnalyzerCloseMessageFormat, "HelloWorld", "HireEmployee"),
+                Message = string.Format(Resources.EntityClassNameAnalyzerCloseMessageFormat, "HelloWorld", "HelloSequence"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 23)
+                            new DiagnosticResultLocation("Test0.cs", 10, 23)
                      }
             };
             

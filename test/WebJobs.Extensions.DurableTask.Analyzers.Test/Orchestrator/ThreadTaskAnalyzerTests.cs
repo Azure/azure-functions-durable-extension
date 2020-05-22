@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }";
 
         [TestMethod]
-        public void ThreadTaskInMethod_NonIssueCalls()
+        public void ThreadTaskInMethod_NoDiagnosticTestCases()
         {
             var test = @"
     using System;

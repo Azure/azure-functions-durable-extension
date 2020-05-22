@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
         private static readonly DiagnosticSeverity Severity = InterfaceAnalyzer.Severity;
         
         [TestMethod]
-        public void InterfaceAnalyzer_NonIssue()
+        public void InterfaceAnalyzer_NoDiagnosticTestCases()
         {
             var test = @"
     using System;

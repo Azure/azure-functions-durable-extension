@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
         private static readonly DiagnosticSeverity Severity = ParameterAnalyzer.Severity;
 
         [TestMethod]
-        public void ParameterAnalyzer_NonIssue()
+        public void ParameterAnalyzer_NoDiagnosticTestCases()
         {
             var test = @"
     using System;
