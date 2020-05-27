@@ -2977,13 +2977,6 @@
             </summary>
             <param name="context">The orchestration execution context.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ScheduleDurableTaskEvents(Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim.OrchestrationInvocationResult)">
-            <summary>
-            Not intended for public consumption.
-            </summary>
-            <param name="result">The result of the out-of-proc execution.</param>
-            <returns><c>true</c> if there are more executions to process; <c>false</c> otherwise.</returns>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.

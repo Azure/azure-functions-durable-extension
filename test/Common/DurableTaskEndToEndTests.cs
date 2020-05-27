@@ -1096,7 +1096,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var extendedSessions = false;
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.WaitForExternalEventWithTimeout),
+                nameof(this.WaitForExternalEventWithTooLargeTimeout),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -1344,7 +1344,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_ComplexType(string storageProvider)
         {
-            await this.SubOrchestration_ComplexType_Main_Logic(storageProvider);
+            await this.SubOrchestration_ComplexType_Main_Logic(nameof(this.SubOrchestration_ComplexType), storageProvider);
         }
 
         /// <summary>
@@ -1355,7 +1355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_ComplexType_History(string storageProvider)
         {
-            await this.SubOrchestration_ComplexType_Main_Logic(storageProvider, showHistory: true);
+            await this.SubOrchestration_ComplexType_Main_Logic(nameof(this.SubOrchestration_ComplexType_History), storageProvider, showHistory: true);
         }
 
         /// <summary>
@@ -1366,7 +1366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task SubOrchestration_ComplexType_HistoryInputOutput(string storageProvider)
         {
-            await this.SubOrchestration_ComplexType_Main_Logic(storageProvider, showHistory: true, showHistoryOutput: true);
+            await this.SubOrchestration_ComplexType_Main_Logic(nameof(this.SubOrchestration_ComplexType_HistoryInputOutput), storageProvider, showHistory: true, showHistoryOutput: true);
         }
 
         /// <summary>
@@ -1375,9 +1375,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task SubOrchestration_Has_Valid_ParentInstanceId_Assigned(bool extendedSessions, string storageProvider)
+        public async Task SubOrchestration_ParentInstanceId_Assigned(bool extendedSessions, string storageProvider)
         {
-            const string TaskHub = nameof(this.SubOrchestration_ComplexType);
+            const string TaskHub = nameof(this.SubOrchestration_ParentInstanceId_Assigned);
             using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, extendedSessions, storageProviderType: storageProvider))
             {
                 await host.StartAsync();
@@ -1403,10 +1403,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private async Task SubOrchestration_ComplexType_Main_Logic(string storageProvider, bool showHistory = false, bool showHistoryOutput = false)
+        private async Task SubOrchestration_ComplexType_Main_Logic(string taskHub, string storageProvider, bool showHistory = false, bool showHistoryOutput = false)
         {
-            const string TaskHub = nameof(this.SubOrchestration_ComplexType);
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, enableExtendedSessions: false, storageProviderType: storageProvider))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, taskHub, enableExtendedSessions: false, storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 

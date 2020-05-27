@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task DurableEntity_EntityWithDependencyInjectionAndBindings(bool extendedSessions)
+        public async Task DurableEntity_DependencyInjectionAndBindings(bool extendedSessions)
         {
             string[] orchestratorFunctionNames =
             {
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_EntityWithDependencyInjection),
+                nameof(this.DurableEntity_DependencyInjectionAndBindings),
                 extendedSessions,
                 nameResolver: new TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableResolver()))
             {

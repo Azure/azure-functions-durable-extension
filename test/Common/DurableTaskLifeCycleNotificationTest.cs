@@ -300,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task OrchestrationStartedOptOutOfEvent(bool extendedSessionsEnabled)
         {
-            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var testName = nameof(this.OrchestrationStartedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.SayHelloInline);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task OrchestrationCompletedOptOutOfEvent(bool extendedSessionsEnabled)
         {
-            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var testName = nameof(this.OrchestrationCompletedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.SayHelloInline);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
