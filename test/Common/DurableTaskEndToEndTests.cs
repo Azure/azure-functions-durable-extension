@@ -1375,9 +1375,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task SubOrchestration_Has_Valid_ParentInstanceId_Assigned(bool extendedSessions, string storageProvider)
+        public async Task SubOrchestration_ParentInstanceId_Assigned(bool extendedSessions, string storageProvider)
         {
-            const string TaskHub = nameof(this.SubOrchestration_Has_Valid_ParentInstanceId_Assigned);
+            const string TaskHub = nameof(this.SubOrchestration_ParentInstanceId_Assigned);
             using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, TaskHub, extendedSessions, storageProviderType: storageProvider))
             {
                 await host.StartAsync();
