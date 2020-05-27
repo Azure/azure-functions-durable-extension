@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_EntityWithDependencyInjection),
+                nameof(this.DurableEntity_EntityWithDependencyInjectionAndBindings),
                 extendedSessions,
                 nameResolver: new TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableResolver()))
             {

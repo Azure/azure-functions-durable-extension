@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.BindToDurableClientAsString),
+                nameof(this.BindToDurableClientAsString) + localRcpEnabled.ToString(),
                 enableExtendedSessions: false,
                 localRpcEndpointEnabled: localRcpEnabled,
                 notificationUrl: testNotificationUrl))
