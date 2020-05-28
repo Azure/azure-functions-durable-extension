@@ -336,6 +336,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionTerminated(this.TaskHubName, state.Name, instanceId, reason);
+#if !FUNCTIONS_V1
+                DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Terminated, instanceId);
+#endif
+
             }
             else
             {
