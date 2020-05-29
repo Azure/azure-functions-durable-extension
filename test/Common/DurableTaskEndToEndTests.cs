@@ -3531,7 +3531,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_EntityProxy),
+                nameof(this.DurableEntity_EntityProxy_NameResolve),
                 extendedSessions))
             {
                 await host.StartAsync();
