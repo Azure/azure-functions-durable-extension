@@ -67,12 +67,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                returnTypeNode = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.ArrayType)).FirstOrDefault();
-                return true;
+                return TryGetChildTypeNode(methodDeclaration, out returnTypeNode);
             }
 
             returnTypeNode = null;
             return false;
+        }
+
+        private static bool TryGetChildTypeNode(SyntaxNode node, out SyntaxNode childTypeNode)
+        {
+            childTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.ArrayType) || x.IsKind(SyntaxKind.TupleType)).FirstOrDefault();
+            return childTypeNode != null;
         }
 
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
@@ -175,7 +180,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
+            var newSemanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
+            if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
             {
                 return true;
             }
@@ -268,8 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         internal static bool TryGetParameterNodeNextToAttribute(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
-            inputType = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
-            return inputType != null;
+            return TryGetChildTypeNode(parameter, out inputType);
         }
 
         internal static bool TryGetTypeArgumentNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
@@ -312,7 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
                     if (tupleUnderlyingType != null)
                     {
-                        return $"System.Tuple<{string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))}>";
+                        return $"({string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))})";
                     }
 
                     return typeInfo.ToString();
@@ -342,11 +347,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return invocationType.Equals(definitionType)
-                || AreEqualTupleTypes(invocationType, definitionType)
-                || AreCompatibleIEnumerableTypes(invocationType, definitionType);
+                || AreCompatibleIEnumerableTypes(invocationType, definitionType)
+                || AreEqualQualifiedTypeNames(invocationType, definitionType);
         }
 
-        private static bool AreEqualTupleTypes(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        private static bool AreEqualQualifiedTypeNames(ITypeSymbol invocationType, ITypeSymbol definitionType)
         {
             var invocationQualifiedName = GetQualifiedTypeName(invocationType);
             var definitionQualifiedName = GetQualifiedTypeName(definitionType);
@@ -358,11 +363,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (AreArrayOrNamedTypes(invocationType, functionType) && UnderlyingTypesMatch(invocationType, functionType))
             {
-                return ((invocationType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable")))
-                    && (functionType.AllInterfaces.Any(i => i.Name.Equals("IEnumerable"))));
+                return TypeNodeImplementsOrExtendsType(invocationType, "IEnumerable")
+                    && TypeNodeImplementsOrExtendsType(functionType, "IEnumerable");
             }
 
             return false;
+        }
+
+        public static bool TypeNodeImplementsOrExtendsType(ITypeSymbol node, string interfaceOrBase)
+        {
+            if (string.IsNullOrEmpty(interfaceOrBase))
+            {
+                return false;
+            }
+
+            return node.AllInterfaces.Any(i => i.Name.Equals(interfaceOrBase))
+                || TypeNodeIsSubclass(node, interfaceOrBase);
+
+        }
+
+        private static bool TypeNodeIsSubclass(ITypeSymbol node, string baseClass)
+        {
+            if (node == null || string.IsNullOrEmpty(baseClass))
+            {
+                return false;
+            }
+
+            var curr = node.BaseType;
+            while (curr != null)
+            {
+                if (curr.ToString().Equals(baseClass))
+                {
+                    return true;
+                }
+
+                curr = curr.BaseType;
+            }
+
+            return false;
+
         }
 
         private static bool AreArrayOrNamedTypes(ITypeSymbol invocationType, ITypeSymbol functionType)

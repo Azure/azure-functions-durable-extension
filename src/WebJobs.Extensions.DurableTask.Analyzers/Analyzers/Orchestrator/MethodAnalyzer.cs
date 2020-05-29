@@ -58,8 +58,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             foreach (MethodInformation method in methodInformationList)
             {
-                var methodDeclaration = (MethodDeclarationSyntax)method.Declaration;
-                
                 if (!method.IsDeterministic)
                 {
                     var invocation = method.Invocation;

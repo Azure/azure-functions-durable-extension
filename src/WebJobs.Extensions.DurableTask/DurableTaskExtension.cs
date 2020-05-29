@@ -359,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
+            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver, this.nameResolver);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
@@ -512,6 +512,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
+                        context.ExecutorCalledBack = true;
+
                         // 2. Configure the shim with the inner invoker to execute the user code.
                         shim.SetFunctionInvocationCallback(userCodeInvoker);
 
@@ -526,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
+                context,
                 this.hostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
@@ -688,6 +691,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
+                        entityContext.ExecutorCalledBack = true;
+
                         entityShim.SetFunctionInvocationCallback(userCodeInvoker);
 
                         // 3. Run all the operations in the batch
@@ -713,6 +718,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
+                entityContext,
                 this.hostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
@@ -1108,5 +1114,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return payload;
         }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
+        /// This metadata will show up in Application Insights, if enabled.
+        /// </summary>
+        internal static void TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus status, string instanceId, bool isEntity = false)
+        {
+            // Adding "Tags" to activity allows using Application Insights to query current state of orchestrations
+            Activity activity = Activity.Current;
+            string functionsType = isEntity ? "Entity" : "Orchestrator";
+
+            // The activity may be null when running unit tests, but should be non-null otherwise
+            if (activity != null)
+            {
+                string statusStr = Enum.GetName(status.GetType(), status);
+                activity.AddTag("DurableFunctionsType", functionsType);
+                activity.AddTag("DurableFunctionsInstanceId", instanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
+            }
+        }
+#endif
     }
 }
