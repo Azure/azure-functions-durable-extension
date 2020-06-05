@@ -522,6 +522,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ThrowExceptionOnInvalidDedupeStatus = true,
             };
 
+            string stamp = this.nameResolver.Resolve("WEBSITE_CURRENT_STAMPNAME");
+            string roleInstance = this.nameResolver.Resolve("RoleInstanceId");
+            if (!string.IsNullOrEmpty(stamp) && !string.IsNullOrEmpty(roleInstance))
+            {
+                settings.WorkerId = $"{stamp}:{roleInstance}";
+            }
+
             if (!string.IsNullOrEmpty(this.Options.TrackingStoreNamePrefix))
             {
                 settings.TrackingStoreNamePrefix = this.Options.TrackingStoreNamePrefix;
