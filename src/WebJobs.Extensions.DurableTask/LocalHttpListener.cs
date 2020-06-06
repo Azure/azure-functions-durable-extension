@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -18,19 +20,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class LocalHttpListener : IDisposable
     {
+        private const int DefaultPort = 17071;
+
         private readonly DurableTaskExtension extension;
         private readonly IWebHost localWebHost;
         private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
 
         public LocalHttpListener(
             DurableTaskExtension extension,
-            Uri listenUri,
             Func<HttpRequestMessage, Task<HttpResponseMessage>> handler)
         {
             this.extension = extension ?? throw new ArgumentNullException(nameof(extension));
             this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
-            this.localWebHost = this.CreateWebHost(listenUri);
+#if !FUNCTIONS_V1
+            this.InternalRpcUri = new Uri($"http://127.0.0.1:{this.GetAvailablePort()}/durabletask/");
+            var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
+            this.localWebHost = new WebHostBuilder()
+                .UseKestrel()
+                .UseUrls(listenUri.OriginalString)
+                .Configure(a => a.Run(this.HandleRequestAsync))
+                .Build();
+#else
+            // Just use default port for internal Uri. No need to check for port availability since
+            // we won't be listening to this endpoint.
+            this.InternalRpcUri = new Uri($"http://127.0.0.1:{DefaultPort}/durabletask/");
+            this.localWebHost = new NoOpWebHost();
+#endif
         }
+
+        public Uri InternalRpcUri { get; }
 
         public bool IsListening { get; private set; }
 
@@ -45,11 +63,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if !FUNCTIONS_V1
             await this.localWebHost.StartAsync();
+            this.IsListening = true;
 #else
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
 #endif
-            this.IsListening = true;
+        }
+
+        public int GetAvailablePort()
+        {
+            // If we are able to successfully start a listener looking on the default port without
+            // an exception, we can use the default port. Otherwise, let the TcpListener class decide for us.
+            try
+            {
+                var listener = new TcpListener(IPAddress.Loopback, DefaultPort);
+                listener.Start();
+                listener.Stop();
+                return DefaultPort;
+            }
+            catch (SocketException)
+            {
+                // Following guidance of this stack overflow answer
+                // to find available port: https://stackoverflow.com/a/150974/9035640
+                var listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                int availablePort = ((IPEndPoint)listener.LocalEndpoint).Port;
+                listener.Stop();
+                return availablePort;
+            }
         }
 
         public async Task StopAsync()
