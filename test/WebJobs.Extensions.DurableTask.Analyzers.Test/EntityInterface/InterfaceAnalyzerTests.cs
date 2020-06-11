@@ -19,29 +19,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
         public void InterfaceAnalyzer_NoDiagnosticTestCases()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();
             }
 
-            public static async Task<List<string>> NotFunction(
+            public static async Task NotFunction(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();
             }
 
-            public static async Task<List<string>> NotFunctionNotEntity(
+            public static async Task NotFunctionNotEntity(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IAmNotAnEntity>();
@@ -57,21 +57,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test);
         }
 
+        // Tests SyntaxKind.IdentifierName
         [TestMethod]
-        public void InterfaceAnalyzer_Object()
+        public void InterfaceAnalyzer_SignalEntityUsingObject()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<Object>();
@@ -97,61 +98,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
+        // Tests SyntaxKind.PredefinedType
         [TestMethod]
-        public void InterfaceAnalyzer_ILogger()
+        public void InterfaceAnalyzer_SignalEntityUsingString()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                context.SignalEntityAsync<ILogger>();
-            }
-        }
-
-        public interface IEntityExample
-        {
-            public static void methodTest();
-        }
-    }";
-            var expectedDiagnostics = new DiagnosticResult
-            {
-                Id = DiagnosticId,
-                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "ILogger"),
-                Severity = Severity,
-                Locations =
-                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 43)
-                        }
-            };
-
-            VerifyCSharpDiagnostic(test, expectedDiagnostics);
-        }
-
-        [TestMethod]
-        public void InterfaceAnalyzer_String()
-        {
-            var test = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.WebJobs;
-
-    namespace VSSample
-    {
-        public static class HelloSequence
-        {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<string>();
@@ -177,24 +139,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
+        // Tests SyntaxKind.GenericName
         [TestMethod]
-        public void InterfaceAnalyzer_Tuple()
+        public void InterfaceAnalyzer_SignalEntityUsingList()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                context.SignalEntityAsync<Tuple<int, string>>();
+                context.SignalEntityAsync<List<string>>();
             }
         }
 
@@ -206,11 +169,134 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<Tuple<int, string>>"),
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<List<string>>"),
                 Severity = Severity,
                 Locations =
                     new[] {
                             new DiagnosticResultLocation("Test0.cs", 15, 42)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        // Tests SyntaxKind.ArrayType
+        [TestMethod]
+        public void InterfaceAnalyzer_SignalEntityUsingArray()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.SignalEntityAsync<string[]>();
+            }
+        }
+
+        public interface IEntityExample
+        {
+            public static void methodTest();
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<string[]>"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 15, 42)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        // Tests SyntaxKind.TupleType
+        [TestMethod]
+        public void InterfaceAnalyzer_SignalEntityUsingValueTuple()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.SignalEntityAsync<(string, int)>();
+            }
+        }
+
+        public interface IEntityExample
+        {
+            public static void methodTest();
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<(string, int)>"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 15, 42)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        // Tests interface not defined in user code
+        [TestMethod]
+        public void InterfaceAnalyzer_SignalEntityUsingILogger()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""InterfaceAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                context.SignalEntityAsync<ILogger>();
+            }
+        }
+
+        public interface IEntityExample
+        {
+            public static void methodTest();
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "ILogger"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 

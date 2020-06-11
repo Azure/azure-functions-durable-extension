@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         public void ClassName_NoDiagnosticMatch()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -27,7 +28,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""HelloSequence"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] IDurableEntityContext context)
             {
             }
@@ -39,6 +40,7 @@ namespace VSSample
         public void ClassName_NoDiagnosticNameOf()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -48,7 +50,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(nameof(HelloSequence))]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] IDurableEntityContext context)
             {
             }
@@ -61,6 +63,7 @@ namespace VSSample
         public void ClassName_NoDiagnosticNameOfWithNamespace()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -70,7 +73,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(nameof(VSSample.HelloSequence))]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] IDurableEntityContext context)
             {
             }
@@ -83,6 +86,7 @@ namespace VSSample
         public void ClasName_Mismatch()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -92,7 +96,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""HelloWorld"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] IDurableEntityContext context)
             {
             }
@@ -105,7 +109,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 10, 23)
+                            new DiagnosticResultLocation("Test0.cs", 11, 23)
                      }
             };
             

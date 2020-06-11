@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly DiagnosticSeverity Severity = DispatchEntityNameAnalyzer.Severity;
 
         private const string ExpectedFix = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -36,6 +37,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void DispatchCall_UsingObject()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -51,7 +53,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                            new DiagnosticResultLocation("Test0.cs", 9, 96)
                      }
             };
 
@@ -65,6 +67,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void DispatchCall_UsingString()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -80,7 +83,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                            new DiagnosticResultLocation("Test0.cs", 9, 96)
                      }
             };
 
@@ -94,6 +97,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void DispatchCall_UsingList()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -109,7 +113,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                            new DiagnosticResultLocation("Test0.cs", 9, 96)
                      }
             };
 
@@ -123,6 +127,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void DispatchCall_UsingArray()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -138,7 +143,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                            new DiagnosticResultLocation("Test0.cs", 9, 96)
                      }
             };
 
@@ -152,6 +157,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void DispatchCall_UsingValueTuple()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -167,7 +173,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                            new DiagnosticResultLocation("Test0.cs", 9, 96)
                      }
             };
 
@@ -181,6 +187,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void DispatchCall_ILogger()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
@@ -196,7 +203,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 8, 96)
+                            new DiagnosticResultLocation("Test0.cs", 9, 96)
                      }
             };
 

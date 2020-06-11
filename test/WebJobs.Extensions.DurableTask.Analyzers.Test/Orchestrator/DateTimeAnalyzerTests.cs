@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly DiagnosticSeverity Severity = DateTimeAnalyzer.Severity;
 
         private const string allNonDiagnosticTestCases = @"
-        public void dateTimeNow()
+        public async Task dateTimeNow()
         {
             System.DateTime.Now;
             System.DateTime.UtcNow;
@@ -31,19 +31,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         private const string ExpectedFix = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                context.CurrentUtcDateTime;
+                var dateTime = context.CurrentUtcDateTime;
             }
         }
     }";
@@ -53,35 +53,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         {
             var test = @"
     using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
-        public static class DateTimeNowExample
+        public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
             " + allNonDiagnosticTestCases;
 
             VerifyCSharpDiagnostic(test);
         }
         
         [TestMethod]
-        public void DateTimeInOrchestrator_Now_Namespace()
+        public void DateTime_Now_WithNamespace()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                System.DateTime.Now;
+                var dateTime = System.DateTime.Now;
             }
         }
     }";
@@ -92,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 32)
                         }
             };
 
@@ -102,23 +105,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DateTimeInOrchestrator_UtcNow_Namespace()
+        public void DateTime_UtcNow_WithNamespace()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                System.DateTime.UtcNow;
+                var dateTime = System.DateTime.UtcNow;
             }
         }
     }";
@@ -129,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 32)
                         }
             };
 
@@ -139,23 +142,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DateTimeInOrchestrator_Today_Namespace()
+        public void DateTime_Today_WithNamespace()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                System.DateTime.Today;
+                var dateTime = System.DateTime.Today;
             }
         }
     }";
@@ -166,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 32)
                         }
             };
 
@@ -176,23 +179,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DateTimeInOrchestrator_Now()
+        public void DateTime_Now()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                DateTime.Now;
+                var dateTime = DateTime.Now;
             }
         }
     }";
@@ -203,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 32)
                         }
             };
 
@@ -213,23 +216,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DateTimeInOrchestrator_UtcNow()
+        public void DateTime_UtcNow()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                DateTime.UtcNow;
+                var dateTime = DateTime.UtcNow;
             }
         }
     }";
@@ -240,7 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 32)
                         }
             };
 
@@ -250,23 +253,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DateTimeInOrchestrator_Today()
+        public void DateTime_Today()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                DateTime.Today;
+                var dateTime = DateTime.Today;
             }
         }
     }";
@@ -277,7 +280,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 32)
                         }
             };
 
@@ -287,32 +290,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DateTime_InMethod_OrchestratorCall_All()
+        public void DateTime_NonDeterministicMethod_AllDateTimeCases()
         {
             var test = @"
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace VSSample
-{
-    public static class HelloSequence
+    namespace VSSample
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static class HelloSequence
+        {
+            [FunctionName(""DateTimeAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
-        public static string DirectCall()
-        {
-            " + allNonDiagnosticTestCases;
+            public static string DirectCall()
+            {
+                " + allNonDiagnosticTestCases;
 
 
             var expectedDiagnostics = new DiagnosticResult[7];
@@ -323,7 +322,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
@@ -334,7 +333,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 27, 13)
+                            new DiagnosticResultLocation("Test0.cs", 23, 13)
                         }
             };
 
@@ -345,7 +344,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 28, 13)
+                            new DiagnosticResultLocation("Test0.cs", 24, 13)
                         }
             };
 
@@ -356,7 +355,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 29, 13)
+                            new DiagnosticResultLocation("Test0.cs", 25, 13)
                         }
             };
 
@@ -367,7 +366,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 30, 4)
+                            new DiagnosticResultLocation("Test0.cs", 26, 4)
                         }
             };
 
@@ -378,7 +377,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 31, 4)
+                            new DiagnosticResultLocation("Test0.cs", 27, 4)
                         }
             };
 
@@ -389,7 +388,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 32, 13)
+                            new DiagnosticResultLocation("Test0.cs", 28, 13)
                        }
             };
 

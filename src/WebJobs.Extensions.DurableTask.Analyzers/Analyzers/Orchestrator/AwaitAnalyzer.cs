@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Linq;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Analyzers.Orchestrator
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AwaitAnalyzer

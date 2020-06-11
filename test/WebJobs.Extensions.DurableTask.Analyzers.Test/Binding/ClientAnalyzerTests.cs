@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
         private static readonly DiagnosticSeverity Severity = ClientAnalyzer.Severity;
 
         private const string V1ExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -24,13 +25,14 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] DurableOrchestrationClient client)
             {
             }
 }";
 
         private const string V2ClientExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -40,13 +42,14 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] IDurableClient client)
             {
             }
 }";
 
         private const string V2OrchestrationClientExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -56,13 +59,14 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] IDurableOrchestrationClient client)
             {
             }
 }";
 
         private const string V2EntityClientExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -72,7 +76,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] IDurableEntityClient client)
             {
             }
@@ -101,6 +105,7 @@ namespace VSSample
         public void OrchestrationClient_V1_UsingObject()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -109,7 +114,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] Object client)
             {
             }
@@ -121,7 +126,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
+                            new DiagnosticResultLocation("Test0.cs", 12, 35)
                      }
             };
 
@@ -137,6 +142,7 @@ namespace VSSample
         public void OrchestrationClient_V1_UsingString()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -145,7 +151,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] string client)
             {
             }
@@ -157,7 +163,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
+                            new DiagnosticResultLocation("Test0.cs", 12, 35)
                      }
             };
 
@@ -173,6 +179,7 @@ namespace VSSample
         public void OrchestrationClient_V1_UsingList()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -181,7 +188,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] List<string> client)
             {
             }
@@ -193,7 +200,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
+                            new DiagnosticResultLocation("Test0.cs", 12, 35)
                      }
             };
 
@@ -209,6 +216,7 @@ namespace VSSample
         public void OrchestrationClient_V1_UsingArray()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -217,7 +225,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] string[] client)
             {
             }
@@ -229,7 +237,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
+                            new DiagnosticResultLocation("Test0.cs", 12, 35)
                      }
             };
 
@@ -245,6 +253,7 @@ namespace VSSample
         public void OrchestrationClient_V1_UsingValueTuple()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -253,7 +262,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] (string, int) client)
             {
             }
@@ -265,7 +274,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
+                            new DiagnosticResultLocation("Test0.cs", 12, 35)
                      }
             };
 
@@ -281,6 +290,7 @@ namespace VSSample
         public void OrchestrationClient_V1_UsingV2Client()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -289,7 +299,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationClient] IDurableClient client)
             {
             }
@@ -301,7 +311,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
+                            new DiagnosticResultLocation("Test0.cs", 12, 35)
                      }
             };
 
@@ -317,6 +327,7 @@ namespace VSSample
         public void DurableClient_V2_UsingObject()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -326,7 +337,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] Object client)
             {
             }
@@ -338,7 +349,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -356,6 +367,7 @@ namespace VSSample
         public void DurableClient_V2_UsingString()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -365,7 +377,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] string client)
             {
             }
@@ -377,7 +389,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -395,6 +407,7 @@ namespace VSSample
         public void DurableClient_V2_UsingList()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -404,7 +417,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] List<string> client)
             {
             }
@@ -416,7 +429,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -434,6 +447,7 @@ namespace VSSample
         public void DurableClient_V2_UsingArray()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -443,7 +457,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] string[] client)
             {
             }
@@ -455,7 +469,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -473,6 +487,7 @@ namespace VSSample
         public void DurableClient_V2_UsingValueTuple()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -482,7 +497,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] (string, int) client)
             {
             }
@@ -494,7 +509,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -512,6 +527,7 @@ namespace VSSample
         public void DurableClient_V2_V1DurableClass()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -521,7 +537,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""ClientAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [DurableClient] DurableOrchestrationClient client)
             {
             }
@@ -533,7 +549,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 

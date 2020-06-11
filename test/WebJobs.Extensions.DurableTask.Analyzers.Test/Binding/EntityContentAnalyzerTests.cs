@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
         private static readonly DiagnosticSeverity Severity = EntityContextAnalyzer.Severity;
 
         private const string ExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -25,7 +26,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] IDurableEntityContext context)
             {
             }
@@ -43,6 +44,7 @@ namespace VSSample
         public void EntityTrigger_UsingObject()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -52,7 +54,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] Object context)
             {
             }
@@ -65,7 +67,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
             
@@ -79,6 +81,7 @@ namespace VSSample
         public void EntityTrigger_UsingString()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -88,7 +91,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] string context)
             {
             }
@@ -101,7 +104,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
             
@@ -115,6 +118,7 @@ namespace VSSample
         public void EntityTrigger_UsingList()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -124,7 +128,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] List<string> context)
             {
             }
@@ -137,7 +141,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -151,6 +155,7 @@ namespace VSSample
         public void EntityTrigger_UsingArray()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -160,7 +165,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] string[] context)
             {
             }
@@ -173,7 +178,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -187,6 +192,7 @@ namespace VSSample
         public void EntityTrigger_UsingValueTuple()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -196,7 +202,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] (string, int) context)
             {
             }
@@ -209,7 +215,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 
@@ -223,6 +229,7 @@ namespace VSSample
         public void EntityTrigger_UsingIncorrectDurableType()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -232,7 +239,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""EntityContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [EntityTrigger] IDurableActivityContext context)
             {
             }
@@ -245,7 +252,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 29)
+                            new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
 

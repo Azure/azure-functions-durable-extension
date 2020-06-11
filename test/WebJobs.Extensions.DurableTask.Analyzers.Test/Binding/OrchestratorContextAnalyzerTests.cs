@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Binding
         private static readonly DiagnosticSeverity Severity = OrchestratorContextAnalyzer.Severity;
 
         private const string V1ExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -24,7 +25,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] DurableOrchestrationContext context)
             {
             }
@@ -32,6 +33,7 @@ namespace VSSample
 }";
 
         private const string V1BaseExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -40,7 +42,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] DurableOrchestrationContextBase context)
             {
             }
@@ -48,6 +50,7 @@ namespace VSSample
 }";
 
         private const string V2ExpectedFix = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -57,7 +60,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
             }
@@ -84,6 +87,7 @@ namespace VSSample
         public void OrchestrationContext_V1_UsingObject()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -92,7 +96,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] Object context)
             {
             }
@@ -105,7 +109,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 36)
+                            new DiagnosticResultLocation("Test0.cs", 12, 36)
                      }
             };
 
@@ -122,6 +126,7 @@ namespace VSSample
         public void OrchestrationContext_V1_UsingString()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -130,7 +135,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] string context)
             {
             }
@@ -143,7 +148,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 36)
+                            new DiagnosticResultLocation("Test0.cs", 12, 36)
                      }
             };
 
@@ -160,6 +165,7 @@ namespace VSSample
         public void OrchestrationContext_V1_UsingList()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -168,7 +174,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] List<string> context)
             {
             }
@@ -181,7 +187,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 36)
+                            new DiagnosticResultLocation("Test0.cs", 12, 36)
                      }
             };
 
@@ -198,6 +204,7 @@ namespace VSSample
         public void OrchestrationContext_V1_UsingArray()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -206,7 +213,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] string[] context)
             {
             }
@@ -219,7 +226,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 36)
+                            new DiagnosticResultLocation("Test0.cs", 12, 36)
                      }
             };
 
@@ -236,6 +243,7 @@ namespace VSSample
         public void OrchestrationContext_V1_UsingValueTuple()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -244,7 +252,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] (string, int) context)
             {
             }
@@ -257,7 +265,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 36)
+                            new DiagnosticResultLocation("Test0.cs", 12, 36)
                      }
             };
 
@@ -274,6 +282,7 @@ namespace VSSample
         public void OrchestrationContext_V1_UsingV2Context()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 
@@ -282,7 +291,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
             }
@@ -295,7 +304,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 36)
+                            new DiagnosticResultLocation("Test0.cs", 12, 36)
                      }
             };
 
@@ -312,6 +321,7 @@ namespace VSSample
         public void OrchestrationContext_V2_UsingObject()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -321,7 +331,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] Object context)
             {
             }
@@ -334,7 +344,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 36)
+                            new DiagnosticResultLocation("Test0.cs", 13, 36)
                      }
             };
 
@@ -350,6 +360,7 @@ namespace VSSample
         public void OrchestrationContext_V2_UsingString()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -359,7 +370,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] string context)
             {
             }
@@ -372,7 +383,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 36)
+                            new DiagnosticResultLocation("Test0.cs", 13, 36)
                      }
             };
 
@@ -388,6 +399,7 @@ namespace VSSample
         public void OrchestrationContext_V2_UsingList()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -397,7 +409,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] List<string> context)
             {
             }
@@ -410,7 +422,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 36)
+                            new DiagnosticResultLocation("Test0.cs", 13, 36)
                      }
             };
 
@@ -426,6 +438,7 @@ namespace VSSample
         public void OrchestrationContext_V2_UsingArray()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -435,7 +448,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] string[] context)
             {
             }
@@ -448,7 +461,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 36)
+                            new DiagnosticResultLocation("Test0.cs", 13, 36)
                      }
             };
 
@@ -464,6 +477,7 @@ namespace VSSample
         public void OrchestrationContext_V2_UsingValueTuple()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -473,7 +487,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] (string, int) context)
             {
             }
@@ -486,7 +500,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 36)
+                            new DiagnosticResultLocation("Test0.cs", 13, 36)
                      }
             };
 
@@ -502,6 +516,7 @@ namespace VSSample
         public void OrchestrationContext_V2_UsingV1Context()
         {
             var test = @"
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -511,7 +526,7 @@ namespace VSSample
     public static class HelloSequence
     {
         [FunctionName(""OrchestratorContextAnalyzerTestCases"")]
-        public static async Task<Application> Run(
+        public static async Task Run(
             [OrchestrationTrigger] DurableOrchestrationContext context)
             {
             }
@@ -524,7 +539,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 12, 36)
+                            new DiagnosticResultLocation("Test0.cs", 13, 36)
                      }
             };
 

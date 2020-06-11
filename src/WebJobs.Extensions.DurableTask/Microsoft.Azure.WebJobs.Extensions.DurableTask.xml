@@ -2031,6 +2031,12 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.TagActivityWithOrchestrationStatus(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus,System.String,System.Boolean)">
+            <summary>
+            Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
+            This metadata will show up in Application Insights, if enabled.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions">
             <summary>
             Extension for registering a Durable Functions configuration with <c>JobHostConfiguration</c>.

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
         private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
 
         private const string ExpectedFix = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -34,6 +35,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
         public void StaticFunction_NotStatic()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -49,7 +51,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 7, 21)
+                            new DiagnosticResultLocation("Test0.cs", 8, 21)
                      }
             };
 
