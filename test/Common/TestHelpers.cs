@@ -89,9 +89,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 testNameResolver);
         }
 
+        // Create a valid task hub from the test name, and add a random g
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
-            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+
+            string strippedTestName = testName.Replace("_", "");
+            string truncatedTestName = strippedTestName.Substring(0, Math.Min(35, strippedTestName.Length));
+            string deterministicSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
+            return truncatedTestName + deterministicSuffix + randomSuffix;
         }
 
         public static ITypeLocator GetTypeLocator()
