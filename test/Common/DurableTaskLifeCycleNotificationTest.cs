@@ -49,9 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
+            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -88,7 +89,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
-                eventGridNotificationHandler: httpMessageHandler))
+                eventGridNotificationHandler: httpMessageHandler,
+                exactTaskHubName: taskHub))
             {
                 await host.StartAsync();
 

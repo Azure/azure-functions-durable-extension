@@ -2643,8 +2643,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     using (var host = TestHelpers.GetJobHost(
                         this.loggerProvider,
-                        taskHubName,
-                        false))
+                        nameof(this.TaskHubName_Throws_ArgumentException),
+                        false,
+                        exactTaskHubName: taskHubName))
                     {
                         await host.StartAsync();
                         await host.StopAsync();

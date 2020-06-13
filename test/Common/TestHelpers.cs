@@ -36,11 +36,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string[] eventGridPublishEventTypes = null,
             bool autoFetchLargeMessages = true,
             bool? localRpcEndpointEnabled = false,
-            OverridableStates? overridableStates = null)
+            OverridableStates? overridableStates = null,
+            string exactTaskHubName = null)
         {
             var durableTaskOptions = new DurableTaskOptions
             {
-                HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions),
+                HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions),
                 TraceInputsAndOutputs = true,
                 EventGridKeySettingName = eventGridKeySettingName,
                 EventGridTopicEndpoint = eventGridTopicEndpoint,
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 testNameResolver);
         }
 
-        // Create a valid task hub from the test name, and add a random g
+        // Create a valid task hub from the test name, and add a random suffix to avoid conflicts
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
 
