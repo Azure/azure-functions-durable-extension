@@ -2638,6 +2638,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest")]
         public async Task TaskHubName_Throws_ArgumentException(string taskHubName)
         {
+            taskHubName += PlatformSpecificHelpers.VersionSuffix;
             ArgumentException argumentException =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
@@ -2654,9 +2655,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(argumentException);
             Assert.Equal(
-                argumentException.Message.Contains($"{taskHubName}V1")
-                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
-                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                $"Task hub name '{taskHubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.",
                 argumentException.Message);
         }
 
