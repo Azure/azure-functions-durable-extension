@@ -3,10 +3,12 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -26,43 +28,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static void ReportProblems(
             CompilationAnalysisContext context, 
             SemanticModel semanticModel, 
-            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
-            IEnumerable<ActivityFunctionCall> calledFunctions)
+            IEnumerable<ActivityFunctionDefinition> functionDefinitions, 
+            IEnumerable<ActivityFunctionCall> functionInvocations)
         {
-            foreach (var activityInvocation in calledFunctions)
+            foreach (var invocation in functionInvocations)
             {
-                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).FirstOrDefault();
-                if (functionDefinition != null)
+                var definition = functionDefinitions.Where(x => x.FunctionName == invocation.FunctionName).FirstOrDefault();
+                if (definition != null)
                 {
-                    var isInvokedWithNonNullInput = TryGetInvocationInputType(semanticModel, activityInvocation, out ITypeSymbol invocationInputType);
-                    var functionDefinitionUsesInput = TryGetDefinitionInputType(semanticModel, functionDefinition, out ITypeSymbol definitionInputType);
+                    var isInvokedWithNonNullInput = TryGetInvocationInputType(semanticModel, invocation, out ITypeSymbol invocationInputType);
+                    var functionDefinitionUsesInput = TryGetDefinitionInputType(semanticModel, definition, out ITypeSymbol definitionInputType);
 
                     if (!functionDefinitionUsesInput)
                     {
                         if (isInvokedWithNonNullInput)
                         {
-                            var diagnostic = Diagnostic.Create(InputNotUsedRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name);
+                            var diagnostic = Diagnostic.Create(InputNotUsedRule, invocation.ParameterNode.GetLocation(), invocation.FunctionName);
 
                             context.ReportDiagnostic(diagnostic);
                         }
                     }
                     else if (!IsValidArgumentForDefinition(invocationInputType, definitionInputType))
                     {
-                        var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationInputType);
-                        var definitionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionInputType);
-
-                        var diagnostic = Diagnostic.Create(MismatchRule, activityInvocation.ParameterNode.GetLocation(), activityInvocation.Name, definitionTypeName, invocationTypeName);
+                        var diagnostic = Diagnostic.Create(MismatchRule, invocation.ParameterNode.GetLocation(), invocation.FunctionName, definitionInputType.ToString(), invocationInputType.ToString());
 
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
-        }
-
-        private static bool IsValidArgumentForDefinition(ITypeSymbol invocationInputType, ITypeSymbol definitionInputType)
-        {
-            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationInputType, definitionInputType)
-                || SyntaxNodeUtils.TypeNodeImplementsOrExtendsType(invocationInputType, definitionInputType.ToString());
         }
 
         private static bool TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
@@ -143,6 +136,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             inputFromContext = null;
             return false;
+        }
+
+        private static bool IsValidArgumentForDefinition(ITypeSymbol invocationInputType, ITypeSymbol definitionInputType)
+        {
+            return SyntaxNodeUtils.IsMatchingSubclassOrCompatibleType(invocationInputType, definitionInputType);
         }
     }
 }

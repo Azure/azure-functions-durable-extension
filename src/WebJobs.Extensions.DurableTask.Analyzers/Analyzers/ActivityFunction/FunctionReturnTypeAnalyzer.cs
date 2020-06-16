@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var activityInvocation in calledFunctions)
             {
-                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).FirstOrDefault();
+                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.FunctionName).FirstOrDefault();
                 if (functionDefinition != null && activityInvocation.ReturnTypeNode != null)
                 {
                     TryGetInvocationReturnType(semanticModel, activityInvocation, out ITypeSymbol invocationReturnType);
@@ -37,10 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                     if (!IsValidReturnTypeForDefinition(invocationReturnType, definitionReturnType))
                     {
-                        var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
-                        var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
-
-                        var diagnostic = Diagnostic.Create(Rule, activityInvocation.InvocationExpression.GetLocation(), activityInvocation.Name, functionTypeName, invocationTypeName);
+                        var diagnostic = Diagnostic.Create(Rule, activityInvocation.InvocationExpression.GetLocation(), activityInvocation.FunctionName, definitionReturnType.ToString(), invocationReturnType.ToString());
 
                         context.ReportDiagnostic(diagnostic);
                     }
@@ -55,8 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 definitionReturnType = taskTypeArgument;
             }
 
-            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType)
-                || SyntaxNodeUtils.TypeNodeImplementsOrExtendsType(definitionReturnType, invocationReturnType.ToString());
+            return SyntaxNodeUtils.IsMatchingSubclassOrCompatibleType(definitionReturnType, invocationReturnType);
         }
 
         private static bool TryGetTaskTypeArgument(ITypeSymbol returnType, out ITypeSymbol taskTypeArgument)

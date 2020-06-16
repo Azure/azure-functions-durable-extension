@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -308,81 +309,175 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static string GetQualifiedTypeName(ITypeSymbol typeInfo)
+        public static bool IsMatchingSubclassOrCompatibleType(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            if (typeInfo != null)
-            {
-                if (typeInfo is INamedTypeSymbol namedTypeInfo)
-                {
-                    var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
-                    if (tupleUnderlyingType != null)
-                    {
-                        return $"({string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))})";
-                    }
-
-                    return typeInfo.ToString();
-                }
-
-                var arrayString = "";
-                if (typeInfo.Kind.Equals(SymbolKind.ArrayType))
-                {
-                    arrayString = "[]";
-                    typeInfo = ((IArrayTypeSymbol)typeInfo).ElementType;
-                }
-
-                if (!string.IsNullOrEmpty(typeInfo.Name))
-                {
-                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString() + arrayString;
-                }
-            }
-
-            return "Unknown Type";
-        }
-
-        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, ITypeSymbol definitionType)
-        {
-            if (invocationType == null || definitionType == null)
+            if (subclassOrMatching == null || superOrMatching == null)
             {
                 return false;
             }
 
-            return invocationType.Equals(definitionType)
-                || AreCompatibleIEnumerableTypes(invocationType, definitionType)
-                || AreEqualQualifiedTypeNames(invocationType, definitionType);
+            return (subclassOrMatching.Equals(superOrMatching)
+                || AreMatchingValueTuples(subclassOrMatching, superOrMatching)
+                || AreMatchingGenericTypes(subclassOrMatching, superOrMatching)
+                || IsSubclassOrImplementation(subclassOrMatching, superOrMatching)
+                || AreCompatibleIEnumerableTypes(subclassOrMatching, superOrMatching));
         }
 
-        private static bool AreEqualQualifiedTypeNames(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        private static bool AreMatchingValueTuples(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            var invocationQualifiedName = GetQualifiedTypeName(invocationType);
-            var definitionQualifiedName = GetQualifiedTypeName(definitionType);
-
-            return invocationQualifiedName.Equals(definitionQualifiedName);
-        }
-
-        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
-        {
-            if (AreArrayOrNamedTypes(invocationType, functionType) && UnderlyingTypesMatch(invocationType, functionType))
+            if (subclassOrMatching == null || superOrMatching == null)
             {
-                return TypeNodeImplementsOrExtendsType(invocationType, "IEnumerable")
-                    && TypeNodeImplementsOrExtendsType(functionType, "IEnumerable");
+                return false;
+            }
+
+            if (subclassOrMatching.IsTupleType && superOrMatching.IsTupleType)
+            {
+                return HaveMatchingOrCompatibeTypeArguments(subclassOrMatching, superOrMatching);
             }
 
             return false;
         }
 
-        public static bool TypeNodeImplementsOrExtendsType(ITypeSymbol node, string interfaceOrBase)
+        private static bool HaveMatchingOrCompatibeTypeArguments(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            if (string.IsNullOrEmpty(interfaceOrBase))
+            if (subclassOrMatching == null || superOrMatching == null)
             {
                 return false;
             }
 
-            return node.AllInterfaces.Any(i => i.Name.Equals(interfaceOrBase))
-                || TypeNodeIsSubclass(node, interfaceOrBase);
+            var subclassTypeArguments = ((INamedTypeSymbol)subclassOrMatching).TypeArguments;
+            var superTypeArguments = ((INamedTypeSymbol)superOrMatching).TypeArguments;
+
+            if (NotNullAndMatchingLength(subclassTypeArguments, superTypeArguments))
+            {
+                for (int i = 0; i < subclassTypeArguments.Length; i++)
+                {
+                    if (!IsMatchingSubclassOrCompatibleType(subclassTypeArguments[i], superTypeArguments[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool NotNullAndMatchingLength(ImmutableArray<ITypeSymbol> immutableArrayOne, ImmutableArray<ITypeSymbol> immutableArrayTwo)
+        {
+            if (immutableArrayOne != null && immutableArrayOne != null)
+            {
+                return immutableArrayOne.Length == immutableArrayTwo.Length;
+            }
+
+            return false;
+        }
+
+        private static bool AreMatchingGenericTypes(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
+        {
+            if (subclassOrMatching == null && superOrMatching == null)
+            {
+                return false;
+            }
+
+            if (subclassOrMatching.Name == superOrMatching.Name)
+            {
+                return HaveMatchingOrCompatibeTypeArguments(subclassOrMatching, superOrMatching);
+            }
+
+            return false;
+        }
+
+        private static bool IsSubclassOrImplementation(ITypeSymbol subclassOrImplementation, ITypeSymbol superOrInterface)
+        {
+            if (subclassOrImplementation == null || superOrInterface == null)
+            {
+                return false;
+            }
+
+            var superOrInterfaceName = superOrInterface is IArrayTypeSymbol arrayType ? arrayType.ElementType.Name : superOrInterface.Name;
+
+            if (TypeSymbolImplementsOrExtendsType(subclassOrImplementation, superOrInterfaceName))
+            {
+                return HaveMatchingOrCompatibeTypeArguments(subclassOrImplementation, superOrInterface);
+            }
+
+            return false;
+        }
+
+        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol typeOne, ITypeSymbol typeTwo)
+        {
+            if (typeOne == null || typeTwo == null)
+            {
+                return false;
+            }
+
+            if (CollectionTypesMatch(typeOne, typeTwo))
+            {
+                return TypeSymbolImplementsOrExtendsType(typeOne, "IEnumerable")
+                    && TypeSymbolImplementsOrExtendsType(typeTwo, "IEnumerable");
+            }
+
+            return false;
+        }
+
+        private static bool CollectionTypesMatch(ITypeSymbol typeOne, ITypeSymbol typeTwo)
+        {
+            if (typeOne == null || typeTwo == null)
+            {
+                return false;
+            }
+
+            return (TryGetCollectionType(typeOne, out ITypeSymbol invocationCollectionType)
+                && TryGetCollectionType(typeTwo, out ITypeSymbol functionCollectionType)
+                && IsMatchingSubclassOrCompatibleType(invocationCollectionType, functionCollectionType));
+        }
+
+        private static bool TryGetCollectionType(ITypeSymbol type, out ITypeSymbol collectionType)
+        {
+            if (type != null)
+            {
+                if (type.Kind.Equals(SymbolKind.ArrayType))
+                {
+                    collectionType = ((IArrayTypeSymbol)type).ElementType;
+                    return true;
+                }
+
+                if (type.Kind.Equals(SymbolKind.NamedType))
+                {
+                    collectionType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
+                    return collectionType != null;
+                }
+            }
+
+            collectionType = null;
+            return false;
+        }
+
+        public static bool TypeSymbolImplementsOrExtendsType(ITypeSymbol node, string interfaceOrBase)
+        {
+            if (node == null || string.IsNullOrEmpty(interfaceOrBase))
+            {
+                return false;
+            }
+
+            return TypeSymbolImplementsInterface(node, interfaceOrBase)
+                || TypeSymbolIsSubclass(node, interfaceOrBase);
 
         }
 
-        private static bool TypeNodeIsSubclass(ITypeSymbol node, string baseClass)
+        private static bool TypeSymbolImplementsInterface(ITypeSymbol node, string interfaceName)
+        {
+            if (node == null || string.IsNullOrEmpty(interfaceName))
+            {
+                return false;
+            }
+
+            return node.AllInterfaces.Any(i => i.Name.Equals(interfaceName));
+        }
+
+        private static bool TypeSymbolIsSubclass(ITypeSymbol node, string baseClass)
         {
             if (node == null || string.IsNullOrEmpty(baseClass))
             {
@@ -392,7 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var curr = node.BaseType;
             while (curr != null)
             {
-                if (curr.ToString().Equals(baseClass))
+                if (curr.Name.Equals(baseClass))
                 {
                     return true;
                 }
@@ -402,39 +497,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return false;
 
-        }
-
-        private static bool AreArrayOrNamedTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
-        {
-            return (invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
-                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType));
-        }
-
-        private static bool UnderlyingTypesMatch(ITypeSymbol invocationType, ITypeSymbol functionType)
-        {
-            return (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType)
-                && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType)
-                && invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name));
-        }
-
-        private static bool TryGetUnderlyingType(ITypeSymbol type, out ITypeSymbol underlyingType)
-        {
-            if (type.Kind.Equals(SymbolKind.ArrayType))
-            {
-                underlyingType = ((IArrayTypeSymbol)type).ElementType;
-                return true;
-            }
-
-            if (type.Kind.Equals(SymbolKind.NamedType))
-            {
-                underlyingType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
-                return underlyingType != null;
-            }
-            else
-            {
-                underlyingType = null;
-                return false;
-            }
         }
     }
 }

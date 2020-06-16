@@ -34,17 +34,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var activityInvocation in calledFunctions)
             {
-                if (!availableFunctions.Select(x => x.FunctionName).Contains(activityInvocation.Name))
+                if (!availableFunctions.Select(x => x.FunctionName).Contains(activityInvocation.FunctionName))
                 {
-                    if (SyntaxNodeUtils.TryGetClosestString(activityInvocation.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                    if (SyntaxNodeUtils.TryGetClosestString(activityInvocation.FunctionName, availableFunctions.Select(x => x.FunctionName), out string closestName))
                     {
-                        var diagnostic = Diagnostic.Create(CloseRule, activityInvocation.NameNode.GetLocation(), activityInvocation.Name, closestName);
+                        var diagnostic = Diagnostic.Create(CloseRule, activityInvocation.NameNode.GetLocation(), activityInvocation.FunctionName, closestName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
                     else
                     {
-                        var diagnostic = Diagnostic.Create(MissingRule, activityInvocation.NameNode.GetLocation(), activityInvocation.Name);
+                        var diagnostic = Diagnostic.Create(MissingRule, activityInvocation.NameNode.GetLocation(), activityInvocation.FunctionName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
