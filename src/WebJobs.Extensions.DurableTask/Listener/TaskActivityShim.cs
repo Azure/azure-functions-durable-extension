@@ -23,6 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IApplicationLifetimeWrapper hostServiceLifetime;
         private readonly string activityName;
 
+        private int taskEventId = -1;
+
         public TaskActivityShim(
             DurableTaskExtension config,
             ITriggeredFunctionExecutor executor,
@@ -56,7 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
-                isReplay: false);
+                isReplay: false,
+                taskEventId: this.taskEventId);
 
             WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteActivityFunction(
                 this.executor,
@@ -74,7 +77,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.config.GetIntputOutputTrace(serializedOutput),
                         continuedAsNew: false,
                         functionType: FunctionType.Activity,
-                        isReplay: false);
+                        isReplay: false,
+                        taskEventId: this.taskEventId);
 
                     return serializedOutput;
                 case WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError:
@@ -106,7 +110,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instanceId,
                         exceptionToReport?.ToString() ?? string.Empty,
                         functionType: FunctionType.Activity,
-                        isReplay: false);
+                        isReplay: false,
+                        taskEventId: this.taskEventId);
 
                     throw new TaskFailureException(
                             $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
@@ -120,6 +125,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // This won't get called as long as we've implemented RunAsync.
             throw new NotImplementedException();
+        }
+
+        internal void SetTaskEventId(int taskEventId)
+        {
+            this.taskEventId = taskEventId;
         }
 
         private static Exception StripFunctionInvocationException(Exception e)

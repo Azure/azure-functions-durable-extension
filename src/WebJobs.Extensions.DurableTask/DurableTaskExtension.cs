@@ -291,6 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
             this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
+            this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
@@ -463,6 +464,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
+        }
+
+        private Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
+            {
+                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
+                shim.SetTaskEventId(@event?.EventId ?? -1);
+            }
+
+            return next();
         }
 
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
