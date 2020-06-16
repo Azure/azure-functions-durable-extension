@@ -113,27 +113,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Delete blobs
             CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
             CloudBlobContainer leases = blobClient.GetContainerReference($"{taskHub}-leases");
-            deletionTasks.Add(leases.DeleteAsync());
+            deletionTasks.Add(leases.DeleteIfExistsAsync());
             CloudBlobContainer largeContainers = blobClient.GetContainerReference($"{taskHub}-largemessages");
-            deletionTasks.Add(largeContainers.DeleteAsync());
+            deletionTasks.Add(largeContainers.DeleteIfExistsAsync());
 
             // Delete queues
             CloudQueueClient queueClient = storageAccount.CreateCloudQueueClient();
             CloudQueue workItemQueue = queueClient.GetQueueReference($"{taskHub}-workitems");
-            deletionTasks.Add(workItemQueue.DeleteAsync());
+            deletionTasks.Add(workItemQueue.DeleteIfExistsAsync());
             for (int i = 0; i < partitionCount; i++)
             {
                 string controlQueueName = $"{taskHub}-control-{i.ToString("00")}";
                 CloudQueue controlQueue = queueClient.GetQueueReference(controlQueueName);
-                deletionTasks.Add(controlQueue.DeleteAsync());
+                deletionTasks.Add(controlQueue.DeleteIfExistsAsync());
             }
 
             // Delete tables
             CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
             CloudTable historyTable = tableClient.GetTableReference($"{taskHub}History");
             CloudTable instancesTable = tableClient.GetTableReference($"{taskHub}Instances");
-            deletionTasks.Add(historyTable.DeleteAsync());
-            deletionTasks.Add(instancesTable.DeleteAsync());
+            deletionTasks.Add(historyTable.DeleteIfExistsAsync());
+            deletionTasks.Add(instancesTable.DeleteIfExistsAsync());
 
             await Task.WhenAll(deletionTasks);
         }
