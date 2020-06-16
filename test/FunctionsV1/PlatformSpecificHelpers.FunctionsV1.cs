@@ -57,16 +57,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host);
+            return new FunctionsV1HostWrapper(host, options, connectionResolver);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
+            private readonly DurableTaskOptions options;
+            private readonly IConnectionStringResolver connectionResolver;
 
-            public FunctionsV1HostWrapper(JobHost innerHost)
+            public FunctionsV1HostWrapper(
+                JobHost innerHost, 
+                IOptions<DurableTaskOptions> options,
+                IConnectionStringResolver connectionResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
+                this.options = options.Value;
+                this.connectionResolver = connectionResolver;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)
@@ -75,7 +82,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Task CallAsync(MethodInfo method, IDictionary<string, object> args)
                 => this.innerHost.CallAsync(method, args);
 
-            public void Dispose() => this.innerHost.Dispose();
+            public void Dispose()
+            {
+                this.innerHost.Dispose();
+#if !DEBUG
+                string connectionString = this.connectionResolver.Resolve(this.options.AzureStorageConnectionStringName ?? "AzureWebJobsStorage");
+                int partitionCount = this.options.PartitionCount;
+                string taskHub = this.options.HubName.ToLowerInvariant();
+                Task.Run(() => TestHelpers.DeleteAllElementsInStorageTaskHubAsync(connectionString, taskHub, partitionCount)).GetAwaiter().GetResult();
+#endif
+            }
 
             public Task StartAsync() => this.innerHost.StartAsync();
 

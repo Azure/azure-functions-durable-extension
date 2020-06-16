@@ -10,6 +10,10 @@ using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -99,6 +103,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string deterministicSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
             string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
             return truncatedTestName + deterministicSuffix + randomSuffix;
+        }
+
+        internal static async Task DeleteAllElementsInStorageTaskHubAsync(string connectionString, string taskHub, int partitionCount)
+        {
+            var deletionTasks = new List<Task>();
+            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
+
+            // Delete blobs
+            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer leases = blobClient.GetContainerReference($"{taskHub}-leases");
+            deletionTasks.Add(leases.DeleteAsync());
+            CloudBlobContainer largeContainers = blobClient.GetContainerReference($"{taskHub}-largemessages");
+            deletionTasks.Add(largeContainers.DeleteAsync());
+
+            // Delete queues
+            CloudQueueClient queueClient = storageAccount.CreateCloudQueueClient();
+            CloudQueue workItemQueue = queueClient.GetQueueReference($"{taskHub}-workitems");
+            deletionTasks.Add(workItemQueue.DeleteAsync());
+            for (int i = 0; i < partitionCount; i++)
+            {
+                string controlQueueName = $"{taskHub}-control-{i.ToString("00")}";
+                CloudQueue controlQueue = queueClient.GetQueueReference(controlQueueName);
+                deletionTasks.Add(controlQueue.DeleteAsync());
+            }
+
+            // Delete tables
+            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+            CloudTable historyTable = tableClient.GetTableReference($"{taskHub}History");
+            CloudTable instancesTable = tableClient.GetTableReference($"{taskHub}Instances");
+            deletionTasks.Add(historyTable.DeleteAsync());
+            deletionTasks.Add(instancesTable.DeleteAsync());
+
+            await Task.WhenAll(deletionTasks);
         }
 
         public static ITypeLocator GetTypeLocator()
