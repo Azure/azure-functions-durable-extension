@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
@@ -23,6 +22,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IApplicationLifetimeWrapper hostServiceLifetime;
         private readonly string activityName;
 
+        /// <summary>
+        /// The DTFx-generated, auto-incrementing ID that uniquely identifies this activity function execution.
+        /// </summary>
         private int taskEventId = -1;
 
         public TaskActivityShim(
@@ -129,6 +131,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void SetTaskEventId(int taskEventId)
         {
+            // We don't have the DTFx task event ID at TaskActivityShim-creation time
+            // so we have to set it here, before DTFx calls the RunAsync method.
             this.taskEventId = taskEventId;
         }
 
