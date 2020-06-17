@@ -49,9 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
+            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -88,7 +89,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
-                eventGridNotificationHandler: httpMessageHandler))
+                eventGridNotificationHandler: httpMessageHandler,
+                exactTaskHubName: taskHub))
             {
                 await host.StartAsync();
 
@@ -125,6 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var testName = nameof(this.OrchestrationFailed);
             var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
+            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
@@ -137,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -174,6 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHub,
                 eventGridNotificationHandler: httpMessageHandler))
             {
                 await host.StartAsync();
@@ -209,6 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task OrchestrationTerminate(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationTerminate);
+            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
 
             // Using the counter orchestration because it will wait indefinitely for input.
             var functionName = nameof(TestOrchestrations.Counter);
@@ -224,7 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -261,6 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHub,
                 eventGridNotificationHandler: httpMessageHandler))
             {
                 await host.StartAsync();
@@ -312,8 +318,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
+            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -334,6 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHub,
                 eventGridNotificationHandler: httpMessageHandler,
                 eventGridPublishEventTypes: new[] { "Completed", "Failed" }))
             {
@@ -360,6 +368,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var testName = nameof(this.OrchestrationStartAndCompleted);
             var functionName = nameof(TestOrchestrations.SayHelloInline);
+            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
@@ -371,7 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -392,6 +401,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHub,
                 eventGridNotificationHandler: httpMessageHandler,
                 eventGridPublishEventTypes: new[] { "Started", "Failed" }))
             {
@@ -417,6 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationFailed);
+            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -429,7 +440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -450,6 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHub,
                 eventGridNotificationHandler: httpMessageHandler,
                 eventGridPublishEventTypes: new[] { "Started", "Completed" }))
             {
@@ -476,6 +488,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task OrchestrationTerminatedOptOutOfEvent(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationTerminate);
+            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
 
             // Using the counter orchestration because it will wait indefinitely for input.
             var functionName = nameof(TestOrchestrations.Counter);
@@ -490,7 +503,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHub,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -511,6 +524,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHub,
                 eventGridNotificationHandler: httpMessageHandler,
                 eventGridPublishEventTypes: new[] { "Started", "Failed", "Completed" }))
             {
@@ -551,10 +565,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     HttpStatusCode.InternalServerError,
                     new { message = "Exception has been thrown" });
 
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             string createdInstanceId = Guid.NewGuid().ToString("N");
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
-                TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled),
+                taskHubName,
                 functionName,
                 createdInstanceId,
                 eventGridKeyValue,
@@ -591,6 +606,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 eventGridKeySettingName,
                 mockNameResolver.Object,
                 eventGridEndpoint,
+                exactTaskHubName: taskHubName,
                 eventGridNotificationHandler: httpMessageHandler))
             {
                 await host.StartAsync();

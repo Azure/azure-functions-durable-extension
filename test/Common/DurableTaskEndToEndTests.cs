@@ -132,6 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (var orchestrationHost = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.HelloWorld_OrchestrationClientTaskHub),
+                exactTaskHubName: taskHubName,
                 enableExtendedSessions: false))
             {
                 await clientHost.StartAsync();
@@ -2245,10 +2246,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestActivities.GetAndReturnHttpManagementPayload),
             };
 
+            string testName = nameof(this.Activity_Gets_HttpManagementPayload);
+            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessions);
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.Activity_Gets_HttpManagementPayload),
+                testName,
                 extendedSessions,
+                exactTaskHubName: taskHub,
                 notificationUrl: new Uri(TestConstants.NotificationUrl)))
             {
                 await host.StartAsync();
@@ -2258,7 +2262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
+                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, taskHub);
 
                 await host.StopAsync();
             }
@@ -2277,10 +2281,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloInline),
             };
 
+            string testName = nameof(this.OrchestrationClient_Gets_HttpManagementPayload);
+            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessions);
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.OrchestrationClient_Gets_HttpManagementPayload),
+                testName,
                 extendedSessions,
+                exactTaskHubName: taskHub,
                 notificationUrl: new Uri(TestConstants.NotificationUrl)))
             {
                 await host.StartAsync();
@@ -2289,7 +2296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
+                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, taskHub);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -2638,13 +2645,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("taskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametesttaskhubnametest")]
         public async Task TaskHubName_Throws_ArgumentException(string taskHubName)
         {
+            taskHubName += PlatformSpecificHelpers.VersionSuffix;
             ArgumentException argumentException =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
                     using (var host = TestHelpers.GetJobHost(
                         this.loggerProvider,
-                        taskHubName,
-                        false))
+                        nameof(this.TaskHubName_Throws_ArgumentException),
+                        false,
+                        exactTaskHubName: taskHubName))
                     {
                         await host.StartAsync();
                         await host.StopAsync();
@@ -2653,9 +2662,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(argumentException);
             Assert.Equal(
-                argumentException.Message.Contains($"{taskHubName}V1")
-                    ? $"Task hub name '{taskHubName}V1' should contain only alphanumeric characters excluding '-' and have length up to 50."
-                    : $"Task hub name '{taskHubName}V2' should contain only alphanumeric characters excluding '-' and have length up to 50.",
+                $"Task hub name '{taskHubName}' should contain only alphanumeric characters excluding '-' and have length up to 50.",
                 argumentException.Message);
         }
 
@@ -2848,16 +2855,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.True(await blob.ExistsAsync(), $"Blob named {blob.Uri} is expected to exist.");
         }
 
-        private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
+        private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string taskHubName)
         {
             Assert.NotNull(httpManagementPayload);
             Assert.NotEmpty(httpManagementPayload.Id);
             string instanceId = httpManagementPayload.Id;
             string notificationUrl = TestConstants.NotificationUrlBase;
-            string taskHubName = extendedSessions
-                ? $"{defaultTaskHubName}EX"
-                : defaultTaskHubName;
-            taskHubName += PlatformSpecificHelpers.VersionSuffix;
 
             Assert.Equal(
                 $"{notificationUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=Storage&code=mykey",
