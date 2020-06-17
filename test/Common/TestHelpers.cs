@@ -12,6 +12,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json.Linq;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -56,7 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool? localRpcEndpointEnabled = false,
             DurableTaskOptions options = null,
             bool rollbackEntityOperationsOnExceptions = true,
-            int entityMessageReorderWindowInMinutes = 30)
+            int entityMessageReorderWindowInMinutes = 30,
+            string exactTaskHubName = null)
         {
             switch (storageProviderType)
             {
@@ -75,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options = new DurableTaskOptions();
             }
 
-            options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            options.HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             options.Tracing = new TraceOptions()
             {
                 TraceInputsAndOutputs = true,
@@ -196,9 +200,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        // Create a valid task hub from the test name, and add a random suffix to avoid conflicts
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
-            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+
+            string strippedTestName = testName.Replace("_", "");
+            string truncatedTestName = strippedTestName.Substring(0, Math.Min(35, strippedTestName.Length));
+            string deterministicSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
+            return truncatedTestName + deterministicSuffix + randomSuffix;
+        }
+
+        internal static async Task DeleteAllElementsInStorageTaskHubAsync(string connectionString, string taskHub, int partitionCount)
+        {
+            var deletionTasks = new List<Task>();
+            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
+
+            // Delete blobs
+            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer leases = blobClient.GetContainerReference($"{taskHub}-leases");
+            deletionTasks.Add(leases.DeleteIfExistsAsync());
+            CloudBlobContainer largeContainers = blobClient.GetContainerReference($"{taskHub}-largemessages");
+            deletionTasks.Add(largeContainers.DeleteIfExistsAsync());
+
+            // Delete queues
+            CloudQueueClient queueClient = storageAccount.CreateCloudQueueClient();
+            CloudQueue workItemQueue = queueClient.GetQueueReference($"{taskHub}-workitems");
+            deletionTasks.Add(workItemQueue.DeleteIfExistsAsync());
+            for (int i = 0; i < partitionCount; i++)
+            {
+                string controlQueueName = $"{taskHub}-control-{i.ToString("00")}";
+                CloudQueue controlQueue = queueClient.GetQueueReference(controlQueueName);
+                deletionTasks.Add(controlQueue.DeleteIfExistsAsync());
+            }
+
+            // Delete tables
+            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+            CloudTable historyTable = tableClient.GetTableReference($"{taskHub}History");
+            CloudTable instancesTable = tableClient.GetTableReference($"{taskHub}Instances");
+            deletionTasks.Add(historyTable.DeleteIfExistsAsync());
+            deletionTasks.Add(instancesTable.DeleteIfExistsAsync());
+
+            await Task.WhenAll(deletionTasks);
         }
 
         public static ITypeLocator GetTypeLocator()
