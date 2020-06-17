@@ -97,7 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         // Create a valid task hub from the test name, and add a random suffix to avoid conflicts
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
-
             string strippedTestName = testName.Replace("_", "");
             string truncatedTestName = strippedTestName.Substring(0, Math.Min(35, strippedTestName.Length));
             string deterministicSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
