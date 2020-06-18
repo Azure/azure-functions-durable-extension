@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             private readonly IConnectionStringResolver connectionResolver;
 
             public FunctionsV1HostWrapper(
-                JobHost innerHost, 
+                JobHost innerHost,
                 IOptions<DurableTaskOptions> options,
                 IConnectionStringResolver connectionResolver)
             {
