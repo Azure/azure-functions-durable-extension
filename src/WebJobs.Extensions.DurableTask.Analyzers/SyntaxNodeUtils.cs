@@ -35,6 +35,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 : model.Compilation.GetSemanticModel(node.SyntaxTree);
         }
 
+        public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)
+        {
+            if (node != null)
+            {
+                semanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
+                if (semanticModel != null)
+                {
+                    typeSymbol = semanticModel.GetTypeInfo(node).Type;
+                    return true;
+                }
+            }
+
+            typeSymbol = null;
+            return false;
+        }
+
+        public static bool TryGetISymbol(SemanticModel semanticModel, SyntaxNode node, out ISymbol symbol)
+        {
+            if (node != null)
+            {
+                semanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
+                if (semanticModel != null)
+                {
+                    symbol = semanticModel.GetSymbolInfo(node).Symbol;
+                    return true;
+                }
+            }
+
+            symbol = null;
+            return false;
+        }
+
         public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
         {
             closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
@@ -309,7 +341,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        public static bool IsMatchingSubclassOrCompatibleType(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
+        public static bool IsDurableActivityContext(this ITypeSymbol type)
+        {
+            return (type.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext")
+                || type.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
+                || type.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));
+        }
+
+        public static bool IsMatchingDerivedOrCompatibleType(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
             if (subclassOrMatching == null || superOrMatching == null)
             {
@@ -352,7 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 for (int i = 0; i < subclassTypeArguments.Length; i++)
                 {
-                    if (!IsMatchingSubclassOrCompatibleType(subclassTypeArguments[i], superTypeArguments[i]))
+                    if (!IsMatchingDerivedOrCompatibleType(subclassTypeArguments[i], superTypeArguments[i]))
                     {
                         return false;
                     }
@@ -431,7 +470,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return (TryGetCollectionType(typeOne, out ITypeSymbol invocationCollectionType)
                 && TryGetCollectionType(typeTwo, out ITypeSymbol functionCollectionType)
-                && IsMatchingSubclassOrCompatibleType(invocationCollectionType, functionCollectionType));
+                && IsMatchingDerivedOrCompatibleType(invocationCollectionType, functionCollectionType));
         }
 
         private static bool TryGetCollectionType(ITypeSymbol type, out ITypeSymbol collectionType)

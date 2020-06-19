@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var invocationExpression = descendant.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
                     if (invocationExpression != null)
                     {
-                        if (SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationExpression).GetSymbolInfo(invocationExpression).Symbol is IMethodSymbol methodSymbol)
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, invocationExpression, out ISymbol symbol) && symbol is IMethodSymbol methodSymbol)
                         {
                             var syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
                             if (syntaxReference != null)

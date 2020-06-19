@@ -43,15 +43,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Run" || identifierText == "Factory.StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            if (memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }
@@ -72,15 +73,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            if (memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }

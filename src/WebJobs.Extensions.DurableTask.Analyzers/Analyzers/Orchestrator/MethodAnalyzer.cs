@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (descendant is InvocationExpressionSyntax invocation)
                 {
-                    if (SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocation).GetSymbolInfo(invocation).Symbol is IMethodSymbol methodSymbol)
+                    if (SyntaxNodeUtils.TryGetISymbol(semanticModel, invocation, out ISymbol symbol) && symbol is IMethodSymbol methodSymbol)
                     {
                         var syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
                         if (syntaxReference != null)

@@ -60,55 +60,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
         {
-            var invocationInput = activityInvocation.ParameterNode;
-
-            if (invocationInput == null)
+            var activityInput = activityInvocation.ParameterNode;
+            if (activityInput == null)
             {
                 invocationInputType = null;
                 return false;
             }
 
-            invocationInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationInput).GetTypeInfo(invocationInput).Type;
-
-            return invocationInputType != null;
+            return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, activityInput, out invocationInputType);
         }
 
         private static bool TryGetDefinitionInputType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionInputType)
         {
             var definitionInput = functionDefinition.ParameterNode;
-
             if (definitionInput == null)
             {
                 definitionInputType = null;
                 return false;
             }
 
-            if (FunctionParameterIsContext(semanticModel, definitionInput))
+            if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, definitionInput, out definitionInputType))
             {
-                if (!TryGetInputFromDurableContextCall(semanticModel, definitionInput, out definitionInput))
+                if (definitionInputType.IsDurableActivityContext())
                 {
-                    definitionInputType = null;
-                    return false;
+                    return TryGetInputTypeFromContext(semanticModel, definitionInput, out definitionInputType);
                 }
+
+                return true;
             }
 
-            definitionInputType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, definitionInput).GetTypeInfo(definitionInput).Type;
-
-            return definitionInputType != null;
+            definitionInputType = null;
+            return false;
         }
 
-        private static bool FunctionParameterIsContext(SemanticModel semanticModel, SyntaxNode functionInput)
+        private static bool TryGetInputTypeFromContext(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol definitionInputType)
         {
-            var parameterTypeName = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, functionInput).GetTypeInfo(functionInput).Type.ToString();
-
-            return (parameterTypeName.Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext")
-                || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
-                || parameterTypeName.Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));
-        }
-
-        private static bool TryGetInputFromDurableContextCall(SemanticModel semanticModel, SyntaxNode definitionInput, out SyntaxNode inputFromContext)
-        {
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(definitionInput, out SyntaxNode methodDeclaration))
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
                 var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
                 foreach (var memberAccessExpression in memberAccessExpressionList)
@@ -116,8 +103,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var identifierName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
                     if (identifierName != null)
                     {
-                        var identifierNameType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, identifierName).GetTypeInfo(identifierName).Type.Name;
-                        if (identifierNameType.Equals("IDurableActivityContext") || identifierNameType.Equals("DurableActivityContext") || identifierNameType.Equals("DurableActivityContextBase"))
+                        SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol);
+                        if (typeSymbol.IsDurableActivityContext())
                         {
                             var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
                             if (genericName != null)
@@ -125,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                                 var typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).FirstOrDefault();
                                 if (typeArgumentList != null)
                                 {
-                                    inputFromContext = typeArgumentList.ChildNodes().First();
+                                    SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgumentList.ChildNodes().First(), out definitionInputType);
                                     return true;
                                 }
                             }
@@ -134,13 +121,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 }
             }
 
-            inputFromContext = null;
+            definitionInputType = null;
             return false;
         }
 
         private static bool IsValidArgumentForDefinition(ITypeSymbol invocationInputType, ITypeSymbol definitionInputType)
         {
-            return SyntaxNodeUtils.IsMatchingSubclassOrCompatibleType(invocationInputType, definitionInputType);
+            return SyntaxNodeUtils.IsMatchingDerivedOrCompatibleType(invocationInputType, definitionInputType);
         }
     }
 }

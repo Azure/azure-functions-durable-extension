@@ -33,16 +33,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Now" || identifierText == "UtcNow" || identifierText == "Today")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        //Covers both DateTime and DateTimeOffset
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.DateTime"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            //Covers both DateTime and DateTimeOffset
+                            if (memberSymbol.ToString().StartsWith("System.DateTime"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }
