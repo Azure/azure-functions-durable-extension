@@ -308,29 +308,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
+            DateTime intervalFireAt = fireAt;
+            TimeSpan longRunningTimerIntervalLength = TimeSpan.FromDays(3);
+
             if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
             {
-                throw new ArgumentException(errorMessage, nameof(fireAt));
+                intervalFireAt = this.InnerContext.CurrentUtcDateTime.AddDays(longRunningTimerIntervalLength.TotalDays);
             }
 
-            this.IncrementActionsOrThrowException();
-            Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+            T result = default;
 
-            this.Config.TraceHelper.FunctionListening(
-                this.Config.Options.HubName,
-                this.OrchestrationName,
-                this.InstanceId,
-                reason: $"CreateTimer:{fireAt:o}",
-                isReplay: this.InnerContext.IsReplaying);
+            while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
+            {
+                this.IncrementActionsOrThrowException();
+                Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
 
-            T result = await timerTask;
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                result = await timerTask;
+
+                TimeSpan remainingTime = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
+                if (remainingTime <= TimeSpan.Zero)
+                {
+                    break;
+                }
+                else if (remainingTime < longRunningTimerIntervalLength)
+                {
+                    TimeSpan timerStartsIn = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
+                    double timerStartsInDoubleValue = timerStartsIn.TotalDays;
+                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.AddDays(timerStartsInDoubleValue);
+                }
+                else
+                {
+                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.AddDays(longRunningTimerIntervalLength.TotalDays);
+                }
+            }
 
             this.Config.TraceHelper.TimerExpired(
-                this.Config.Options.HubName,
-                this.OrchestrationName,
-                this.InstanceId,
-                expirationTime: fireAt,
-                isReplay: this.InnerContext.IsReplaying);
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    expirationTime: fireAt,
+                    isReplay: this.InnerContext.IsReplaying);
 
             return result;
         }

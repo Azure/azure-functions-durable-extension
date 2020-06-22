@@ -139,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (timespan > MaxTimerDuration)
             {
-                errorMessage = $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays";
+                errorMessage = null;
                 return false;
             }
 
