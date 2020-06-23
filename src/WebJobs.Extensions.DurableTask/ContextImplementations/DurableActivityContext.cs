@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (objectArray?.Length != 1)
                     {
-                        throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
+                        throw new ArgumentException("The serialized input is expected to be an object array with one element.");
                     }
 
                 var token = JToken.Parse(this.messageDataConverter.Serialize(objectArray[0]));
