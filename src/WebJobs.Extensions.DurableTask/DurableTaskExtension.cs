@@ -132,6 +132,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 durableHttpMessageHandlerFactory = new DurableHttpMessageHandlerFactory();
             }
 
+            if (SystemEnvironment.Instance.IsLinuxConsumtpion())
+            {
+                LinuxEventWriter.FlagLinuxConsumption();
+            }
+            else if (SystemEnvironment.Instance.IsLinuxDedicated())
+            {
+                // TODO: move these magic strings elsewhere
+                LinuxEventWriter.FlagLinuxDedicated("/var/log/functionsLogs", "durableevents");
+            }
+
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
 

@@ -1780,6 +1780,18 @@
             The state as either a <c>JToken</c> or <c>null</c> if no state was provided.
             </value>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableFunctionsLinuxLog">
+            <summary>
+            A string-serializable collection of data representing a durable event
+            to be logged in Linux.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableFunctionsLinuxLog.AsString(System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Turns Log into a string.
+            </summary>
+            <returns>String-representation of the log.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest">
             <summary>
             Request used to make an HTTP call through Durable Functions.
@@ -2020,6 +2032,30 @@
             <param name="name">The name of the activity to return.</param>
             <param name="version">Not used.</param>
             <returns>An activity shim that delegates execution to an activity function.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ActivityMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            This DTFx activity middleware allows us to add context to the activity function shim
+            before it actually starts running.
+            </summary>
+            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+            <param name="next">The handler for running the next middleware in the pipeline.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.OrchestrationMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
+            and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
+            </summary>
+            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+            <param name="next">The handler for running the next middleware in the pipeline.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EntityMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            This DTFx orchestration middleware (for entities) allows us to add context and set state
+            to the entity shim orchestration before it starts executing the actual entity logic.
+            </summary>
+            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+            <param name="next">The handler for running the next middleware in the pipeline.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute)">
             <summary>
@@ -2937,6 +2973,57 @@
             </summary>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter">
+            <summary>
+            Produces Telemetry for the Linux App Service offerings.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.FlagLinuxConsumption">
+            <summary>
+            Indicates that logs should be written for Linux Consumption.
+            Should be called before the first log is written, when the
+            application is initialized.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.FlagLinuxDedicated(System.String,System.String)">
+            <summary>
+            Indicates that logs should be written for Linux Dedicated.
+            Should be called before the first log is written, when the
+            application is initialized.
+            </summary>
+            <param name="dirPath">Path to directory where log file will reside.</param>
+            <param name="fileName">Name of log file.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.IsEnabled">
+            <summary>
+            Returns True if running on Linux Consumption or Dedicated. False otherwise.
+            </summary>
+            <returns>True if running on Linux Consumption or Dedicated. False otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.WriteToFile(System.String)">
+            <summary>
+            Writes a line asynchronously to a file.
+            We use this instead of an ILogger because
+            we expect to write often and thus need asynchronous
+            writing, which ILogger explicitely designs against.
+            </summary>
+            <param name="line">Line to write to log-file.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.ConsoleWriter(System.String)">
+            <summary>
+            Writes a line asynchronously to the console.
+            It adds a prefix to the line, so it can get picked up
+            by the regex monitoring agent.
+            </summary>
+            <param name="line">Line to write to console.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.Write(System.String)">
+            <summary>
+            Writes a line asynchronously to either the console
+            (linux consumption) or a log file (linux dedicated).
+            </summary>
+            <param name="line">Line to write.</param>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.PartitionCount">
             <summary>
             The number of partitions in the task hub.
@@ -2980,6 +3067,11 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim.taskEventId">
+            <summary>
+            The DTFx-generated, auto-incrementing ID that uniquely identifies this activity function execution.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskCommonShim">
@@ -3798,6 +3890,56 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.HistoryEvents">
             <summary>
             JSON object representing history for an orchestration execution.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment">
+            <summary>
+            Provides utilities for inspecting the process enviroment and platform, currently mostly
+            for checking if we are running on a Linux enviroment or not.
+            </summary>
+            Mostly duplicated functionality from:
+            https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script/Environment/EnvironmentExtensions.cs
+            We should consider abstracting away this functionality from both repos, to avoid code duplication.
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.PrivInstance">
+            <summary>
+            Private and lazily constructed singleton instance of SystemEnvironment.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.#ctor">
+            <summary>
+            Private constructor, clients should obtain an instance via the `Instance` static attribute.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.Instance">
+            <summary>
+            The singleton instance of SystemEnvironment, no explicit constructor is exported.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.IsLinuxConsumtpion">
+            <summary>
+            Gets a value indicating whether the application is running in a Linux Consumption (dynamic)
+            App Service environment.
+            </summary>
+            <returns>true if running in a Linux Consumption App Service app; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.IsLinuxDedicated">
+            <summary>
+            Gets a value indicating whether the application is running in a Linux App Service
+            environment (Dedicated Linux).
+            </summary>
+            <returns>true if running in a Linux Azure App Service; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.IsAppService">
+            <summary>
+            Gets a value indicating whether the application is running in App Service
+            (Windows Consumption, Windows Dedicated or Linux Dedicated).
+            </summary>
+            <returns>true if running in a Azure App Service; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.GetEnvironmentVariable(System.String)">
+            <summary>
+            Retrieves the value from an environment variable from the current process.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ActivityTriggerAttribute">
