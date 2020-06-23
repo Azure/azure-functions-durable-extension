@@ -99,6 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
+                options.StorageProvider["ConnectionStringName"] = "AzureWebJobsStorage";
                 options.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
                 if (maxQueuePollingInterval != null)
                 {
@@ -196,6 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntities),
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
+                typeof(UnconstructibleClass),
 #if !FUNCTIONS_V1
                 typeof(TestEntityWithDependencyInjectionHelpers),
 #endif

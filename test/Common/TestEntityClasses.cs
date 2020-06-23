@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
@@ -69,6 +68,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Task<string> GetId();
         }
 
+        public interface ISelfSchedulingEntity
+        {
+            void Start();
+
+            void A();
+
+            Task B();
+
+            void C();
+
+            Task<int> D();
+        }
+
         public interface IFaultyEntity
         {
             Task<int> Get();
@@ -122,6 +134,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static Task StorageBackedCounterFunction([EntityTrigger] IDurableEntityContext context, [Blob(BlobContainerPath)] CloudBlobContainer blobContainer)
         {
             return context.DispatchAsync<StorageBackedCounter>(blobContainer);
+        }
+
+        [FunctionName(nameof(SelfSchedulingEntity))]
+        public static Task SelfSchedulingEntityFunction([EntityTrigger] IDurableEntityContext context)
+        {
+            return context.DispatchAsync<SelfSchedulingEntity>();
         }
 
         [FunctionName("ClassBasedFaultyEntity")]
@@ -298,6 +316,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public void Delete()
             {
                 Entity.Current.DeleteState();
+            }
+        }
+
+        //-------------- An entity that schedules itself ------------------
+        [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
+        public class SelfSchedulingEntity : ISelfSchedulingEntity
+        {
+            [JsonProperty]
+            public string Value { get; set; } = "";
+
+            public void Start()
+            {
+                var now = DateTime.UtcNow;
+
+                var timeA = now + TimeSpan.FromSeconds(1);
+                var timeB = now + TimeSpan.FromSeconds(2);
+                var timeC = now + TimeSpan.FromSeconds(3);
+                var timeD = now + TimeSpan.FromSeconds(4);
+
+                Entity.Current.SignalEntity<ISelfSchedulingEntity>(Entity.Current.EntityId.EntityKey, timeD, p => p.D());
+                Entity.Current.SignalEntity<ISelfSchedulingEntity>(Entity.Current.EntityId.EntityKey, timeC, p => p.C());
+                Entity.Current.SignalEntity<ISelfSchedulingEntity>(Entity.Current.EntityId.EntityKey, timeB, p => p.B());
+                Entity.Current.SignalEntity<ISelfSchedulingEntity>(Entity.Current.EntityId.EntityKey, timeA, p => p.A());
+            }
+
+            public void A()
+            {
+                this.Value += "A";
+            }
+
+            public Task B()
+            {
+                this.Value += "B";
+                return Task.Delay(100);
+            }
+
+            public void C()
+            {
+                this.Value += "C";
+            }
+
+            public Task<int> D()
+            {
+                this.Value += "D";
+                return Task.FromResult(111);
             }
         }
 

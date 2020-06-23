@@ -57,7 +57,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData("")]
         [InlineData("@invalid")]
         [InlineData("/invalid")]
         [InlineData("invalid\\")]
@@ -240,12 +239,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.HubName = "DurableTaskHub";
             options.NotificationUrl = new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();
-            var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver);
+            var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver, nameResolver);
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
-                TestHelpers.GetTestNameResolver(),
+                nameResolver,
                 serviceFactory,
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory());

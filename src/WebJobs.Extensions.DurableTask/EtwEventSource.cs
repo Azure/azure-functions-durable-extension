@@ -55,12 +55,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        [Event(202, Level = EventLevel.Informational, Version = 4)]
+        [Event(202, Level = EventLevel.Informational, Version = 5)]
         public void FunctionStarting(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
+            int TaskEventId,
             string InstanceId,
             string Input,
             string FunctionType,
@@ -186,12 +187,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        [Event(206, Level = EventLevel.Informational, Version = 4)]
+        [Event(206, Level = EventLevel.Informational, Version = 5)]
         public void FunctionCompleted(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
+            int TaskEventId,
             string InstanceId,
             string Output,
             bool ContinuedAsNew,
@@ -252,12 +254,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        [Event(208, Level = EventLevel.Error, Version = 3)]
+        [Event(208, Level = EventLevel.Error, Version = 4)]
         public void FunctionFailed(
             string TaskHub,
             string AppName,
             string SlotName,
             string FunctionName,
+            int TaskEventId,
             string InstanceId,
             string Reason,
             string FunctionType,
