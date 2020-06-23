@@ -20,6 +20,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableT
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9850DECF-CBA2-43E7-B5E2-55053DD308E9}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -29,8 +30,8 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}.Debug|Any CPU.Build.0 = Release|Any CPU
 		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51790AFE-5B8E-4795-9EA3-D2B15D04B5AC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F2A5DABB-36D4-4152-AF49-2570149899E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

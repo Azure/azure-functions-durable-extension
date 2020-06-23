@@ -951,7 +951,7 @@
             </remarks>
             <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
             <param name="instanceId">The ID to use for the new orchestration instance.</param>
-            <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+            <param name="input">JSON-serializable input value for the orchestrator function.</param>
             <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
             <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
             orchestratation instance.</returns>
@@ -1741,6 +1741,18 @@
             <value>
             The state as either a <c>JToken</c> or <c>null</c> if no state was provided.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableFunctionsLinuxLog">
+            <summary>
+            Augments EventSource to also work on Linux platforms:
+            Dedicated and Consumption. The Windows behaviour is preserved.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableFunctionsLinuxLog.AsString(System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Turns Log into a string.
+            </summary>
+            <returns>String-representation of the log.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest">
             <summary>
@@ -2893,6 +2905,117 @@
             </summary>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger">
+            <summary>
+            TBD.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.#ctor(System.String,System.String,System.IO.Abstractions.IFileSystem,System.Boolean)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="logFileName">TBD1.</param>
+            <param name="logFileDirectory">TBD2.</param>
+            <param name="fileSystem">TBD3.</param>
+            <param name="startOnCreate">TBD4.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.MaxFileCount">
+            <summary>
+            Maximum number of files.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.MaxFileSizeMb">
+            <summary>
+            Maximum size of individual log file in MB.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.FlushFrequencySeconds">
+            <summary>
+            Maximum time between successive flushes (seconds).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.Log(System.String)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="message">TBD1.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.Start">
+            <summary>
+            TBD.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.Stop(System.TimeSpan)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="timeSpan">leso.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.ProcessLogQueue(System.Object)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="state">TBD1.</param>
+            <returns>TBD2.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxDedicatedLogger.GetCurrentFileName(System.DateTime)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="dateTime">TBD1.</param>
+            <returns>TBD2.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter">
+            <summary>
+            Produces Telemetry for the Linux App Service offerings.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.FlagLinuxConsumption">
+            <summary>
+            Indicates that logs should be written for Linux Consumption.
+            Should be called before the first log is written, when the
+            application is initialized.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.FlagLinuxDedicated(System.String,System.String)">
+            <summary>
+            Indicates that logs should be written for Linux Dedicated.
+            Should be called before the first log is written, when the
+            application is initialized.
+            </summary>
+            <param name="dirPath">Path to directory where log file will reside.</param>
+            <param name="fileName">Name of log file.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.IsEnabled">
+            <summary>
+            Returns True if running on Linux Consumption or Dedicated. False otherwise.
+            </summary>
+            <returns>True if running on Linux Consumption or Dedicated. False otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.WriteToFile(System.String)">
+            <summary>
+            Writes a line asynchronously to a file.
+            We use this instead of an ILogger because
+            we expect to write often and thus need asynchronous
+            writing, which ILogger explicitely designs against.
+            </summary>
+            <param name="line">Line to write to log-file.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.ConsoleWriter(System.String)">
+            <summary>
+            Writes a line asynchronously to the console.
+            It adds a prefix to the line, so it can get picked up
+            by the regex monitoring agent.
+            </summary>
+            <param name="line">Line to write to console.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxEventWriter.Write(System.String)">
+            <summary>
+            Writes a line asynchronously to either the console
+            (linux consumption) or a log file (linux dedicated).
+            </summary>
+            <param name="line">Line to write.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim">
             <summary>
             Not intended for public consumption.
@@ -3732,6 +3855,56 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.StatusResponsePayload.HistoryEvents">
             <summary>
             JSON object representing history for an orchestration execution.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment">
+            <summary>
+            Provides utilities for inspecting the process enviroment and platform, currently mostly
+            for checking if we are running on a Linux enviroment or not.
+            </summary>
+            Mostly duplicated functionality from:
+            https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script/Environment/EnvironmentExtensions.cs
+            We should consider abstracting away this functionality from both repos, to avoid code duplication.
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.PrivInstance">
+            <summary>
+            Private and lazily constructed singleton instance of SystemEnvironment.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.#ctor">
+            <summary>
+            Private constructor, clients should obtain an instance via the `Instance` static attribute.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.Instance">
+            <summary>
+            The singleton instance of SystemEnvironment, no explicit constructor is exported.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.IsLinuxConsumtpion">
+            <summary>
+            Gets a value indicating whether the application is running in a Linux Consumption (dynamic)
+            App Service environment.
+            </summary>
+            <returns>true if running in a Linux Consumption App Service app; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.IsLinuxDedicated">
+            <summary>
+            Gets a value indicating whether the application is running in a Linux App Service
+            environment (Dedicated Linux).
+            </summary>
+            <returns>true if running in a Linux Azure App Service; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.IsAppService">
+            <summary>
+            Gets a value indicating whether the application is running in App Service
+            (Windows Consumption, Windows Dedicated or Linux Dedicated).
+            </summary>
+            <returns>true if running in a Azure App Service; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.SystemEnvironment.GetEnvironmentVariable(System.String)">
+            <summary>
+            Retrieves the value from an environment variable from the current process.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ActivityTriggerAttribute">

@@ -6,6 +6,7 @@
     "TwilioAuthToken": "<Put your Twilio Auth Token here>",
     "TwilioPhoneNumber": "<Put your Twilio Phone Number here in E.164 format>",
     "WeatherUndergroundApiKey": "<Put your Weather Underground API key here>",
-    "MyTaskHubName": "SampleHubVS"
+    "MyTaskHubName": "SampleHubVS",
+    "APPINSIGHTS_INSTRUMENTATIONKEY": "d96aa192-7adb-45b1-a5c3-0ae9fdcdfd57"
   }
 }
