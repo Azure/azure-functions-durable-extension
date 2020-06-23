@@ -55,30 +55,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.serializedInput != null && this.parsedJsonInput == null)
             {
-                if (this.messageDataConverter.JsonSettings.TypeNameHandling == TypeNameHandling.All)
-                {
-                    var objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
+                var objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
 
-                    if (objectArray?.Length != 1)
+                if (objectArray?.Length != 1)
                     {
                         throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
                     }
 
-                    var token = JToken.Parse(this.messageDataConverter.Serialize(objectArray[0]));
+                var token = JToken.Parse(this.messageDataConverter.Serialize(objectArray[0]));
 
-                    this.parsedJsonInput = token;
-                }
-                else
-                {
-                    JArray array = JArray.Parse(this.serializedInput);
-
-                    if (array?.Count != 1)
-                    {
-                        throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
-                    }
-
-                    this.parsedJsonInput = array[0];
-                }
+                this.parsedJsonInput = token;
             }
 
             return this.parsedJsonInput;
