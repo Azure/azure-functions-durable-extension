@@ -1999,6 +1999,30 @@
             <param name="version">Not used.</param>
             <returns>An activity shim that delegates execution to an activity function.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.ActivityMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            This DTFx activity middleware allows us to add context to the activity function shim
+            before it actually starts running.
+            </summary>
+            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+            <param name="next">The handler for running the next middleware in the pipeline.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.OrchestrationMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
+            and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
+            </summary>
+            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+            <param name="next">The handler for running the next middleware in the pipeline.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EntityMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            This DTFx orchestration middleware (for entities) allows us to add context and set state
+            to the entity shim orchestration before it starts executing the actual entity logic.
+            </summary>
+            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+            <param name="next">The handler for running the next middleware in the pipeline.</param>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.GetClient(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute)">
             <summary>
             Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> instance.
@@ -2907,6 +2931,11 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
             Task activity implementation which delegates the implementation to a function.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim.taskEventId">
+            <summary>
+            The DTFx-generated, auto-incrementing ID that uniquely identifies this activity function execution.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskCommonShim">
