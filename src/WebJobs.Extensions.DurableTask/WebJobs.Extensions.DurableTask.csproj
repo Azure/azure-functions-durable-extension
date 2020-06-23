@@ -6,7 +6,7 @@
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>2</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>9</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -77,6 +77,7 @@
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.2.3" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.2.0" />
+    <PackageReference Include="System.IO.Abstractions" Version="11.0.4" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
