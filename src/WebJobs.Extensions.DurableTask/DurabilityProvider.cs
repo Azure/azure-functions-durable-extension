@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal const string NoConnectionDetails = "default";
 
         private static readonly JObject EmptyConfig = new JObject();
+        private static readonly TimeSpan DefaultDelayTime = TimeSpan.FromDays(6);
 
         private readonly string name;
         private readonly IOrchestrationService innerService;
@@ -61,6 +62,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// JSON representation of configuration to emit in telemetry.
         /// </summary>
         public virtual JObject ConfigurationJson => EmptyConfig;
+
+        /// <summary>
+        /// Value of maximum durable timer delay. Used for long running durable timers.
+        /// </summary>
+        public virtual TimeSpan MaximumDelayTime => DefaultDelayTime;
 
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;

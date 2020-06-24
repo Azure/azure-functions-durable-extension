@@ -54,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override JObject ConfigurationJson => this.storageOptionsJson;
 
+        public override TimeSpan MaximumDelayTime => MaxTimerDuration;
+
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)
         {
@@ -139,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (timespan > MaxTimerDuration)
             {
-                errorMessage = null;
+                errorMessage = $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays";
                 return false;
             }
 

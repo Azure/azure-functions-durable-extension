@@ -85,6 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsCompleted { get; set; }
 
+        internal bool IsLongRunningTimer { get; set; }
+
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
         internal bool IsOutputSet => this.serializedOutput != null;
@@ -311,10 +313,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DateTime intervalFireAt = fireAt;
             TimeSpan longRunningTimerIntervalLength = TimeSpan.FromDays(3);
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            if (fireAt.Subtract(this.InnerContext.CurrentUtcDateTime) > this.durabilityProvider.MaximumDelayTime)
             {
-                intervalFireAt = this.InnerContext.CurrentUtcDateTime.AddDays(longRunningTimerIntervalLength.TotalDays);
+                this.IsLongRunningTimer = true;
+                intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(longRunningTimerIntervalLength);
             }
+
+            this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
 
             T result = default;
 
@@ -322,13 +332,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.IncrementActionsOrThrowException();
                 Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
-
-                this.Config.TraceHelper.FunctionListening(
-                    this.Config.Options.HubName,
-                    this.OrchestrationName,
-                    this.InstanceId,
-                    reason: $"CreateTimer:{fireAt:o}",
-                    isReplay: this.InnerContext.IsReplaying);
 
                 result = await timerTask;
 
@@ -340,21 +343,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else if (remainingTime < longRunningTimerIntervalLength)
                 {
                     TimeSpan timerStartsIn = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
-                    double timerStartsInDoubleValue = timerStartsIn.TotalDays;
-                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.AddDays(timerStartsInDoubleValue);
+                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(timerStartsIn);
                 }
                 else
                 {
-                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.AddDays(longRunningTimerIntervalLength.TotalDays);
+                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(longRunningTimerIntervalLength);
                 }
             }
 
             this.Config.TraceHelper.TimerExpired(
-                    this.Config.Options.HubName,
-                    this.OrchestrationName,
-                    this.InstanceId,
-                    expirationTime: fireAt,
-                    isReplay: this.InnerContext.IsReplaying);
+                this.Config.Options.HubName,
+                this.OrchestrationName,
+                this.InstanceId,
+                expirationTime: fireAt,
+                isReplay: this.InnerContext.IsReplaying);
+
+            this.IsLongRunningTimer = false;
 
             return result;
         }
