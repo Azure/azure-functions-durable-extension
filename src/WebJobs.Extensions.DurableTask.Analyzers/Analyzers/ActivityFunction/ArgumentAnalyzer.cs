@@ -95,6 +95,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetInputTypeFromContext(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol definitionInputType)
         {
+            if (TryGetDurableActivityContextExpression(semanticModel, node, out SyntaxNode durableContextExpression))
+            {
+                if (SyntaxNodeUtils.TryGetTypeArgumentNode((MemberAccessExpressionSyntax)durableContextExpression, out SyntaxNode typeArgument))
+                {
+                    return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgument, out definitionInputType);
+                }
+            }
+
+            definitionInputType = null;
+            return false;
+        }
+
+        private static bool TryGetDurableActivityContextExpression(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode durableContextExpression)
+        {
             if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
                 var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
@@ -106,22 +120,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol);
                         if (typeSymbol.IsDurableActivityContext())
                         {
-                            var genericName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
-                            if (genericName != null)
-                            {
-                                var typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).FirstOrDefault();
-                                if (typeArgumentList != null)
-                                {
-                                    SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgumentList.ChildNodes().First(), out definitionInputType);
-                                    return true;
-                                }
-                            }
+                            durableContextExpression = memberAccessExpression;
+                            return true;
                         }
                     }
                 }
             }
 
-            definitionInputType = null;
+            durableContextExpression = null;
             return false;
         }
 
