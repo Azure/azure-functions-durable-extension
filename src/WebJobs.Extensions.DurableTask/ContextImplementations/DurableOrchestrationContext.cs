@@ -292,7 +292,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: HttpMethod.Get,
                 uri: new Uri(locationUri),
                 headers: durableHttpRequest.Headers,
-                content: durableHttpRequest.Content,
                 tokenSource: durableHttpRequest.TokenSource);
 
             // Do not copy over the x-functions-key header, as in many cases, the
