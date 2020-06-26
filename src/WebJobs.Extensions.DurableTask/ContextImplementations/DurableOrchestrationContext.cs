@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsCompleted { get; set; }
 
-        internal bool IsLongRunningTimer { get; set; }
+        internal bool IsLongRunningTimer { get; private set; }
 
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
@@ -320,11 +320,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.Config.TraceHelper.FunctionListening(
-                    this.Config.Options.HubName,
-                    this.OrchestrationName,
-                    this.InstanceId,
-                    reason: $"CreateTimer:{fireAt:o}",
-                    isReplay: this.InnerContext.IsReplaying);
+                this.Config.Options.HubName,
+                this.OrchestrationName,
+                this.InstanceId,
+                reason: $"CreateTimer:{fireAt:o}",
+                isReplay: this.InnerContext.IsReplaying);
 
             T result = default;
 
