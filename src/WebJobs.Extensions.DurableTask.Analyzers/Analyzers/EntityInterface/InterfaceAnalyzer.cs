@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -71,36 +72,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var name = expression.Name;
                 if (name.ToString().StartsWith("SignalEntityAsync"))
                 {
-                    if (TryGetTypeArgumentList(expression, out SyntaxNode typeArgumentList))
+                    if (!SyntaxNodeUtils.TryGetTypeArgumentIdentifier(expression, out SyntaxNode typeArgument))
                     {
-                        if (!TryGetIdentifierName(typeArgumentList, out SyntaxNode identifierName))
-                        {
-                            var diagnosticWrongType = Diagnostic.Create(Rule, typeArgumentList.GetLocation(), typeArgumentList);
+                        return;
+                    }
+                    
+                    if (TryFindEntityInterface(context, typeArgument, out EntityInterface entityInterface))
+                    {
+                        entityInterfacesList.Add(entityInterface);
+                    }
+                    else
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, typeArgument.GetLocation(), typeArgument);
 
-                            context.ReportDiagnostic(diagnosticWrongType);
-
-                            return;
-                        }
-
-                        if (TryFindEntityInterface(identifierName, context, out EntityInterface entityInterface))
-                        {
-                            entityInterfacesList.Add(entityInterface);
-                        }
-                        else
-                        {
-                            var diagnostic = Diagnostic.Create(Rule, identifierName.GetLocation(), identifierName);
-
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
         }
 
-        private bool TryFindEntityInterface(SyntaxNode identifierName, SyntaxNodeAnalysisContext context, out EntityInterface entityInterface)
+        private bool TryFindEntityInterface(SyntaxNodeAnalysisContext context, SyntaxNode identifierName, out EntityInterface entityInterface)
         {
-            var interfaceSymbol = context.SemanticModel.GetSymbolInfo(identifierName, context.CancellationToken).Symbol;
-            if (interfaceSymbol != null)
+            if (SyntaxNodeUtils.TryGetISymbol(context.SemanticModel, identifierName, out ISymbol interfaceSymbol))
             {
                 var syntaxReference = interfaceSymbol.DeclaringSyntaxReferences.FirstOrDefault();
                 if (syntaxReference != null)
@@ -108,12 +101,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var declaration = syntaxReference.GetSyntax(context.CancellationToken);
                     if (declaration != null)
                     {
-                        var interfaceKeyword = declaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.InterfaceKeyword));
-                        if (interfaceKeyword.Any())
+                        if (IsInterface(declaration))
                         {
-                            var interfaceType = context.SemanticModel.GetTypeInfo(declaration).Type;
-
-                            entityInterface = new EntityInterface { name = identifierName.ToString(), InterfaceDeclaration = declaration, typeSymbol = interfaceType };
+                            entityInterface = new EntityInterface { name = identifierName.ToString(), InterfaceDeclaration = declaration };
                             return true;
                         }
                     }
@@ -124,24 +114,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private bool TryGetIdentifierName(SyntaxNode typeArgumentList, out SyntaxNode identifierName)
+        private bool IsInterface(SyntaxNode declaration)
         {
-            identifierName = typeArgumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
-            return identifierName != null;
-        }
-
-        private bool TryGetTypeArgumentList(MemberAccessExpressionSyntax expression, out SyntaxNode typeArgumentList)
-        {
-            var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
-            if (genericName != null)
-            {
-                //TypeArgumentList will always exist inside a GenericName
-                typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
-                return true;
-            }
-
-            typeArgumentList = null;
-            return false;
+            var interfaceKeyword = declaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.InterfaceKeyword)).FirstOrDefault();
+            return interfaceKeyword != null && !interfaceKeyword.IsKind(SyntaxKind.None);
         }
     }
 }

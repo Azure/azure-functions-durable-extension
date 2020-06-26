@@ -345,7 +345,7 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "System.String[]"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "string[]"),
                 Severity = Severity,
                 Locations =
                  new[] {

@@ -8,10 +8,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     public class EntityInterface
     {
-        public String name { get; set; }
+        public string name { get; set; }
 
         public SyntaxNode InterfaceDeclaration { get; set; }
-
-        public ITypeSymbol typeSymbol { get; set; }
     }
 }

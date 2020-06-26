@@ -128,11 +128,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<string>"),
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "string"),
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 42)
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 
@@ -169,11 +169,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<List<string>>"),
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "List<string>"),
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 42)
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 
@@ -210,11 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<string[]>"),
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "string[]"),
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 42)
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 
@@ -251,11 +251,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "<(string, int)>"),
+                Message = string.Format(Resources.SignalEntityAnalyzerMessageFormat, "(string, int)"),
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 42)
+                            new DiagnosticResultLocation("Test0.cs", 15, 43)
                         }
             };
 

@@ -155,8 +155,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     foreach (SyntaxNode identifier in identifiers)
                     {
                         if (string.Equals(identifier.ToString(), typeWithoutNamespace) ||
-                            TryGetTypeName(semanticModel, identifier, out string typeName) &&
-                            string.Equals(typeName, typeToCompare))
+                            SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifier, out ITypeSymbol type) &&
+                            string.Equals(type.ToString(), typeToCompare))
                         {
                             parameter = node.First().ToString();
                             return true;
@@ -199,19 +199,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            return false;
-        }
-
-        private static bool TryGetTypeName(SemanticModel semanticModel, SyntaxNode identifier, out string typeName)
-        {
-            var typeInfo = semanticModel.GetTypeInfo(identifier);
-            if (typeInfo.Type != null)
-            {
-                typeName = typeInfo.Type.ToString();
-                return true;
-            }
-
-            typeName = null;
             return false;
         }
         

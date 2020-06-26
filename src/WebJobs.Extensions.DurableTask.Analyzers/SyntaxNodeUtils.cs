@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 if (semanticModel != null)
                 {
                     typeSymbol = semanticModel.GetTypeInfo(node).Type;
-                    return true;
+                    return typeSymbol != null;
                 }
             }
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 if (semanticModel != null)
                 {
                     symbol = semanticModel.GetSymbolInfo(node).Symbol;
-                    return true;
+                    return symbol != null;
                 }
             }
 
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return TryGetChildTypeNode(parameter, out inputType);
         }
 
-        internal static bool TryGetTypeArgumentNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        internal static bool TryGetTypeArgumentIdentifier(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
             var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
             if (genericName != null)
@@ -379,13 +379,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool HaveMatchingOrCompatibeTypeArguments(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            if (subclassOrMatching == null || superOrMatching == null)
+            if (subclassOrMatching == null || superOrMatching == null
+                || !(subclassOrMatching is INamedTypeSymbol subclassNamedType
+                    && superOrMatching is INamedTypeSymbol superNamedType))
             {
                 return false;
             }
 
-            var subclassTypeArguments = ((INamedTypeSymbol)subclassOrMatching).TypeArguments;
-            var superTypeArguments = ((INamedTypeSymbol)superOrMatching).TypeArguments;
+            var subclassTypeArguments = subclassNamedType.TypeArguments;
+            var superTypeArguments = superNamedType.TypeArguments;
 
             if (NotNullAndMatchingLength(subclassTypeArguments, superTypeArguments))
             {

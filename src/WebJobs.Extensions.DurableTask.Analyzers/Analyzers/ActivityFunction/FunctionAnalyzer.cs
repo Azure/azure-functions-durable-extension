@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     return;
                 }
 
-                SyntaxNodeUtils.TryGetTypeArgumentNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
+                SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
 
                 TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode);
 

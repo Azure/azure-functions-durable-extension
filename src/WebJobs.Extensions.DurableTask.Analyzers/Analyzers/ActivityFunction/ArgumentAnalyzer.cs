@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (TryGetDurableActivityContextExpression(semanticModel, node, out SyntaxNode durableContextExpression))
             {
-                if (SyntaxNodeUtils.TryGetTypeArgumentNode((MemberAccessExpressionSyntax)durableContextExpression, out SyntaxNode typeArgument))
+                if (SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)durableContextExpression, out SyntaxNode typeArgument))
                 {
                     return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgument, out definitionInputType);
                 }
