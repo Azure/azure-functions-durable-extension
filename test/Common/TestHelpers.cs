@@ -197,6 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntities),
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
+                typeof(UnconstructibleClass),
 #if !FUNCTIONS_V1
                 typeof(TestEntityWithDependencyInjectionHelpers),
 #endif

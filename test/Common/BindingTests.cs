@@ -102,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.IDurableEntityClientBinding),
+                nameof(this.IDurableEntityClientBindingBackComp),
                 enableExtendedSessions: false))
             {
                 await host.StartAsync();

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
@@ -22,6 +21,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ITriggeredFunctionExecutor executor;
         private readonly IApplicationLifetimeWrapper hostServiceLifetime;
         private readonly string activityName;
+
+        /// <summary>
+        /// The DTFx-generated, auto-incrementing ID that uniquely identifies this activity function execution.
+        /// </summary>
+        private int taskEventId = -1;
 
         public TaskActivityShim(
             DurableTaskExtension config,
@@ -56,7 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
-                isReplay: false);
+                isReplay: false,
+                taskEventId: this.taskEventId);
 
             WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteActivityFunction(
                 this.executor,
@@ -74,7 +79,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.config.GetIntputOutputTrace(serializedOutput),
                         continuedAsNew: false,
                         functionType: FunctionType.Activity,
-                        isReplay: false);
+                        isReplay: false,
+                        taskEventId: this.taskEventId);
 
                     return serializedOutput;
                 case WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError:
@@ -93,13 +99,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // without the outer FunctionInvocationException.
                     Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
 
+                    if (OutOfProcExceptionHelpers.TryGetExceptionWithFriendlyMessage(
+                        exceptionToReport,
+                        out Exception friendlyMessageException))
+                    {
+                        exceptionToReport = friendlyMessageException;
+                    }
+
                     this.config.TraceHelper.FunctionFailed(
                         this.config.Options.HubName,
                         this.activityName,
                         instanceId,
                         exceptionToReport?.ToString() ?? string.Empty,
                         functionType: FunctionType.Activity,
-                        isReplay: false);
+                        isReplay: false,
+                        taskEventId: this.taskEventId);
 
                     throw new TaskFailureException(
                             $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
@@ -113,6 +127,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // This won't get called as long as we've implemented RunAsync.
             throw new NotImplementedException();
+        }
+
+        internal void SetTaskEventId(int taskEventId)
+        {
+            // We don't have the DTFx task event ID at TaskActivityShim-creation time
+            // so we have to set it here, before DTFx calls the RunAsync method.
+            this.taskEventId = taskEventId;
         }
 
         private static Exception StripFunctionInvocationException(Exception e)
