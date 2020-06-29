@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods..
         /// </summary>
         public static string AwaitAnalyzerMessageFormat {
             get {
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods..
         /// </summary>
         public static string AwaitAnalyzerTitle {
             get {

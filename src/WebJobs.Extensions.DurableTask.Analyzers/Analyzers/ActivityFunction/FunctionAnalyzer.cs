@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     FunctionName = functionName,
                     NameNode = functionNameNode,
-                    ParameterNode = inputNode,
+                    ArgumentNode = inputNode,
                     ReturnTypeNode = returnTypeNode,
                     InvocationExpression = invocationExpression
                 });
@@ -93,7 +93,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (invocationExpression != null && invocationExpression.Expression is MemberAccessExpressionSyntax memberAccessExpression)
             {
                 var name = memberAccessExpression.Name;
-                if (name.ToString().StartsWith("CallActivityAsync") || name.ToString().StartsWith("CallActivityWithRetryAsync"))
+                if (name != null
+                    && (name.ToString().StartsWith("CallActivityAsync")
+                        || name.ToString().StartsWith("CallActivityWithRetryAsync")))
                 {
                     return true;
                 }
@@ -122,14 +124,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
         {
-            var arguments = invocationExpression.ArgumentList.Arguments;
-            if (arguments != null && arguments.Count > 1)
+            var argumentList = invocationExpression.ArgumentList;
+            if (argumentList != null)
             {
-                var lastArgumentNode = arguments.Last();
+                var arguments = argumentList.Arguments;
+                if (arguments != null && arguments.Count > 1)
+                {
+                    var lastArgumentNode = arguments.Last();
 
-                //An Argument node will always have a child node
-                inputNode = lastArgumentNode.ChildNodes().First();
-                return true;
+                    //An Argument node will always have a child node
+                    inputNode = lastArgumentNode.ChildNodes().First();
+                    return true;
+                }
             }
 
             inputNode = null;

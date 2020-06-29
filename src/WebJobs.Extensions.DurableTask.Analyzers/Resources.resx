@@ -151,10 +151,10 @@
     <value>Activity function call return type doesn't match function definition return type.</value>
   </data>
   <data name="AwaitAnalyzerMessageFormat" xml:space="preserve">
-    <value />
+    <value>Code used in an orchestrator must not use await on non-Durable Functions methods.</value>
   </data>
   <data name="AwaitAnalyzerTitle" xml:space="preserve">
-    <value />
+    <value>Code used in an orchestrator must not use await on non-Durable Functions methods.</value>
   </data>
   <data name="DateTimeAnalyzerTitle" xml:space="preserve">
     <value>DateTime calls must be deterministic inside an orchestrator function.</value>

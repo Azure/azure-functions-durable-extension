@@ -5,10 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -39,20 +37,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var isInvokedWithNonNullInput = TryGetInvocationInputType(semanticModel, invocation, out ITypeSymbol invocationInputType);
                     var functionDefinitionUsesInput = TryGetDefinitionInputType(semanticModel, definition, out ITypeSymbol definitionInputType);
 
-                    if (!functionDefinitionUsesInput)
+                    if (isInvokedWithNonNullInput)
                     {
-                        if (isInvokedWithNonNullInput)
+                        if (!functionDefinitionUsesInput)
                         {
-                            var diagnostic = Diagnostic.Create(InputNotUsedRule, invocation.ParameterNode.GetLocation(), invocation.FunctionName);
+                            var diagnostic = Diagnostic.Create(InputNotUsedRule, invocation.ArgumentNode.GetLocation(), invocation.FunctionName);
 
                             context.ReportDiagnostic(diagnostic);
                         }
-                    }
-                    else if (!IsValidArgumentForDefinition(invocationInputType, definitionInputType))
-                    {
-                        var diagnostic = Diagnostic.Create(MismatchRule, invocation.ParameterNode.GetLocation(), invocation.FunctionName, definitionInputType.ToString(), invocationInputType.ToString());
+                        else if (!IsValidArgumentForDefinition(invocationInputType, definitionInputType))
+                        {
+                            var diagnostic = Diagnostic.Create(MismatchRule, invocation.ArgumentNode.GetLocation(), invocation.FunctionName, definitionInputType.ToString(), invocationInputType.ToString());
 
-                        context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
             }
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
         {
-            var activityInput = activityInvocation.ParameterNode;
+            var activityInput = activityInvocation.ArgumentNode;
             if (activityInput == null)
             {
                 invocationInputType = null;

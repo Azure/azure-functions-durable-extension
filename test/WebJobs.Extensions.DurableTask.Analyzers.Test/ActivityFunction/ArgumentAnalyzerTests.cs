@@ -94,6 +94,10 @@ namespace VSSample
                 await context.CallActivityAsync<string>(""Test_UnusedInputFromContext"", null);
             
                 return ""Hello World!"";
+
+                // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
+
+                await context.CallActivityAsync<string>(""Test_NightmareTest"", new List< Tuple<(int, IEnumerable<string>), Decimal>>());
             }
 
         // Functions Testing different matching input types
@@ -203,6 +207,15 @@ namespace VSSample
         public static string TestUnusedInputFromContext([ActivityTrigger] IDurableActivityContext context)
         {
             return $""Hello {name}!"";
+        }
+
+        // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
+
+        [FunctionName(""Test_NightmareTest"")]
+        public static string TestNightmareTest([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<Tuple<(int, List<string>), Object>[]>();
+            return $""Hello World!"";
         }
     }
 }";

@@ -1,10 +1,9 @@
-﻿using Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
@@ -109,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedDiagnostics[0] = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.AwaitAnalyzerMessageFormat, ""),
+                Message = Resources.AwaitAnalyzerMessageFormat,
                 Severity = Severity,
                 Locations =
                     new[] {
@@ -131,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedDiagnostics[2] = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.AwaitAnalyzerMessageFormat, "UserDefinedCode()"),
+                Message = Resources.AwaitAnalyzerMessageFormat,
                 Severity = Severity,
                 Locations =
                     new[] {
@@ -190,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             expectedDiagnostics[1] = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.AwaitAnalyzerMessageFormat, ""),
+                Message = Resources.AwaitAnalyzerMessageFormat,
                 Severity = Severity,
                 Locations =
                     new[] {

@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -315,16 +314,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
             if (genericName != null)
             {
-                //GenericName will always have a TypeArgumentList
-                var typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
-
-                //TypeArgumentList will always have a child node
-                identifierNode = typeArgumentList.ChildNodes().First();
-                return true;
+                return TryGetTypeArgumentIdentifier((GenericNameSyntax)genericName, out identifierNode);
             }
 
             identifierNode = null;
             return false;
+        }
+
+        internal static bool TryGetTypeArgumentIdentifier(GenericNameSyntax node, out SyntaxNode identifierNode)
+        {
+            //GenericName will always have a TypeArgumentList
+            identifierNode = node.TypeArgumentList.ChildNodes().First();
+            return (identifierNode != null && !identifierNode.IsKind(SyntaxKind.OmittedTypeArgument));
         }
 
         internal static bool IsActivityTriggerAttribute(AttributeSyntax attribute) => IsSpecifiedAttribute(attribute, "ActivityTrigger");

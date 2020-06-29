@@ -28,23 +28,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         }
 
         public static void ReportProblems(
-            CompilationAnalysisContext context, 
-            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
-            IEnumerable<ActivityFunctionCall> calledFunctions)
+            CompilationAnalysisContext context,
+            IEnumerable<ActivityFunctionDefinition> functionDefinitions,
+            IEnumerable<ActivityFunctionCall> functionInvocations)
         {
-            foreach (var activityInvocation in calledFunctions)
+            foreach (var invocation in functionInvocations)
             {
-                if (!availableFunctions.Select(x => x.FunctionName).Contains(activityInvocation.FunctionName))
+                if (!functionDefinitions.Select(x => x.FunctionName).Contains(invocation.FunctionName))
                 {
-                    if (SyntaxNodeUtils.TryGetClosestString(activityInvocation.FunctionName, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                    if (SyntaxNodeUtils.TryGetClosestString(invocation.FunctionName, functionDefinitions.Select(x => x.FunctionName), out string closestName))
                     {
-                        var diagnostic = Diagnostic.Create(CloseRule, activityInvocation.NameNode.GetLocation(), activityInvocation.FunctionName, closestName);
+                        var diagnostic = Diagnostic.Create(CloseRule, invocation.NameNode.GetLocation(), invocation.FunctionName, closestName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
                     else
                     {
-                        var diagnostic = Diagnostic.Create(MissingRule, activityInvocation.NameNode.GetLocation(), activityInvocation.FunctionName);
+                        var diagnostic = Diagnostic.Create(MissingRule, invocation.NameNode.GetLocation(), invocation.FunctionName);
 
                         context.ReportDiagnostic(diagnostic);
                     }

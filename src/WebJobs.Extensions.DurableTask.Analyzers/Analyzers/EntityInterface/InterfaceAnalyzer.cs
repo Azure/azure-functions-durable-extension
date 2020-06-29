@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -103,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         if (IsInterface(declaration))
                         {
-                            entityInterface = new EntityInterface { name = identifierName.ToString(), InterfaceDeclaration = declaration };
+                            entityInterface = new EntityInterface { Name = identifierName.ToString(), InterfaceDeclaration = declaration };
                             return true;
                         }
                     }

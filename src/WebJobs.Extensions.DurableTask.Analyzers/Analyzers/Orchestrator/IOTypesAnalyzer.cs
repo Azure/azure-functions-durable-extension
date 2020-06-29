@@ -2,10 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
