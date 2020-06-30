@@ -300,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task OrchestrationStartedOptOutOfEvent(bool extendedSessionsEnabled)
         {
-            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var testName = nameof(this.OrchestrationStartedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.SayHelloInline);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task OrchestrationCompletedOptOutOfEvent(bool extendedSessionsEnabled)
         {
-            var testName = nameof(this.OrchestrationStartAndCompleted);
+            var testName = nameof(this.OrchestrationCompletedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.SayHelloInline);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false)]
         public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
         {
-            var testName = nameof(this.OrchestrationFailed);
+            var testName = nameof(this.OrchestrationFailedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -1230,7 +1230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 wrappedOptions,
                 new LoggerFactory(),
                 mockNameResolver.Object,
-                new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver),
+                new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver, mockNameResolver.Object),
                 new TestHostShutdownNotificationService());
 
             var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
@@ -1267,11 +1267,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.HubName = "DurableTaskHub";
 
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = new SimpleNameResolver();
             var extension = new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
-                new SimpleNameResolver(),
-                new AzureStorageDurabilityProviderFactory(wrappedOptions, new TestConnectionStringResolver()),
+                nameResolver,
+                new AzureStorageDurabilityProviderFactory(wrappedOptions, new TestConnectionStringResolver(), nameResolver),
                 new TestHostShutdownNotificationService());
 
             var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
@@ -1290,11 +1291,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = new SimpleNameResolver();
             var extension = new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
-                new SimpleNameResolver(),
-                new AzureStorageDurabilityProviderFactory(wrappedOptions, new TestConnectionStringResolver()),
+                nameResolver,
+                new AzureStorageDurabilityProviderFactory(wrappedOptions, new TestConnectionStringResolver(), nameResolver),
                 new TestHostShutdownNotificationService());
 
             int callCount = 0;

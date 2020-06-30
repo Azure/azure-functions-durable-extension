@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
         public static async Task<WrappedFunctionResult> ExecuteFunctionInOrchestrationMiddleware(
             ITriggeredFunctionExecutor executor,
             TriggeredFunctionData triggerInput,
+            DurableCommonContext context,
             CancellationToken cancellationToken)
         {
 #pragma warning disable CS0618 // InvokeHandler approved for use by this extension
@@ -24,42 +25,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 
             try
             {
-                bool executedUserCode = false;
-                var triggeredFunctionData = new TriggeredFunctionData()
-                {
-                    TriggerValue = triggerInput.TriggerValue,
-                    ParentId = triggerInput.ParentId,
-                    InvokeHandler = userCodeHandler =>
-                    {
-                        executedUserCode = true;
-                        return triggerInput.InvokeHandler(userCodeHandler);
-                    },
-#if !FUNCTIONS_V1
-                    TriggerDetails = triggerInput.TriggerDetails,
-#endif
-                };
-#pragma warning restore CS0618
+                context.ExecutorCalledBack = false;
 
                 FunctionResult result = await executor.TryExecuteAsync(triggerInput, cancellationToken);
 
-                if (result.Succeeded)
+                if (context.ExecutorCalledBack)
                 {
-                    return WrappedFunctionResult.Success();
-                }
+                    if (result.Succeeded)
+                    {
+                        return WrappedFunctionResult.Success();
+                    }
 
-                if (cancellationToken.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return WrappedFunctionResult.FunctionRuntimeFailure(result.Exception);
+                    }
+
+                    return WrappedFunctionResult.UserCodeFailure(result.Exception);
+                }
+                else
                 {
-                    return WrappedFunctionResult.FunctionRuntimeFailure(result.Exception);
-                }
+                    // This can happen if the constructor for a non-static function fails.
+                    // We want to treat this case exactly as if the function itself is throwing the exception.
+                    // So we execute the middleware directly, instead of via the executor.
+                    try
+                    {
+                        var exception = result.Exception ?? new InvalidOperationException("The function failed to start executing.");
 
-                if (!executedUserCode)
-                {
-                    WrappedFunctionResult.UserCodeFailure(new InvalidOperationException(
-                         "The function failed to start executing. " +
-                         "For .NET functions, this can happen if an unhandled exception is thrown in the function's class constructor."));
-                }
+                        await triggerInput.InvokeHandler(() => Task.FromException<object>(exception));
 
-                return WrappedFunctionResult.UserCodeFailure(result.Exception);
+                        return WrappedFunctionResult.Success();
+                    }
+                    catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        return WrappedFunctionResult.UserCodeFailure(e);
+                    }
+                }
+#pragma warning restore CS0618
             }
             catch (Exception e)
             {

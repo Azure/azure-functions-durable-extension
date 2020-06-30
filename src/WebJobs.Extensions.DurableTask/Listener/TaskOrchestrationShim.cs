@@ -101,82 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.IsReplaying));
             }
 
-            object returnValue;
-            try
-            {
-                Task invokeTask = this.FunctionInvocationCallback();
-                if (invokeTask is Task<object> resultTask)
-                {
-                    // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
-                    // Possible performance implications; may need revisiting.
-                    returnValue = orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask;
-                }
-                else
-                {
-                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
-                }
-            }
-            catch (Exception e)
-            {
-                string exceptionDetails = e.ToString();
-                this.Config.TraceHelper.FunctionFailed(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    exceptionDetails,
-                    FunctionType.Orchestrator,
-                    this.context.IsReplaying);
-                status = OrchestrationRuntimeStatus.Failed;
-
-                if (!this.context.IsReplaying)
-                {
-                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        exceptionDetails,
-                        this.context.IsReplaying));
-                }
-
-                var orchestrationException = new OrchestrationFailureException(
-                    $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
-                    Utils.SerializeCause(e, this.config.ErrorDataConverter));
-
-                this.context.OrchestrationException = ExceptionDispatchInfo.Capture(orchestrationException);
-#if !FUNCTIONS_V1
-                DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
-#endif
-                throw orchestrationException;
-            }
-            finally
-            {
-                this.context.IsCompleted = true;
-            }
-
-            if (returnValue != null)
-            {
-                if (orchestratorInfo.IsOutOfProc)
-                {
-                    var jObj = returnValue as JObject;
-                    if (jObj == null && returnValue is string jsonText)
-                    {
-                        jObj = JObject.Parse(jsonText);
-                    }
-
-                    if (jObj != null)
-                    {
-                        await this.outOfProcShim.HandleOutOfProcExecutionAsync(jObj);
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema.");
-                    }
-                }
-                else
-                {
-                    this.context.SetOutput(returnValue);
-                }
-            }
+            await this.InvokeUserCodeAndHandleResults(orchestratorInfo, innerContext);
 
             // release any locks that were held by the orchestration
             // just in case the application code did not do so already
@@ -207,6 +132,113 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
 #endif
             return serializedOutput;
+        }
+
+        // Responsible for invoking the function, handling the exception, set the output, and if
+        // the function execution is out-of-process, handles the replay.
+        private async Task InvokeUserCodeAndHandleResults(
+            RegisteredFunctionInfo orchestratorInfo,
+            OrchestrationContext innerContext)
+        {
+            try
+            {
+                Task invokeTask = this.FunctionInvocationCallback();
+                if (invokeTask is Task<object> resultTask)
+                {
+                    // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
+                    // Possible performance implications; may need revisiting.
+                    object returnValue = orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask;
+                    if (returnValue != null)
+                    {
+                        if (orchestratorInfo.IsOutOfProc)
+                        {
+                            await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
+                            {
+                                ReturnValue = returnValue,
+                            });
+                        }
+                        else
+                        {
+                            this.context.SetOutput(returnValue);
+                        }
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that does not support return values!");
+                }
+            }
+            catch (Exception e)
+            {
+                if (orchestratorInfo.IsOutOfProc
+                    && OutOfProcExceptionHelpers.TryExtractOutOfProcStateJson(e.InnerException, out string returnValue)
+                    && !string.IsNullOrEmpty(returnValue))
+                {
+                    try
+                    {
+                        await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
+                        {
+                            ReturnValue = returnValue,
+                            Exception = e,
+                        });
+                    }
+                    catch (OrchestrationFailureException ex)
+                    {
+                        this.TraceAndSendExceptionNotification(ex.Details);
+                        this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
+                        throw ex;
+                    }
+                }
+                else
+                {
+                    this.TraceAndSendExceptionNotification(e.ToString());
+                    var orchestrationException = new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
+                        Utils.SerializeCause(e, innerContext.ErrorDataConverter));
+
+                    this.context.OrchestrationException =
+                        ExceptionDispatchInfo.Capture(orchestrationException);
+
+#if !FUNCTIONS_V1
+                    DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Failed, this.context.InstanceId);
+#endif
+
+                    throw orchestrationException;
+                }
+            }
+            finally
+            {
+                this.context.IsCompleted = true;
+            }
+        }
+
+        private void TraceAndSendExceptionNotification(string exceptionDetails)
+        {
+            this.config.TraceHelper.FunctionFailed(
+                this.context.HubName,
+                this.context.Name,
+                this.context.InstanceId,
+                exceptionDetails,
+                FunctionType.Orchestrator,
+                this.context.IsReplaying);
+
+            if (!this.context.IsReplaying)
+            {
+                this.context.AddDeferredTask(
+                    () => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        exceptionDetails,
+                        this.context.IsReplaying));
+            }
+        }
+
+        internal class OrchestrationInvocationResult
+        {
+            public object ReturnValue { get; set; }
+
+            public Exception Exception { get; set; }
         }
     }
 }

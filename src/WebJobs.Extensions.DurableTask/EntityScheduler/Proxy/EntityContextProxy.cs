@@ -24,14 +24,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public Task CallAsync(EntityId entityId, string operationName, object operationInput)
         {
-            this.context.SignalEntity(entityId, operationName, operationInput);
+            if (this.scheduledTimeForSignal.HasValue)
+            {
+                this.context.SignalEntity(entityId, this.scheduledTimeForSignal.Value, operationName, operationInput);
+            }
+            else
+            {
+                this.context.SignalEntity(entityId, operationName, operationInput);
+            }
 
             return Task.CompletedTask;
         }
 
         public Task<TResult> CallAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
-            this.context.SignalEntity(entityId, operationName, operationInput);
+            if (this.scheduledTimeForSignal.HasValue)
+            {
+                this.context.SignalEntity(entityId, this.scheduledTimeForSignal.Value, operationName, operationInput);
+            }
+            else
+            {
+                this.context.SignalEntity(entityId, operationName, operationInput);
+            }
 
             return Task.FromResult(default(TResult));
         }

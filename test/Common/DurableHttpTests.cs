@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_CheckUserAgentHeader),
+                nameof(this.DurableHttpAsync_CheckRequestAcceptHeaders),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -612,13 +612,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_SynchronousAPI_RequestContentTest(string storageProvider)
+        public async Task CallHttpAsync_SynchronousAPI_ReqContentTest(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
+                nameof(this.CallHttpAsync_SynchronousAPI_ReqContentTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -1009,7 +1009,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
+                nameof(this.DurableHttpAsync_Asynchronous_AddsBearerToken),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
