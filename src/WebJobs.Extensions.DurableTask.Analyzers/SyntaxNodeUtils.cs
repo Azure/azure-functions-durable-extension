@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
         {
-            return model.SyntaxTree == node.SyntaxTree
+            return model?.SyntaxTree == node.SyntaxTree
                 ? model
                 : model.Compilation.GetSemanticModel(node.SyntaxTree);
         }
@@ -213,9 +213,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             var newSemanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-            if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
+            if (newSemanticModel != null)
             {
-                return true;
+                if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
+                {
+                    return true;
+                }
             }
             
             functionName = null;
@@ -342,8 +345,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        public static bool IsDurableActivityContext(this ITypeSymbol type)
+        public static bool IsDurableActivityContext(ITypeSymbol type)
         {
+            if (type == null)
+            {
+                return false;
+            }
+
             return (type.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext")
                 || type.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
                 || type.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));

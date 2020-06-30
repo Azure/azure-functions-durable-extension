@@ -24,9 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor InputNotUsedRule = new DiagnosticDescriptor(DiagnosticId, Title, InputNotUsedMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         public static void ReportProblems(
-            CompilationAnalysisContext context, 
-            SemanticModel semanticModel, 
-            IEnumerable<ActivityFunctionDefinition> functionDefinitions, 
+            CompilationAnalysisContext context,
+            SemanticModel semanticModel,
+            IEnumerable<ActivityFunctionDefinition> functionDefinitions,
             IEnumerable<ActivityFunctionCall> functionInvocations)
         {
             foreach (var invocation in functionInvocations)
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var isInvokedWithNonNullInput = TryGetInvocationInputType(semanticModel, invocation, out ITypeSymbol invocationInputType);
                     var functionDefinitionUsesInput = TryGetDefinitionInputType(semanticModel, definition, out ITypeSymbol definitionInputType);
 
-                    if (isInvokedWithNonNullInput)
+                    if (isInvokedWithNonNullInput && invocationInputType != null)
                     {
                         if (!functionDefinitionUsesInput)
                         {
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, definitionInput, out definitionInputType))
             {
-                if (definitionInputType.IsDurableActivityContext())
+                if (SyntaxNodeUtils.IsDurableActivityContext(definitionInputType))
                 {
                     return TryGetInputTypeFromContext(semanticModel, definitionInput, out definitionInputType);
                 }
@@ -115,11 +115,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var identifierName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
                     if (identifierName != null)
                     {
-                        SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol);
-                        if (typeSymbol.IsDurableActivityContext())
+                        if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol))
                         {
-                            durableContextExpression = memberAccessExpression;
-                            return true;
+                            if (SyntaxNodeUtils.IsDurableActivityContext(typeSymbol))
+                            {
+                                durableContextExpression = memberAccessExpression;
+                                return true;
+                            }
                         }
                     }
                 }
