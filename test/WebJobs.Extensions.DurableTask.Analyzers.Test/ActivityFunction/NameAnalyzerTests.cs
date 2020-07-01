@@ -37,6 +37,7 @@ namespace VSSample
         // For test cases below
         public const string TestFunctionUsesConstant = ""TestFunctionNameWithConstant"";
         public const string TestFunctionNameWithClass = ""TestFunctionNameWithClass"";
+        public const string TestFunctionInDependencies = ""TestFunctionInDependencies"";
 
         // Testing that no diagnostics are produced when method does not have the FunctionName attribute present
         public static async Task<string> NonFunctionInvalidNames(
@@ -55,31 +56,35 @@ namespace VSSample
         {
             // Matching names (strings)
 
-            await context.CallActivityAsync<string>(""Test_MatchingStrings"", ""Tokyo"");
+            await context.CallActivityAsync<string>(""Test_MatchingStrings"", ""Sandra Bland"");
 
             // Invocation and function using nameof()
 
-            await context.CallActivityAsync<string>(nameof(TestFunctionUsesNameOfClassName), ""Amsterdam"");
+            await context.CallActivityAsync<string>(nameof(TestFunctionUsesNameOfClassName), ""Jamar Clark"");
 
             // Invocation uses string, function uses nameof()
 
-            await context.CallActivityAsync<string>(""TestFunctionUsesNameOfMethodName"", ""Amsterdam"");
+            await context.CallActivityAsync<string>(""TestFunctionUsesNameOfMethodName"", ""Ahmaud Arbery"");
 
             // Invocation uses string, function uses constant
 
-            await context.CallActivityAsync<string>(""TestFunctionNameWithConstant"", ""Amsterdam"");
+            await context.CallActivityAsync<string>(""TestFunctionNameWithConstant"", ""Philando Castile"");
 
             // Invocation uses string, function uses constant prefaced with class name
 
-            await context.CallActivityAsync<string>(""TestFunctionNameWithClass"", ""Amsterdam"");
+            await context.CallActivityAsync<string>(""TestFunctionNameWithClass"", ""Aura Rosser"");
 
             // Invocation uses constant, function uses constant
 
-            await context.CallActivityAsync<string>(TestFunctionUsesConstant, ""Amsterdam"");
+            await context.CallActivityAsync<string>(TestFunctionUsesConstant, ""Atatiana Jefferson"");
 
             // Invocation uses constant prefaced with class name, function uses nameof()
 
-            await context.CallActivityAsync<string>(HelloSequence.TestFunctionNameWithClass, ""Amsterdam"");
+            await context.CallActivityAsync<string>(HelloSequence.TestFunctionNameWithClass, ""Breonna Taylor"");
+
+            // Invocation uses constant, function not found in source code, covers <FunctionsInDependencies>true</FunctionsInDependencies>
+
+            await context.CallActivityAsync<string>(TestFunctionInDependencies, ""George Floyd"");
 
             return ""Hello World!"";
         }

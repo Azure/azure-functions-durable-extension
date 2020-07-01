@@ -225,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private static bool TryGetFunctionNameInConstant(SemanticModel semanticModel, SyntaxNode node, out string functionName)
+        public static bool TryGetFunctionNameInConstant(SemanticModel semanticModel, SyntaxNode node, out string functionName)
         {
             if (node != null && (node.IsKind(SyntaxKind.IdentifierName) || node.IsKind(SyntaxKind.SimpleMemberAccessExpression)))
             {

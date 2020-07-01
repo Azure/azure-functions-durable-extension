@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            NameAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
+            NameAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
             ArgumentAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
             FunctionReturnTypeAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
         }
