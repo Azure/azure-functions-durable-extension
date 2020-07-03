@@ -1531,6 +1531,11 @@
             Value of maximum durable timer delay. Used for long running durable timers.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LongRunningTimerIntervalLength">
+            <summary>
+            Value of maximum durable timer delay. Used for long running durable timers.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">
             <inheritdoc/>
         </member>

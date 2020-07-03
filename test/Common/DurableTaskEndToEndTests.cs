@@ -1989,26 +1989,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task ThrowExceptionOnLongTimer(bool extendedSessions, string storageProvider)
+        public async Task LongRunningTimer(bool extendedSessions, string storageProvider)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.ThrowExceptionOnLongTimer),
+                nameof(this.LongRunningTimer),
                 extendedSessions,
-                storageProviderType: storageProvider))
+                storageProviderType: "azure_storage_modified"))
             {
                 await host.StartAsync();
 
-                // Right now, the limit for timers is 6 days. In the future, we'll extend this and update this test.
-                // https://github.com/Azure/azure-functions-durable-extension/issues/14
-                DateTime fireAt = DateTime.UtcNow.AddDays(7);
+                var fireAt = DateTime.UtcNow.AddMinutes(2);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.NotNull(status);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-                Assert.Contains("fireAt", status.Output.ToString());
-
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 await host.StopAsync();
             }
         }

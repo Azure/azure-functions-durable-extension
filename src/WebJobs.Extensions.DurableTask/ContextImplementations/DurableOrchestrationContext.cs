@@ -311,12 +311,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ThrowIfInvalidAccess();
 
             DateTime intervalFireAt = fireAt;
-            TimeSpan longRunningTimerIntervalLength = TimeSpan.FromDays(3);
 
             if (fireAt.Subtract(this.InnerContext.CurrentUtcDateTime) > this.durabilityProvider.MaximumDelayTime)
             {
                 this.IsLongRunningTimer = true;
-                intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(longRunningTimerIntervalLength);
+                intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
             }
 
             this.Config.TraceHelper.FunctionListening(
@@ -340,14 +339,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     break;
                 }
-                else if (remainingTime < longRunningTimerIntervalLength)
+                else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
                 {
                     TimeSpan timerStartsIn = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
                     intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(timerStartsIn);
                 }
                 else
                 {
-                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(longRunningTimerIntervalLength);
+                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
                 }
             }
 
