@@ -4467,7 +4467,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string[] orchestratorFunctionNames =
             {
-                nameof(TestOrchestrations.SayHelloInline),
+                nameof(TestOrchestrations.SayHelloWithActivity),
             };
 
             using (var host = TestHelpers.GetJobHost(
