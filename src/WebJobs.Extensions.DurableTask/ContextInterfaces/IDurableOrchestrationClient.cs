@@ -251,6 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="eventName">The name of the event.</param>
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
+        [Obsolete]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
         Task RaiseEventAsync(string instanceId, string eventName, object eventData);
 
@@ -327,37 +328,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns an instance of <see cref="PurgeHistoryResult"/>.</returns>
         [Obsolete]
         Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus);
-
-        /// <summary>
-        /// Gets all the status of the orchestration instances.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-        /// <param name="connectionDetails">The storage account connection details.</param>
-        /// <returns>Returns orchestration status for all instances.</returns>
-        [Obsolete]
-        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken), DurableConnectionDetails connectionDetails = null);
-
-        /// <summary>
-        /// Gets the status of all orchestration instances that match the specified conditions.
-        /// </summary>
-        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
-        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
-        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-        /// <param name="connectionDetails">The storage account connection details.</param>
-        /// <returns>Returns orchestration status for all instances.</returns>
-        [Obsolete]
-        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken), DurableConnectionDetails connectionDetails = null);
-
-        /// <summary>
-        /// Gets the status of all orchestration instances with paging that match the specified conditions.
-        /// </summary>
-        /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-        /// <param name="connectionDetails">The storage account connection details.</param>
-        /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
-        [Obsolete]
-        Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken, DurableConnectionDetails connectionDetails = null);
 
         /// <summary>
         /// Gets the status of the specified orchestration instance.
