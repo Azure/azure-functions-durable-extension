@@ -1533,7 +1533,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LongRunningTimerIntervalLength">
             <summary>
-            Value of maximum durable timer delay. Used for long running durable timers.
+            Interval time used for long running timers.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">

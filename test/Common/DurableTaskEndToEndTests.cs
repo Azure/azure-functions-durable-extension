@@ -1989,28 +1989,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task LongRunningTimer(bool extendedSessions, string storageProvider)
-        {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.LongRunningTimer),
-                extendedSessions,
-                storageProviderType: "azure_storage_modified"))
-            {
-                await host.StartAsync();
-
-                var fireAt = DateTime.UtcNow.AddMinutes(2);
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-                await host.StopAsync();
-            }
-        }
-
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task HandleUncallableOrchestrator(bool extendedSessions, string storageProvider)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -3262,31 +3240,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(response.EntityExists);
 
                 await host.StopAsync();
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task AzureStorage_TimerLimitExceeded_ThrowsException()
-        {
-            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleTimerSucceeds);
-
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.AzureStorage_TimerLimitExceeded_ThrowsException),
-                false))
-            {
-                await host.StartAsync();
-
-                var invalidFireAtTime = DateTime.UtcNow.AddDays(7);
-
-                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, invalidFireAtTime, this.output);
-
-                var status = await client.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-
-                string output = status.Output.ToString();
-                Assert.Contains("fireAt", output);
             }
         }
 

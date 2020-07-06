@@ -78,6 +78,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case TestHelpers.AzureStorageProviderType:
                     // This provider is built into the default AddDurableTask() call below.
                     break;
+                case TestHelpers.AzureStorageProviderModifiedType:
+                    builder.AddAzureStorageModifiedDurableTask();
+                    break;
                 default:
                     throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
             }
@@ -95,6 +98,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static IWebJobsBuilder AddEmulatorDurableTask(this IWebJobsBuilder builder)
         {
             builder.Services.AddSingleton<IDurabilityProviderFactory, EmulatorDurabilityProviderFactory>();
+            return builder;
+        }
+
+        private static IWebJobsBuilder AddAzureStorageModifiedDurableTask(this IWebJobsBuilder builder)
+        {
+            builder.Services.AddSingleton<IDurabilityProviderFactory, AzureStorageModifiedDurabilityProviderFactory>();
             return builder;
         }
 
