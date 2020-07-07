@@ -35,12 +35,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string Resource { get; }
 
         /// <inheritdoc/>
-        public async Task<string> GetTokenAsync()
+        public async Task<string> GetTokenAsync(DefaultAzureCredentialOptions options = null)
         {
             var scopes = new string[] { this.Resource };
             TokenRequestContext context = new TokenRequestContext(scopes);
 
-            DefaultAzureCredential defaultCredential = new DefaultAzureCredential();
+            DefaultAzureCredential defaultCredential = new DefaultAzureCredential(options);
             AccessToken defaultToken = await defaultCredential.GetTokenAsync(context);
             string accessToken = defaultToken.Token;
 

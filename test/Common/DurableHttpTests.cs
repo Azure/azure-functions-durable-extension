@@ -12,6 +12,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Identity;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Extensions.Primitives;
@@ -1355,7 +1356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.token = token;
             }
 
-            public Task<string> GetTokenAsync()
+            public Task<string> GetTokenAsync(DefaultAzureCredentialOptions options = null)
             {
                 return Task.FromResult(this.token);
             }
