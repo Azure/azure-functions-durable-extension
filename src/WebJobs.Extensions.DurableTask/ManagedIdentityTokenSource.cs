@@ -3,7 +3,8 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.Azure.Services.AppAuthentication;
+using Azure.Core;
+using Azure.Identity;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -36,8 +37,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public async Task<string> GetTokenAsync()
         {
-            var azureServiceTokenProvider = new AzureServiceTokenProvider();
-            string accessToken = await azureServiceTokenProvider.GetAccessTokenAsync(this.Resource);
+            var scopes = new string[] { this.Resource };
+            TokenRequestContext context = new TokenRequestContext(scopes);
+
+            DefaultAzureCredential defaultCredential = new DefaultAzureCredential();
+            AccessToken defaultToken = await defaultCredential.GetTokenAsync(context);
+            string accessToken = defaultToken.Token;
+
             return accessToken;
         }
     }
