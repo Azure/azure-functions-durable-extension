@@ -22,9 +22,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The Azure Active Directory resource identifier of the web API being invoked.
         /// For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
         /// </param>
-        public ManagedIdentityTokenSource(string resource)
+        /// <param name="options">azure credential options that the user can configure when authenticating.</param>
+        public ManagedIdentityTokenSource(string resource, DefaultAzureCredentialOptions options = null)
         {
             this.Resource = resource ?? throw new ArgumentNullException(nameof(resource));
+            this.Options = options;
         }
 
         /// <summary>
@@ -34,13 +36,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty("resource")]
         public string Resource { get; }
 
+        /// <summary>
+        /// The azure credential options that a user can configure when authenticating.
+        /// </summary>
+        [JsonProperty("options")]
+        public DefaultAzureCredentialOptions Options { get; }
+
         /// <inheritdoc/>
-        public async Task<string> GetTokenAsync(DefaultAzureCredentialOptions options = null)
+        public async Task<string> GetTokenAsync()
         {
             var scopes = new string[] { this.Resource };
             TokenRequestContext context = new TokenRequestContext(scopes);
 
-            DefaultAzureCredential defaultCredential = new DefaultAzureCredential(options);
+            DefaultAzureCredential defaultCredential = new DefaultAzureCredential(this.Options);
             AccessToken defaultToken = await defaultCredential.GetTokenAsync(context);
             string accessToken = defaultToken.Token;
 

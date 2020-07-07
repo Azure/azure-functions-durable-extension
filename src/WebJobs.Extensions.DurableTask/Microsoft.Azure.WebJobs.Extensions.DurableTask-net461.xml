@@ -2911,11 +2911,10 @@
             Implementations of this interface can be used to provide authorization tokens for outbound HTTP requests.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource.GetTokenAsync(Azure.Identity.DefaultAzureCredentialOptions)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource.GetTokenAsync">
             <summary>
             Gets a token for a resource.
             </summary>
-            <param name="options">azure credential options that the user can configure when authenticating.</param>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim">
@@ -3031,7 +3030,7 @@
             Token Source implementation for Azure Managed Identities.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.#ctor(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.#ctor(System.String,Azure.Identity.DefaultAzureCredentialOptions)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource"/> class.
             </summary>
@@ -3039,6 +3038,7 @@
             The Azure Active Directory resource identifier of the web API being invoked.
             For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
             </param>
+            <param name="options">azure credential options that the user can configure when authenticating.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Resource">
             <summary>
@@ -3046,7 +3046,12 @@
             For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.GetTokenAsync(Azure.Identity.DefaultAzureCredentialOptions)">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Options">
+            <summary>
+            The azure credential options that a user can configure when authenticating.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.GetTokenAsync">
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessagePayloadDataConverter.Serialize(System.Object)">

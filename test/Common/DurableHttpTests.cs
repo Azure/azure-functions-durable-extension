@@ -1356,7 +1356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.token = token;
             }
 
-            public Task<string> GetTokenAsync(DefaultAzureCredentialOptions options = null)
+            public Task<string> GetTokenAsync()
             {
                 return Task.FromResult(this.token);
             }
