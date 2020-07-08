@@ -4463,6 +4463,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CustomSerializerSettings_TypeNameHandlingAll()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.CustomIMessageSerializerSettingsFactory),
+                true,
+                serializerSettings: new CustomTypeNameHandlingSettings()))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("World", status?.Input);
+                Assert.Equal("Hello, World!", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task DefaultIMessageSerializerSettingsFactory()
         {
             string[] orchestratorFunctionNames =
@@ -4741,6 +4769,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 serializer.Converters.Add(new StringEnumConverter());
 
                 return serializer;
+            }
+        }
+
+        // JsonSerializerSettings with TypeNameHandling.All
+        private class CustomTypeNameHandlingSettings : IMessageSerializerSettingsFactory
+        {
+            public JsonSerializerSettings CreateJsonSerializerSettings()
+            {
+                return new JsonSerializerSettings()
+                {
+                    TypeNameHandling = TypeNameHandling.All,
+                };
             }
         }
     }
