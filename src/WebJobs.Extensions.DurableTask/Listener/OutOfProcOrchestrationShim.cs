@@ -127,6 +127,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CreateTimer:
                             using (var cts = new CancellationTokenSource())
                             {
+                                DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+
+                                string validTimerMsg = ctx.ValidOutOfProcTimer(action.FireAt);
+                                if (!string.IsNullOrEmpty(validTimerMsg))
+                                {
+                                    throw new ArgumentException(validTimerMsg, nameof(action.FireAt));
+                                }
+
                                 tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
                                 if (action.IsCanceled)
                                 {

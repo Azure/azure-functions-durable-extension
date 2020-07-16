@@ -362,6 +362,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
+        public string ValidOutOfProcTimer(DateTime fireAt)
+        {
+            this.ThrowIfInvalidAccess();
+
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            {
+                return errorMessage;
+            }
+
+            return string.Empty;
+        }
+
         /// <inheritdoc />
         Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name)
         {
