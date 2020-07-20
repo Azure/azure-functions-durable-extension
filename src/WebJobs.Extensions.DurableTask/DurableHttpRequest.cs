@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using Azure.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -143,7 +145,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (Enum.TryParse((string)kindValue, out TokenSourceType tokenSourceKind) &&
                         tokenSourceKind == TokenSourceType.AzureManagedIdentity)
                     {
-                        return new ManagedIdentityTokenSource((string)jsonObject.GetValue("resource", StringComparison.Ordinal));
+                        string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
+                        string optionsString = (string)jsonObject.GetValue("defaultazurecredentialoptions", StringComparison.Ordinal);
+
+                        if (!string.IsNullOrEmpty(optionsString))
+                        {
+                            DefaultAzureCredentialOptions options = JsonConvert.DeserializeObject<DefaultAzureCredentialOptions>(optionsString);
+                            return new ManagedIdentityTokenSource(resourceString, options);
+                        }
+
+                        return new ManagedIdentityTokenSource(resourceString);
                     }
 
                     throw new NotSupportedException($"The token source kind '{kindValue.ToString(Formatting.None)}' is not supported.");
@@ -169,6 +180,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     writer.WriteValue(TokenSourceType.AzureManagedIdentity.ToString());
                     writer.WritePropertyName("resource");
                     writer.WriteValue(tokenSource.Resource);
+                    writer.WritePropertyName("defaultazurecredentialoptions");
+                    writer.WriteValue(JsonConvert.SerializeObject(tokenSource.Options));
                     writer.WriteEndObject();
                 }
                 else
