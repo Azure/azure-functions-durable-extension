@@ -129,10 +129,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             {
                                 DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
 
-                                string validTimerMsg = ctx.ValidOutOfProcTimer(action.FireAt);
-                                if (!string.IsNullOrEmpty(validTimerMsg))
+                                if (ctx == null)
                                 {
-                                    throw new ArgumentException(validTimerMsg, nameof(action.FireAt));
+                                    throw new InvalidOperationException("DurableOrchestrationContext ctx is null.");
+                                }
+
+                                bool isValidTimer = ctx.ValidOutOfProcTimer(action.FireAt, out string errorMessage);
+                                if (!isValidTimer)
+                                {
+                                    throw new ArgumentException(errorMessage, nameof(action.FireAt));
                                 }
 
                                 tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));

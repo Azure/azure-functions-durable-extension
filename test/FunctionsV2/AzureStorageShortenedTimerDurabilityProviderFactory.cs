@@ -6,9 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class AzureStorageModifiedDurabilityProviderFactory : AzureStorageDurabilityProviderFactory
+    internal class AzureStorageShortenedTimerDurabilityProviderFactory : AzureStorageDurabilityProviderFactory
     {
-        public AzureStorageModifiedDurabilityProviderFactory(
+        public AzureStorageShortenedTimerDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver)

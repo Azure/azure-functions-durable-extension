@@ -362,16 +362,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        public string ValidOutOfProcTimer(DateTime fireAt)
+        public bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out errorMessage))
             {
-                return errorMessage;
+                return false;
             }
 
-            return string.Empty;
+            return true;
         }
 
         /// <inheritdoc />

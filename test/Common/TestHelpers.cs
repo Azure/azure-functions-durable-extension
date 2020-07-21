@@ -23,7 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string AzureStorageProviderType = "azure_storage";
         public const string EmulatorProviderType = "emulator";
         public const string RedisProviderType = "redis";
-        public const string AzureStorageProviderModifiedType = "azure_storage_modified";
 
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
@@ -44,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? maxQueuePollingInterval = null,
             string[] eventGridPublishEventTypes = null,
             string storageProviderType = AzureStorageProviderType,
+            Type durabilityProviderFactoryType = null,
             bool autoFetchLargeMessages = true,
             int httpAsyncSleepTime = 500,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
@@ -56,7 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (storageProviderType)
             {
                 case AzureStorageProviderType:
-                case AzureStorageProviderModifiedType:
 #if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
@@ -99,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.RollbackEntityOperationsOnExceptions = rollbackEntityOperationsOnExceptions;
 
             // Azure Storage specfic tests
-            if (string.Equals(storageProviderType, AzureStorageProviderType) || string.Equals(storageProviderType, AzureStorageProviderModifiedType))
+            if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
                 options.StorageProvider["ConnectionStringName"] = "AzureWebJobsStorage";
                 options.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
@@ -136,7 +135,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameResolver,
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
-                serializerSettings);
+                serializerSettings,
+                durabilityProviderFactoryType);
         }
 
         public static ITestHost GetJobHostWithOptions(
@@ -146,7 +146,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver = null,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-            IMessageSerializerSettingsFactory serializerSettings = null)
+            IMessageSerializerSettingsFactory serializerSettings = null,
+            Type durabilityProviderFactoryType = null)
         {
             if (serializerSettings == null)
             {
@@ -163,6 +164,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return PlatformSpecificHelpers.CreateJobHost(
                 optionsWrapper,
                 storageProviderType,
+#if !FUNCTIONS_V1
+                durabilityProviderFactoryType,
+#endif
                 loggerProvider,
                 testNameResolver,
                 durableHttpMessageHandler,

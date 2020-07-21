@@ -31,7 +31,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 this.loggerProvider,
                 nameof(this.LongRunningTimer),
                 extendedSessions,
-                storageProviderType: "azure_storage_modified"))
+                storageProviderType: "azure_storage",
+                durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
             {
                 await host.StartAsync();
 
@@ -53,7 +54,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 this.loggerProvider,
                 nameof(this.LongRunningTimer),
                 extendedSessions,
-                storageProviderType: "azure_storage_modified"))
+                storageProviderType: "azure_storage",
+                durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
             {
                 await host.StartAsync();
 

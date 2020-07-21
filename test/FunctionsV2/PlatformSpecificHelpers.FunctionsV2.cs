@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static ITestHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
             string storageProvider,
+            Type durabilityProviderFactoryType,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddDurableTask(options, storageProvider);
+                        webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -65,8 +66,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host);
         }
 
-        private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider)
+        private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)
         {
+            if (durabilityProviderFactoryType != null)
+            {
+                builder.Services.AddSingleton(typeof(IDurabilityProviderFactory), typeof(AzureStorageShortenedTimerDurabilityProviderFactory));
+                builder.AddDurableTask(options);
+                return builder;
+            }
+
             switch (storageProvider)
             {
                 case TestHelpers.RedisProviderType:
@@ -77,9 +85,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
                 case TestHelpers.AzureStorageProviderType:
                     // This provider is built into the default AddDurableTask() call below.
-                    break;
-                case TestHelpers.AzureStorageProviderModifiedType:
-                    builder.AddAzureStorageModifiedDurableTask();
                     break;
                 default:
                     throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
@@ -98,12 +103,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static IWebJobsBuilder AddEmulatorDurableTask(this IWebJobsBuilder builder)
         {
             builder.Services.AddSingleton<IDurabilityProviderFactory, EmulatorDurabilityProviderFactory>();
-            return builder;
-        }
-
-        private static IWebJobsBuilder AddAzureStorageModifiedDurableTask(this IWebJobsBuilder builder)
-        {
-            builder.Services.AddSingleton<IDurabilityProviderFactory, AzureStorageModifiedDurabilityProviderFactory>();
             return builder;
         }
 
