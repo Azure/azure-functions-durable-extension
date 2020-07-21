@@ -146,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         tokenSourceKind == TokenSourceType.AzureManagedIdentity)
                     {
                         string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
-                        string optionsString = (string)jsonObject.GetValue("defaultazurecredentialoptions", StringComparison.Ordinal);
+                        string optionsString = (string)jsonObject.GetValue("options", StringComparison.Ordinal);
 
                         if (!string.IsNullOrEmpty(optionsString))
                         {
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     writer.WriteValue(TokenSourceType.AzureManagedIdentity.ToString());
                     writer.WritePropertyName("resource");
                     writer.WriteValue(tokenSource.Resource);
-                    writer.WritePropertyName("defaultazurecredentialoptions");
+                    writer.WritePropertyName("options");
                     writer.WriteValue(JsonConvert.SerializeObject(tokenSource.Options));
                     writer.WriteEndObject();
                 }
