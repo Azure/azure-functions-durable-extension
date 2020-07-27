@@ -129,9 +129,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
-            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions();
+            ManagedIdentityOptions options = new ManagedIdentityOptions();
             options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
-            options.ExcludeEnvironmentCredential = true;
 
             MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
 
@@ -143,7 +142,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string serializedTestDurableHttpRequest = JsonConvert.SerializeObject(request);
 
             Assert.Contains("\"AuthorityHost\":\"https://dummy.login.microsoftonline.com/", serializedTestDurableHttpRequest);
-            Assert.Contains("\"ExcludeEnvironmentCredential\":true", serializedTestDurableHttpRequest);
 
             // Part 2: Check if DefaultAzureCredentialOptions is correctly serialized with DurableHttRequest
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
@@ -156,7 +154,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
 
             Assert.Contains("\\\"AuthorityHost\\\":\\\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
-            Assert.Contains("\\\"ExcludeEnvironmentCredential\\\":true", serializedDurableHttpRequest);
         }
 
         /// <summary>
@@ -988,7 +985,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                DefaultAzureCredentialOptions credentialOptions = new DefaultAzureCredentialOptions();
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
                 credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
@@ -1033,7 +1030,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                DefaultAzureCredentialOptions credentialOptions = new DefaultAzureCredentialOptions();
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
                 credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
@@ -1479,9 +1476,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             private readonly string testToken;
 
             [DataMember]
-            private readonly DefaultAzureCredentialOptions options;
+            private readonly ManagedIdentityOptions options;
 
-            public MockTokenSource(string token, DefaultAzureCredentialOptions options = null)
+            public MockTokenSource(string token, ManagedIdentityOptions options = null)
             {
                 this.testToken = token;
                 this.options = options;
@@ -1492,7 +1489,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 return Task.FromResult(this.testToken);
             }
 
-            public DefaultAzureCredentialOptions GetOptions()
+            public ManagedIdentityOptions GetOptions()
             {
                 return this.options;
             }

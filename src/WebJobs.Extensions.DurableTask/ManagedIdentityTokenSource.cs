@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
         /// </param>
         /// <param name="options">Optional Azure credential options to use when authenticating.</param>
-        public ManagedIdentityTokenSource(string resource, DefaultAzureCredentialOptions options = null)
+        public ManagedIdentityTokenSource(string resource, ManagedIdentityOptions options = null)
         {
             this.Resource = resource ?? throw new ArgumentNullException(nameof(resource));
             this.Options = options;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The azure credential options that a user can configure when authenticating.
         /// </summary>
         [JsonProperty("options")]
-        public DefaultAzureCredentialOptions Options { get; }
+        public ManagedIdentityOptions Options { get; }
 
         /// <inheritdoc/>
         public async Task<string> GetTokenAsync()
@@ -48,9 +48,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var scopes = new string[] { this.Resource };
             TokenRequestContext context = new TokenRequestContext(scopes);
 
-            DefaultAzureCredential defaultCredential = this.Options != null ?
-                new DefaultAzureCredential(this.Options) :
-                new DefaultAzureCredential();
+            DefaultAzureCredential defaultCredential;
+            DefaultAzureCredentialOptions defaultAzureCredentialOptions = new DefaultAzureCredentialOptions();
+
+            if (this.Options != null && ((this.Options.AuthorityHost != null) || (!string.IsNullOrEmpty(this.Options.TenantId))))
+            {
+                if (this.Options.AuthorityHost != null)
+                {
+                    defaultAzureCredentialOptions.AuthorityHost = this.Options.AuthorityHost;
+                }
+
+                if (!string.IsNullOrEmpty(this.Options.TenantId))
+                {
+                    defaultAzureCredentialOptions.InteractiveBrowserTenantId = this.Options.TenantId;
+                }
+
+                defaultCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
+            }
+            else
+            {
+                defaultCredential = new DefaultAzureCredential();
+            }
+
             AccessToken defaultToken = await defaultCredential.GetTokenAsync(context);
             string accessToken = defaultToken.Token;
 

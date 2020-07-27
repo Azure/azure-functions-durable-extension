@@ -3025,12 +3025,34 @@
             Task orchestration implementation which delegates the orchestration implementation to a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions">
+            <summary>
+            Request used to make an HTTP call through Durable Functions.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions.#ctor(System.Uri,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions"/> class.
+            </summary>
+            <param name="authorityHost">The host of the Azure Active Directory authority.</param>
+            <param name="tenantId">The tenant id of the user to authenticate.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions.AuthorityHost">
+            <summary>
+            Content passed with the HTTP request made by the Durable Function.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions.TenantId">
+            <summary>
+            Content passed with the HTTP request made by the Durable Function.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource">
             <summary>
             Token Source implementation for Azure Managed Identities.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.#ctor(System.String,Azure.Identity.DefaultAzureCredentialOptions)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.#ctor(System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource"/> class.
             </summary>

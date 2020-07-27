@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         if (!string.IsNullOrEmpty(optionsString))
                         {
-                            DefaultAzureCredentialOptions options = JsonConvert.DeserializeObject<DefaultAzureCredentialOptions>(optionsString);
+                            ManagedIdentityOptions options = JsonConvert.DeserializeObject<ManagedIdentityOptions>(optionsString);
                             return new ManagedIdentityTokenSource(resourceString, options);
                         }
 
