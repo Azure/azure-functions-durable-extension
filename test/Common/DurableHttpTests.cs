@@ -123,14 +123,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void SerializeDefaultAzureCredentialOptions()
+        public void SerializeManagedIdentityOptions()
         {
-            // Part 1: Check if DefaultAzureCredentialOptions is correctly serialized with TestDurableHttRequest
+            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttRequest
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
             ManagedIdentityOptions options = new ManagedIdentityOptions();
             options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+            options.TenantId = "tenant_id";
 
             MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
 
@@ -141,9 +142,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             string serializedTestDurableHttpRequest = JsonConvert.SerializeObject(request);
 
-            Assert.Contains("\"AuthorityHost\":\"https://dummy.login.microsoftonline.com/", serializedTestDurableHttpRequest);
+            Assert.Contains("\"authorityhost\":\"https://dummy.login.microsoftonline.com/", serializedTestDurableHttpRequest);
+            Assert.Contains("\"tenantid\":\"tenant_id\"", serializedTestDurableHttpRequest);
 
-            // Part 2: Check if DefaultAzureCredentialOptions is correctly serialized with DurableHttRequest
+            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttRequest
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
             TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
                 httpMethod: HttpMethod.Get,
@@ -153,7 +155,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
             string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
 
-            Assert.Contains("\\\"AuthorityHost\\\":\\\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
+            Assert.Contains("\\\"authorityhost\\\":\\\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
+            Assert.Contains("\\\"tenantid\\\":\\\"tenant_id", serializedDurableHttpRequest);
         }
 
         /// <summary>
@@ -966,7 +969,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
-        /// when the MockTokenSource object takes in a DefaultAzureCredentialsOptions object and
+        /// when the MockTokenSource object takes in a ManagedIdentityOptions object and
         /// a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
         [Theory]
@@ -987,6 +990,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
                 credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
@@ -1010,7 +1014,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
-        /// when the MockTokenSource object takes in a DefaultAzureCredentialsOptions object,
+        /// when the MockTokenSource object takes in a ManagedIdentityOptions object,
         /// a Bearer Token is added to the DurableHttpRequest object, and follows the
         /// asynchronous pattern.
         /// </summary>
@@ -1032,6 +1036,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
                 credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
