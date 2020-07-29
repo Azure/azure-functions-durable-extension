@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class TimerAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = TimerAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = TimerAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         private const string allTests = @"
             public void timerAllCalls()

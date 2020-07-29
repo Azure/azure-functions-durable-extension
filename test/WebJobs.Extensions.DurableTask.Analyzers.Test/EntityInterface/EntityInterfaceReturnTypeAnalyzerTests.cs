@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     public class EntityInterfaceReturnTypeAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = EntityInterfaceReturnTypeAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = EntityInterfaceReturnTypeAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
         public void ReturnTypeAnalyzer_NoDiagnosticTestCases()

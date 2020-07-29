@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     public class NameAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = NameAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = NameAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
         public void Name_NoDiagnosticTestCases()

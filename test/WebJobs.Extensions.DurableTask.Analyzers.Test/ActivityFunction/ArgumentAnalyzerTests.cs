@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     public class ArgumentAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = ArgumentAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = ArgumentAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
         public void Argument_NoDiagnosticTestCases()

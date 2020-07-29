@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class IOTypesAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = IOTypesAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = IOTypesAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         private const string allTests = @"
             public void allCalls(HttpClient httpClient, SqlConnection sqlConnection, CloudBlobClient cloudBlobClient, CloudQueueClient cloudQueueClient, 
