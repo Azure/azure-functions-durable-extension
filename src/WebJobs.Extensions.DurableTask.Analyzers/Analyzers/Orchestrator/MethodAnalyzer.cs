@@ -42,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     IOTypesAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
                     ThreadTaskAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
                     TimerAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
-                    AwaitAnalyzer.RegisterDiagnostic(declaration, context, semanticModel) |
                     RegisterDiagnostics(declaration, context, semanticModel))
                 {
                     method.IsDeterministic = false;

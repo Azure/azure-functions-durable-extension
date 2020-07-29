@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     public class NameAnalyzer
     {
-        public const string DiagnosticId = "DF0113";
+        public const string DiagnosticId = "DF0109";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString CloseMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerCloseMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MissingMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityNameAnalyzerMissingMessageFormat), Resources.ResourceManager, typeof(Resources));

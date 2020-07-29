@@ -28,7 +28,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     ThreadTaskAnalyzer.Rule,
                     TimerAnalyzer.V1Rule,
                     TimerAnalyzer.V2Rule,
-                    AwaitAnalyzer.Rule,
                     MethodAnalyzer.Rule);
             }
         }
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 IOTypesAnalyzer.RegisterDiagnostic(method, context, this.semanticModel);
                 ThreadTaskAnalyzer.RegisterDiagnostic(method, context, this.semanticModel);
                 TimerAnalyzer.RegisterDiagnostic(method, context, this.semanticModel);
-                AwaitAnalyzer.RegisterDiagnostic(method, context, this.semanticModel);
                 MethodAnalyzer.RegisterDiagnostics(method, context, this.semanticModel);
             }
         }

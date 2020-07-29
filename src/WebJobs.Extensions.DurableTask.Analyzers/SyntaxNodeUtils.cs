@@ -29,7 +29,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
         {
-            return model?.SyntaxTree == node.SyntaxTree
+            if (model == null || node == null)
+            {
+                return null;
+            }
+
+            return model.SyntaxTree == node.SyntaxTree
                 ? model
                 : model.Compilation.GetSemanticModel(node.SyntaxTree);
         }
@@ -426,7 +431,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool AreMatchingGenericTypes(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            if (subclassOrMatching == null && superOrMatching == null)
+            if (subclassOrMatching == null || superOrMatching == null)
             {
                 return false;
             }

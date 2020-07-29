@@ -97,7 +97,7 @@ namespace VSSample
 
                 // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
 
-                await context.CallActivityAsync<string>(""Test_NightmareTest"", new List< Tuple<(int, IEnumerable<string>), Decimal>>());
+                await context.CallActivityAsync<string>(""Test_NightmareTest"", new List<Tuple<(int, IEnumerable<string>), Decimal>>());
             }
 
         // Functions Testing different matching input types

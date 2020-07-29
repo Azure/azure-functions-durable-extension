@@ -56,35 +56,35 @@ namespace VSSample
         {
             // Matching names (strings)
 
-            await context.CallActivityAsync<string>(""Test_MatchingStrings"", ""Sandra Bland"");
+            await context.CallActivityAsync<string>(""Test_MatchingStrings"", ""Prairie View"");
 
             // Invocation and function using nameof()
 
-            await context.CallActivityAsync<string>(nameof(TestFunctionUsesNameOfClassName), ""Jamar Clark"");
+            await context.CallActivityAsync<string>(nameof(TestFunctionUsesNameOfClassName), ""Minneapolis"");
 
             // Invocation uses string, function uses nameof()
 
-            await context.CallActivityAsync<string>(""TestFunctionUsesNameOfMethodName"", ""Ahmaud Arbery"");
+            await context.CallActivityAsync<string>(""TestFunctionUsesNameOfMethodName"", ""Brunswick"");
 
             // Invocation uses string, function uses constant
 
-            await context.CallActivityAsync<string>(""TestFunctionNameWithConstant"", ""Philando Castile"");
+            await context.CallActivityAsync<string>(""TestFunctionNameWithConstant"", ""Minneapolis"");
 
             // Invocation uses string, function uses constant prefaced with class name
 
-            await context.CallActivityAsync<string>(""TestFunctionNameWithClass"", ""Aura Rosser"");
+            await context.CallActivityAsync<string>(""TestFunctionNameWithClass"", ""Ann Arbor"");
 
             // Invocation uses constant, function uses constant
 
-            await context.CallActivityAsync<string>(TestFunctionUsesConstant, ""Atatiana Jefferson"");
+            await context.CallActivityAsync<string>(TestFunctionUsesConstant, ""Fort Worth"");
 
             // Invocation uses constant prefaced with class name, function uses nameof()
 
-            await context.CallActivityAsync<string>(HelloSequence.TestFunctionNameWithClass, ""Breonna Taylor"");
+            await context.CallActivityAsync<string>(HelloSequence.TestFunctionNameWithClass, ""Louisville"");
 
             // Invocation uses constant, function not found in source code, covers <FunctionsInDependencies>true</FunctionsInDependencies>
 
-            await context.CallActivityAsync<string>(TestFunctionInDependencies, ""George Floyd"");
+            await context.CallActivityAsync<string>(TestFunctionInDependencies, ""Minneapolis"");
 
             return ""Hello World!"";
         }
