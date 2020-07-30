@@ -494,9 +494,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
+            if (!query.IncludeDeleted)
+            {
+                query.FetchState = true;
+            }
+
             var condition = new OrchestrationStatusQueryCondition(query);
             var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
             var entityResult = new EntityQueryResult(result);
+
+            if (!query.IncludeDeleted)
+            {
+                var statefulEntities = entityResult.Entities.Where(e => e.State != null).ToList();
+                while (statefulEntities.Count < query.PageSize)
+                {
+                    query.ContinuationToken = entityResult.ContinuationToken;
+                    condition = new OrchestrationStatusQueryCondition(query);
+                    result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
+                    entityResult = new EntityQueryResult(result);
+                    statefulEntities = entityResult.Entities.Where(e => e.State != null).ToList();
+                }
+            }
+
             return entityResult;
         }
 
