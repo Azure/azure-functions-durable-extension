@@ -155,8 +155,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
             string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
 
-            Assert.Contains("\\\"authorityhost\\\":\\\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
-            Assert.Contains("\\\"tenantid\\\":\\\"tenant_id", serializedDurableHttpRequest);
+            Assert.Contains("\"authorityhost\":\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
+            Assert.Contains("\"tenantid\":\"tenant_id", serializedDurableHttpRequest);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void SerializeDurableHttpRequestWithoutManagedIdentityOptions()
+        {
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Accept", "application/json");
+
+            ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url");
+            TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: managedIdentityTokenSource);
+
+            DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
+            string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
+
+            Assert.DoesNotContain("\"authorityhost\":\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
+            Assert.DoesNotContain("\"tenantid\":\"tenant_id\"", serializedDurableHttpRequest);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DeserializeManagedIdentityOptions()
+        {
+            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttRequest
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Accept", "application/json");
+
+            ManagedIdentityOptions options = new ManagedIdentityOptions();
+            options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+            options.TenantId = "tenant_id";
+
+            MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
+
+            TestDurableHttpRequest request = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: mockTokenSource);
+
+            string serializedTestDurableHttpRequest = JsonConvert.SerializeObject(request);
+            TestDurableHttpRequest deserializedTestDurableHttpRequest = JsonConvert.DeserializeObject<TestDurableHttpRequest>(serializedTestDurableHttpRequest);
+
+            MockTokenSource deserializedMockTokenSource = deserializedTestDurableHttpRequest.TokenSource as MockTokenSource;
+            Assert.Equal("https://dummy.login.microsoftonline.com/", deserializedMockTokenSource.GetOptions().AuthorityHost.ToString());
+            Assert.Equal("tenant_id", deserializedMockTokenSource.GetOptions().TenantId);
+
+            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttRequest
+            ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
+            TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: managedIdentityTokenSource);
+
+            DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
+            string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
+            DurableHttpRequest deserializedDurableHttpRequest = JsonConvert.DeserializeObject<DurableHttpRequest>(serializedDurableHttpRequest);
+
+            ManagedIdentityTokenSource deserilizedManagedIdentityTokenSource = deserializedDurableHttpRequest.TokenSource as ManagedIdentityTokenSource;
+            Assert.Equal("https://dummy.login.microsoftonline.com/", deserilizedManagedIdentityTokenSource.Options.AuthorityHost.ToString());
+            Assert.Equal("tenant_id", deserilizedManagedIdentityTokenSource.Options.TenantId);
         }
 
         /// <summary>

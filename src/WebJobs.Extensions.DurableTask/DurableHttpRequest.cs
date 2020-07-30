@@ -146,12 +146,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         tokenSourceKind == TokenSourceType.AzureManagedIdentity)
                     {
                         string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
-                        string optionsString = (string)jsonObject.GetValue("options", StringComparison.Ordinal);
 
-                        if (!string.IsNullOrEmpty(optionsString))
+                        if (jsonObject.TryGetValue("options", out JToken optionsValue))
                         {
-                            ManagedIdentityOptions options = JsonConvert.DeserializeObject<ManagedIdentityOptions>(optionsString);
-                            return new ManagedIdentityTokenSource(resourceString, options);
+                            JObject optionsJObject = (JObject)optionsValue;
+                            string authorityHostValue = (string)optionsJObject.GetValue("authorityhost", StringComparison.Ordinal);
+                            string tenantIdValue = (string)optionsJObject.GetValue("tenantid", StringComparison.Ordinal);
+
+                            if (!string.IsNullOrEmpty(authorityHostValue) || !string.IsNullOrEmpty(tenantIdValue))
+                            {
+                                ManagedIdentityOptions managedIdentityOptions = new ManagedIdentityOptions();
+
+                                if (!string.IsNullOrEmpty(authorityHostValue))
+                                {
+                                    managedIdentityOptions.AuthorityHost = new Uri(authorityHostValue);
+                                }
+
+                                if (!string.IsNullOrEmpty(tenantIdValue))
+                                {
+                                    managedIdentityOptions.TenantId = tenantIdValue;
+                                }
+
+                                return new ManagedIdentityTokenSource(resourceString, managedIdentityOptions);
+                            }
                         }
 
                         return new ManagedIdentityTokenSource(resourceString);
@@ -180,8 +197,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     writer.WriteValue(TokenSourceType.AzureManagedIdentity.ToString());
                     writer.WritePropertyName("resource");
                     writer.WriteValue(tokenSource.Resource);
-                    writer.WritePropertyName("options");
-                    writer.WriteValue(JsonConvert.SerializeObject(tokenSource.Options));
+
+                    if (tokenSource.Options != null && ((tokenSource.Options.AuthorityHost != null) || (!string.IsNullOrEmpty(tokenSource.Options.TenantId))))
+                    {
+                        writer.WritePropertyName("options");
+                        writer.WriteStartObject();
+
+                        if (tokenSource.Options.AuthorityHost != null)
+                        {
+                            writer.WritePropertyName("authorityhost");
+                            writer.WriteValue(tokenSource.Options.AuthorityHost);
+                        }
+
+                        if (!string.IsNullOrEmpty(tokenSource.Options.TenantId))
+                        {
+                            writer.WritePropertyName("tenantid");
+                            writer.WriteValue(tokenSource.Options.TenantId);
+                        }
+
+                        writer.WriteEndObject();
+                    }
+
                     writer.WriteEndObject();
                 }
                 else

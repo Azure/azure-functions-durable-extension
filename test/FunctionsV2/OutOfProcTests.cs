@@ -148,6 +148,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallHttpActionOrchestrationWithManagedIdentityOptions()
+        {
+            DurableHttpRequest request = null;
+
+            // Mock the CallHttpAsync API so we can capture the request and return a fixed response.
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+            contextMock
+                .Setup(ctx => ctx.CallHttpAsync(It.IsAny<DurableHttpRequest>()))
+                .Callback<DurableHttpRequest>(req => request = req)
+                .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
+
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var executionJson = @"
+{
+    ""isDone"": false,
+    ""actions"": [
+        [{
+            ""actionType"": ""CallHttp"",
+            ""httpRequest"": {
+                ""method"": ""GET"",
+                ""uri"": ""https://example.com"",
+                ""tokenSource"": {
+                    ""kind"": ""AzureManagedIdentity"",
+                    ""resource"": ""https://management.core.windows.net"",
+                    ""options"": {
+                        ""authorityhost"": ""https://login.microsoftonline.com/"",
+                        ""tenantid"": ""example_tenant_id""
+                    }
+                }
+            }
+        }]
+    ]
+}";
+
+            // Feed the out-of-proc execution result JSON to the out-of-proc shim.
+            var jsonObject = JObject.Parse(executionJson);
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
+            {
+                ReturnValue = jsonObject,
+            };
+            bool moreWork = await shim.ScheduleDurableTaskEvents(result);
+
+            Assert.NotNull(request);
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal(new Uri("https://example.com"), request.Uri);
+            Assert.Null(request.Content);
+
+            Assert.NotNull(request.TokenSource);
+            ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(request.TokenSource);
+            Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
+            Assert.Equal("https://login.microsoftonline.com/", tokenSource.Options.AuthorityHost.ToString());
+            Assert.Equal("example_tenant_id", tokenSource.Options.TenantId);
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
