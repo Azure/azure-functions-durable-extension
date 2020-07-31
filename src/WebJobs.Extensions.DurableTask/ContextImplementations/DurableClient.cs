@@ -491,6 +491,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
         }
 
+        private static EntityQueryResult ConvertToEntityQueryResult(IEnumerable<DurableEntityStatus> entities, string continuationToken)
+        {
+            var entityQueryResult = new EntityQueryResult();
+            entityQueryResult.Entities = entities;
+            entityQueryResult.ContinuationToken = continuationToken;
+
+            return entityQueryResult;
+        }
+
         /// <inheritdoc />
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
@@ -505,15 +514,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!query.IncludeDeleted)
             {
-                var statefulEntities = entityResult.Entities.Where(e => e.State != null).ToList();
-                while (statefulEntities.Count < query.PageSize)
+                var statefulEntities = entityResult.Entities.Where(e => e.State != null);
+                var statefulEntityResult = ConvertToEntityQueryResult(statefulEntities, entityResult.ContinuationToken);
+
+                while (statefulEntities.ToList().Count < query.PageSize && !string.IsNullOrEmpty(entityResult.ContinuationToken))
                 {
                     query.ContinuationToken = entityResult.ContinuationToken;
                     condition = new OrchestrationStatusQueryCondition(query);
                     result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
                     entityResult = new EntityQueryResult(result);
-                    statefulEntities = entityResult.Entities.Where(e => e.State != null).ToList();
+                    statefulEntities = entityResult.Entities.Where(e => e.State != null);
+
+                    statefulEntityResult = ConvertToEntityQueryResult(statefulEntities, entityResult.ContinuationToken);
                 }
+                return statefulEntityResult;
             }
 
             return entityResult;
