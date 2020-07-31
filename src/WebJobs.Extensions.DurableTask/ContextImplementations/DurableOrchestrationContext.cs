@@ -341,8 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
                 {
-                    TimeSpan timerStartsIn = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
-                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(timerStartsIn);
+                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(remainingTime);
                 }
                 else
                 {

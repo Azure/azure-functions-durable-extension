@@ -24,7 +24,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanOptions), MemberType = typeof(TestDataGenerator))]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task LongRunningTimer(bool extendedSessions)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -47,7 +48,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanOptions), MemberType = typeof(TestDataGenerator))]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task TimerLengthLessThanMaxTime(bool extendedSessions)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
