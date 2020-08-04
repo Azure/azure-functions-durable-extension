@@ -100,7 +100,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if !FUNCTIONS_V1
         public FunctionBindingContext FunctionBindingContext { get; set; }
-        FunctionBindingContext IDurableEntityContext.FunctionBindingContext { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 #endif
 
         public void CaptureInternalError(Exception e)
