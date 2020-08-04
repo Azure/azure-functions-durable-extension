@@ -64,9 +64,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         string IDurableOrchestrationClient.TaskHubName => this.TaskHubName;
 
-        string IDurableClient.TaskHubName => throw new NotImplementedException();
+        string IDurableClient.TaskHubName => this.TaskHubName;
 
-        string IDurableEntityClient.TaskHubName => throw new NotImplementedException();
+        string IDurableEntityClient.TaskHubName => this.TaskHubName;
 
         /// <inheritdoc />
         HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure)
