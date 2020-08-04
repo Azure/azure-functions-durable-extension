@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class TimerAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = TimerAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = TimerAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         private const string allTests = @"
             public void timerAllCalls()
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }";
 
         [TestMethod]
-        public void TimerInMethod_NonIssueCalls()
+        public void Timer_NoDiagnosticTestCases()
         {
             var test = @"
     using System;
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void TaskInOrchestrator_Delay_Namespace()
+        public void Task_Delay_WithNamespace()
         {
             var test = @"
     using System;
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void TaskInOrchestrator_Delay()
+        public void Task_Delay()
         {
             var test = @"
     using System;
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void ThreadInOrchestrator_Sleep_Namespace()
+        public void Thread_Sleep_WithNamespace()
         {
             var test = @"
     using System;
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void ThreadInOrchestrator_Sleep()
+        public void Thread_Sleep()
         {
             var test = @"
     using System;
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void Timer_InMethod_OrchestratorCall_All()
+        public void Timer_NonDeterministicMethod_AllTimerCases()
         {
             var test = @"
 using System;
@@ -234,8 +234,6 @@ namespace VSSample
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
         public static string DirectCall()
@@ -262,7 +260,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 27, 17)
+                            new DiagnosticResultLocation("Test0.cs", 25, 17)
                         }
             };
 
@@ -273,7 +271,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 28, 17)
+                            new DiagnosticResultLocation("Test0.cs", 26, 17)
                         }
             };
 
@@ -284,7 +282,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 29, 17)
+                            new DiagnosticResultLocation("Test0.cs", 27, 17)
                         }
             };
 
@@ -295,7 +293,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 30, 17)
+                            new DiagnosticResultLocation("Test0.cs", 28, 17)
                         }
             };
 

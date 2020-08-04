@@ -4,9 +4,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using TestHelper;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestrator
@@ -15,50 +12,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class MethodAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = MethodAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = MethodAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
-        public void MethodCallsInOrchestrator_NonIssueCalls()
+        public void MethodCalls_NoDiagnosticTestCases()
         {
             var test = @"
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace VSSample
-{
-    public static class HelloSequence
+    namespace VSSample
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static class HelloSequence
+        {
+            [FunctionName(""MethodAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 string.ToLower(""Testing method call not defined in source code"");
                 DirectCall();
-            
-                return ""Hello"";
             }
 
-        public static string DirectCall()
+        public static void DirectCall()
         {
             string.ToUpper(""Method not defined in source code"");
             IndirectCall();
             RecursiveCall();
-            return ""Hi"";
         }
 
-        public static Object IndirectCall()
+        public static void IndirectCall()
         {
-            return new Object();
         }
 
-        public static Object RecursiveCall()
+        public static void RecursiveCall()
         {
             RecursiveCall();
-            return new Object();
         }
     }
 }";
@@ -67,33 +57,28 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void MethodCallsInOrchestrator_DirectCall()
+        public void MethodCalls_DirectCall()
         {
             var test = @"
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace VSSample
-{
-    public static class HelloSequence
+    namespace VSSample
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static class HelloSequence
+        {
+            [FunctionName(""MethodAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
-        public static string DirectCall()
+        public static void DirectCall()
         {
             var dateTime = DateTime.Now;
-            return ""Hi"";
         }
     }
 }";
@@ -106,7 +91,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
@@ -117,7 +102,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 24, 28)
+                            new DiagnosticResultLocation("Test0.cs", 20, 28)
                         }
             };
 
@@ -125,39 +110,33 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void MethodCallsInOrchestrator_IndirectCall()
+        public void MethodCalls_IndirectCall()
         {
             var test = @"
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace VSSample
-{
-    public static class HelloSequence
+    namespace VSSample
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static class HelloSequence
+        {
+            [FunctionName(""MethodAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
-        public static string DirectCall()
+        public static void DirectCall()
         {
             IndirectCall();
-            return ""Hi"";
         }
 
-        public static Object IndirectCall()
+        public static void IndirectCall()
         {
             var dateTime = DateTime.Now;
-            return new Object();
         }
     }
 }";
@@ -170,7 +149,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
@@ -181,7 +160,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 24, 13)
+                            new DiagnosticResultLocation("Test0.cs", 20, 13)
                         }
             };
 
@@ -192,7 +171,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 30, 28)
+                            new DiagnosticResultLocation("Test0.cs", 25, 28)
                         }
             };
 
@@ -200,34 +179,29 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void MethodCallsInOrchestrator_NonShortCircuit()
+        public void MethodCalls_NonShortCircuit()
         {
             var test = @"
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace VSSample
-{
-    public static class HelloSequence
+    namespace VSSample
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static class HelloSequence
+        {
+            [FunctionName(""MethodAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
-        public static string DirectCall()
+        public static void DirectCall()
         {
             var dateTime = DateTime.Now;
             Environment.GetEnvironmentVariable(""test"");
-            return ""Hi"";
         }
     }
 }";
@@ -240,7 +214,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
@@ -251,7 +225,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 24, 28)
+                            new DiagnosticResultLocation("Test0.cs", 20, 28)
                         }
             };
 
@@ -262,7 +236,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 25, 13)
+                            new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 

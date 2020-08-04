@@ -3,7 +3,6 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,27 +21,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
 
         public static void ReportProblems(
-            CompilationAnalysisContext context, 
-            SemanticModel semanticModel, 
-            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
-            IEnumerable<ActivityFunctionCall> calledFunctions)
+            CompilationAnalysisContext context,
+            SemanticModel semanticModel,
+            IEnumerable<ActivityFunctionDefinition> functionDefinitions,
+            IEnumerable<ActivityFunctionCall> functionInvocations)
         {
-            foreach (var activityInvocation in calledFunctions)
+            foreach (var invocation in functionInvocations)
             {
-                var functionDefinition = availableFunctions.Where(x => x.FunctionName == activityInvocation.Name).FirstOrDefault();
-                if (functionDefinition != null && activityInvocation.ReturnTypeNode != null)
+                var definition = functionDefinitions.Where(x => x.FunctionName == invocation.FunctionName).FirstOrDefault();
+                if (definition != null && invocation.ReturnTypeNode != null)
                 {
-                    TryGetInvocationReturnType(semanticModel, activityInvocation, out ITypeSymbol invocationReturnType);
-                    TryGetDefinitionReturnType(semanticModel, functionDefinition, out ITypeSymbol definitionReturnType);
-
-                    if (!IsValidReturnTypeForDefinition(invocationReturnType, definitionReturnType))
+                    if (TryGetInvocationReturnType(semanticModel, invocation, out ITypeSymbol invocationReturnType)
+                        && TryGetDefinitionReturnType(semanticModel, definition, out ITypeSymbol definitionReturnType))
                     {
-                        var invocationTypeName = SyntaxNodeUtils.GetQualifiedTypeName(invocationReturnType);
-                        var functionTypeName = SyntaxNodeUtils.GetQualifiedTypeName(definitionReturnType);
+                        if (!IsValidReturnTypeForDefinition(invocationReturnType, definitionReturnType))
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, invocation.InvocationExpression.GetLocation(), invocation.FunctionName, definitionReturnType.ToString(), invocationReturnType.ToString());
 
-                        var diagnostic = Diagnostic.Create(Rule, activityInvocation.InvocationExpression.GetLocation(), activityInvocation.Name, functionTypeName, invocationTypeName);
-
-                        context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
             }
@@ -55,8 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 definitionReturnType = taskTypeArgument;
             }
 
-            return SyntaxNodeUtils.InputMatchesOrCompatibleType(invocationReturnType, definitionReturnType)
-                || SyntaxNodeUtils.TypeNodeImplementsOrExtendsType(definitionReturnType, invocationReturnType.ToString());
+            return SyntaxNodeUtils.IsMatchingDerivedOrCompatibleType(definitionReturnType, invocationReturnType);
         }
 
         private static bool TryGetTaskTypeArgument(ITypeSymbol returnType, out ITypeSymbol taskTypeArgument)
@@ -71,18 +67,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private static void TryGetInvocationReturnType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationReturnType)
+        private static bool TryGetInvocationReturnType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationReturnType)
         {
             var invocationReturnNode = activityInvocation.ReturnTypeNode;
 
-            invocationReturnType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocationReturnNode).GetTypeInfo(invocationReturnNode).Type;
+            return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, invocationReturnNode, out invocationReturnType);
         }
 
-        private static void TryGetDefinitionReturnType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionReturnType)
+        private static bool TryGetDefinitionReturnType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionReturnType)
         {
             var definitionReturnNode = functionDefinition.ReturnTypeNode;
 
-            definitionReturnType = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, definitionReturnNode).GetTypeInfo(definitionReturnNode).Type;
+            return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, definitionReturnNode, out definitionReturnType);
         }
     }
 }
