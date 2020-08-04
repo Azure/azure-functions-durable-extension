@@ -947,7 +947,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
             var timeoutAt = this.InnerContext.CurrentUtcDateTime + timeout;
-            var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
+            var timeoutTask = ((IDurableOrchestrationContext)this).CreateTimer(timeoutAt, cts.Token);
             var waitForEventTask = this.WaitForExternalEvent<T>(name, "ExternalEvent");
 
             waitForEventTask.ContinueWith(
@@ -1175,6 +1175,114 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.newGuidCounter++;
 
             return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
+        }
+
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallEntityAsync<TResult>(EntityId entityId, string operationName)
+        {
+            return ((IDurableOrchestrationContext)this).CallEntityAsync<TResult>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName)
+        {
+            return ((IDurableOrchestrationContext)this).CallEntityAsync<object>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, string instanceId, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, instanceId, input);
+        }
+
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<TResult>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, string instanceId, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, instanceId, input);
+        }
+
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<TResult>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CreateTimer(DateTime fireAt, CancellationToken cancelToken)
+        {
+            return ((IDurableOrchestrationContext)this).CreateTimer<object>(fireAt, null, cancelToken);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name, TimeSpan timeout)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name, timeout);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name, timeout, cancelToken);
+        }
+
+        /// <inheritdoc/>
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<T>(name, timeout, CancellationToken.None);
+        }
+
+        /// <inheritdoc/>
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<T>(name, timeout, defaultValue, CancellationToken.None);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallActivityAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallActivityAsync<object>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallActivityWithRetryAsync<object>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(string entityKey)
+        {
+            return ((IDurableOrchestrationContext)this).CreateEntityProxy<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey));
+        }
+
+        /// <inheritdoc/>
+        TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(EntityId entityId)
+        {
+            return EntityProxyFactory.Create<TEntityInterface>(new OrchestrationContextProxy(this), entityId);
         }
 
         private class LockReleaser : IDisposable

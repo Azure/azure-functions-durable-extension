@@ -100,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if !FUNCTIONS_V1
         public FunctionBindingContext FunctionBindingContext { get; set; }
+        FunctionBindingContext IDurableEntityContext.FunctionBindingContext { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 #endif
 
         public void CaptureInternalError(Exception e)
@@ -562,6 +563,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.outbox.Clear();
             }
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
+        {
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), operation);
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this), entityId));
+        }
+
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this, scheduledTimeUtc), entityId));
         }
 
         private abstract class OutgoingMessage
