@@ -361,7 +361,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        public bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
+        internal Task OutOfProcCreateTimer(DurableOrchestrationContext ctx, DateTime fireAt, CancellationToken cancelToken)
+        {
+            if (!ValidOutOfProcTimer(fireAt, out string errorMessage))
+            {
+                throw new ArgumentException(errorMessage, nameof(fireAt));
+            }
+
+            return ctx.CreateTimer(fireAt, cancelToken);
+        }
+
+        private bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
         {
             this.ThrowIfInvalidAccess();
 
