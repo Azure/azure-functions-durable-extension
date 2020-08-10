@@ -318,34 +318,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
             }
 
-            this.Config.TraceHelper.FunctionListening(
-                this.Config.Options.HubName,
-                this.OrchestrationName,
-                this.InstanceId,
-                reason: $"CreateTimer:{fireAt:o}",
-                isReplay: this.InnerContext.IsReplaying);
-
             T result = default;
 
-            while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
+            if (!this.IsLongRunningTimer)
             {
                 this.IncrementActionsOrThrowException();
-                Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
+                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
 
                 result = await timerTask;
+            }
+            else
+            {
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
 
-                TimeSpan remainingTime = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
-                if (remainingTime <= TimeSpan.Zero)
+                while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
                 {
-                    break;
-                }
-                else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
-                {
-                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(remainingTime);
-                }
-                else
-                {
-                    intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
+                    this.IncrementActionsOrThrowException();
+                    Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
+
+                    result = await timerTask;
+
+                    TimeSpan remainingTime = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
+
+                    if (remainingTime <= TimeSpan.Zero)
+                    {
+                        break;
+                    }
+                    else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(remainingTime);
+                    }
+                    else
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
+                    }
                 }
             }
 
@@ -363,7 +381,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal Task OutOfProcCreateTimer(DurableOrchestrationContext ctx, DateTime fireAt, CancellationToken cancelToken)
         {
-            if (!ValidOutOfProcTimer(fireAt, out string errorMessage))
+            if (!this.ValidOutOfProcTimer(fireAt, out string errorMessage))
             {
                 throw new ArgumentException(errorMessage, nameof(fireAt));
             }

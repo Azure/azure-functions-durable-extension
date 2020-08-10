@@ -59,7 +59,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ctx.SignalEntity(input, "count");
 
             ctx.SetCustomStatus("AllAPICallsUsed");
-            await ctx.CallHttpAsync(null);
+
+            // next call shouldn't run because MaxOrchestrationCount is reached
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), stringInput);
 
             return "TestCompleted";
         }
