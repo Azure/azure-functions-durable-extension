@@ -51,24 +51,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DefaultAzureCredential defaultCredential;
             DefaultAzureCredentialOptions defaultAzureCredentialOptions = new DefaultAzureCredentialOptions();
 
-            if (this.Options != null && ((this.Options.AuthorityHost != null) || (!string.IsNullOrEmpty(this.Options.TenantId))))
+            if (this.Options?.AuthorityHost != null)
             {
-                if (this.Options.AuthorityHost != null)
-                {
-                    defaultAzureCredentialOptions.AuthorityHost = this.Options.AuthorityHost;
-                }
-
-                if (!string.IsNullOrEmpty(this.Options.TenantId))
-                {
-                    defaultAzureCredentialOptions.InteractiveBrowserTenantId = this.Options.TenantId;
-                }
-
-                defaultCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
+                defaultAzureCredentialOptions.AuthorityHost = this.Options.AuthorityHost;
             }
-            else
+
+            if (!string.IsNullOrEmpty(this.Options?.TenantId))
             {
-                defaultCredential = new DefaultAzureCredential();
+                defaultAzureCredentialOptions.InteractiveBrowserTenantId = this.Options.TenantId;
             }
+
+            defaultCredential = this.Options == null ? new DefaultAzureCredential() : new DefaultAzureCredential(defaultAzureCredentialOptions);
 
             AccessToken defaultToken = await defaultCredential.GetTokenAsync(context);
             string accessToken = defaultToken.Token;

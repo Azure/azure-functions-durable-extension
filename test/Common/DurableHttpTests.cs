@@ -216,9 +216,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
             DurableHttpRequest deserializedDurableHttpRequest = JsonConvert.DeserializeObject<DurableHttpRequest>(serializedDurableHttpRequest);
 
-            ManagedIdentityTokenSource deserilizedManagedIdentityTokenSource = deserializedDurableHttpRequest.TokenSource as ManagedIdentityTokenSource;
-            Assert.Equal("https://dummy.login.microsoftonline.com/", deserilizedManagedIdentityTokenSource.Options.AuthorityHost.ToString());
-            Assert.Equal("tenant_id", deserilizedManagedIdentityTokenSource.Options.TenantId);
+            ManagedIdentityTokenSource deserializedManagedIdentityTokenSource = deserializedDurableHttpRequest.TokenSource as ManagedIdentityTokenSource;
+            Assert.Equal("https://dummy.login.microsoftonline.com/", deserializedManagedIdentityTokenSource.Options.AuthorityHost.ToString());
+            Assert.Equal("tenant_id", deserializedManagedIdentityTokenSource.Options.TenantId);
         }
 
         /// <summary>
