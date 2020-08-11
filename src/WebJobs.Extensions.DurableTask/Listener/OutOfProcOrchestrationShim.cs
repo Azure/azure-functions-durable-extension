@@ -133,8 +133,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 {
                                     tasks.Add(ctx.OutOfProcCreateTimer(ctx, action.FireAt, cts.Token));
                                 }
+                                else
+                                {
+                                    tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
+                                }
 
-                                tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
                                 if (action.IsCanceled)
                                 {
                                     cts.Cancel();
