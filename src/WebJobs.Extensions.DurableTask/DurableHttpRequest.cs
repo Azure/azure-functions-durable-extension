@@ -147,28 +147,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
 
-                        if (jsonObject.TryGetValue("options", out JToken optionsValue))
+                        if (jsonObject.TryGetValue("options", out JToken optionsToken))
                         {
-                            JObject optionsJObject = (JObject)optionsValue;
-                            string authorityHostValue = (string)optionsJObject.GetValue("authorityhost", StringComparison.Ordinal);
-                            string tenantIdValue = (string)optionsJObject.GetValue("tenantid", StringComparison.Ordinal);
-
-                            if (!string.IsNullOrEmpty(authorityHostValue) || !string.IsNullOrEmpty(tenantIdValue))
-                            {
-                                ManagedIdentityOptions managedIdentityOptions = new ManagedIdentityOptions();
-
-                                if (!string.IsNullOrEmpty(authorityHostValue))
-                                {
-                                    managedIdentityOptions.AuthorityHost = new Uri(authorityHostValue);
-                                }
-
-                                if (!string.IsNullOrEmpty(tenantIdValue))
-                                {
-                                    managedIdentityOptions.TenantId = tenantIdValue;
-                                }
-
-                                return new ManagedIdentityTokenSource(resourceString, managedIdentityOptions);
-                            }
+                            ManagedIdentityOptions managedIdentityOptions = optionsToken.ToObject<JObject>().ToObject<ManagedIdentityOptions>();
+                            return new ManagedIdentityTokenSource(resourceString, managedIdentityOptions);
                         }
 
                         return new ManagedIdentityTokenSource(resourceString);
@@ -198,24 +180,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     writer.WritePropertyName("resource");
                     writer.WriteValue(tokenSource.Resource);
 
-                    if (tokenSource.Options != null && ((tokenSource.Options.AuthorityHost != null) || (!string.IsNullOrEmpty(tokenSource.Options.TenantId))))
+                    if (tokenSource.Options != null)
                     {
                         writer.WritePropertyName("options");
-                        writer.WriteStartObject();
-
-                        if (tokenSource.Options.AuthorityHost != null)
-                        {
-                            writer.WritePropertyName("authorityhost");
-                            writer.WriteValue(tokenSource.Options.AuthorityHost);
-                        }
-
-                        if (!string.IsNullOrEmpty(tokenSource.Options.TenantId))
-                        {
-                            writer.WritePropertyName("tenantid");
-                            writer.WriteValue(tokenSource.Options.TenantId);
-                        }
-
-                        writer.WriteEndObject();
+                        writer.WriteRawValue(JsonConvert.SerializeObject(tokenSource.Options));
                     }
 
                     writer.WriteEndObject();
