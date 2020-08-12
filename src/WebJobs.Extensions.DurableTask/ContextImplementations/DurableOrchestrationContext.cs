@@ -390,7 +390,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException(errorMessage, nameof(fireAt));
             }
 
-            return ctx.CreateTimer(fireAt, cancelToken);
+            return ((IDurableOrchestrationContext)ctx).CreateTimer(fireAt, cancelToken);
         }
 
         private bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
