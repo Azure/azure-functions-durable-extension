@@ -413,6 +413,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
+        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken)
+        {
+            this.ThrowIfInvalidAccess();
+            Action<TaskCompletionSource<T>> timedOutAction = tcs =>
+                tcs.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
+            return this.WaitForExternalEvent(name, timeout, timedOutAction, cancelToken);
+        }
+
+        /// <inheritdoc/>
         Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
