@@ -179,24 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input);
-
-        /// <summary>
-        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The sub-orchestrator function failed with an unhandled exception.
-        /// </exception>
-        Task CallSubOrchestratorAsync(string functionName, object input);
+        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId = null, object input = null);
 
         /// <summary>
         /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
@@ -238,24 +221,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The activity function failed with an unhandled exception.
         /// </exception>
         Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input);
-
-        /// <summary>
-        /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
-        /// </summary>
-        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
-        /// <param name="functionName">The name of the orchestrator function to call.</param>
-        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
-        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
-        /// <exception cref="ArgumentException">
-        /// The specified function does not exist, is disabled, or is not an orchestrator function.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        /// The current thread is different than the thread which started the orchestrator execution.
-        /// </exception>
-        /// <exception cref="FunctionFailedException">
-        /// The activity function failed with an unhandled exception.
-        /// </exception>
-        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, object input);
 
         /// <summary>
         /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
@@ -373,20 +338,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A durable task that completes when the external event is received.</returns>
         Task WaitForExternalEvent(string name);
 
-        /// <summary>
-        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
-        /// </summary>
-        /// <remarks>
-        /// External clients can raise events to a waiting orchestration instance using
-        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
-        /// </remarks>
-        /// <param name="name">The name of the event to wait for.</param>
-        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
-        /// <returns>A durable task that completes when the external event is received.</returns>
-        /// <exception cref="TimeoutException">
-        /// The external event was not received before the timeout expired.
-        /// </exception>
-        Task WaitForExternalEvent(string name, TimeSpan timeout);
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
@@ -402,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="TimeoutException">
         /// The external event was not received before the timeout expired.
         /// </exception>
-        Task WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken);
+        Task WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken = default(CancellationToken));
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
@@ -412,61 +363,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
         /// </remarks>
         /// <param name="name">The name of the event to wait for.</param>
-        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
-        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
-        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
-        /// <returns>A durable task that completes when the external event is received.</returns>
-        /// <exception cref="TimeoutException">
-        /// The external event was not received before the timeout expired.
-        /// </exception>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken);
-
-        /// <summary>
-        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
-        /// </summary>
-        /// <remarks>
-        /// External clients can raise events to a waiting orchestration instance using
-        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
-        /// </remarks>
-        /// <param name="name">The name of the event to wait for.</param>
-        /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
-        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
-        /// <returns>A durable task that completes when the external event is received.</returns>
-        /// <exception cref="TimeoutException">
-        /// The external event was not received before the timeout expired.
-        /// </exception>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout);
-
-        /// <summary>
-        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
-        /// </summary>
-        /// <remarks>
-        /// External clients can raise events to a waiting orchestration instance using
-        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
-        /// </remarks>
-        /// <param name="name">The name of the event to wait for.</param>
-        /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
-        /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
-        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
-        /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
-        /// if the timeout expires.</returns>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue);
-
-        /// <summary>
-        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
-        /// </summary>
-        /// <remarks>
-        /// External clients can raise events to a waiting orchestration instance using
-        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
-        /// </remarks>
-        /// <param name="name">The name of the event to wait for.</param>
-        /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
-        /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+        /// <param name="timeout">The duration of time to wait for the event.</param>
+        /// <param name="defaultValue">If specified, the default value to return if the timeout expires before the external event is received.
+        /// Otherwise, a timeout exception will be thrown instead.</param>
         /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
         /// if the timeout expires.</returns>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken);
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue = default(T), CancellationToken cancelToken = default(CancellationToken));
 
         /// <summary>
         /// Acquires one or more locks, for the specified entities.

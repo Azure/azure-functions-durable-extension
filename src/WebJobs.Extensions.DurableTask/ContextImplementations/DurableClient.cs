@@ -89,18 +89,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan timeout, TimeSpan retryInterval)
+        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
         {
             return await this.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 request,
                 instanceId,
                 this.attribute,
-                timeout,
-                retryInterval);
+                timeout ?? TimeSpan.FromSeconds(10),
+                retryInterval ?? TimeSpan.FromSeconds(1));
         }
 
         /// <inheritdoc />
-        async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan timeout, TimeSpan retryInterval)
+        async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
             HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval);
@@ -390,13 +390,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(CancellationToken cancellationToken)
-        {
-            return await this.GetAllStatusHelper(null, null, null, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             return await this.GetAllStatusHelper(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
         }
@@ -797,36 +791,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId)
-        {
-            return ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, timeout: TimeSpan.FromSeconds(10));
-        }
-
-        /// <inheritdoc/>
-        Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan timeout)
-        {
-            return ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, timeout: timeout, retryInterval: TimeSpan.FromSeconds(1));
-        }
-
-        /// <inheritdoc/>
-        Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId)
-        {
-            return ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, timeout: TimeSpan.FromSeconds(10));
-        }
-
-        /// <inheritdoc/>
-        Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan timeout)
-        {
-            return ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, timeout: timeout, retryInterval: TimeSpan.FromSeconds(1));
-        }
-
-        /// <inheritdoc/>
-        Task<string> IDurableOrchestrationClient.StartNewAsync(string orchestratorFunctionName)
-        {
-            return ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName, null);
-        }
-
-        /// <inheritdoc/>
         Task<string> IDurableOrchestrationClient.StartNewAsync(string orchestratorFunctionName, string instanceId)
         {
             return ((IDurableOrchestrationClient)this).StartNewAsync<object>(orchestratorFunctionName, instanceId, null);
@@ -839,24 +803,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task IDurableOrchestrationClient.RaiseEventAsync(string instanceId, string eventName)
-        {
-            return ((IDurableOrchestrationClient)this).RaiseEventAsync(instanceId, eventName, null);
-        }
-
-        /// <inheritdoc/>
-        Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId)
-        {
-            return ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory: false);
-        }
-
-        /// <inheritdoc/>
-        Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory)
-        {
-            return ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory, showHistoryOutput: false, showInput: true);
-        }
-
-        /// <inheritdoc/>
         Task IDurableEntityClient.SignalEntityAsync<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
         {
             return ((IDurableEntityClient)this).SignalEntityAsync<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), operation);
@@ -865,7 +811,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         Task IDurableEntityClient.SignalEntityAsync<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
         {
-            return ((IDurableEntityClient) this).SignalEntityAsync<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+            return ((IDurableEntityClient)this).SignalEntityAsync<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
         }
 
         /// <inheritdoc/>

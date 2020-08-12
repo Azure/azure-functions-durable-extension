@@ -408,15 +408,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken)
-        {
-            this.ThrowIfInvalidAccess();
-            Action<TaskCompletionSource<T>> timedOutAction = tcs =>
-                tcs.TrySetException(new TimeoutException($"Event {name} not received in {timeout}"));
-            return this.WaitForExternalEvent(name, timeout, timedOutAction, cancelToken);
-        }
-
-        /// <inheritdoc/>
         Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken)
         {
             this.ThrowIfInvalidAccess();
@@ -1190,21 +1181,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, object input)
-        {
-            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, input);
-        }
-
-        /// <inheritdoc/>
         Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, string instanceId, object input)
         {
             return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, instanceId, input);
-        }
-
-        /// <inheritdoc/>
-        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, object input)
-        {
-            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<TResult>(functionName, input);
         }
 
         /// <inheritdoc/>
@@ -1238,27 +1217,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task IDurableOrchestrationContext.WaitForExternalEvent(string name, TimeSpan timeout)
-        {
-            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name, timeout);
-        }
-
-        /// <inheritdoc/>
         Task IDurableOrchestrationContext.WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken)
         {
             return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name, timeout, cancelToken);
-        }
-
-        /// <inheritdoc/>
-        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout)
-        {
-            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<T>(name, timeout, CancellationToken.None);
-        }
-
-        /// <inheritdoc/>
-        Task<T> IDurableOrchestrationContext.WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue)
-        {
-            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<T>(name, timeout, defaultValue, CancellationToken.None);
         }
 
         /// <inheritdoc/>
