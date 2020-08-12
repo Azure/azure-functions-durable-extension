@@ -1566,7 +1566,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Strip '\r' characters to make Windows and Unix output identical.
                 string output = status.Output.ToString().Replace("\r", string.Empty);
                 this.output.WriteLine($"Orchestration output string: {output}");
-                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\nParameter name: message\"", output);
+                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.", output);
+                Assert.Contains("message", output);
 
                 string subOrchestrationInstanceId = (string)status.CustomStatus;
                 Assert.NotNull(subOrchestrationInstanceId);
@@ -1615,8 +1616,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string output = status.Output.ToString().Replace(Environment.NewLine, " ");
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.StartsWith(
-                    $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: Value cannot be null. Parameter name: retryOptions",
+                    $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: Value cannot be null.",
                     output);
+                Assert.Contains("retryOptions", output);
 
                 await host.StopAsync();
             }
@@ -1800,7 +1802,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.Contains(orchestratorFunctionName, output);
                 Assert.Contains("Value cannot be null.", output);
-                Assert.Contains("Parameter name: retryOptions", output);
+                Assert.Contains("retryOptions", output);
 
                 await host.StopAsync();
             }
