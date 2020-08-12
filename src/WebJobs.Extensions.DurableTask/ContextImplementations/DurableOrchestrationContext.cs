@@ -1248,7 +1248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(string entityKey)
         {
-            return ((IDurableOrchestrationContext)this).CreateEntityProxy<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey));
+            return ((IDurableOrchestrationContext)this).CreateEntityProxy<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey));
         }
 
         /// <inheritdoc/>

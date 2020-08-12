@@ -165,6 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
         /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
         /// <param name="functionName">The name of the orchestrator function to call.</param>
         /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
         /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
@@ -371,7 +372,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="name">The name of the event to wait for.</param>
         /// <returns>A durable task that completes when the external event is received.</returns>
         Task WaitForExternalEvent(string name);
-
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.

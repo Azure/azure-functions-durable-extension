@@ -1016,6 +1016,7 @@
             <summary>
             Schedules an orchestrator function named <paramref name="functionName"/> for execution.
             </summary>
+            <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
             <param name="functionName">The name of the orchestrator function to call.</param>
             <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
             <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
@@ -2289,11 +2290,6 @@
             </summary>
             <param name="info">The System.Runtime.Serialization.SerializationInfo that holds the serialized object data about the exception being thrown.</param>
             <param name="context">The System.Runtime.Serialization.StreamingContext that contains contextual information about the source or destination.</param>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableEntityProxyExtensions">
-            <summary>
-            Defines convenient overloads for creating entity proxy, for all the contexts.
-            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityProxy">
             <summary>

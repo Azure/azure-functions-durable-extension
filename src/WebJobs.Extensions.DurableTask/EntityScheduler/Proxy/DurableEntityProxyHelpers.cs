@@ -8,14 +8,11 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    /// <summary>
-    /// Defines convenient overloads for creating entity proxy, for all the contexts.
-    /// </summary>
-    public static class DurableEntityProxyExtensions
+    internal static class DurableEntityProxyHelpers
     {
         private static readonly ConcurrentDictionary<Type, Type> EntityNameMappings = new ConcurrentDictionary<Type, Type>();
 
-        public static string ResolveEntityName<TEntityInterface>()
+        internal static string ResolveEntityName<TEntityInterface>()
         {
             var type = EntityNameMappings.GetOrAdd(typeof(TEntityInterface), CreateTypeMapping);
 

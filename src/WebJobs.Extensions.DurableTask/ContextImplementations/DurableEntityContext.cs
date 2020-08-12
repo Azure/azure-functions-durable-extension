@@ -567,13 +567,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
         {
-            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), operation);
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey), operation);
         }
 
         /// <inheritdoc/>
         void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
         {
-            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyExtensions.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
         }
 
         /// <inheritdoc/>
