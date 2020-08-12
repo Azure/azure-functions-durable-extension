@@ -1488,6 +1488,16 @@
             JSON representation of configuration to emit in telemetry.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.MaximumDelayTime">
+            <summary>
+            Value of maximum durable timer delay. Used for long running durable timers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LongRunningTimerIntervalLength">
+            <summary>
+            Interval time used for long running timers.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">
             <inheritdoc/>
         </member>

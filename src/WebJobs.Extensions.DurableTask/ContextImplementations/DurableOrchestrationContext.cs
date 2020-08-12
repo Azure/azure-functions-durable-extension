@@ -85,6 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsCompleted { get; set; }
 
+        internal bool IsLongRunningTimer { get; private set; }
+
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
         internal bool IsOutputSet => this.serializedOutput != null;
@@ -307,22 +309,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            DateTime intervalFireAt = fireAt;
+
+            if (fireAt.Subtract(this.InnerContext.CurrentUtcDateTime) > this.durabilityProvider.MaximumDelayTime)
             {
-                throw new ArgumentException(errorMessage, nameof(fireAt));
+                this.IsLongRunningTimer = true;
+                intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
             }
 
-            this.IncrementActionsOrThrowException();
-            Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+            T result = default;
 
-            this.Config.TraceHelper.FunctionListening(
-                this.Config.Options.HubName,
-                this.OrchestrationName,
-                this.InstanceId,
-                reason: $"CreateTimer:{fireAt:o}",
-                isReplay: this.InnerContext.IsReplaying);
+            if (!this.IsLongRunningTimer)
+            {
+                this.IncrementActionsOrThrowException();
+                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
 
-            T result = await timerTask;
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                result = await timerTask;
+            }
+            else
+            {
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
+                {
+                    this.IncrementActionsOrThrowException();
+                    Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
+
+                    result = await timerTask;
+
+                    TimeSpan remainingTime = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
+
+                    if (remainingTime <= TimeSpan.Zero)
+                    {
+                        break;
+                    }
+                    else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(remainingTime);
+                    }
+                    else
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
+                    }
+                }
+            }
 
             this.Config.TraceHelper.TimerExpired(
                 this.Config.Options.HubName,
@@ -331,7 +373,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 expirationTime: fireAt,
                 isReplay: this.InnerContext.IsReplaying);
 
+            this.IsLongRunningTimer = false;
+
             return result;
+        }
+
+        internal Task OutOfProcCreateTimer(DurableOrchestrationContext ctx, DateTime fireAt, CancellationToken cancelToken)
+        {
+            if (!this.ValidOutOfProcTimer(fireAt, out string errorMessage))
+            {
+                throw new ArgumentException(errorMessage, nameof(fireAt));
+            }
+
+            return ctx.CreateTimer(fireAt, cancelToken);
+        }
+
+        private bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
+        {
+            this.ThrowIfInvalidAccess();
+
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out errorMessage))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <inheritdoc />

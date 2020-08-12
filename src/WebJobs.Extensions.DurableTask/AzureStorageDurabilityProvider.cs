@@ -22,8 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class AzureStorageDurabilityProvider : DurabilityProvider
     {
-        private static readonly TimeSpan MaxTimerDuration = TimeSpan.FromDays(6);
-
         private readonly AzureStorageOrchestrationService serviceClient;
         private readonly string connectionName;
         private readonly JObject storageOptionsJson;
@@ -53,6 +51,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override string ConnectionName => this.connectionName;
 
         public override JObject ConfigurationJson => this.storageOptionsJson;
+
+        public override TimeSpan MaximumDelayTime { get; set; } = TimeSpan.FromDays(6);
+
+        public override TimeSpan LongRunningTimerIntervalLength { get; set; } = TimeSpan.FromDays(3);
 
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)
@@ -137,9 +139,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override bool ValidateDelayTime(TimeSpan timespan, out string errorMessage)
         {
-            if (timespan > MaxTimerDuration)
+            if (timespan > this.MaximumDelayTime)
             {
-                errorMessage = $"The Azure Storage provider supports a maximum of {MaxTimerDuration.TotalDays} days for time-based delays";
+                errorMessage = $"The Azure Storage provider supports a maximum of {this.MaximumDelayTime.TotalDays} days for time-based delays";
                 return false;
             }
 
