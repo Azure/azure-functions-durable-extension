@@ -125,7 +125,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void SerializeManagedIdentityOptions()
         {
-            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttRequest
+            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttpRequest
+            var expectedTestDurableHttpRequestJson = @"
+{
+  ""HttpMethod"": {
+    ""Method"": ""GET""
+  },
+  ""Uri"": ""https://www.dummy-url.com"",
+  ""Headers"": {
+    ""Accept"": ""application/json""
+  },
+  ""Content"": null,
+  ""TokenSource"": {
+    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests.V2"",
+    ""testToken"": ""dummy token"",
+    ""options"": {
+      ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
+      ""tenantid"": ""tenant_id""
+    }
+  },
+  ""AsynchronousPatternEnabled"": true
+}";
+
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
@@ -142,10 +163,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             string serializedTestDurableHttpRequest = JsonConvert.SerializeObject(request);
 
-            Assert.Contains("\"authorityhost\":\"https://dummy.login.microsoftonline.com/", serializedTestDurableHttpRequest);
-            Assert.Contains("\"tenantid\":\"tenant_id\"", serializedTestDurableHttpRequest);
+            Assert.True(JToken.DeepEquals(JObject.Parse(expectedTestDurableHttpRequestJson), JObject.Parse(serializedTestDurableHttpRequest)));
 
-            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttRequest
+            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttpRequest
+            var expectedDurableHttpRequestJson = @"
+{
+  ""method"": ""GET"",
+  ""uri"": ""https://www.dummy-url.com"",
+  ""headers"": {
+    ""Accept"": ""application/json""
+  },
+  ""content"": null,
+  ""tokenSource"": {
+    ""kind"": ""AzureManagedIdentity"",
+    ""resource"": ""dummy url"",
+    ""options"": {
+      ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
+      ""tenantid"": ""tenant_id""
+    }
+   },
+  ""asynchronousPatternEnabled"": true
+}";
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
             TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
                 httpMethod: HttpMethod.Get,
@@ -155,14 +193,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
             string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
 
-            Assert.Contains("\"authorityhost\":\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
-            Assert.Contains("\"tenantid\":\"tenant_id", serializedDurableHttpRequest);
+            Assert.True(JToken.DeepEquals(JObject.Parse(expectedDurableHttpRequestJson), JObject.Parse(serializedDurableHttpRequest)));
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void SerializeDurableHttpRequestWithoutManagedIdentityOptions()
         {
+            var expectedDurableHttpRequestJson = @"
+{
+  ""method"": ""GET"",
+  ""uri"": ""https://www.dummy-url.com"",
+  ""headers"": {
+    ""Accept"": ""application/json""
+  },
+  ""content"": null,
+  ""tokenSource"": {
+    ""kind"": ""AzureManagedIdentity"",
+    ""resource"": ""dummy url""
+  },
+  ""asynchronousPatternEnabled"": true
+}";
+
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
@@ -175,15 +227,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
             string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
 
-            Assert.DoesNotContain("\"authorityhost\":\"https://dummy.login.microsoftonline.com/", serializedDurableHttpRequest);
-            Assert.DoesNotContain("\"tenantid\":\"tenant_id\"", serializedDurableHttpRequest);
+            Assert.True(JToken.DeepEquals(JObject.Parse(expectedDurableHttpRequestJson), JObject.Parse(serializedDurableHttpRequest)));
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DeserializeManagedIdentityOptions()
         {
-            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttRequest
+            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttpRequest
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
@@ -205,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("https://dummy.login.microsoftonline.com/", deserializedMockTokenSource.GetOptions().AuthorityHost.ToString());
             Assert.Equal("tenant_id", deserializedMockTokenSource.GetOptions().TenantId);
 
-            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttRequest
+            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttpRequest
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
             TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
                 httpMethod: HttpMethod.Get,
