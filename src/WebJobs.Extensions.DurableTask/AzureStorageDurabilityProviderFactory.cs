@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public DurabilityProvider GetDurabilityProvider()
+        public virtual DurabilityProvider GetDurabilityProvider()
         {
             this.EnsureInitialized();
             if (this.defaultStorageProvider == null)
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.defaultStorageProvider;
         }
 
-        public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
+        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
             this.EnsureInitialized();
             return this.GetAzureStorageStorageProvider(attribute);

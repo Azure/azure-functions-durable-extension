@@ -62,6 +62,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public virtual JObject ConfigurationJson => EmptyConfig;
 
+        /// <summary>
+        /// Value of maximum durable timer delay. Used for long running durable timers.
+        /// </summary>
+        public virtual TimeSpan MaximumDelayTime { get; set; }
+
+        /// <summary>
+        /// Interval time used for long running timers.
+        /// </summary>
+        public virtual TimeSpan LongRunningTimerIntervalLength { get; set; }
+
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
 

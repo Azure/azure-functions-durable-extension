@@ -575,7 +575,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
             }
 
-            if (!context.IsCompleted)
+            if (!context.IsCompleted && !context.IsLongRunningTimer)
             {
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,

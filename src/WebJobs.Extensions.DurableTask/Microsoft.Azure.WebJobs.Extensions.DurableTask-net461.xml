@@ -1488,6 +1488,16 @@
             JSON representation of configuration to emit in telemetry.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.MaximumDelayTime">
+            <summary>
+            Value of maximum durable timer delay. Used for long running durable timers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LongRunningTimerIntervalLength">
+            <summary>
+            Interval time used for long running timers.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">
             <inheritdoc/>
         </member>
@@ -3025,12 +3035,34 @@
             Task orchestration implementation which delegates the orchestration implementation to a function.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions">
+            <summary>
+            Configuration options for Managed Identity.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions.#ctor(System.Uri,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions"/> class.
+            </summary>
+            <param name="authorityHost">The host of the Azure Active Directory authority.</param>
+            <param name="tenantId">The tenant id of the user to authenticate.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions.AuthorityHost">
+            <summary>
+            The host of the Azure Active Directory authority. The default is https://login.microsoftonline.com/.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions.TenantId">
+            <summary>
+            The tenant id of the user to authenticate.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource">
             <summary>
             Token Source implementation for Azure Managed Identities.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.#ctor(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.#ctor(System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityOptions)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource"/> class.
             </summary>
@@ -3038,11 +3070,17 @@
             The Azure Active Directory resource identifier of the web API being invoked.
             For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
             </param>
+            <param name="options">Optional Azure credential options to use when authenticating.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Resource">
             <summary>
             Gets the Azure Active Directory resource identifier of the web API being invoked.
             For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Options">
+            <summary>
+            The azure credential options that a user can configure when authenticating.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.GetTokenAsync">
