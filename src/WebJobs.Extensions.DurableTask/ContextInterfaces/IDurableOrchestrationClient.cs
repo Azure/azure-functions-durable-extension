@@ -82,8 +82,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
-            TimeSpan? timeout,
-            TimeSpan? retryInterval);
+            TimeSpan? timeout = null,
+            TimeSpan? retryInterval = null);
 
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance

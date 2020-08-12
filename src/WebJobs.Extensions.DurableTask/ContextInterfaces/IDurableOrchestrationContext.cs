@@ -163,6 +163,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task CallEntityAsync(EntityId entityId, string operationName, object operationInput);
 
         /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The sub-orchestrator function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, object input);
+
+        /// <summary>
         /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
         /// </summary>
         /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
@@ -179,7 +196,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="FunctionFailedException">
         /// The activity function failed with an unhandled exception.
         /// </exception>
-        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId = null, object input = null);
+        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input);
+
+        /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The sub-orchestrator function failed with an unhandled exception.
+        /// </exception>
+        Task CallSubOrchestratorAsync(string functionName, object input);
 
         /// <summary>
         /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.

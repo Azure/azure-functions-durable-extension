@@ -210,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.serializedCustomStatus;
         }
 
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<TResult>(functionName, string.Empty, input);
+        }
+
         /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
@@ -1178,6 +1183,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName)
         {
             return ((IDurableOrchestrationContext)this).CallEntityAsync<object>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, input);
         }
 
         /// <inheritdoc/>
