@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using DurableTask.AzureStorage.Partitioning;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string originalHubName;
         private string resolvedHubName;
         private string defaultHubName;
+        private string appName;
 
         /// <summary>
         /// Settings used for Durable HTTP functionality.
@@ -194,6 +196,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// only after an entire batch of operations completes.
         /// </remarks>
         public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
+
+        /// <summary>
+        /// If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+        /// </summary>
+        public bool UseAppLease { get; set; } = true;
+
+        /// <summary>
+        /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+        /// </summary>
+        public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
+
+        internal string AppName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.appName))
+                {
+                    try
+                    {
+                        this.appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? Environment.MachineName;
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    if (string.IsNullOrEmpty(this.appName))
+                    {
+                        this.appName = Guid.NewGuid().ToString();
+                    }
+                }
+
+                return this.appName;
+            }
+
+            set
+            {
+                this.appName = value;
+            }
+        }
 
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
