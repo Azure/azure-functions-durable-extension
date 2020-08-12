@@ -564,6 +564,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
+        {
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey), operation);
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this), entityId));
+        }
+
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this, scheduledTimeUtc), entityId));
+        }
+
         private abstract class OutgoingMessage
         {
         }
