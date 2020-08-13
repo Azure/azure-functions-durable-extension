@@ -78,6 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete ([OrchestrationClient])
+
         /// <summary>
         /// Helper function for the IDurableOrchestrationClientBindingBackComp test. Gets an IDurableEntityClient.
         /// </summary>

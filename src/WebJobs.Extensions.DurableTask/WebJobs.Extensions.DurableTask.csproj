@@ -19,6 +19,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <IncludeSymbols>false</IncludeSymbols>
+    <!-- See https://github.com/Azure/azure-functions-durable-extension/issues/1433 -->
+    <NoWarn>NU5125</NoWarn>
   </PropertyGroup>
 
   <!-- 
