@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -11,8 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public AzureStorageShortenedTimerDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
-            INameResolver nameResolver)
-            : base(options, connectionStringResolver, nameResolver)
+            INameResolver nameResolver,
+            ILoggerFactory loggerFactory)
+            : base(options, connectionStringResolver, nameResolver, loggerFactory)
         {
         }
 

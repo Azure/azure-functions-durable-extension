@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 #endif
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
@@ -209,7 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();
-            var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver, nameResolver);
+            var serviceFactory = new AzureStorageDurabilityProviderFactory(
+                wrappedOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance);
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
