@@ -1677,6 +1677,13 @@
             <param name="errorMessage">The error message if the timespan is invalid.</param>
             <returns>A boolean indicating whether the time interval is valid.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConnectionNameMatches(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider)">
+            <summary>
+             Returns true if the stored connection string, ConnectionName, matches the input DurabilityProvider ConnectionName.
+            </summary>
+            <param name="durabilityProvider">The DurabilityProvider used to check for matching connection string names.</param>
+            <returns>A boolean indicating whether the connection names match.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute">
             <summary>
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.

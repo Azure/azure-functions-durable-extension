@@ -75,6 +75,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.StartNewAsync("anyOrchestratorFunction", instanceId, new { message = "any obj" }));
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("@invalid")]
+        [InlineData("/invalid")]
+        [InlineData("invalid\\")]
+        [InlineData("invalid#")]
+        [InlineData("invalid?")]
+        [InlineData("invalid\t")]
+        [InlineData("invalid\n")]
+        public async Task SignalEntity_InvalidEntityKey_ThrowsException(string entityKey)
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
+            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test");
+            var durableExtension = GetDurableTaskConfig();
+            var durableClient = (IDurableEntityClient)new DurableClient(storageProvider, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
+
+            var entityId = new EntityId("test", entityKey);
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.SignalEntityAsync(entityId, "test"));
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RaiseEventAsync_InvalidInstanceId_ThrowsException()
