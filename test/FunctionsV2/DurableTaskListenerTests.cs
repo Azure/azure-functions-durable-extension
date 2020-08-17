@@ -5,6 +5,7 @@ using System;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
@@ -56,7 +57,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();
-            var serviceFactory = new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver, nameResolver);
+            var serviceFactory = new AzureStorageDurabilityProviderFactory(
+                wrappedOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance);
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),

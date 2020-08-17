@@ -1566,7 +1566,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Strip '\r' characters to make Windows and Unix output identical.
                 string output = status.Output.ToString().Replace("\r", string.Empty);
                 this.output.WriteLine($"Orchestration output string: {output}");
-                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.\nParameter name: message\"", output);
+                Assert.StartsWith($"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The orchestrator function 'ThrowOrchestrator' failed: \"Value cannot be null.", output);
+                Assert.Contains("message", output);
 
                 string subOrchestrationInstanceId = (string)status.CustomStatus;
                 Assert.NotNull(subOrchestrationInstanceId);
@@ -1615,8 +1616,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string output = status.Output.ToString().Replace(Environment.NewLine, " ");
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.StartsWith(
-                    $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: Value cannot be null. Parameter name: retryOptions",
+                    $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: Value cannot be null.",
                     output);
+                Assert.Contains("retryOptions", output);
 
                 await host.StopAsync();
             }
@@ -1800,7 +1802,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.Contains(orchestratorFunctionName, output);
                 Assert.Contains("Value cannot be null.", output);
-                Assert.Contains("Parameter name: retryOptions", output);
+                Assert.Contains("retryOptions", output);
 
                 await host.StopAsync();
             }
@@ -1983,33 +1985,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         orchestratorFunctionNames,
                         activityFunctionName);
                 }
-            }
-        }
-
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task ThrowExceptionOnLongTimer(bool extendedSessions, string storageProvider)
-        {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.ThrowExceptionOnLongTimer),
-                extendedSessions,
-                storageProviderType: storageProvider))
-            {
-                await host.StartAsync();
-
-                // Right now, the limit for timers is 6 days. In the future, we'll extend this and update this test.
-                // https://github.com/Azure/azure-functions-durable-extension/issues/14
-                DateTime fireAt = DateTime.UtcNow.AddDays(7);
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
-
-                Assert.NotNull(status);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-                Assert.Contains("fireAt", status.Output.ToString());
-
-                await host.StopAsync();
             }
         }
 
@@ -3267,31 +3242,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(response.EntityExists);
 
                 await host.StopAsync();
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task AzureStorage_TimerLimitExceeded_ThrowsException()
-        {
-            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleTimerSucceeds);
-
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.AzureStorage_TimerLimitExceeded_ThrowsException),
-                false))
-            {
-                await host.StartAsync();
-
-                var invalidFireAtTime = DateTime.UtcNow.AddDays(7);
-
-                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, invalidFireAtTime, this.output);
-
-                var status = await client.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-
-                string output = status.Output.ToString();
-                Assert.Contains("fireAt", output);
             }
         }
 

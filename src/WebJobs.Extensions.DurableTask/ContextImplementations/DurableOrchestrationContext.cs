@@ -85,6 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsCompleted { get; set; }
 
+        internal bool IsLongRunningTimer { get; private set; }
+
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
         internal bool IsOutputSet => this.serializedOutput != null;
@@ -208,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.serializedCustomStatus;
         }
 
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<TResult>(functionName, string.Empty, input);
+        }
+
         /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
@@ -307,22 +314,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            DateTime intervalFireAt = fireAt;
+
+            if (fireAt.Subtract(this.InnerContext.CurrentUtcDateTime) > this.durabilityProvider.MaximumDelayTime)
             {
-                throw new ArgumentException(errorMessage, nameof(fireAt));
+                this.IsLongRunningTimer = true;
+                intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
             }
 
-            this.IncrementActionsOrThrowException();
-            Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+            T result = default;
 
-            this.Config.TraceHelper.FunctionListening(
-                this.Config.Options.HubName,
-                this.OrchestrationName,
-                this.InstanceId,
-                reason: $"CreateTimer:{fireAt:o}",
-                isReplay: this.InnerContext.IsReplaying);
+            if (!this.IsLongRunningTimer)
+            {
+                this.IncrementActionsOrThrowException();
+                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
 
-            T result = await timerTask;
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                result = await timerTask;
+            }
+            else
+            {
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
+                {
+                    this.IncrementActionsOrThrowException();
+                    Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
+
+                    result = await timerTask;
+
+                    TimeSpan remainingTime = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
+
+                    if (remainingTime <= TimeSpan.Zero)
+                    {
+                        break;
+                    }
+                    else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(remainingTime);
+                    }
+                    else
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
+                    }
+                }
+            }
 
             this.Config.TraceHelper.TimerExpired(
                 this.Config.Options.HubName,
@@ -331,7 +378,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 expirationTime: fireAt,
                 isReplay: this.InnerContext.IsReplaying);
 
+            this.IsLongRunningTimer = false;
+
             return result;
+        }
+
+        internal Task OutOfProcCreateTimer(DurableOrchestrationContext ctx, DateTime fireAt, CancellationToken cancelToken)
+        {
+            if (!this.ValidOutOfProcTimer(fireAt, out string errorMessage))
+            {
+                throw new ArgumentException(errorMessage, nameof(fireAt));
+            }
+
+            return ((IDurableOrchestrationContext)ctx).CreateTimer(fireAt, cancelToken);
+        }
+
+        private bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
+        {
+            this.ThrowIfInvalidAccess();
+
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out errorMessage))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <inheritdoc />
@@ -881,7 +952,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
             var timeoutAt = this.InnerContext.CurrentUtcDateTime + timeout;
-            var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
+            var timeoutTask = ((IDurableOrchestrationContext)this).CreateTimer(timeoutAt, cts.Token);
             var waitForEventTask = this.WaitForExternalEvent<T>(name, "ExternalEvent");
 
             waitForEventTask.ContinueWith(
@@ -1109,6 +1180,90 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.newGuidCounter++;
 
             return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
+        }
+
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallEntityAsync<TResult>(EntityId entityId, string operationName)
+        {
+            return ((IDurableOrchestrationContext)this).CallEntityAsync<TResult>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName)
+        {
+            return ((IDurableOrchestrationContext)this).CallEntityAsync<object>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, string instanceId, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, instanceId, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, string instanceId, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, instanceId, input);
+        }
+
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<TResult>(functionName, retryOptions, null, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CreateTimer(DateTime fireAt, CancellationToken cancelToken)
+        {
+            return ((IDurableOrchestrationContext)this).CreateTimer<object>(fireAt, null, cancelToken);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name, timeout, cancelToken);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallActivityAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallActivityAsync<object>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallActivityWithRetryAsync<object>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(string entityKey)
+        {
+            return ((IDurableOrchestrationContext)this).CreateEntityProxy<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey));
+        }
+
+        /// <inheritdoc/>
+        TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(EntityId entityId)
+        {
+            return EntityProxyFactory.Create<TEntityInterface>(new OrchestrationContextProxy(this), entityId);
         }
 
         private class LockReleaser : IDisposable

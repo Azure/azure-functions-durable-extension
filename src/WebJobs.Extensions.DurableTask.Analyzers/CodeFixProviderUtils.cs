@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Linq;
 using System.Threading;
@@ -31,10 +30,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
-                    var attributeListEnumerable = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                    foreach (SyntaxNode attribute in attributeListEnumerable)
+                    var attributeLists = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
+                    foreach (SyntaxNode attributeList in attributeLists)
                     {
-                        if (attribute.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
+                        if (attributeList.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
                         {
                             var identifierName = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault()?.ToString();
                             if (string.Equals(identifierName, "IDurableOrchestrationContext") || string.Equals(identifierName, "DurableOrchestrationContext") || string.Equals(identifierName, "DurableOrchestrationContextBase"))

@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -33,15 +32,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         var memberAccessExpression = identifierName.Parent;
                         var invocationExpression = memberAccessExpression.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Guid"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, invocationExpression.GetLocation(), memberAccessExpression);
+                            if (memberSymbol.ToString().StartsWith("System.Guid"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }

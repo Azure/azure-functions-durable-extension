@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (descendant is InvocationExpressionSyntax invocation)
                 {
-                    if (SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, invocation).GetSymbolInfo(invocation).Symbol is IMethodSymbol methodSymbol)
+                    if (SyntaxNodeUtils.TryGetISymbol(semanticModel, invocation, out ISymbol symbol) && symbol is IMethodSymbol methodSymbol)
                     {
                         var syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
                         if (syntaxReference != null)

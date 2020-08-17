@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
@@ -1230,7 +1231,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 wrappedOptions,
                 new LoggerFactory(),
                 mockNameResolver.Object,
-                new AzureStorageDurabilityProviderFactory(wrappedOptions, connectionStringResolver, mockNameResolver.Object),
+                new AzureStorageDurabilityProviderFactory(
+                    wrappedOptions,
+                    connectionStringResolver,
+                    mockNameResolver.Object,
+                    NullLoggerFactory.Instance),
                 new TestHostShutdownNotificationService());
 
             var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
@@ -1272,7 +1277,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
-                new AzureStorageDurabilityProviderFactory(wrappedOptions, new TestConnectionStringResolver(), nameResolver),
+                new AzureStorageDurabilityProviderFactory(
+                    wrappedOptions,
+                    new TestConnectionStringResolver(),
+                    nameResolver,
+                    NullLoggerFactory.Instance),
                 new TestHostShutdownNotificationService());
 
             var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
@@ -1296,7 +1305,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
-                new AzureStorageDurabilityProviderFactory(wrappedOptions, new TestConnectionStringResolver(), nameResolver),
+                new AzureStorageDurabilityProviderFactory(
+                    wrappedOptions,
+                    new TestConnectionStringResolver(),
+                    nameResolver,
+                    NullLoggerFactory.Instance),
                 new TestHostShutdownNotificationService());
 
             int callCount = 0;

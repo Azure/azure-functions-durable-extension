@@ -114,6 +114,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void SignalEntity(EntityId entity, DateTime scheduledTimeUtc, string operationName, object operationInput = null);
 
         /// <summary>
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(EntityId entityId, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
+
+        /// <summary>
         /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
         /// Any result or exception is ignored (fire and forget).
         /// </summary>

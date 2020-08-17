@@ -142,6 +142,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return context.DispatchAsync<SelfSchedulingEntity>();
         }
 
+#pragma warning disable DF0305 // Function named 'ClassBasedFaultyEntity' doesn't have an entity class with the same name defined. Did you mean 'FaultyEntity'?
+#pragma warning disable DF0307 // DispatchAsync must be used with the entity name, equal to the name of the function it's used in.
         [FunctionName("ClassBasedFaultyEntity")]
         public static Task FaultyEntityFunction([EntityTrigger] IDurableEntityContext context)
         {
@@ -252,6 +254,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return Task.CompletedTask;
         }
+#pragma warning restore DF0307 // DispatchAsync must be used with the entity name, equal to the name of the function it's used in.
+#pragma warning restore DF0305
 
         //-------------- an entity representing a chat room -----------------
 
@@ -612,7 +616,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             [JsonProperty("endDate")]
             public DateTime EndDate { get; private set; }
 
-            public void SetId(string Id) => this.Id = Id;
+            public void SetId(string id) => this.Id = id;
 
             public void SetEndDate(DateTime date) => this.EndDate = date;
 
@@ -625,10 +629,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public void Delete()
             {
                 Entity.Current.DeleteState();
-            }
-
-            public JobWithProxyMultiInterface()
-            {
             }
 
             [FunctionName(nameof(JobWithProxyMultiInterface))]

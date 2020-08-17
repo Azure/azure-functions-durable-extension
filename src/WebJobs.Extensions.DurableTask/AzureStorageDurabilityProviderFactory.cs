@@ -3,6 +3,7 @@
 
 using System;
 using DurableTask.AzureStorage;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IConnectionStringResolver connectionStringResolver;
         private readonly string defaultConnectionName;
         private readonly INameResolver nameResolver;
+        private readonly ILoggerFactory loggerFactory;
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
@@ -24,10 +26,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
-            INameResolver nameResolver)
+            INameResolver nameResolver,
+            ILoggerFactory loggerFactory)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
+            this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
@@ -63,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public DurabilityProvider GetDurabilityProvider()
+        public virtual DurabilityProvider GetDurabilityProvider()
         {
             this.EnsureInitialized();
             if (this.defaultStorageProvider == null)
@@ -78,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.defaultStorageProvider;
         }
 
-        public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
+        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
             this.EnsureInitialized();
             return this.GetAzureStorageStorageProvider(attribute);
@@ -147,6 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseAppLease = this.options.UseAppLease,
                 AppLeaseOptions = this.options.AppLeaseOptions,
                 AppName = EndToEndTraceHelper.LocalAppName,
+                LoggerFactory = this.loggerFactory,
             };
 
             // When running on App Service VMSS stamps, these environment variables are the best way

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -156,6 +156,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         public static string ActivityReturnTypeAnalyzerTitle {
             get {
                 return ResourceManager.GetString("ActivityReturnTypeAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods..
+        /// </summary>
+        public static string AwaitAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("AwaitAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods..
+        /// </summary>
+        public static string AwaitAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("AwaitAnalyzerTitle", resourceCulture);
             }
         }
         
