@@ -264,6 +264,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task SignalEntityAsyncInternal(DurableClient durableClient, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
         {
+            var entityKey = entityId.EntityKey;
+            if (entityKey.Any(IsInvalidCharacter))
+            {
+                throw new ArgumentException(nameof(entityKey), "Entity keys must not contain /, \\, #, ?, or control characters.");
+            }
+
             if (operationName == null)
             {
                 throw new ArgumentNullException(nameof(operationName));
@@ -317,14 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
         {
-            var storageProvider = this.config.Options.StorageProvider;
-            if (storageProvider.TryGetValue("ConnectionStringName", out object connectionName))
-            {
-                var newConnectionName = client.DurabilityProvider.ConnectionName;
-                return newConnectionName.Equals(connectionName);
-            }
-
-            return false;
+            return this.DurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
         }
 
         /// <inheritdoc />

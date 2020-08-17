@@ -408,5 +408,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             errorMessage = null;
             return true;
         }
+
+        /// <summary>
+        ///  Returns true if the stored connection string, ConnectionName, matches the input DurabilityProvider ConnectionName.
+        /// </summary>
+        /// <param name="durabilityProvider">The DurabilityProvider used to check for matching connection string names.</param>
+        /// <returns>A boolean indicating whether the connection names match.</returns>
+        internal virtual bool ConnectionNameMatches(DurabilityProvider durabilityProvider)
+        {
+            return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
+        }
     }
 }
