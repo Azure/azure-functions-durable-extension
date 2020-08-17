@@ -207,35 +207,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
 
-        internal string AppName
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(this.appName))
-                {
-                    try
-                    {
-                        this.appName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? Environment.MachineName;
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    if (string.IsNullOrEmpty(this.appName))
-                    {
-                        this.appName = Guid.NewGuid().ToString();
-                    }
-                }
-
-                return this.appName;
-            }
-
-            set
-            {
-                this.appName = value;
-            }
-        }
-
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 

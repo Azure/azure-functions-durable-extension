@@ -146,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ThrowExceptionOnInvalidDedupeStatus = true,
                 UseAppLease = this.options.UseAppLease,
                 AppLeaseOptions = this.options.AppLeaseOptions,
-                AppName = this.options.AppName,
+                AppName = EndToEndTraceHelper.LocalAppName,
             };
 
             // When running on App Service VMSS stamps, these environment variables are the best way
