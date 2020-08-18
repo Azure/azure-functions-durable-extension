@@ -28,6 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.jsonSerializerSettings = new JsonSerializerSettings
                 {
                     TypeNameHandling = TypeNameHandling.None,
+                    DateParseHandling = DateParseHandling.None,
                 };
             }
 
