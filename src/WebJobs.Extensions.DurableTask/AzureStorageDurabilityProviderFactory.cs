@@ -148,6 +148,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.azureStorageOptions.TrackingStoreConnectionStringName),
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,
+                UseAppLease = this.options.UseAppLease,
+                AppLeaseOptions = this.options.AppLeaseOptions,
+                AppName = EndToEndTraceHelper.LocalAppName,
                 LoggerFactory = this.loggerFactory,
             };
 
