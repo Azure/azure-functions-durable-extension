@@ -550,6 +550,26 @@ namespace VSSample
             VerifyCSharpFix(test, V2ExpectedFix);
         }
 
+        // Tests SyntaxNodeUtils.TryGetAttribute
+        [TestMethod]
+        public void OrchestrationContext_V2_InvalidOperationTest()
+        {
+            var test = @"
+namespace VSSample
+{
+    public interface ExampleInterface
+    {
+        [return: System.ServiceModel.MessageParameterAttribute(Name = ""getSubscriberInfoReturn"")]
+        string getSubscriberInfo(string request);
+    }
+}
+";
+
+            SyntaxNodeUtils.version = DurableVersion.V2;
+
+            VerifyCSharpDiagnostic(test, new DiagnosticResult[] { });
+        }
+
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
             return new OrchestratorContextCodeFixProvider();

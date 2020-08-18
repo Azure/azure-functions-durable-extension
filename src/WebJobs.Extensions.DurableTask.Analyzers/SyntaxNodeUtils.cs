@@ -126,7 +126,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     //An AttributeList will always have a child node Attribute
                     attribute = attributeList.ChildNodes().First();
-                    if (attribute.ChildNodes().First().ToString().Equals(attributeName))
+
+                    if (attribute.ChildNodes().Any() && attribute.ChildNodes().First().ToString().Equals(attributeName))
                     {
                         return true;
                     }
