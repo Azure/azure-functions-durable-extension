@@ -193,6 +193,12 @@
             <param name="durableClientOptions">options containing the client configuration parameters.</param>
             <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.IDurableClientFactory.CreateClient">
+            <summary>
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> instance.
+            </summary>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
             <summary>
             Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>
@@ -3257,6 +3263,9 @@
             <summary>
                 Indicate if the client is External from the azure function where orchestrator functions are hosted.
             </summary>
+            <remarks>
+                Default is true.
+            </remarks>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
@@ -3413,6 +3422,16 @@
             after each individual operation. If false, the entity state is serialized
             only after an entire batch of operations completes.
             </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseAppLease">
+            <summary>
+            If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AppLeaseOptions">
+            <summary>
+            If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+            </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
             <summary>
