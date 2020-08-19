@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
+        internal const string DefaultHubName = "TestHubName";
         private string originalHubName;
         private string resolvedHubName;
         private string defaultHubName;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
                     // specified in local.settings.json file to avoid being defaulted to "TestHubName"
-                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? DefaultHubName;
                     this.defaultHubName = this.resolvedHubName;
                 }
 

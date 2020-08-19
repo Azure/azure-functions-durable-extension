@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 #if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -43,8 +44,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
+            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 
             return builder;
+        }
+
+        /// <summary>
+        /// Adds the Durable Task extension to the provided <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection AddDurableTask(this IServiceCollection serviceCollection)
+        {
+            if (serviceCollection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceCollection));
+            }
+
+            serviceCollection.TryAddSingleton<DurableTaskExtension>();
+            serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
+            serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
+            serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
+            serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
+            serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
+            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+
+            return serviceCollection;
         }
 
         /// <summary>
