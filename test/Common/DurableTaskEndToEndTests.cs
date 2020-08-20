@@ -3972,6 +3972,111 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_CleanEntityStorage(string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CleanEntityStorage),
+                enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
+                entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                // construct unique names for this test
+                string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                var emptyEntityId = new EntityId("Counter", $"{prefix}-empty");
+                var orphanedEntityId = new EntityId(nameof(TestEntityClasses.CounterWithProxy), $"{prefix}-orphaned");
+                var orchestrationA = $"{prefix}-A";
+                var orchestrationB = $"{prefix}-B";
+
+                // create an empty entity
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), new EntityId[] { emptyEntityId }, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                // check that the empty entity record is still there in storage
+                var query = new EntityQuery
+                {
+                    EntityName = emptyEntityId.EntityName,
+                };
+                var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                Assert.Contains(result.Entities, s => s.EntityId.Equals(emptyEntityId));
+
+                // run an orchestration A that leaves an orphaned lock
+                TestDurableClient clientA = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, true), this.output, orchestrationA);
+                status = await clientA.WaitForCompletionAsync(this.output);
+
+                // run an orchestration B that queues behind A for the lock (and thus gets stuck)
+                TestDurableClient clientB = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, false), this.output, orchestrationB);
+
+                // remove empty entity and release orphaned lock
+                var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(1, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
+
+                // wait for orchestration B to complete, now that the lock has been released
+                status = await clientB.WaitForCompletionAsync(this.output);
+                Assert.True(status.RuntimeStatus == OrchestrationRuntimeStatus.Completed);
+
+                // check that the empty entity record has been removed from storage
+                result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                Assert.DoesNotContain(result.Entities, s => s.EntityId.Equals(emptyEntityId));
+
+                // clean again to remove the orphaned entity which is now empty also
+                response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_CleanEntityStorage_Many(string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CleanEntityStorage),
+                enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
+                entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                int numReps = 120; // is above the default page size for queries
+
+                // construct unique names for this test
+                string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                EntityId[] entityIds = new EntityId[numReps];
+                for (int i = 0; i < entityIds.Length; i++)
+                {
+                    entityIds[i] = new EntityId("Counter", $"{prefix}-{i:D3}");
+                }
+
+                // create the empty entities
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                if (storageProvider == TestHelpers.AzureStorageProviderType)
+                {
+                    // account for delay in updating instance tables
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+                }
+
+                // remove all empty entities
+                var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(numReps, response.NumberOfEmptyEntitiesRemoved);
+
+                await host.StopAsync();
+            }
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task MaxOrchestrationAction_MaxReached_OrchestrationFails()
