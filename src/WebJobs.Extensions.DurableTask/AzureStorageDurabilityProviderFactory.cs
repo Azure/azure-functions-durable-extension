@@ -152,6 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 AppLeaseOptions = this.options.AppLeaseOptions,
                 AppName = EndToEndTraceHelper.LocalAppName,
                 LoggerFactory = this.loggerFactory,
+                UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
             };
 
             // When running on App Service VMSS stamps, these environment variables are the best way
