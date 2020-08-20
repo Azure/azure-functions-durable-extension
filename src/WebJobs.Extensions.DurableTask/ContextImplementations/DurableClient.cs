@@ -38,23 +38,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
         private readonly MessagePayloadDataConverter messageDataConverter;
+        private readonly DurableTaskOptions durableTaskOptions;
+
+        internal DurableClient(
+            DurabilityProvider serviceClient,
+            HttpApiHandler httpHandler,
+            DurableClientAttribute attribute,
+            MessagePayloadDataConverter messageDataConverter,
+            EndToEndTraceHelper traceHelper,
+            DurableTaskOptions durableTaskOptions)
+        {
+            this.messageDataConverter = messageDataConverter;
+
+            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
+            this.durabilityProvider = serviceClient;
+            this.traceHelper = traceHelper;
+            this.httpApiHandler = httpHandler;
+            this.durableTaskOptions = durableTaskOptions;
+            this.hubName = attribute.TaskHub ?? this.durableTaskOptions.HubName;
+            this.attribute = attribute;
+        }
 
         internal DurableClient(
             DurabilityProvider serviceClient,
             DurableTaskExtension config,
             HttpApiHandler httpHandler,
             DurableClientAttribute attribute)
+            : this(serviceClient, httpHandler, attribute, config.MessageDataConverter, config.TraceHelper, config.Options)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-
-            this.messageDataConverter = config.MessageDataConverter;
-
-            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
-            this.durabilityProvider = serviceClient;
-            this.traceHelper = config.TraceHelper;
-            this.httpApiHandler = httpHandler;
-            this.hubName = attribute.TaskHub ?? config.Options.HubName;
-            this.attribute = attribute;
+            this.config = config;
         }
 
         public string TaskHubName => this.hubName;
@@ -110,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            if (this.ClientReferencesCurrentApp(this))
+            if (!this.attribute.ExternalClient && this.ClientReferencesCurrentApp(this))
             {
                 this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
@@ -151,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private OrchestrationStatus[] GetStatusesNotToOverride()
         {
-            var overridableStates = this.config.Options.OverridableExistingInstanceStates;
+            var overridableStates = this.durableTaskOptions.OverridableExistingInstanceStates;
             if (overridableStates == OverridableStates.NonRunningStates)
             {
                 return new OrchestrationStatus[]
@@ -317,7 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
-            var taskHubName = this.config.Options.HubName;
+            var taskHubName = this.durableTaskOptions.HubName;
             return client.TaskHubName.Equals(taskHubName);
         }
 

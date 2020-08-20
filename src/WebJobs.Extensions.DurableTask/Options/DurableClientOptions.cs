@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public string ConnectionName { get; set; }
 
         /// <summary>
-        /// Optional. Gets or sets the name of the task hub in which the orchestration data lives.
+        ///  Gets or sets the name of the task hub in which the orchestration data lives.
         /// </summary>
         /// <value>The task hub used by this binding.</value>
         /// <remarks>

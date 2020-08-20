@@ -61,21 +61,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
 
-        private readonly DurableTaskExtension config;
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter messageDataConverter;
         private readonly LocalHttpListener localHttpListener;
+        private readonly EndToEndTraceHelper traceHelper;
+        private readonly DurableTaskOptions durableTaskOptions;
+        private readonly DurableTaskExtension config;
 
-        public HttpApiHandler(DurableTaskExtension config, ILogger logger)
+        public HttpApiHandler(
+            EndToEndTraceHelper traceHelper,
+            MessagePayloadDataConverter messageDataConverter,
+            DurableTaskOptions durableTaskOptions,
+            ILogger logger)
         {
-            this.config = config;
-            this.messageDataConverter = this.config.MessageDataConverter;
+            this.messageDataConverter = messageDataConverter;
             this.logger = logger;
+            this.durableTaskOptions = durableTaskOptions;
+            this.traceHelper = traceHelper;
 
             // The listen URL must not include the path.
             this.localHttpListener = new LocalHttpListener(
-                config,
+                this.traceHelper,
+                this.durableTaskOptions,
                 this.HandleRequestAsync);
+        }
+
+        public HttpApiHandler(DurableTaskExtension config, ILogger logger)
+            : this(config.TraceHelper, config.MessageDataConverter, config.Options, logger)
+        {
+            this.config = config;
         }
 
         public void Dispose()
@@ -215,9 +229,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     basePath = this.localHttpListener.InternalRpcUri.AbsolutePath;
                 }
-                else if (this.config.Options.NotificationUrl != null)
+                else if (this.durableTaskOptions.NotificationUrl != null)
                 {
-                    basePath = this.config.Options.NotificationUrl.AbsolutePath;
+                    basePath = this.durableTaskOptions.NotificationUrl.AbsolutePath;
                 }
                 else
                 {
@@ -550,15 +564,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // The orchestration has failed - return 500 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
-                    if (returnInternalServerErrorOnFailure)
-                    {
-                        statusCode = HttpStatusCode.InternalServerError;
-                    }
-                    else
-                    {
-                        statusCode = HttpStatusCode.OK;
-                    }
-
+                    statusCode = returnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
                     location = null;
                     break;
 
@@ -901,7 +907,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.NotificationUrl;
+            Uri notificationUri = this.durableTaskOptions.NotificationUrl;
 
             string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
             return hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
@@ -911,7 +917,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.NotificationUrl;
+            Uri notificationUri = this.durableTaskOptions.NotificationUrl;
 
             return !string.IsNullOrEmpty(notificationUri.Query)
                 ? notificationUri.Query.TrimStart('?')
@@ -943,7 +949,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfWebhooksNotConfigured();
 
-            Uri notificationUri = this.config.Options.NotificationUrl;
+            Uri notificationUri = this.durableTaskOptions.NotificationUrl;
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/runtime/webhooks/durabletask?code={systemKey}
@@ -952,7 +958,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string allInstancesPrefix = baseUrl + "/" + InstancesControllerSegment;
             string instancePrefix = allInstancesPrefix + WebUtility.UrlEncode(instanceId);
 
-            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.config.Options.HubName);
+            string taskHub = WebUtility.UrlEncode(taskHubName ?? this.durableTaskOptions.HubName);
             string connection = WebUtility.UrlEncode(connectionName ?? this.config.GetDefaultConnectionName());
 
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
@@ -1007,7 +1013,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void ThrowIfWebhooksNotConfigured()
         {
-            if (this.config.Options.NotificationUrl == null)
+            if (this.durableTaskOptions.NotificationUrl == null)
             {
                 throw new InvalidOperationException("Webhooks are not configured");
             }
@@ -1015,7 +1021,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool TryGetRpcBaseUrl(out Uri rpcBaseUrl)
         {
-            if (this.config.Options.LocalRpcEndpointEnabled != false)
+            if (this.durableTaskOptions.LocalRpcEndpointEnabled != false)
             {
                 rpcBaseUrl = this.localHttpListener.InternalRpcUri;
                 return true;
@@ -1031,8 +1037,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (!this.localHttpListener.IsListening)
             {
-                this.config.TraceHelper.ExtensionInformationalEvent(
-                    this.config.Options.HubName,
+                this.traceHelper.ExtensionInformationalEvent(
+                    this.durableTaskOptions.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
                     message: $"Opening local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
@@ -1046,8 +1052,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.localHttpListener.IsListening)
             {
-                this.config.TraceHelper.ExtensionInformationalEvent(
-                    this.config.Options.HubName,
+                this.traceHelper.ExtensionInformationalEvent(
+                    this.durableTaskOptions.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
                     message: $"Closing local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
