@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -12,6 +13,7 @@ using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -709,7 +711,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            return this.ConvertOrchestrationStateToStatus(orchestrationState, historyArray);
+            return ConvertOrchestrationStateToStatus(orchestrationState, historyArray);
         }
 
         // Get a response that will point to our webhook handler.
@@ -737,7 +739,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState, JArray historyArray = null)
+        internal static DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState, JArray historyArray = null)
         {
             return new DurableOrchestrationStatus
             {
@@ -746,14 +748,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreatedTime = orchestrationState.CreatedTime,
                 LastUpdatedTime = orchestrationState.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
-                CustomStatus = this.ParseToJToken(orchestrationState.Status),
-                Input = this.ParseToJToken(orchestrationState.Input),
-                Output = this.ParseToJToken(orchestrationState.Output),
+                CustomStatus = ParseToJToken(orchestrationState.Status),
+                Input = ParseToJToken(orchestrationState.Input),
+                Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,
             };
         }
 
-        private JToken ParseToJToken(string value)
+        private static JToken ParseToJToken(string value)
         {
             if (value == null)
             {
@@ -767,7 +769,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return string.Empty;
             }
 
-            return this.config.MessageDataConverter.ConvertToJToken(value);
+            JToken token;
+            using (var stringReader = new StringReader(value))
+            using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None })
+            {
+                token = JToken.ReadFrom(jsonTextReader);
+            }
+
+            return token;
         }
 
         private void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
@@ -777,7 +786,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            jsonObject["Result"] = this.ParseToJToken((string)jsonObject["Result"]);
+            jsonObject["Result"] = ParseToJToken((string)jsonObject["Result"]);
         }
 
         /// <inheritdoc/>
