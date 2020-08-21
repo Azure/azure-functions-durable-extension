@@ -604,7 +604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput)
+        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput)
         {
             JArray historyArray = null;
             if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
@@ -640,7 +640,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
-                                    this.ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
@@ -656,7 +656,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
-                                    this.ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
                                     break;
                                 case EventType.ExecutionStarted:
                                     var functionName = historyItem["Name"];
@@ -679,7 +679,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
-                                    this.ConvertOutputToJToken(historyItem, showHistoryOutput);
+                                    ConvertOutputToJToken(historyItem, showHistoryOutput);
                                     break;
                                 case EventType.ExecutionTerminated:
                                     historyItem.Remove("Input");
@@ -779,7 +779,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return token;
         }
 
-        private void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
+        private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
         {
             if (!showHistoryOutput)
             {
