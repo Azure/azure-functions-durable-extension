@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -59,18 +58,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
 
                 if (objectArray?.Length != 1)
-                    {
-                        throw new ArgumentException("The serialized input is expected to be an object array with one element.");
-                    }
-
-                JToken token;
-                using (var stringReader = new StringReader(this.messageDataConverter.Serialize(objectArray[0])))
-                using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = this.messageDataConverter.JsonSettings.DateParseHandling })
                 {
-                    token = JToken.ReadFrom(jsonTextReader);
+                    throw new ArgumentException("The serialized input is expected to be an object array with one element.");
                 }
 
-                this.parsedJsonInput = token;
+                this.parsedJsonInput = this.messageDataConverter.ConvertToJToken(this.messageDataConverter.Serialize(objectArray[0]));
             }
 
             return this.parsedJsonInput;

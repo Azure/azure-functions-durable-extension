@@ -12,7 +12,6 @@ using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -385,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+            return await this.GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
         }
 
         /// <inheritdoc />
@@ -603,7 +602,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput)
+        private async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput)
         {
             JArray historyArray = null;
             if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
@@ -639,7 +638,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
-                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
+                                    this.ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
@@ -655,7 +654,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
-                                    ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
+                                    this.ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
                                     break;
                                 case EventType.ExecutionStarted:
                                     var functionName = historyItem["Name"];
@@ -678,7 +677,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
-                                    ConvertOutputToJToken(historyItem, showHistoryOutput);
+                                    this.ConvertOutputToJToken(historyItem, showHistoryOutput);
                                     break;
                                 case EventType.ExecutionTerminated:
                                     historyItem.Remove("Input");
@@ -710,7 +709,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            return ConvertOrchestrationStateToStatus(orchestrationState, historyArray);
+            return this.ConvertOrchestrationStateToStatus(orchestrationState, historyArray);
         }
 
         // Get a response that will point to our webhook handler.
@@ -738,7 +737,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal static DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState, JArray historyArray = null)
+        private DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState, JArray historyArray = null)
         {
             return new DurableOrchestrationStatus
             {
@@ -747,14 +746,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreatedTime = orchestrationState.CreatedTime,
                 LastUpdatedTime = orchestrationState.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
-                CustomStatus = ParseToJToken(orchestrationState.Status),
-                Input = ParseToJToken(orchestrationState.Input),
-                Output = ParseToJToken(orchestrationState.Output),
+                CustomStatus = this.ParseToJToken(orchestrationState.Status),
+                Input = this.ParseToJToken(orchestrationState.Input),
+                Output = this.ParseToJToken(orchestrationState.Output),
                 History = historyArray,
             };
         }
 
-        internal static JToken ParseToJToken(string value)
+        private JToken ParseToJToken(string value)
         {
             if (value == null)
             {
@@ -768,25 +767,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return string.Empty;
             }
 
-            try
-            {
-                return JToken.Parse(value);
-            }
-            catch (JsonReaderException)
-            {
-                // Return the raw string value as the fallback. This is common in terminate scenarios.
-                return value;
-            }
+            return this.config.MessageDataConverter.ConvertToJToken(value);
         }
 
-        private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
+        private void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
         {
             if (!showHistoryOutput)
             {
                 return;
             }
 
-            jsonObject["Result"] = ParseToJToken((string)jsonObject["Result"]);
+            jsonObject["Result"] = this.ParseToJToken((string)jsonObject["Result"]);
         }
 
         /// <inheritdoc/>
