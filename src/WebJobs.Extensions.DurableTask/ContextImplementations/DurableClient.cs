@@ -386,7 +386,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return await this.GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
         }
 
         /// <inheritdoc />
@@ -755,7 +755,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static JToken ParseToJToken(string value)
+        internal static JToken ParseToJToken(string value)
         {
             if (value == null)
             {
