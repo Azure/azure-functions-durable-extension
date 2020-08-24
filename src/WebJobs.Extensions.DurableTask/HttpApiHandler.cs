@@ -774,7 +774,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string stringData = await request.Content.ReadAsStringAsync();
 
-            var eventData = this.config.MessageDataConverter.ConvertToJToken(stringData);
+            var eventData = MessagePayloadDataConverter.ConvertToJToken(stringData);
 
             await client.RaiseEventAsync(instanceId, eventName, eventData);
             return request.CreateResponse(HttpStatusCode.Accepted);
@@ -833,7 +833,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 object operationInput;
                 if (string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
                 {
-                    operationInput = this.config.MessageDataConverter.ConvertToJToken(requestContent);
+                    operationInput = MessagePayloadDataConverter.ConvertToJToken(requestContent);
                 }
                 else
                 {

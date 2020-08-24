@@ -612,7 +612,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string history = await client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
                 if (!string.IsNullOrEmpty(history))
                 {
-                    historyArray = JArray.Parse(history);
+                    historyArray = MessagePayloadDataConverter.ConvertToJArray(history);
 
                     var eventMapper = new Dictionary<string, EventIndexDateMapping>();
                     var indexList = new List<int>();
@@ -769,14 +769,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return string.Empty;
             }
 
-            JToken token;
-            using (var stringReader = new StringReader(value))
-            using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None })
-            {
-                token = JToken.ReadFrom(jsonTextReader);
-            }
-
-            return token;
+            return MessagePayloadDataConverter.ConvertToJToken(value);
         }
 
         private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)

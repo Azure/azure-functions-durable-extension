@@ -3275,6 +3275,16 @@
             only after an entire batch of operations completes.
             </remarks>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseAppLease">
+            <summary>
+            If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AppLeaseOptions">
+            <summary>
+            If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
             <summary>
             Sets HubName to a value that is considered a default value.

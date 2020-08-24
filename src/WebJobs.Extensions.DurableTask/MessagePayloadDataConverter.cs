@@ -69,19 +69,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serializedJson;
         }
 
-        public JToken ConvertToJToken(string input)
+        public static JToken ConvertToJToken(string input)
         {
-            JToken token = null;
+            try
+            {
+                JToken token = null;
+                if (input != null)
+                {
+                    using (var stringReader = new StringReader(input))
+                    using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None })
+                    {
+                        return token = JToken.Load(jsonTextReader);
+                    }
+                }
+
+                return token;
+            }
+            catch (JsonReaderException)
+            {
+                // Return the raw string value as the fallback. This is common in terminate scenarios.
+                return input;
+            }
+        }
+
+        public static JArray ConvertToJArray(string input)
+        {
+            JArray jArray = null;
             if (input != null)
             {
                 using (var stringReader = new StringReader(input))
-                using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = this.JsonSettings.DateParseHandling })
+                using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None })
                 {
-                    token = JToken.ReadFrom(jsonTextReader);
+                    jArray = JArray.Load(jsonTextReader);
                 }
             }
 
-            return token;
+            return jArray;
         }
     }
 }

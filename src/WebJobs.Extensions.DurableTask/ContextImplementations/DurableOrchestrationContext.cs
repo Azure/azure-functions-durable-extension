@@ -136,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </returns>
         internal JToken GetInputAsJson()
         {
-            return this.Config.MessageDataConverter.ConvertToJToken(this.RawInput);
+            return MessagePayloadDataConverter.ConvertToJToken(this.RawInput);
         }
 
         /// <inheritdoc />
@@ -935,7 +935,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Need to round-trip serialization since SendEvent always tries to serialize.
                     string rawInput = events.Dequeue();
-                    JToken jsonData = this.Config.MessageDataConverter.ConvertToJToken(rawInput);
+                    JToken jsonData = MessagePayloadDataConverter.ConvertToJToken(rawInput);
                     this.InnerContext.SendEvent(instance, eventName, jsonData);
                 }
             }

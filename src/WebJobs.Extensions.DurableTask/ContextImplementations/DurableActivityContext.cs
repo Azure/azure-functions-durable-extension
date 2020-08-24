@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new ArgumentException("The serialized input is expected to be an object array with one element.");
                 }
 
-                this.parsedJsonInput = this.messageDataConverter.ConvertToJToken(this.messageDataConverter.Serialize(objectArray[0]));
+                this.parsedJsonInput = MessagePayloadDataConverter.ConvertToJToken(this.messageDataConverter.Serialize(objectArray[0]));
             }
 
             return this.parsedJsonInput;
