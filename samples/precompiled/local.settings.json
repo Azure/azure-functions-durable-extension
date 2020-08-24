@@ -1,6 +1,7 @@
 {
   "IsEncrypted": false,
   "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "TwilioAccountSid": "<Put your Twilio Account SID here>",
     "TwilioAuthToken": "<Put your Twilio Auth Token here>",

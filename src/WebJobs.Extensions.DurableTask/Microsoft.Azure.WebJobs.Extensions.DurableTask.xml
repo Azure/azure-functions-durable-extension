@@ -3149,6 +3149,15 @@
             </summary>
             <value>Maximum interval for polling control and work-item queues.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.UseLegacyPartitionManagement">
+            <summary>
+            Determines whether or not to use the old partition management strategy, or the new
+            strategy that is more resilient to split brain problems, at the potential expense
+            of scale out performance.
+            </summary>
+            <value>A boolean indicating whether we use the legacy partition strategy. Defaults to true
+            but this will change to false once the new partition management strategy is fully tested. </value>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ValidateHubName(System.String)">
             <summary>
             Throws an exception if the provided hub name violates any naming conventions for the storage provider.
@@ -3314,6 +3323,16 @@
             after each individual operation. If false, the entity state is serialized
             only after an entire batch of operations completes.
             </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseAppLease">
+            <summary>
+            If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AppLeaseOptions">
+            <summary>
+            If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+            </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.SetDefaultHubName(System.String)">
             <summary>
