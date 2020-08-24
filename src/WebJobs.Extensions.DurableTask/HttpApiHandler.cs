@@ -774,7 +774,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string stringData = await request.Content.ReadAsStringAsync();
 
-            var eventData = MessagePayloadDataConverter.ConvertToJToken(stringData);
+            object eventData;
+            try
+            {
+                eventData = MessagePayloadDataConverter.ConvertToJToken(stringData);
+            }
+            catch (JsonReaderException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
+            }
 
             await client.RaiseEventAsync(instanceId, eventName, eventData);
             return request.CreateResponse(HttpStatusCode.Accepted);
@@ -833,7 +841,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 object operationInput;
                 if (string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
                 {
-                    operationInput = MessagePayloadDataConverter.ConvertToJToken(requestContent);
+                    try
+                    {
+                        operationInput = MessagePayloadDataConverter.ConvertToJToken(requestContent);
+                    }
+                    catch (JsonException e)
+                    {
+                        return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Could not parse JSON content: " + e.Message);
+                    }
                 }
                 else
                 {

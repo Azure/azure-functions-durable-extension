@@ -769,7 +769,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return string.Empty;
             }
 
-            return MessagePayloadDataConverter.ConvertToJToken(value);
+            try
+            {
+                return MessagePayloadDataConverter.ConvertToJToken(value);
+            }
+            catch (JsonReaderException)
+            {
+                // Return the raw string value as the fallback. This is common in terminate scenarios.
+                return value;
+            }
         }
 
         private static void ConvertOutputToJToken(JObject jsonObject, bool showHistoryOutput)
