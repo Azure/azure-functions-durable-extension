@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -611,7 +612,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string history = await client.GetOrchestrationHistoryAsync(orchestrationState.OrchestrationInstance);
                 if (!string.IsNullOrEmpty(history))
                 {
-                    historyArray = JArray.Parse(history);
+                    historyArray = MessagePayloadDataConverter.ConvertToJArray(history);
 
                     var eventMapper = new Dictionary<string, EventIndexDateMapping>();
                     var indexList = new List<int>();
@@ -770,7 +771,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             try
             {
-                return JToken.Parse(value);
+                return MessagePayloadDataConverter.ConvertToJToken(value);
             }
             catch (JsonReaderException)
             {

@@ -777,7 +777,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             object eventData;
             try
             {
-                eventData = !string.IsNullOrEmpty(stringData) ? JToken.Parse(stringData) : null;
+                eventData = MessagePayloadDataConverter.ConvertToJToken(stringData);
             }
             catch (JsonReaderException e)
             {
@@ -843,7 +843,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        operationInput = JToken.Parse(requestContent);
+                        operationInput = MessagePayloadDataConverter.ConvertToJToken(requestContent);
                     }
                     catch (JsonException e)
                     {
