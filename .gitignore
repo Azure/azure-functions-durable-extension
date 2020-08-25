@@ -295,3 +295,4 @@ __pycache__/
 functions-extensions/
 
 .vscode/
+.ionide/

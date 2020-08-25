@@ -12,23 +12,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     public class InterfaceContentAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = InterfaceContentAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = InterfaceContentAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
-        public void InterfaceContentAnalyzer_NonIssue()
+        public void InterfaceContentAnalyzer_NoDiagnosticTestCases()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceContentAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();
@@ -44,21 +44,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test);
         }
 
+        // Entity interface must have at least one method.
         [TestMethod]
         public void InterfaceContentAnalyzer_NoMethods()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceContentAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();
@@ -83,21 +84,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
+        // Entity interface must have only methods.
         [TestMethod]
-        public void InterfaceContentAnalyzer_Property()
+        public void InterfaceContentAnalyzer_HasProperty()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""InterfaceContentAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();

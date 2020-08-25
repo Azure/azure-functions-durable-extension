@@ -1,25 +1,20 @@
-﻿using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
-using Microsoft.Extensions.Options;
-using Moq;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System;
 using System.Collections.Generic;
-using System.Text;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class AzureStorageDurabilityProviderFactoryTests
     {
-        private readonly ITestOutputHelper output;
-
-        public AzureStorageDurabilityProviderFactoryTests(ITestOutputHelper output)
-        {
-            this.output = output;
-        }
-
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DefaultWorkerId_IsMachineName()
@@ -27,7 +22,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var connectionStringResolver = new TestConnectionStringResolver();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new Mock<INameResolver>().Object;
-            var factory = new AzureStorageDurabilityProviderFactory(mockOptions, connectionStringResolver, nameResolver);
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance);
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
@@ -36,7 +35,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-
         public void EnvironmentIsVMSS_WorkerIdFromEnvironmentVariables()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
@@ -47,7 +45,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 { "RoleInstanceId", "dw0SmallDedicatedWebWorkerRole_hr0HostRole-3-VM-13" },
             });
 
-            var factory = new AzureStorageDurabilityProviderFactory(mockOptions, connectionStringResolver, nameResolver);
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance);
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.IO;
 using System.Text;
 using DurableTask.Core.Serializing;
 using Newtonsoft.Json;
@@ -66,6 +67,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return serializedJson;
+        }
+
+        public static JToken ConvertToJToken(string input)
+        {
+            JToken token = null;
+            if (input != null)
+            {
+                using (var stringReader = new StringReader(input))
+                using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None })
+                {
+                    return token = JToken.Load(jsonTextReader);
+                }
+            }
+
+            return token;
+        }
+
+        public static JArray ConvertToJArray(string input)
+        {
+            JArray jArray = null;
+            if (input != null)
+            {
+                using (var stringReader = new StringReader(input))
+                using (var jsonTextReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None })
+                {
+                    jArray = JArray.Load(jsonTextReader);
+                }
+            }
+
+            return jArray;
         }
     }
 }

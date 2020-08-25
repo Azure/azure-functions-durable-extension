@@ -66,6 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
+        private ILoggerFactory loggerFactory;
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
@@ -112,12 +113,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.ResolveAppSettingOptions();
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
@@ -290,7 +287,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
-            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
+
+            // Add middleware to the DTFx dispatcher so that we can inject our own logic
+            // into and customize the orchestration execution pipeline.
+            this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
@@ -355,11 +356,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
             this.nameResolver = context.Config.NameResolver;
+            this.loggerFactory = context.Config.LoggerFactory;
             this.ResolveAppSettingOptions();
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
+            ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver, this.nameResolver);
+            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(this.Options),
+                this.connectionStringResolver,
+                this.nameResolver,
+                this.loggerFactory);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
@@ -465,6 +471,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
         }
 
+        /// <summary>
+        /// This DTFx activity middleware allows us to add context to the activity function shim
+        /// before it actually starts running.
+        /// </summary>
+        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
+        private Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
+            {
+                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
+                shim.SetTaskEventId(@event?.EventId ?? -1);
+            }
+
+            // Move to the next stage of the DTFx pipeline to trigger the activity shim.
+            return next();
+        }
+
+        /// <summary>
+        /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
+        /// and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
+        /// </summary>
+        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
             TaskOrchestrationShim shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
@@ -545,7 +575,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
             }
 
-            if (!context.IsCompleted)
+            if (!context.IsCompleted && !context.IsLongRunningTimer)
             {
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,
@@ -566,6 +596,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await context.RunDeferredTasks();
         }
 
+        /// <summary>
+        /// This DTFx orchestration middleware (for entities) allows us to add context and set state
+        /// to the entity shim orchestration before it starts executing the actual entity logic.
+        /// </summary>
+        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
         private async Task EntityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
             var entityShim = dispatchContext.GetProperty<TaskOrchestration>() as TaskEntityShim;

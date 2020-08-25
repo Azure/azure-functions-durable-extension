@@ -45,35 +45,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            NameAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
+            NameAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
             ArgumentAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
             FunctionReturnTypeAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
         }
 
         public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
+            SetSemanticModel(context);
+
             var semanticModel = context.SemanticModel;
             if (context.Node is InvocationExpressionSyntax invocationExpression
                 && SyntaxNodeUtils.IsInsideFunction(semanticModel, invocationExpression)
                 && IsActivityInvocation(invocationExpression))
             {
-                SetSemanticModel(context);
-
                 if (!TryGetFunctionNameFromActivityInvocation(invocationExpression, out SyntaxNode functionNameNode, out string functionName))
                 {
                     //Do not store ActivityFunctionCall if there is no function name
                     return;
                 }
 
-                SyntaxNodeUtils.TryGetTypeArgumentNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
+                SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
 
                 TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode);
 
                 calledFunctions.Add(new ActivityFunctionCall
                 {
-                    Name = functionName,
+                    FunctionName = functionName,
                     NameNode = functionNameNode,
-                    ParameterNode = inputNode,
+                    ArgumentNode = inputNode,
                     ReturnTypeNode = returnTypeNode,
                     InvocationExpression = invocationExpression
                 });
@@ -93,7 +93,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (invocationExpression != null && invocationExpression.Expression is MemberAccessExpressionSyntax memberAccessExpression)
             {
                 var name = memberAccessExpression.Name;
-                if (name.ToString().StartsWith("CallActivityAsync") || name.ToString().StartsWith("CallActivityWithRetryAsync"))
+                if (name != null
+                    && (name.ToString().StartsWith("CallActivityAsync")
+                        || name.ToString().StartsWith("CallActivityWithRetryAsync")))
                 {
                     return true;
                 }
@@ -122,14 +124,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
         {
-            var arguments = invocationExpression.ArgumentList.Arguments;
-            if (arguments != null && arguments.Count > 1)
+            var argumentList = invocationExpression.ArgumentList;
+            if (argumentList != null)
             {
-                var lastArgumentNode = arguments.Last();
+                var arguments = argumentList.Arguments;
+                if (arguments != null && arguments.Count > 1)
+                {
+                    var lastArgumentNode = arguments.Last();
 
-                //An Argument node will always have a child node
-                inputNode = lastArgumentNode.ChildNodes().First();
-                return true;
+                    //An Argument node will always have a child node
+                    inputNode = lastArgumentNode.ChildNodes().First();
+                    return true;
+                }
             }
 
             inputNode = null;
@@ -138,8 +144,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindActivityFunction(SyntaxNodeAnalysisContext context)
         {
-            var attribute = context.Node as AttributeSyntax;
-            if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
+            if (context.Node is AttributeSyntax attribute
+                && SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
                 if (!SyntaxNodeUtils.TryGetFunctionName(context.SemanticModel, attribute, out string functionName))
                 {

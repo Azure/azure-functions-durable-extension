@@ -3,6 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -28,28 +29,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         }
 
         public static void ReportProblems(
-            CompilationAnalysisContext context, 
-            IEnumerable<ActivityFunctionDefinition> availableFunctions, 
-            IEnumerable<ActivityFunctionCall> calledFunctions)
+            CompilationAnalysisContext context,
+            SemanticModel semanticModel,
+            IEnumerable<ActivityFunctionDefinition> functionDefinitions,
+            IEnumerable<ActivityFunctionCall> functionInvocations)
         {
-            foreach (var activityInvocation in calledFunctions)
+            foreach (var invocation in functionInvocations)
             {
-                if (!availableFunctions.Select(x => x.FunctionName).Contains(activityInvocation.Name))
+                // If invocation uses constant and there is no matching function name in function definition, trust the customer for correctness in case they are using <FunctionsInDependencies>true</FunctionsInDependencies>
+                if (!functionDefinitions.Select(x => x.FunctionName).Contains(invocation.FunctionName) && !IsConstant(semanticModel, invocation.NameNode))
                 {
-                    if (SyntaxNodeUtils.TryGetClosestString(activityInvocation.Name, availableFunctions.Select(x => x.FunctionName), out string closestName))
+                    if (SyntaxNodeUtils.TryGetClosestString(invocation.FunctionName, functionDefinitions.Select(x => x.FunctionName), out string closestName))
                     {
-                        var diagnostic = Diagnostic.Create(CloseRule, activityInvocation.NameNode.GetLocation(), activityInvocation.Name, closestName);
+                        var diagnostic = Diagnostic.Create(CloseRule, invocation.NameNode.GetLocation(), invocation.FunctionName, closestName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
                     else
                     {
-                        var diagnostic = Diagnostic.Create(MissingRule, activityInvocation.NameNode.GetLocation(), activityInvocation.Name);
+                        var diagnostic = Diagnostic.Create(MissingRule, invocation.NameNode.GetLocation(), invocation.FunctionName);
 
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
+        }
+
+        private static bool IsConstant(SemanticModel semanticModel, SyntaxNode nameNode)
+        {
+            return SyntaxNodeUtils.TryGetFunctionNameInConstant(semanticModel, nameNode, out string functionName);
         }
     }
 }
