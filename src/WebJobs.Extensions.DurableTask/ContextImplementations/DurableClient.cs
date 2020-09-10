@@ -90,21 +90,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
+        async Task<HttpResponseMessage> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequestMessage request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval, bool returnInternalServerErrorOnFailure)
         {
             return await this.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 request,
                 instanceId,
                 this.attribute,
                 timeout ?? TimeSpan.FromSeconds(10),
-                retryInterval ?? TimeSpan.FromSeconds(1));
+                retryInterval ?? TimeSpan.FromSeconds(1),
+                returnInternalServerErrorOnFailure);
         }
 
         /// <inheritdoc />
-        async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval)
+        async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval, bool returnInternalServerErrorOnFailure)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
-            HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval);
+            HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval, returnInternalServerErrorOnFailure);
             return ConvertHttpResponseMessage(responseMessage);
         }
 
@@ -575,14 +576,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             DurableClientAttribute attribute,
             TimeSpan timeout,
-            TimeSpan retryInterval)
+            TimeSpan retryInterval,
+            bool returnInternalServerErrorOnFailure)
         {
             return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 request,
                 instanceId,
                 attribute,
                 timeout,
-                retryInterval);
+                retryInterval,
+                returnInternalServerErrorOnFailure);
         }
 
         private static bool IsOrchestrationRunning(OrchestrationState status)
