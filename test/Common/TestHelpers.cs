@@ -51,7 +51,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IMessageSerializerSettingsFactory serializerSettings = null,
             bool? localRpcEndpointEnabled = false,
             DurableTaskOptions options = null,
-            bool rollbackEntityOperationsOnExceptions = true)
+            bool rollbackEntityOperationsOnExceptions = true,
+            int entityMessageReorderWindowInMinutes = 30)
         {
             switch (storageProviderType)
             {
@@ -96,6 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.NotificationHandler = eventGridNotificationHandler;
             options.LocalRpcEndpointEnabled = localRpcEndpointEnabled;
             options.RollbackEntityOperationsOnExceptions = rollbackEntityOperationsOnExceptions;
+            options.EntityMessageReorderWindowInMinutes = entityMessageReorderWindowInMinutes;
 
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
