@@ -299,7 +299,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
-            var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
+            var eventName = scheduledTimeUtc.HasValue
+                ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
+                : EntityMessageEventNames.RequestMessageEventName;
             await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
