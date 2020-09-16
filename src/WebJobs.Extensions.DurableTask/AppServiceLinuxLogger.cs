@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -24,7 +25,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            return null;
+            // This logger does not accept adding external scopes,
+            // so it returns a No-Op Disposable, does nothing when disposed.
+            return NoOpDisposable.Instance;
         }
 
         public bool IsEnabled(LogLevel logLevel)
@@ -51,7 +54,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // In Linux Dedicated, we write to file
                 using (var writer = new StreamWriter(LoggingPath, true))
                 {
-                    writer.WriteLine(jsonString);
+                    // TODO: ensure this won't crash the process if an exception
+                    // is encountered
+                    Task unused = writer.WriteLineAsync(jsonString);
                 }
             }
         }
