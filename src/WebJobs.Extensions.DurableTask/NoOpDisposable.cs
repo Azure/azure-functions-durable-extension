@@ -9,20 +9,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// From: https://github.com/StephenCleary/Disposables
     /// </summary>
     public sealed class NoOpDisposable : IDisposable
-#if NETSTANDARD2_1
-        , IAsyncDisposable
-#endif
     {
         private NoOpDisposable()
         {
         }
-
-#if NETSTANDARD2_1
-        /// <summary>
-        /// Does nothing.
-        /// </summary>
-        public ValueTask DisposeAsync() => new ValueTask();
-#endif
 
         /// <summary>
         /// Gets the instance of <see cref="NoOpDisposable"/>.
