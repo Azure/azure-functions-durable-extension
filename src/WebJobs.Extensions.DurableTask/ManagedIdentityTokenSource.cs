@@ -32,6 +32,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.Resource = "https://management.core.windows.net/.default";
             }
+
+            if (this.Resource.Equals("https://graph.microsoft.com") || this.Resource.Equals("https://graph.microsoft.com/"))
+            {
+                this.Resource = "https://graph.microsoft.com/.default";
+            }
         }
 
         /// <summary>
