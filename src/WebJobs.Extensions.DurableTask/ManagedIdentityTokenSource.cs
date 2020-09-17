@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Resource = resource ?? throw new ArgumentNullException(nameof(resource));
             this.Options = options;
 
-            if (this.Resource.Equals("https://management.core.windows.net"))
+            if (this.Resource.Equals("https://management.core.windows.net") || this.Resource.Equals("https://management.core.windows.net/"))
             {
                 this.Resource = "https://management.core.windows.net/.default";
             }
