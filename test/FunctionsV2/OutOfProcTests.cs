@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ""uri"": ""https://example.com"",
                 ""tokenSource"": {
                     ""kind"": ""AzureManagedIdentity"",
-                    ""resource"": ""https://management.core.windows.net""
+                    ""resource"": ""https://management.core.windows.net/.default""
                 }
             }
         }]
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(request.TokenSource);
             ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(request.TokenSource);
-            Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
+            Assert.Equal("https://management.core.windows.net/.default", tokenSource.Resource);
         }
 
         [Fact]
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ""uri"": ""https://example.com"",
                 ""tokenSource"": {
                     ""kind"": ""AzureManagedIdentity"",
-                    ""resource"": ""https://management.core.windows.net"",
+                    ""resource"": ""https://management.core.windows.net/.default"",
                     ""options"": {
                         ""authorityhost"": ""https://login.microsoftonline.com/"",
                         ""tenantid"": ""example_tenant_id""
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(request.TokenSource);
             ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(request.TokenSource);
-            Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
+            Assert.Equal("https://management.core.windows.net/.default", tokenSource.Resource);
             Assert.Equal("https://login.microsoftonline.com/", tokenSource.Options.AuthorityHost.ToString());
             Assert.Equal("example_tenant_id", tokenSource.Options.TenantId);
         }
