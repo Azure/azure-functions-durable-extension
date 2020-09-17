@@ -3014,14 +3014,14 @@
             </summary>
             <param name="resource">
             The Azure Active Directory resource identifier of the web API being invoked.
-            For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
+            For example, <c>https://management.core.windows.net/.default</c> or <c>https://graph.microsoft.com/.default</c>.
             </param>
             <param name="options">Optional Azure credential options to use when authenticating.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Resource">
             <summary>
             Gets the Azure Active Directory resource identifier of the web API being invoked.
-            For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
+            For example, <c>https://management.core.windows.net/.default</c> or <c>https://graph.microsoft.com/.default</c>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Options">
