@@ -3986,6 +3986,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
+                // before the test, clean storage so we can properly validate the count later
+                var irrelevantEntityId = new EntityId("Counter", "unused"); // we don't access this entity, just use it to construct a client
+                var entityClient = await host.GetEntityClientAsync(irrelevantEntityId, this.output);
+                await entityClient.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+
                 // construct unique names for this test
                 string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
                 var emptyEntityId = new EntityId("Counter", $"{prefix}-empty");
@@ -4047,6 +4052,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProviderType: storageProvider))
             {
                 await host.StartAsync();
+
+                // before the test, clean storage so we can properly validate the count later
+                var irrelevantEntityId = new EntityId("Counter", "unused"); // we don't access this entity, just use it to construct a client
+                var entityClient = await host.GetEntityClientAsync(irrelevantEntityId, this.output);
+                await entityClient.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
 
                 int numReps = 120; // is above the default page size for queries
 
