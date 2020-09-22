@@ -26,13 +26,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="content">Content added to the body of the HTTP request.</param>
         /// <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
         /// <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
+        /// <param name="timeoutDuration">Timeout duration for the original HTTP request.</param>
+        /// <param name="maximumPollingDuration">Total timeout duration for asynchronous polling requests.</param>
         public DurableHttpRequest(
             HttpMethod method,
             Uri uri,
             IDictionary<string, StringValues> headers = null,
             string content = null,
             ITokenSource tokenSource = null,
-            bool asynchronousPatternEnabled = true)
+            bool asynchronousPatternEnabled = true,
+            double? timeoutDuration = null,
+            int? maximumPollingDuration = null)
         {
             this.Method = method;
             this.Uri = uri;
@@ -40,6 +44,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Content = content;
             this.TokenSource = tokenSource;
             this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+            this.TimeoutDurationMilliseconds = timeoutDuration;
+            this.MaximumPollingDurationMilliseconds = maximumPollingDuration;
         }
 
         /// <summary>
@@ -81,6 +87,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         [JsonProperty("asynchronousPatternEnabled")]
         public bool AsynchronousPatternEnabled { get; }
+
+        /// <summary>
+        /// HTTP request timeout value in milliseconds. Default value is 100000 milliseconds (100 seconds).
+        /// </summary>
+        [JsonProperty("timeoutDuration")]
+        public double? TimeoutDurationMilliseconds { get; }
+
+        /// <summary>
+        /// Maximum time for polling during long running tasks
+        /// </summary>
+        [JsonProperty("maximumPollingDuration")]
+        public int? MaximumPollingDurationMilliseconds { get; }
 
         private class HttpMethodConverter : JsonConverter
         {

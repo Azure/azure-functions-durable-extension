@@ -1766,7 +1766,7 @@
             Request used to make an HTTP call through Durable Functions.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.#ctor(System.Net.Http.HttpMethod,System.Uri,System.Collections.Generic.IDictionary{System.String,Microsoft.Extensions.Primitives.StringValues},System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.#ctor(System.Net.Http.HttpMethod,System.Uri,System.Collections.Generic.IDictionary{System.String,Microsoft.Extensions.Primitives.StringValues},System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource,System.Boolean,System.Nullable{System.Double},System.Nullable{System.Int32})">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest"/> class.
             </summary>
@@ -1776,6 +1776,8 @@
             <param name="content">Content added to the body of the HTTP request.</param>
             <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
             <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
+            <param name="timeoutDuration">Timeout duration for the original HTTP request.</param>
+            <param name="maximumPollingDuration">Total timeout duration for asynchronous polling requests.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.Method">
             <summary>
@@ -1806,6 +1808,16 @@
             <summary>
             Specifies whether the Durable HTTP APIs should automatically
             handle the asynchronous HTTP pattern.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.TimeoutDurationMilliseconds">
+            <summary>
+            HTTP request timeout value in milliseconds. Default value is 100000 milliseconds (100 seconds).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.MaximumPollingDurationMilliseconds">
+            <summary>
+            Maximum time for polling during long running tasks
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpResponse">

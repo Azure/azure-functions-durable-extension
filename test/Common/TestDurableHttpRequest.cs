@@ -46,5 +46,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [DataMember]
         public bool AsynchronousPatternEnabled { get; set; } = true;
+
+        [DataMember]
+        public double? TimeoutDuration { get; set; }
+
+        [DataMember]
+        public int? MaximumPollingDuration { get; set; }
     }
 }

@@ -247,7 +247,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
-            while (currStatusCode == HttpStatusCode.Accepted && req.AsynchronousPatternEnabled)
+            CancellationTokenSource cts = new CancellationTokenSource();
+            if (currStatusCode == HttpStatusCode.Accepted && req.AsynchronousPatternEnabled && req.MaximumPollingDurationMilliseconds != null)
+            {
+                cts.CancelAfter(req.MaximumPollingDurationMilliseconds.Value);
+            }
+
+            while (currStatusCode == HttpStatusCode.Accepted && req.AsynchronousPatternEnabled && !cts.IsCancellationRequested)
             {
                 var headersDictionary = new Dictionary<string, StringValues>(
                         durableHttpResponse.Headers,
@@ -266,13 +272,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.IncrementActionsOrThrowException();
-                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+
+                if (req.MaximumPollingDurationMilliseconds != null)
+                {
+                    await this.InnerContext.CreateTimer(fireAt, cts);
+                }
+                else
+                {
+                    await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+                }
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
                     durableHttpResponse.Headers["Location"]);
                 durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest);
                 currStatusCode = durableHttpResponse.StatusCode;
+            }
+
+            if (cts.IsCancellationRequested)
+            {
+                throw new TimeoutException("Reached timeout value specified in DurableHttpRequest.TimeoutDuration.");
             }
 
             return durableHttpResponse;
@@ -299,7 +318,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: HttpMethod.Get,
                 uri: new Uri(locationUri),
                 headers: durableHttpRequest.Headers,
-                tokenSource: durableHttpRequest.TokenSource);
+                tokenSource: durableHttpRequest.TokenSource,
+                timeoutDuration: null, // setting this value to null because it only applies to the original Durable HTTP request
+                maximumPollingDuration: durableHttpRequest.MaximumPollingDurationMilliseconds);
 
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key
