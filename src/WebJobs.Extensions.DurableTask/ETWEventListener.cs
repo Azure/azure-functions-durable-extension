@@ -8,15 +8,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ETWEventListener : EventListener
     {
+        private ILogger logger;
+
+        public ETWEventListener(ILogger logger)
+        {
+            this.logger = logger;
+        }
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            ILogger logger = null; // TODO: need to set
-            bool inLinux = true; // TODO: need to set
-            if (inLinux)
+            if (DurableTaskExtension.InLinux)
             {
                 // TODO: Not sure that LogLevel here is right
-                logger.Log(LogLevel.Information, eventData.EventId, eventData, null, null);
+                this.logger.Log(LogLevel.Information, eventData.EventId, eventData, null, null);
             }
         }
     }
