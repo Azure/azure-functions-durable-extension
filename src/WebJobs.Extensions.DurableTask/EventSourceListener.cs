@@ -8,7 +8,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EventSourceListener : EventListener
     {
-
         private readonly LinuxAppServiceILogger logger;
         public static readonly EventSourceListener Instance = Initialize();
 
@@ -34,8 +33,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 instance = new EventSourceListener(linuxLogger);
             }
-            return instance;
 
+            return instance;
         }
 
         protected override void OnEventSourceCreated(EventSource eventSource)
