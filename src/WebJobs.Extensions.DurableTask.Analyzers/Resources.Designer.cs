@@ -79,6 +79,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes &apos;{1}&apos; but was given null. Cannot pass null on a value type..
+        /// </summary>
+        public static string ActivityArgumentAnalyzerMessageFormatInvalidNull {
+            get {
+                return ResourceManager.GetString("ActivityArgumentAnalyzerMessageFormatInvalidNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; doesn&apos;t use its input. Pass null for the input parameter instead..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormatNotUsed {

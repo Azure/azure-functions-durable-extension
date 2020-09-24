@@ -27,28 +27,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
 
-        public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
+        public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            if (model == null || node == null)
+            if (model == null || model.SyntaxTree == null || node == null || node.SyntaxTree == null)
             {
-                return null;
+                newModel = null;
+                return false;
             }
 
-            return model.SyntaxTree == node.SyntaxTree
+            newModel = model.SyntaxTree == node.SyntaxTree
                 ? model
                 : model.Compilation.GetSemanticModel(node.SyntaxTree);
+            return newModel != null;
         }
 
         public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)
         {
-            if (node != null)
+            if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
             {
-                semanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-                if (semanticModel != null)
-                {
-                    typeSymbol = semanticModel.GetTypeInfo(node).Type;
-                    return typeSymbol != null;
-                }
+                typeSymbol = newModel.GetTypeInfo(node).Type;
+                return typeSymbol != null;
             }
 
             typeSymbol = null;
@@ -57,14 +55,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetISymbol(SemanticModel semanticModel, SyntaxNode node, out ISymbol symbol)
         {
-            if (node != null)
+            if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
             {
-                semanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-                if (semanticModel != null)
-                {
-                    symbol = semanticModel.GetSymbolInfo(node).Symbol;
-                    return symbol != null;
-                }
+                symbol = semanticModel.GetSymbolInfo(node).Symbol;
+                return symbol != null;
             }
 
             symbol = null;
@@ -113,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetChildTypeNode(SyntaxNode node, out SyntaxNode childTypeNode)
         {
-            childTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.ArrayType) || x.IsKind(SyntaxKind.TupleType)).FirstOrDefault();
+            childTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.ArrayType) || x.IsKind(SyntaxKind.TupleType) || x.IsKind(SyntaxKind.NullableType)).FirstOrDefault();
             return childTypeNode != null;
         }
 
@@ -218,13 +212,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            var newSemanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-            if (newSemanticModel != null)
-            {
-                if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
-                {
-                    return true;
-                }
+            if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
+            { 
+                return true;
             }
             
             functionName = null;
@@ -235,11 +225,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && (node.IsKind(SyntaxKind.IdentifierName) || node.IsKind(SyntaxKind.SimpleMemberAccessExpression)))
             {
-                var constValue = semanticModel.GetConstantValue(node);
-                if (constValue.HasValue && constValue.Value is string constString)
+                if (TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
                 {
-                    functionName = constString;
-                    return true;
+                    var constValue = newModel.GetConstantValue(node);
+                    if (constValue.HasValue && constValue.Value is string constString)
+                    {
+                        functionName = constString;
+                        return true;
+                    }
                 }
             }
 

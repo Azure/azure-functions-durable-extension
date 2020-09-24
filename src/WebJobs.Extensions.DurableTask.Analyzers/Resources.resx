@@ -123,6 +123,9 @@
   <data name="ActivityArgumentAnalyzerMessageFormat" xml:space="preserve">
     <value>Activity function named '{0}' takes '{1}' but was given '{2}'.</value>
   </data>
+  <data name="ActivityArgumentAnalyzerMessageFormatInvalidNull" xml:space="preserve">
+    <value>Activity function named '{0}' takes '{1}' but was given null. Cannot pass null on a value type.</value>
+  </data>
   <data name="ActivityArgumentAnalyzerMessageFormatNotUsed" xml:space="preserve">
     <value>Activity function named '{0}' doesn't use its input. Pass null for the input parameter instead.</value>
   </data>
