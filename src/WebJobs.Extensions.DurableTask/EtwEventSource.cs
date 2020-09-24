@@ -15,8 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // Private .ctor - callers should use the shared static instance.
         private EtwEventSource()
-        {
-        }
+        { }
 
 #pragma warning disable SA1313 // Parameter names should begin with lower-case letter
 

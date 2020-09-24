@@ -44,7 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskActivity>
     {
         private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
-        internal static readonly bool InLinux = SystemEnvironment.Instance.IsLinuxConsumption() || SystemEnvironment.Instance.IsLinuxDedicated();
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that DurableClientAttribute defines a custom equality comparer.
