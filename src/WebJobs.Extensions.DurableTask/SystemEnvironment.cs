@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// App Service environment.
         /// </summary>
         /// <returns>true if running in a Linux Consumption App Service app; otherwise, false.</returns>
-        public bool IsLinuxConsumtpion()
+        public bool IsLinuxConsumption()
         {
             return !this.IsAppService() && !string.IsNullOrEmpty(this.GetEnvironmentVariable(ContainerName));
         }

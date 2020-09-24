@@ -1,16 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Diagnostics.Tracing;
-using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class ETWEventListener : EventListener
+    internal class EventSourceListener : EventListener
     {
-        private ILogger logger;
+        private readonly LinuxAppServiceILogger logger;
 
-        public ETWEventListener(ILogger logger)
+        public EventSourceListener(LinuxAppServiceILogger logger)
         {
             this.logger = logger;
         }

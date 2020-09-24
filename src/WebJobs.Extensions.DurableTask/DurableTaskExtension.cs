@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskActivity>
     {
         private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
-        internal static readonly bool InLinux = SystemEnvironment.Instance.IsLinuxConsumtpion() || SystemEnvironment.Instance.IsLinuxDedicated();
+        internal static readonly bool InLinux = SystemEnvironment.Instance.IsLinuxConsumption() || SystemEnvironment.Instance.IsLinuxDedicated();
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that DurableClientAttribute defines a custom equality comparer.
@@ -72,8 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
-        private ETWEventListener etwEventListener;
-
+        private EventSourceListener etwEventListener;
 
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
@@ -119,9 +118,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.ResolveAppSettingOptions();
 
-            //TODO: need to modify line below to enable linux logger to be created, but how?
+            // TODO: need to modify line below to enable linux logger to be created, but how?
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
-            this.etwEventListener = new ETWEventListener(logger); // TODO: do we need to save this as a var?
+            this.etwEventListener = new EventSourceListener(null); // TODO: replace null
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
