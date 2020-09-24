@@ -72,7 +72,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
-        private EventSourceListener etwEventListener;
 
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
@@ -118,9 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.ResolveAppSettingOptions();
 
-            // TODO: need to modify line below to enable linux logger to be created, but how?
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
-            this.etwEventListener = new EventSourceListener(null); // TODO: replace null
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
@@ -298,6 +295,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+
+            // Initialize the EventSourceListener
+            _ = EventSourceListener.Instance;
 
 #if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered

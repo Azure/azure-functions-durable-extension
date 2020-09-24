@@ -12,9 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string LoggingPath = "/var/log/functionsLogs/durableevents.log";
 
-        public override void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public override void Log(string jsonString)
         {
-            string jsonString = this.GenerateJsonStringToLog(state);
             using (var writer = new StreamWriter(LoggingPath, true))
             {
                 // TODO: ensure this won't crash the process if an exception

@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string GenerateJsonStringToLog<TState>(TState maybeEventData)
         {
+            string jsonString = "";
             if (maybeEventData is EventWrittenEventArgs)
             {
                 var eventData = maybeEventData as EventWrittenEventArgs;
@@ -40,16 +41,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     json.Add(keyAndValue.Item1, keyAndValue.Item2.ToString());
                 }
 
-                string jsonString = json.ToString(Newtonsoft.Json.Formatting.None);
-                return jsonString;
+                jsonString = json.ToString(Newtonsoft.Json.Formatting.None);
             }
-            else
+
+            return jsonString;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        {
+            string jsonString = this.GenerateJsonStringToLog(state);
+            if (jsonString != "")
             {
-                // TODO: we should still log some error
-                return "";
+                this.Log(jsonString);
             }
         }
 
-        public abstract void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter);
+        public abstract void Log(string jsonString);
     }
 }
