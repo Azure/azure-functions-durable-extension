@@ -20,11 +20,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             LinuxAppServiceILogger linuxLogger = null;
             EventSourceListener instance = null;
-            if (SystemEnvironment.Instance.IsLinuxConsumption())
+            if (SystemEnvironment.IsLinuxConsumption())
             {
                 linuxLogger = new LinuxConsumptionLogger();
             }
-            else if (SystemEnvironment.Instance.IsLinuxDedicated())
+            else if (SystemEnvironment.IsLinuxDedicated())
             {
                 linuxLogger = new LinuxDedicatedLogger();
             }
