@@ -71,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
+        private EventSourceListener eventSourceListener;
 
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
@@ -296,7 +297,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
             // Initialize the EventSourceListener
-            _ = EventSourceListener.Instance;
+            string containerName = this.nameResolver.Resolve("CONTAINER_NAME");
+            string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
+            string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
+
+            bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
+            bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
+            bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
+
+            LinuxAppServiceILogger linuxLogger = null;
+            if (inLinuxDedicated)
+            {
+                linuxLogger = new LinuxDedicatedLogger();
+            }
+            else if (inLinuxConsumption)
+            {
+                linuxLogger = new LinuxConsumptionLogger();
+            }
+
+            if (linuxLogger != null)
+            {
+                this.eventSourceListener = new EventSourceListener(linuxLogger);
+            }
+
 
 #if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered
@@ -309,6 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void Dispose()
         {
             this.HttpApiHandler?.Dispose();
+            this.eventSourceListener?.Dispose();
         }
 
 #if !FUNCTIONS_V1

@@ -9,32 +9,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class EventSourceListener : EventListener
     {
         private readonly LinuxAppServiceILogger logger;
-        public static readonly EventSourceListener Instance = Initialize();
 
-        private EventSourceListener(LinuxAppServiceILogger logger)
+        public EventSourceListener(LinuxAppServiceILogger logger)
         {
             this.logger = logger;
-        }
-
-        private static EventSourceListener Initialize()
-        {
-            LinuxAppServiceILogger linuxLogger = null;
-            EventSourceListener instance = null;
-            if (SystemEnvironment.IsLinuxConsumption())
-            {
-                linuxLogger = new LinuxConsumptionLogger();
-            }
-            else if (SystemEnvironment.IsLinuxDedicated())
-            {
-                linuxLogger = new LinuxDedicatedLogger();
-            }
-
-            if (linuxLogger != null)
-            {
-                instance = new EventSourceListener(linuxLogger);
-            }
-
-            return instance;
         }
 
         protected override void OnEventSourceCreated(EventSource eventSource)
@@ -43,13 +21,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 eventSource.Name == "DurableTask-AzureStorage" ||
                 eventSource.Name == "WebJobs-Extensions-DurableTask")
             {
-                Instance.EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
+                this.EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
             }
         }
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            Instance.logger.Log(LogLevel.Information, eventData.EventId, eventData, null, null);
+            this.logger.Log(LogLevel.Information, eventData.EventId, eventData, null, null);
         }
     }
 }
