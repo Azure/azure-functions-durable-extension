@@ -320,7 +320,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.eventSourceListener = new EventSourceListener(linuxLogger);
             }
 
-
 #if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
