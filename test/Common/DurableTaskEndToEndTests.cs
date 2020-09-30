@@ -4479,6 +4479,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_OutOfProc_SetToFalse()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsTestNode";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "FUNCTIONS_WORKER_RUNTIME", "node" },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.False(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_CSharp_RemainsTrue()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsTestCSharp";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "FUNCTIONS_WORKER_RUNTIME", "dotnet" },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.True(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CustomIMessageSerializerSettingsFactory()
         {
             string[] orchestratorFunctionNames =

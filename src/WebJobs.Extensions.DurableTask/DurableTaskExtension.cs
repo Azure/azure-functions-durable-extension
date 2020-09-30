@@ -230,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Throw if any of the configured options are invalid
-            this.Options.Validate();
+            this.Options.Validate(this.nameResolver, this.TraceHelper);
 
             // For 202 support
             if (this.Options.NotificationUrl == null)
