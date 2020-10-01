@@ -305,14 +305,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
             bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
 
-            LinuxAppServiceILogger linuxLogger = null;
+            LinuxAppServiceLogger linuxLogger = null;
             if (inLinuxDedicated)
             {
-                linuxLogger = new LinuxDedicatedLogger();
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false);
             }
             else if (inLinuxConsumption)
             {
-                linuxLogger = new LinuxConsumptionLogger();
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true);
             }
 
             if (linuxLogger != null)
