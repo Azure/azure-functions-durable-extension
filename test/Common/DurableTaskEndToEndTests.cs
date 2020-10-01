@@ -4041,7 +4041,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_CleanEntityStorage),
+                nameof(this.DurableEntity_CleanEntityStorage_Many),
                 enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
                 entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
                 storageProviderType: storageProvider))
