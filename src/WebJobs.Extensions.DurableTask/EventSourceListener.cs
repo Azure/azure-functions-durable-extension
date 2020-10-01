@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Gets called for every EventSource in the process, this method allows us to determine
-        /// if the listener will subscribe to a particular EventSource provider. 
+        /// if the listener will subscribe to a particular EventSource provider.
         /// We only listen to DurableTask and DurableTask-Extension EventSource providers.
         /// </summary>
         /// <param name="eventSource">An instance of EventSource.</param>
