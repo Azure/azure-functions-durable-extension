@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 JObject json = new JObject();
                 for (int i = 0; i < values.Count; i++)
                 {
-                    json.Add(keys[i], (JToken) values[i]);
+                    json.Add(keys[i], (JToken)values[i]);
                 }
 
                 jsonString = json.ToString(Newtonsoft.Json.Formatting.None);
