@@ -296,15 +296,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
-            // Initialize the EventSourceListener
+            this.InitializeLinuxLogging();
+
+
+#if !FUNCTIONS_V1
+            // The RPC server needs to be started sometime before any functions can be triggered
+            // and this is the latest point in the pipeline available to us.
+            this.StartLocalRcpServer();
+#endif
+        }
+
+        /// <summary>
+        /// Initializes the logging service for App Service if it detects that we are running in
+        /// the linux platform.
+        /// </summary>
+        private void InitializeLinuxLogging()
+        {
+            // Read enviroment variables to determine host platform
             string containerName = this.nameResolver.Resolve("CONTAINER_NAME");
             string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
             string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
 
+            // Determine host platform
             bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
             bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
             bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
 
+            // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
             if (inLinuxDedicated)
             {
@@ -317,14 +335,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (linuxLogger != null)
             {
+                // The logging service for linux works by capturing EventSource messages,
+                // which our linux platform does not recognize, and logging them via a
+                // different strategy such as writing to console or to a file.
                 this.eventSourceListener = new EventSourceListener(linuxLogger);
             }
-
-#if !FUNCTIONS_V1
-            // The RPC server needs to be started sometime before any functions can be triggered
-            // and this is the latest point in the pipeline available to us.
-            this.StartLocalRcpServer();
-#endif
         }
 
         /// <inheritdoc />
