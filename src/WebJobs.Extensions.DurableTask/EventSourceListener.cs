@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// A EventSource Listener, provides callbacks to DurableTask EventSource events
+    /// An EventSource Listener. It sets up a callback for internal EventSource events
     /// that we use to capture their data and log it in Linux App Service plans.
     /// </summary>
     internal class EventSourceListener : EventListener
@@ -16,10 +16,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly LinuxAppServiceLogger logger;
 
         /// <summary>
-        /// Create an EventSourceListener for logging Durable-Extension EventSource
+        /// Create an EventSourceListener to capture and log Durable EventSource
         /// data in Linux.
         /// </summary>
-        /// <param name="logger">An LinuxAppService logger configured for the host linux instance.</param>
+        /// <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
         public EventSourceListener(LinuxAppServiceLogger logger)
         {
             this.logger = logger;
@@ -27,8 +27,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Gets called for every EventSource in the process, this method allows us to determine
-        /// if the listener will subscribe to an EventSource provider. We only listen to DurableTask
-        /// and DurableTask-Extension EventSource providers.
+        /// if the listener will subscribe to a particular EventSource provider. 
+        /// We only listen to DurableTask and DurableTask-Extension EventSource providers.
         /// </summary>
         /// <param name="eventSource">An instance of EventSource.</param>
         protected override void OnEventSourceCreated(EventSource eventSource)
@@ -46,8 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Gets called after every EventSource event, that event's data and log it
-        /// using the appropiate strategy for our host linux plan.
+        /// Gets called after every EventSource event. We capture that event's data and log it
+        /// using the appropiate strategy for the current linux host.
         /// </summary>
         /// <param name="eventData">The EventSource event data, for logging.</param>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
