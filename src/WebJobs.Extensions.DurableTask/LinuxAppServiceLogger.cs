@@ -77,11 +77,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // We write to a file in Linux Dedicated
-                using (var writer = new StreamWriter(LoggingPath, append: true))
-                {
-                    // We're ignoring exceptions in the unobserved Task
-                    Task unused = writer.WriteLineAsync(jsonString);
-                }
+                var writer = new StreamWriter(LoggingPath, append: true);
+
+                // We're ignoring exceptions in the unobserved Task
+                Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
             }
         }
     }
