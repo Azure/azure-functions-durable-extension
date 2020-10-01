@@ -272,7 +272,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
-            if (!string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
+            if (this.ExtendedSessionsEnabled &&
+                !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
             {
                 traceHelper.ExtensionWarningEvent(
                     hubName: this.HubName,
