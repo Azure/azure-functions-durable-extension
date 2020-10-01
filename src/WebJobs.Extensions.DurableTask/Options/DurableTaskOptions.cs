@@ -273,6 +273,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
             if (this.ExtendedSessionsEnabled &&
+                runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
                 !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
             {
                 traceHelper.ExtensionWarningEvent(
