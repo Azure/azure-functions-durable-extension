@@ -4529,6 +4529,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_UnknownLanguage_RemainsTrue()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsUnknownLanguage";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver();
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.True(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CustomIMessageSerializerSettingsFactory()
         {
             string[] orchestratorFunctionNames =
