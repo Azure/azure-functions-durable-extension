@@ -2913,6 +2913,9 @@
             Create a LinuxAppServiceLogger instance.
             </summary>
             <param name="writeToConsole">If true, write to console (linux consumption) else to a file (dedicated).</param>
+            <param name="containerName">The app's container name.</param>
+            <param name="tenant">The app's tenant.</param>
+            <param name="stampName">The app's stamp.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateJsonStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
             <summary>

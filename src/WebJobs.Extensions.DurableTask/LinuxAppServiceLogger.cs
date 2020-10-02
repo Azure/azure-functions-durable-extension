@@ -44,6 +44,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Create a LinuxAppServiceLogger instance.
         /// </summary>
         /// <param name="writeToConsole">If true, write to console (linux consumption) else to a file (dedicated).</param>
+        /// <param name="containerName">The app's container name.</param>
+        /// <param name="tenant">The app's tenant.</param>
+        /// <param name="stampName">The app's stamp.</param>
         public LinuxAppServiceLogger(bool writeToConsole, string containerName, string tenant, string stampName)
         {
             // If writeToConsole is False, we write to a file
