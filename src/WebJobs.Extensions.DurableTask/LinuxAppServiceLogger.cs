@@ -26,6 +26,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MaxLogfileSizeInMb = 10;
         private const int BytesToMb = 1024 * 1024;
 
+        // logging metadata
+        private readonly JToken roleInstance;
+        private readonly JToken tenant;
+        private readonly JToken sourceMoniker;
+
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
 
@@ -39,16 +44,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Create a LinuxAppServiceLogger instance.
         /// </summary>
         /// <param name="writeToConsole">If true, write to console (linux consumption) else to a file (dedicated).</param>
-        public LinuxAppServiceLogger(bool writeToConsole)
+        public LinuxAppServiceLogger(bool writeToConsole, string containerName, string tenant, string stampName)
         {
             // If writeToConsole is False, we write to a file
-            this.writeToConsole = writeToConsole;
-
             for (int count = 1; count <= MaxArchives; count++)
             {
                 string archivedPath = LoggingPath + count;
                 this.archivedPaths[count - 1] = archivedPath;
             }
+
+            // initializing fixed logging metadata
+            this.writeToConsole = writeToConsole;
+            this.roleInstance = JToken.FromObject("App-" + containerName);
+            this.tenant = JToken.FromObject(tenant);
+            this.sourceMoniker = JToken.FromObject(
+                string.IsNullOrEmpty(stampName) ? string.Empty : "L" + stampName.Replace("-", "").ToUpperInvariant());
         }
 
         /// <summary>
@@ -65,6 +75,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             JObject json = new JObject
             {
                 { "EventId", eventData.EventId },
+                { "TimeStamp", DateTime.UtcNow },
+                { "RoleInstance", this.roleInstance },
+                { "Tenant", this.tenant },
+                { "SourceMoniker",  this.sourceMoniker },
             };
             for (int i = 0; i < values.Count; i++)
             {

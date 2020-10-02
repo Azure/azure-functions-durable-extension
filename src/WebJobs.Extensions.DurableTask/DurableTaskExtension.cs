@@ -321,15 +321,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
             bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
 
+            // Reading other enviroment variables for intializing the logger
+            string tenant = this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");
+            string stampName = this.nameResolver.Resolve("WEBSITE_HOME_STAMPNAME");
+
             // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
             if (inLinuxDedicated)
             {
-                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false);
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
             }
             else if (inLinuxConsumption)
             {
-                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true);
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
             }
 
             if (linuxLogger != null)
