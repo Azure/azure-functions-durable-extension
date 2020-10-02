@@ -22,11 +22,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
         private const string LoggingPath = "/var/log/functionsLogs/durableevents.log";
+        private const int MaxArchives = 5;
         private const int MaxLogfileSizeInMb = 10;
         private const int BytesToMb = 1024 * 1024;
 
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
+
+        // the paths to all allowed archived log files.
+        private readonly string[] archivedPaths = new string[MaxArchives];
+
+        // the current number of archived log files
+        private int countArchives = 0;
 
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
@@ -36,6 +43,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // If writeToConsole is False, we write to a file
             this.writeToConsole = writeToConsole;
+
+            for (int count = 1; count <= MaxArchives; count++)
+            {
+                string archivedPath = LoggingPath + count;
+                this.archivedPaths[count - 1] = archivedPath;
+            }
         }
 
         /// <summary>
@@ -81,10 +94,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                // If the log file gets too big, we archive it.
                 FileInfo logFileInfo = new FileInfo(LoggingPath);
                 if (logFileInfo.Length / BytesToMb >= MaxLogfileSizeInMb)
                 {
-                    File.Delete(LoggingPath);
+                    string archivedPath = this.archivedPaths[this.countArchives];
+                    File.Move(LoggingPath, archivedPath);
+                    this.countArchives++;
+
+                }
+
+                // If we have too many archived log files, we delete them
+                if (this.countArchives > MaxArchives)
+                {
+                    foreach (string archivePath in this.archivedPaths)
+                    {
+                        File.Delete(archivePath);
+                    }
                 }
 
                 // We write to a file in Linux Dedicated
