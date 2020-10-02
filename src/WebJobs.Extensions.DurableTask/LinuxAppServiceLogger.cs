@@ -90,6 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
 
             };
+
             for (int i = 0; i < values.Count; i++)
             {
                 json.Add(keys[i], JToken.FromObject(values[i]));
