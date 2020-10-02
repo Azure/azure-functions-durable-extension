@@ -1,8 +1,8 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Moq;
 using System.Threading.Tasks;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -33,6 +33,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // this will do.
             mockClient.Verify(c => c.RaiseEventAsync(instanceId, eventName, (object)eventData), Times.Once());
         }
-
     }
 }
