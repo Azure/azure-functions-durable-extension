@@ -22,6 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
         private const string LoggingPath = "/var/log/functionsLogs/durableevents.log";
+        private const int MaxLogfileSizeInMb = 10;
+        private const int BytesToMb = 1024 * 1024;
 
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
@@ -47,10 +49,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var keys = eventData.PayloadNames;
 
             // We pack them into a JSON
-            JObject json = new JObject();
+            JObject json = new JObject
+            {
+                { "EventId", eventData.EventId },
+            };
             for (int i = 0; i < values.Count; i++)
             {
-                json.Add(keys[i], (JToken)values[i]);
+                json.Add(keys[i], JToken.FromObject(values[i]));
             }
 
             // Generate string-representation of JSON
@@ -76,6 +81,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                FileInfo logFileInfo = new FileInfo(LoggingPath);
+                if (logFileInfo.Length / BytesToMb >= MaxLogfileSizeInMb)
+                {
+                    File.Delete(LoggingPath);
+                }
+
                 // We write to a file in Linux Dedicated
                 var writer = new StreamWriter(LoggingPath, append: true);
 
