@@ -101,7 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     string archivedPath = this.archivedPaths[this.countArchives];
                     File.Move(LoggingPath, archivedPath);
                     this.countArchives++;
-
                 }
 
                 // If we have too many archived log files, we delete them
