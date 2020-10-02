@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.durableHttpClient == null)
             {
                 this.durableHttpClient = new HttpClient(handler.CreateHttpMessageHandler());
+                this.durableHttpClient.Timeout = TimeSpan.FromSeconds(240);
 
                 var assembly = typeof(DurableTaskExtension).Assembly;
                 Version assemblyVersion = GetAssemblyVersion(assembly);
