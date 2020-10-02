@@ -67,14 +67,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
 
+                SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, returnTypeNode, out ITypeSymbol returnType);
+
                 TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode);
+
+                SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, inputNode, out ITypeSymbol inputType);
 
                 calledFunctions.Add(new ActivityFunctionCall
                 {
                     FunctionName = functionName,
                     NameNode = functionNameNode,
-                    ArgumentNode = inputNode,
+                    InputNode = inputNode,
+                    InputType = inputType,
                     ReturnTypeNode = returnTypeNode,
+                    ReturnType = returnType,
                     InvocationExpression = invocationExpression
                 });
             }
@@ -144,10 +150,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindActivityFunction(SyntaxNodeAnalysisContext context)
         {
+            var semanticModel = context.SemanticModel;
             if (context.Node is AttributeSyntax attribute
                 && SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
-                if (!SyntaxNodeUtils.TryGetFunctionName(context.SemanticModel, attribute, out string functionName))
+                if (!SyntaxNodeUtils.TryGetFunctionName(semanticModel, attribute, out string functionName))
                 {
                     //Do not store ActivityFunctionDefinition if there is no function name
                     return;
@@ -159,15 +166,77 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     return;
                 }
 
+                SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, returnTypeNode, out ITypeSymbol returnType);
+
                 SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode);
+
+                TryGetDefinitionInputType(semanticModel, parameterNode, out ITypeSymbol inputType);
 
                 availableFunctions.Add(new ActivityFunctionDefinition
                 {
                     FunctionName = functionName,
                     ParameterNode = parameterNode,
-                    ReturnTypeNode = returnTypeNode
+                    InputType = inputType,
+                    ReturnTypeNode = returnTypeNode,
+                    ReturnType = returnType
                 });
             }
+        }
+
+        private static bool TryGetDefinitionInputType(SemanticModel semanticModel, SyntaxNode parameterNode, out ITypeSymbol definitionInputType)
+        {
+            if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, parameterNode, out definitionInputType))
+            {
+                if (SyntaxNodeUtils.IsDurableActivityContext(definitionInputType))
+                {
+                    return TryGetInputTypeFromContext(semanticModel, parameterNode, out definitionInputType);
+                }
+
+                return true;
+            }
+
+            definitionInputType = null;
+            return false;
+        }
+
+        private static bool TryGetInputTypeFromContext(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol definitionInputType)
+        {
+            if (TryGetDurableActivityContextExpression(semanticModel, node, out SyntaxNode durableContextExpression))
+            {
+                if (SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)durableContextExpression, out SyntaxNode typeArgument))
+                {
+                    return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgument, out definitionInputType);
+                }
+            }
+
+            definitionInputType = null;
+            return false;
+        }
+
+        private static bool TryGetDurableActivityContextExpression(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode durableContextExpression)
+        {
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
+                foreach (var memberAccessExpression in memberAccessExpressionList)
+                {
+                    var identifierName = memberAccessExpression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.IdentifierName));
+                    if (identifierName != null)
+                    {
+                        if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol))
+                        {
+                            if (SyntaxNodeUtils.IsDurableActivityContext(typeSymbol))
+                            {
+                                durableContextExpression = memberAccessExpression;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            durableContextExpression = null;
+            return false;
         }
     }
 }
