@@ -2,9 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly JToken roleInstance;
         private readonly JToken tenant;
         private readonly JToken sourceMoniker;
+        private readonly JToken procID;
 
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
@@ -62,6 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.tenant = JToken.FromObject(tenant);
             this.sourceMoniker = JToken.FromObject(
                 string.IsNullOrEmpty(stampName) ? string.Empty : "L" + stampName.Replace("-", "").ToUpperInvariant());
+            this.procID = Process.GetCurrentProcess().Id;
         }
 
         /// <summary>
@@ -82,6 +86,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "RoleInstance", this.roleInstance },
                 { "Tenant", this.tenant },
                 { "SourceMoniker",  this.sourceMoniker },
+                { "Pid", this.procID },
+                { "Tid", Thread.CurrentThread.ManagedThreadId },
+
             };
             for (int i = 0; i < values.Count; i++)
             {
