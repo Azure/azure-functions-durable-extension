@@ -216,7 +216,7 @@ namespace VSSample
         // Testing null input used with non value type
 
         [FunctionName(""Test_ValidNull"")]
-        public static string TestUnusedInputFromContext([ActivityTrigger] object name)
+        public static string TestUnusedInputFromContext([ActivityTrigger] int? name)
         {
             return $""Hello {name}!"";
         }

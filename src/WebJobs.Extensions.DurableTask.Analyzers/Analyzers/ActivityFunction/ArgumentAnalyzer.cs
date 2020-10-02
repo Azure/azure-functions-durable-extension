@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     if (InvocationInputIsNull(invocation))
                     {
-                        if (DefinitionInputIsValueType(definition))
+                        if (DefinitionInputIsNonNullableValueType(definition))
                         {
                             var diagnostic = Diagnostic.Create(InvalidNullRule, invocation.InputNode.GetLocation(), invocation.FunctionName, definition.InputType.ToString());
 
@@ -70,9 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return invocation.InputNode != null && invocation.InputNode.IsKind(SyntaxKind.NullLiteralExpression);
         }
 
-        private static bool DefinitionInputIsValueType(ActivityFunctionDefinition definition)
+        private static bool DefinitionInputIsNonNullableValueType(ActivityFunctionDefinition definition)
         {
-            return definition.InputType != null && definition.InputType.IsValueType;
+            var inputType = definition.InputType;
+            return inputType != null && inputType.IsValueType && !inputType.Name.Equals("Nullable");
         }
 
         private static bool DefinitionInputIsNotUsed(ActivityFunctionDefinition definition)
