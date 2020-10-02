@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var invocation in functionInvocations)
             {
-                var definition = functionDefinitions.Where(x => x.FunctionName == invocation.FunctionName).FirstOrDefault();
+                var definition = functionDefinitions.FirstOrDefault(x => x.FunctionName == invocation.FunctionName);
                 if (definition != null && invocation.ReturnTypeNode != null)
                 {
                     if (!IsValidReturnTypeForDefinition(invocation, definition))
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetTaskTypeArgument(ITypeSymbol returnType, out ITypeSymbol taskTypeArgument)
         {
-            if (returnType != null && returnType.Name.Equals("Task") && returnType is INamedTypeSymbol namedType)
+            if (returnType is INamedTypeSymbol namedType && returnType.Name.Equals("Task"))
             {
                 taskTypeArgument = namedType.TypeArguments.FirstOrDefault();
                 return taskTypeArgument != null;

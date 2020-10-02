@@ -161,18 +161,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return false;
             }
 
-            var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+            var argumentList = invocationExpression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
 
             if (argumentList != null)
             {
                 foreach (SyntaxNode argument in argumentList.ChildNodes())
                 {
-                    var simpleMemberAccessExpression = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
+                    var simpleMemberAccessExpression = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
 
                     if (simpleMemberAccessExpression != null)
                     {
                         var identifierNames = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-
                         foreach (SyntaxNode identifier in identifierNames)
                         {
                             if (identifier.ToString().Equals("ExecuteSynchronously"))

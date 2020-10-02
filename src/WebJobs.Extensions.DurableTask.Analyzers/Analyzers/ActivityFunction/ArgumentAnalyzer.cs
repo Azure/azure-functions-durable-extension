@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var invocation in functionInvocations)
             {
-                var definition = functionDefinitions.Where(x => x.FunctionName == invocation.FunctionName).FirstOrDefault();
+                var definition = functionDefinitions.FirstOrDefault(x => x.FunctionName == invocation.FunctionName);
                 if (definition != null)
                 {
                     if (InvocationInputIsNull(invocation))

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            if (model == null || model.SyntaxTree == null || node == null || node.SyntaxTree == null)
+            if (model?.SyntaxTree == null || node?.SyntaxTree == null)
             {
                 newModel = null;
                 return false;
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
+                var parameterList = methodDeclaration.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
@@ -107,7 +107,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetChildTypeNode(SyntaxNode node, out SyntaxNode childTypeNode)
         {
-            childTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.ArrayType) || x.IsKind(SyntaxKind.TupleType) || x.IsKind(SyntaxKind.NullableType)).FirstOrDefault();
+            childTypeNode = node.ChildNodes().FirstOrDefault(
+                x => x.IsKind(SyntaxKind.IdentifierName)
+                || x.IsKind(SyntaxKind.PredefinedType)
+                || x.IsKind(SyntaxKind.GenericName)
+                || x.IsKind(SyntaxKind.ArrayType)
+                || x.IsKind(SyntaxKind.TupleType)
+                || x.IsKind(SyntaxKind.NullableType));
+
             return childTypeNode != null;
         }
 
@@ -244,13 +251,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && node.IsKind(SyntaxKind.InvocationExpression))
             {
-                var argumentList = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+                var argumentList = node.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
                 if (argumentList != null)
                 {
-                    var argument = argumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument)).FirstOrDefault();
+                    var argument = argumentList.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.Argument));
                     if (argument != null)
                     {
-                        var identifierName = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                        var identifierName = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.IdentifierName));
                         if (identifierName != null)
                         {
                             functionName = identifierName.ToString();
@@ -274,7 +281,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && node.IsKind(SyntaxKind.StringLiteralExpression))
             {
-                var stringLiteralToken = node.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
+                var stringLiteralToken = node.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StringLiteralToken));
                 if (stringLiteralToken != null)
                 {
                     functionName = stringLiteralToken.ValueText;
@@ -313,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         internal static bool TryGetTypeArgumentIdentifier(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
-            var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+            var genericName = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.GenericName));
             if (genericName != null)
             {
                 return TryGetTypeArgumentIdentifier((GenericNameSyntax)genericName, out identifierNode);
