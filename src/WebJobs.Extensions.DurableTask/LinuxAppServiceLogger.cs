@@ -88,7 +88,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "SourceMoniker",  this.sourceMoniker },
                 { "Pid", this.procID },
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
-
             };
 
             for (int i = 0; i < values.Count; i++)
