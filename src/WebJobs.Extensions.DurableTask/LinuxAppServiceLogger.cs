@@ -65,7 +65,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.tenant = JToken.FromObject(tenant);
             this.sourceMoniker = JToken.FromObject(
                 string.IsNullOrEmpty(stampName) ? string.Empty : "L" + stampName.Replace("-", "").ToUpperInvariant());
-            this.procID = Process.GetCurrentProcess().Id;
+            using (var process = Process.GetCurrentProcess())
+            {
+                this.procID = process.Id;
+            }
         }
 
         /// <summary>
