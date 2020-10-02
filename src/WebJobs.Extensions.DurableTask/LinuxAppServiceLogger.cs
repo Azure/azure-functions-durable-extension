@@ -110,6 +110,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         File.Delete(archivePath);
                     }
+
+                    this.countArchives = 0;
                 }
 
                 // We write to a file in Linux Dedicated
