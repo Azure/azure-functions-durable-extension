@@ -2946,9 +2946,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
+                // Wait 5 seconds to account for time to grab ownership lease.
+                await Task.Delay(5000);
+
                 var now = DateTime.UtcNow;
 
-                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(5), "delayed", null);
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(1), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
@@ -2980,7 +2983,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
                 await client.SignalEntity(this.output, "Start", null);
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(15);
                 var state = await client.WaitForEntityState<TestEntityClasses.SelfSchedulingEntity>(this.output, timeout, curstate => curstate.Value.Length == 4 ? null : "expect 4 letters");
 
                 Assert.Equal("ABCD", state.Value);

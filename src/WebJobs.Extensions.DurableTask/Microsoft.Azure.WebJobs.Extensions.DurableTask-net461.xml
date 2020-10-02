@@ -3147,8 +3147,7 @@
             strategy that is more resilient to split brain problems, at the potential expense
             of scale out performance.
             </summary>
-            <value>A boolean indicating whether we use the legacy partition strategy. Defaults to true
-            but this will change to false once the new partition management strategy is fully tested. </value>
+            <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ValidateHubName(System.String)">
             <summary>
