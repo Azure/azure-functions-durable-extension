@@ -38,6 +38,21 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
+            <summary>
+            The result of a clean entity storage operation.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult.NumberOfOrphanedLocksRemoved">
+            <summary>
+            The number of orphaned locks that were removed.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult.NumberOfEmptyEntitiesRemoved">
+            <summary>
+            The number of entities whose metadata was removed from storage.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
             <summary>
             The default parameter type for activity functions.
@@ -136,6 +151,9 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#ListEntitiesAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#CleanEntityStorageAsync(System.Boolean,System.Boolean,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#StartNewAsync(System.String,System.String)">
@@ -463,6 +481,20 @@
             <param name="query">Return entity instances that match the specified query conditions.</param>
             <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
             <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient.CleanEntityStorageAsync(System.Boolean,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Removes empty entities from storage and releases orphaned locks.
+            </summary>
+            <remarks>An entity is considered empty, and is removed, if it has no state, is not locked, and has
+            been idle for more than <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EntityMessageReorderWindowInMinutes"/> minutes.
+            Locks are considered orphaned, and are released, if the orchestration that holds them is not in state <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Running"/>. This
+            should not happen under normal circumstances, but can occur if the orchestration instance holding the lock
+            exhibits replay nondeterminism failures, or if it is explicitly purged.</remarks>
+            <param name="removeEmptyEntities">Whether to remove empty entities.</param>
+            <param name="releaseOrphanedLocks">Whether to release orphaned locks.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the operation.</param>
+            <returns>A task that completes when the operation is finished.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext">
             <summary>
