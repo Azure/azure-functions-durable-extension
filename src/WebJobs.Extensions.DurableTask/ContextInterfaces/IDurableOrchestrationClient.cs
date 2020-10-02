@@ -38,8 +38,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
         /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
         /// return 200.</param>
+        /// <param name="restartWithNewInstanceId">Otional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+        /// reuse the old instanceId. Defauls to <c>true</c>.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-        HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure = false);
+        HttpResponseMessage CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure = false, bool restartWithNewInstanceId = true);
 
         /// <summary>
         /// Creates an HTTP response that is useful for checking the status of the specified instance.
@@ -54,8 +56,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
         /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
         /// return 200.</param>
+        /// <param name="restartWithNewInstanceId">Otional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+        /// reuse the old instanceId. Defauls to <c>true</c>.</param>
         /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-        IActionResult CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure = false);
+        IActionResult CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure = false, bool restartWithNewInstanceId = true);
 
         /// <summary>
         /// Creates a <see cref="HttpManagementPayload"/> object that contains status, terminate and send external event HTTP endpoints.
@@ -280,5 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
+
+        Task<string> RestartAsync(string instanceId, bool startWithNewInstanceId = true);
     }
 }

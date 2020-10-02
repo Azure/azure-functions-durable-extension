@@ -38,6 +38,21 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
+            <summary>
+            The result of a clean entity storage operation.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult.NumberOfOrphanedLocksRemoved">
+            <summary>
+            The number of orphaned locks that were removed.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult.NumberOfEmptyEntitiesRemoved">
+            <summary>
+            The number of entities whose metadata was removed from storage.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
             <summary>
             The default parameter type for activity functions.
@@ -84,10 +99,10 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#TaskHubName">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
@@ -136,6 +151,9 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#ListEntitiesAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#CleanEntityStorageAsync(System.Boolean,System.Boolean,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#StartNewAsync(System.String,System.String)">
@@ -464,6 +482,20 @@
             <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
             <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient.CleanEntityStorageAsync(System.Boolean,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Removes empty entities from storage and releases orphaned locks.
+            </summary>
+            <remarks>An entity is considered empty, and is removed, if it has no state, is not locked, and has
+            been idle for more than <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EntityMessageReorderWindowInMinutes"/> minutes.
+            Locks are considered orphaned, and are released, if the orchestration that holds them is not in state <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Running"/>. This
+            should not happen under normal circumstances, but can occur if the orchestration instance holding the lock
+            exhibits replay nondeterminism failures, or if it is explicitly purged.</remarks>
+            <param name="removeEmptyEntities">Whether to remove empty entities.</param>
+            <param name="releaseOrphanedLocks">Whether to release orphaned locks.</param>
+            <param name="cancellationToken">Cancellation token that can be used to cancel the operation.</param>
+            <returns>A task that completes when the operation is finished.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext">
             <summary>
             Provides functionality for application code implementing an entity operation.
@@ -629,7 +661,7 @@
             The name of the task hub.
             </value>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String,System.Boolean,System.Boolean)">
             <summary>
             Creates an HTTP response that is useful for checking the status of the specified instance.
             </summary>
@@ -643,9 +675,11 @@
             <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
             If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
             return 200.</param>
+            <param name="restartWithNewInstanceId">Otional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+            reuse the old instanceId. Defauls to <c>true</c>.</param>
             <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Boolean,System.Boolean)">
             <summary>
             Creates an HTTP response that is useful for checking the status of the specified instance.
             </summary>
@@ -659,6 +693,8 @@
             <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
             If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
             return 200.</param>
+            <param name="restartWithNewInstanceId">Otional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+            reuse the old instanceId. Defauls to <c>true</c>.</param>
             <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateHttpManagementPayload(System.String)">
@@ -677,7 +713,7 @@
             If the orchestration instance completes within the specified timeout, then the HTTP response payload will
             contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
             complete within the specified timeout, then the HTTP response will be identical to that of the
-            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateCheckStatusResponse(System.Net.Http.HttpRequestMessage,System.String,System.Boolean)"/> API.
+            <see cref="!:CreateCheckStatusResponse(HttpRequestMessage, string, bool)"/> API.
             </remarks>
             <param name="request">The HTTP request that triggered the current function.</param>
             <param name="instanceId">The unique ID of the instance to check.</param>
@@ -694,7 +730,7 @@
             If the orchestration instance completes within the specified timeout, then the HTTP response payload will
             contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
             complete within the specified timeout, then the HTTP response will be identical to that of the
-            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.CreateCheckStatusResponse(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Boolean)"/> API.
+            <see cref="!:CreateCheckStatusResponse(HttpRequest, string, bool)"/> API.
             </remarks>
             <param name="request">The HTTP request that triggered the current function.</param>
             <param name="instanceId">The unique ID of the instance to check.</param>
@@ -2687,6 +2723,14 @@
             </summary>
             <value>
             The HTTP URL for purging instance history by instance ID.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RestartUri">
+            <summary>
+            Gets the HTTP POST instance restart endpoint.
+            </summary>
+            <value>
+            The HTTP URL for restarting an orchestration instance.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper">

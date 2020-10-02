@@ -41,6 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RaiseEventOperation = "raiseEvent";
         private const string TerminateOperation = "terminate";
         private const string RewindOperation = "rewind";
+        private const string RestartOperation = "restart";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
@@ -52,6 +53,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ReturnInternalServerErrorOnFailure = "returnInternalServerErrorOnFailure";
         private const string LastOperationTimeFrom = "lastOperationTimeFrom";
         private const string LastOperationTimeTo = "lastOperationTimeTo";
+        private const string StartWithNewInstanceId = "startWithNewInstanceId";
+        private const string TimeoutParameter = "timeout";
+        private const string PollingInterval = "pollingInterval";
 
         private const string EmptyEntityKeySymbol = "$";
 
@@ -87,16 +91,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             DurableClientAttribute attribute,
-            bool returnInternalServerErrorOnFailure = false)
+            bool returnInternalServerErrorOnFailure = false,
+            bool restartWithNewInstanceId = true)
         {
-            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
             return this.CreateCheckStatusResponseMessage(
                 request,
                 httpManagementPayload.Id,
                 httpManagementPayload.StatusQueryGetUri,
                 httpManagementPayload.SendEventPostUri,
                 httpManagementPayload.TerminatePostUri,
-                httpManagementPayload.PurgeHistoryDeleteUri);
+                httpManagementPayload.PurgeHistoryDeleteUri,
+                httpManagementPayload.RestartUri);
         }
 
         // /orchestrators/{functionName}/{instanceId?}
@@ -141,13 +147,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal HttpManagementPayload CreateHttpManagementPayload(
             string instanceId,
             string taskHub,
-            string connectionName)
+            string connectionName,
+            bool returnInternalServerErrorOnFailure = false,
+            bool restartWithNewInstanceId = true)
         {
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(
                 null,
                 instanceId,
                 taskHub,
-                connectionName);
+                connectionName,
+                returnInternalServerErrorOnFailure,
+                restartWithNewInstanceId);
             return httpManagementPayload;
         }
 
@@ -199,7 +209,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         httpManagementPayload.StatusQueryGetUri,
                         httpManagementPayload.SendEventPostUri,
                         httpManagementPayload.TerminatePostUri,
-                        httpManagementPayload.PurgeHistoryDeleteUri);
+                        httpManagementPayload.PurgeHistoryDeleteUri,
+                        httpManagementPayload.RestartUri);
                 }
             }
         }
@@ -322,6 +333,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         else if (string.Equals(operation, RewindOperation, StringComparison.OrdinalIgnoreCase))
                         {
                             return await this.HandleRewindInstanceRequestAsync(request, instanceId);
+                        }
+                        else if (string.Equals(operation, RestartOperation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return await this.HandleRestartInstanceRequestAsync(request, instanceId);
                         }
                         else
                         {
@@ -651,6 +666,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return int.TryParse(value, out intValue);
         }
 
+        private static bool TryGetTimeSpanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out TimeSpan? timeSpanValue)
+        {
+            timeSpanValue = null;
+            string value = queryStringNameValueCollection[queryParameterName];
+            if (value != null)
+            {
+                timeSpanValue = TimeSpan.FromSeconds(double.Parse(value));
+            }
+
+            return timeSpanValue != null;
+        }
+
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
             HttpRequestMessage request,
             string instanceId)
@@ -688,6 +715,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 IDurableOrchestrationClient client = this.GetClient(request);
 
+                var queryNameValuePairs = request.GetQueryNameValuePairs();
+
                 object input = null;
                 if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
@@ -697,17 +726,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 string id = await client.StartNewAsync(functionName, instanceId, input);
 
-                TimeSpan? timeout = GetTimeSpan(request, "timeout");
-                TimeSpan? pollingInterval = GetTimeSpan(request, "pollingInterval");
-
-                if (timeout.HasValue && pollingInterval.HasValue)
+                if (TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout)
+                    && TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval))
                 {
-                    return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, id, timeout.Value, pollingInterval.Value);
+                    return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, id, timeout, pollingInterval);
                 }
                 else
                 {
                     return client.CreateCheckStatusResponse(request, id);
                 }
+            }
+            catch (JsonReaderException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
+            }
+        }
+
+        private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
+            HttpRequestMessage request,
+            string instanceId)
+        {
+            try
+            {
+                IDurableOrchestrationClient client = this.GetClient(request);
+
+                var queryNameValuePairs = request.GetQueryNameValuePairs();
+
+                string newInstanceId;
+                if (TryGetBooleanQueryParameterValue(queryNameValuePairs, StartWithNewInstanceId, out bool startWithNewInstanceId))
+                {
+                    newInstanceId = await client.RestartAsync(instanceId, startWithNewInstanceId);
+                }
+                else
+                {
+                    newInstanceId = await client.RestartAsync(instanceId);
+                }
+
+                if (TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout)
+                    && TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval))
+                {
+                    return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, newInstanceId, timeout, pollingInterval);
+                }
+                else
+                {
+                    return client.CreateCheckStatusResponse(request, newInstanceId);
+                }
+            }
+            catch (ArgumentException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "InstanceId does not match a valid orchestration instance.", e);
             }
             catch (JsonReaderException e)
             {
@@ -939,7 +1006,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
              string instanceId,
              string taskHubName,
              string connectionName,
-             bool returnInternalServerErrorOnFailure = false)
+             bool returnInternalServerErrorOnFailure = false,
+             bool restartWithNewInstanceId = true)
         {
             this.ThrowIfWebhooksNotConfigured();
 
@@ -970,11 +1038,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
                 PurgeHistoryDeleteUri = instancePrefix + "?" + querySuffix,
+                RestartUri = instancePrefix + "/" + RestartOperation + "?" + querySuffix,
             };
 
             if (returnInternalServerErrorOnFailure)
             {
                 httpManagementPayload.StatusQueryGetUri += "&returnInternalServerErrorOnFailure=true";
+            }
+
+            if (!restartWithNewInstanceId)
+            {
+                httpManagementPayload.RestartUri += "&restartWithNewInstanceId=false";
             }
 
             return httpManagementPayload;
@@ -986,7 +1060,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string statusQueryGetUri,
             string sendEventPostUri,
             string terminatePostUri,
-            string purgeHistoryDeleteUri)
+            string purgeHistoryDeleteUri,
+            string restartUri)
         {
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -997,6 +1072,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri,
                     terminatePostUri,
                     purgeHistoryDeleteUri,
+                    restartUri,
                 });
 
             // Implement the async HTTP 202 pattern.
@@ -1057,16 +1133,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 #endif
-
-        private static TimeSpan? GetTimeSpan(HttpRequestMessage request, string queryParameterName)
-        {
-            string queryParameterStringValue = request.GetQueryNameValuePairs()[queryParameterName];
-            if (string.IsNullOrEmpty(queryParameterStringValue))
-            {
-                return null;
-            }
-
-            return TimeSpan.FromSeconds(double.Parse(queryParameterStringValue));
-        }
     }
 }

@@ -72,16 +72,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableEntityClient.TaskHubName => this.TaskHubName;
 
         /// <inheritdoc />
-        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure)
+        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure, bool restartWithNewInstanceId)
         {
-            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, returnInternalServerErrorOnFailure);
+            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
         }
 
         /// <inheritdoc />
-        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure)
+        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure, bool restartWithNewInstanceId)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
-            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, returnInternalServerErrorOnFailure);
+            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
             return ConvertHttpResponseMessage(responseMessage);
         }
 
@@ -791,9 +791,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             DurableClientAttribute attribute,
-            bool returnInternalServerErrorOnFailure = false)
+            bool returnInternalServerErrorOnFailure = false,
+            bool restartWithNewInstanceId = true)
         {
-            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
+            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
         }
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
@@ -872,6 +873,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, T input)
         {
             return ((IDurableOrchestrationClient)this).StartNewAsync<T>(orchestratorFunctionName, string.Empty, input);
+        }
+
+        async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool startWithNewInstanceId)
+        {
+            DurableOrchestrationStatus status = await ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory: false, showHistoryOutput: false, showInput: true);
+
+            if (status == null)
+            {
+                throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
+            }
+
+            return startWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
+                : await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, instanceId: status.InstanceId, status.Input);
         }
 
         /// <inheritdoc/>

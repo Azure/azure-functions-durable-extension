@@ -4773,6 +4773,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{notificationUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=AzureWebJobsStorage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
+            Assert.Equal(
+                $"{notificationUrl}/instances/{instanceId}/restart?taskHub={taskHubName}&connection=AzureWebJobsStorage&code=mykey",
+                httpManagementPayload.RestartUri);
         }
 
         [DataContract]
