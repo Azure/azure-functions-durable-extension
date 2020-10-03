@@ -3038,7 +3038,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var now = DateTime.UtcNow;
 
-                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(10), "delayed", null);
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(2), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
