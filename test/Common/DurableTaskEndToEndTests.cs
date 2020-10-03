@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -216,6 +217,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal("", status.Output.ToString());
 
                 await host.StopAsync();
+            }
+        }
+
+        private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
+        {
+            var mock = new Mock<INameResolver>();
+            foreach (var setting in settings)
+            {
+                mock.Setup(x => x.Resolve(setting.Key)).Returns(setting.Value);
+            }
+
+            return mock;
+        }
+
+        private static SimpleNameResolver GetNameResolverForLinuxDedicated()
+        {
+            var resolver = new SimpleNameResolver(new Dictionary<string, string>()
+            { {"CONTAINER_NAME", "val1" },
+              { "WEBSITE_INSTANCE_ID", "val2"},
+            });
+            return resolver;
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, TestHelpers.AzureStorageProviderType)]
+        [InlineData(false, TestHelpers.AzureStorageProviderType)]
+#if !FUNCTIONS_V1
+        [InlineData(true, TestHelpers.EmulatorProviderType)]
+        [InlineData(false, TestHelpers.EmulatorProviderType)]
+#endif
+        public async Task WritesToConsole(bool extendedSessions, string storageProviderType)
+        {
+            var expectedOutput = "";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_INSTANCE_ID", "val2"},
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "CanWriteToConsole",
+                    enableExtendedSessions: extendedSessions,
+                    storageProviderType: TestHelpers.EmulatorProviderType))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                // Ensure the console included some basic data
+                Assert.Contains(sw.ToString(), expectedOutput);
             }
         }
 

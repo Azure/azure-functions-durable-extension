@@ -23,10 +23,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class LinuxAppServiceLogger
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
-        private const string LoggingPath = "/var/log/functionsLogs/durableevents.log";
-        private const int MaxArchives = 5;
-        private const int MaxLogfileSizeInMb = 10;
+        internal const int MaxArchives = 5;
         private const int BytesToMb = 1024 * 1024;
+        private readonly int maxLogfileSizeInMb;
+#pragma warning disable SA1401 // Fields should be private
+        internal readonly string LoggingPath;
+#pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
         private readonly JToken roleInstance;
@@ -41,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string[] archivedPaths = new string[MaxArchives];
 
         // the current number of archived log files
-        private int countArchives = 0;
+        private int countArchives;
 
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
@@ -50,16 +52,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="containerName">The app's container name.</param>
         /// <param name="tenant">The app's tenant.</param>
         /// <param name="stampName">The app's stamp.</param>
-        public LinuxAppServiceLogger(bool writeToConsole, string containerName, string tenant, string stampName)
+        /// <param name="loggingPath">Path to log file in linux dedicated. Configurable for testing.</param>
+        /// <param name="countArchives">Num of current archived files. Configurable for testing.</param>
+        /// <param name="maxLogfileSizeInMb">Max size of logging file before archiving. Configurable for testing.</param>
+        public LinuxAppServiceLogger(
+            bool writeToConsole,
+            string containerName,
+            string tenant,
+            string stampName,
+            string loggingPath = "/var/log/functionsLogs/durableevents.log",
+            int countArchives = 0,
+            int maxLogfileSizeInMb = 10)
         {
+            this.LoggingPath = loggingPath;
+            this.countArchives = countArchives;
+            this.maxLogfileSizeInMb = maxLogfileSizeInMb;
+
             // If writeToConsole is False, we write to a file
             for (int count = 1; count <= MaxArchives; count++)
             {
-                string archivedPath = LoggingPath + count;
+                string archivedPath = this.LoggingPath + count;
                 this.archivedPaths[count - 1] = archivedPath;
             }
 
-            // initializing fixed logging metadata
+            // initializing fixetd logging metadata
             this.writeToConsole = writeToConsole;
             this.roleInstance = JToken.FromObject("App-" + containerName);
             this.tenant = JToken.FromObject(tenant);
@@ -69,6 +85,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.procID = process.Id;
             }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(loggingPath));
+            File.Create(loggingPath).Close();
         }
 
         /// <summary>
@@ -121,31 +140,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                // If the log file gets too big, we archive it.
-                FileInfo logFileInfo = new FileInfo(LoggingPath);
-                if (logFileInfo.Length / BytesToMb >= MaxLogfileSizeInMb)
-                {
-                    string archivedPath = this.archivedPaths[this.countArchives];
-                    File.Move(LoggingPath, archivedPath);
-                    this.countArchives++;
-                }
-
-                // If we have too many archived log files, we delete them
-                if (this.countArchives > MaxArchives)
-                {
-                    foreach (string archivePath in this.archivedPaths)
-                    {
-                        File.Delete(archivePath);
-                    }
-
-                    this.countArchives = 0;
-                }
+                this.LogFileMaintenance();
 
                 // We write to a file in Linux Dedicated
-                var writer = new StreamWriter(LoggingPath, append: true);
+                var writer = new StreamWriter(this.LoggingPath, append: true);
 
                 // We're ignoring exceptions in the unobserved Task
                 Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
+            }
+        }
+
+        internal void LogFileMaintenance()
+        {
+            // check that this is only done in right circumstances...
+            // If the log file gets too big, we archive it.
+            FileInfo logFileInfo = new FileInfo(this.LoggingPath);
+            if (logFileInfo.Length / BytesToMb >= this.maxLogfileSizeInMb)
+            {
+                string archivedPath = this.archivedPaths[this.countArchives];
+                File.Move(this.LoggingPath, archivedPath);
+                this.countArchives++;
+            }
+
+            // If we have too many archived log files, we delete them
+            if (this.countArchives >= MaxArchives)
+            {
+                foreach (string archivePath in this.archivedPaths)
+                {
+                    File.Delete(archivePath);
+                }
+
+                this.countArchives = 0;
             }
         }
     }

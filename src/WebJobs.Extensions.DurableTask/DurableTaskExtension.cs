@@ -321,7 +321,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
             bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
 
-            // Reading other enviroment variables for intializing the logger
+            // Reading other envirofment variables for intializing the logger
             string tenant = this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");
             string stampName = this.nameResolver.Resolve("WEBSITE_HOME_STAMPNAME");
 

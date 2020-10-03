@@ -2908,7 +2908,7 @@
             specific EventSource providers.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.#ctor(System.Boolean,System.String,System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.#ctor(System.Boolean,System.String,System.String,System.String,System.String,System.Int32,System.Int32)">
             <summary>
             Create a LinuxAppServiceLogger instance.
             </summary>
@@ -2916,6 +2916,9 @@
             <param name="containerName">The app's container name.</param>
             <param name="tenant">The app's tenant.</param>
             <param name="stampName">The app's stamp.</param>
+            <param name="loggingPath">Path to log file in linux dedicated. Configurable for testing.</param>
+            <param name="countArchives">Num of current archived files. Configurable for testing.</param>
+            <param name="maxLogfileSizeInMb">Max size of logging file before archiving. Configurable for testing.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateJsonStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
             <summary>
