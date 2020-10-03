@@ -4,6 +4,7 @@
 using System.IO;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Moq;
 using Xunit;
 
@@ -50,6 +51,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ArchivesMultipleFiles()
         {
             var logTarget = this.GenFileNameAndPath("ArchivesMultipleFiles");
@@ -67,6 +69,7 @@ namespace WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DeletesArchives()
         {
             var logTarget = this.GenFileNameAndPath("DeletesArchives");
