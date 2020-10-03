@@ -262,7 +262,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     var status = await client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
+
                 this.output.WriteLine(sw.ToString());
+
                 // Ensure the console included some basic data
                 Assert.Contains(sw.ToString(), expectedOutput);
             }
