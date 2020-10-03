@@ -271,7 +271,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WritesToFile()
