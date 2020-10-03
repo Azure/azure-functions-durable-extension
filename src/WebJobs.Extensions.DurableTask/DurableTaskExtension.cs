@@ -348,6 +348,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public void Dispose()
         {
+            // Not flushing the linux logger may lead to lost logs
+            Serilog.Log.CloseAndFlush();
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
         }

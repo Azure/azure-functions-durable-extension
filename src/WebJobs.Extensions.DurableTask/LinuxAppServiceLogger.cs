@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using Serilog;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -88,6 +89,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Directory.CreateDirectory(Path.GetDirectoryName(loggingPath));
             File.Create(loggingPath).Close();
+            Serilog.Log.Logger = new LoggerConfiguration()
+                .WriteTo.Async(a => { a.File(loggingPath, outputTemplate: "{Message}{NewLine}"); })
+                .CreateLogger();
         }
 
         /// <summary>
@@ -143,10 +147,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.LogFileMaintenance();
 
                 // We write to a file in Linux Dedicated
-                var writer = new StreamWriter(LoggingPath, append: true);
+                // var writer = new StreamWriter(LoggingPath, append: true);
 
                 // We're ignoring exceptions in the unobserved Task
-                Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
+                // Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
+                Serilog.Log.Information(jsonString);
             }
         }
 
