@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int BytesToMb = 1024 * 1024;
         private readonly int maxLogfileSizeInMb;
 #pragma warning disable SA1401 // Fields should be private
-        internal readonly string LoggingPath;
+        internal static string LoggingPath;
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -64,14 +64,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int countArchives = 0,
             int maxLogfileSizeInMb = 10)
         {
-            this.LoggingPath = loggingPath;
+            LoggingPath = loggingPath;
             this.countArchives = countArchives;
             this.maxLogfileSizeInMb = maxLogfileSizeInMb;
 
             // If writeToConsole is False, we write to a file
             for (int count = 1; count <= MaxArchives; count++)
             {
-                string archivedPath = this.LoggingPath + count;
+                string archivedPath = LoggingPath + count;
                 this.archivedPaths[count - 1] = archivedPath;
             }
 
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.LogFileMaintenance();
 
                 // We write to a file in Linux Dedicated
-                var writer = new StreamWriter(this.LoggingPath, append: true);
+                var writer = new StreamWriter(LoggingPath, append: true);
 
                 // We're ignoring exceptions in the unobserved Task
                 Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
@@ -154,11 +154,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // check that this is only done in right circumstances...
             // If the log file gets too big, we archive it.
-            FileInfo logFileInfo = new FileInfo(this.LoggingPath);
+            FileInfo logFileInfo = new FileInfo(LoggingPath);
             if (logFileInfo.Length / BytesToMb >= this.maxLogfileSizeInMb)
             {
                 string archivedPath = this.archivedPaths[this.countArchives];
-                File.Move(this.LoggingPath, archivedPath);
+                File.Move(LoggingPath, archivedPath);
                 this.countArchives++;
             }
 

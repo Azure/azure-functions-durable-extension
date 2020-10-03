@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WritesToConsole()
         {
-            var expectedOutput = "";
+            var expectedOutput = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
             // To capture console output in a StringWritter
@@ -262,11 +262,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     var status = await client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
-
+                this.output.WriteLine(sw.ToString());
                 // Ensure the console included some basic data
                 Assert.Contains(sw.ToString(), expectedOutput);
             }
         }
+
+        /***
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToFile()
+        {
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "CONTAINER_NAME", "val1" },
+                { "WEBSITE_INSTANCE_ID", "val2" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "CanWriteToConsole",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the console included some basic data
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+        }
+        ***/
 
         /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.

@@ -77,14 +77,14 @@ namespace WebJobs.Extensions.DurableTask.Tests
             for (int count = 1; count < LinuxAppServiceLogger.MaxArchives; count++)
             {
                 // We generate an empty archiveFile
-                string archiveFilePath = logger.LoggingPath + count;
+                string archiveFilePath = LinuxAppServiceLogger.LoggingPath + count;
                 this.GenerateBigLogFile(archiveFilePath);
             }
 
             logger.LogFileMaintenance();
             string[] files = Directory.GetFiles(logTarget.Dir);
             Assert.Single(files);
-            Assert.Equal(logger.LoggingPath, files[0]);
+            Assert.Equal(LinuxAppServiceLogger.LoggingPath, files[0]);
         }
 
         private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
