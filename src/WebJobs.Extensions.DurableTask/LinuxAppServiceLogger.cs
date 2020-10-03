@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int BytesToMb = 1024 * 1024;
         private readonly int maxLogfileSizeInMb;
 #pragma warning disable SA1401 // Fields should be private
-        internal static string LoggingPath;
+        internal static string LoggingPath = "/var/log/functionsLogs/durableevents.log";
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -53,7 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="containerName">The app's container name.</param>
         /// <param name="tenant">The app's tenant.</param>
         /// <param name="stampName">The app's stamp.</param>
-        /// <param name="loggingPath">Path to log file in linux dedicated. Configurable for testing.</param>
         /// <param name="countArchives">Num of current archived files. Configurable for testing.</param>
         /// <param name="maxLogfileSizeInMb">Max size of logging file before archiving. Configurable for testing.</param>
         public LinuxAppServiceLogger(
@@ -61,11 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string containerName,
             string tenant,
             string stampName,
-            string loggingPath = "/var/log/functionsLogs/durableevents.log",
             int countArchives = 0,
             int maxLogfileSizeInMb = 10)
         {
-            LoggingPath = loggingPath;
             this.countArchives = countArchives;
             this.maxLogfileSizeInMb = maxLogfileSizeInMb;
 
@@ -87,10 +84,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.procID = process.Id;
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(loggingPath));
-            File.Create(loggingPath).Close();
             Serilog.Log.Logger = new LoggerConfiguration()
-                .WriteTo.Async(a => { a.File(loggingPath, outputTemplate: "{Message}{NewLine}"); })
+                .WriteTo.Async(a => { a.File(LinuxAppServiceLogger.LoggingPath, outputTemplate: "{Message}{NewLine}"); })
                 .CreateLogger();
         }
 
@@ -144,38 +139,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                this.LogFileMaintenance();
-
                 // We write to a file in Linux Dedicated
                 // var writer = new StreamWriter(LoggingPath, append: true);
 
                 // We're ignoring exceptions in the unobserved Task
                 // Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
                 Serilog.Log.Information(jsonString);
-            }
-        }
-
-        internal void LogFileMaintenance()
-        {
-            // check that this is only done in right circumstances...
-            // If the log file gets too big, we archive it.
-            FileInfo logFileInfo = new FileInfo(LoggingPath);
-            if (logFileInfo.Length / BytesToMb >= this.maxLogfileSizeInMb)
-            {
-                string archivedPath = this.archivedPaths[this.countArchives];
-                File.Move(LoggingPath, archivedPath);
-                this.countArchives++;
-            }
-
-            // If we have too many archived log files, we delete them
-            if (this.countArchives >= MaxArchives)
-            {
-                foreach (string archivePath in this.archivedPaths)
-                {
-                    File.Delete(archivePath);
-                }
-
-                this.countArchives = 0;
             }
         }
     }

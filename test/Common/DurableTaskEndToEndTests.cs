@@ -275,6 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WritesToFile()
         {
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
@@ -292,9 +293,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 enableExtendedSessions: false,
                 storageProviderType: "azure_storage"))
             {
-                LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
-                Directory.CreateDirectory(Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath));
-                File.Create(LinuxAppServiceLogger.LoggingPath).Close();
+                // Directory.CreateDirectory(Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath));
+                // File.Create(LinuxAppServiceLogger.LoggingPath).Close();
 
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
