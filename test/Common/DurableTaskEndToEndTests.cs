@@ -246,7 +246,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
-                    { "WEBSITE_INSTANCE_ID", "val2" },
                 });
 
                 // Run trivial orchestrator
