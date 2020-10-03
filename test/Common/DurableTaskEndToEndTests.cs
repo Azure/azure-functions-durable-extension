@@ -270,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     nameResolver: nameResolver,
                     testName: "CanWriteToConsole",
                     enableExtendedSessions: extendedSessions,
-                    storageProviderType: TestHelpers.EmulatorProviderType))
+                    storageProviderType: "azure_storage"))
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
