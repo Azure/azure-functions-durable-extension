@@ -246,6 +246,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
                 });
 
                 // Run trivial orchestrator
@@ -269,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        /***
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WritesToFile()
@@ -277,8 +279,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
-                { "CONTAINER_NAME", "val1" },
-                { "WEBSITE_INSTANCE_ID", "val2" },
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
             });
 
             // Run trivial orchestrator
@@ -299,7 +303,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Ensure the console included some basic data
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
         }
-        ***/
 
         /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
