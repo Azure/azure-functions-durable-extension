@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
-        Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData = null, string connectionName = null);
+        Task RaiseEventAsync(string taskHubName, string instanceId, string eventName, object eventData, string connectionName = null);
 
         /// <summary>
         /// Terminates a running orchestration instance.

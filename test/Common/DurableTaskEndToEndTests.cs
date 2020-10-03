@@ -3033,9 +3033,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
+                // Wait 5 seconds to account for time to grab ownership lease.
+                await Task.Delay(5000);
+
                 var now = DateTime.UtcNow;
 
-                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(10), "delayed", null);
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(1), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
@@ -3067,7 +3070,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
                 await client.SignalEntity(this.output, "Start", null);
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(15);
                 var state = await client.WaitForEntityState<TestEntityClasses.SelfSchedulingEntity>(this.output, timeout, curstate => curstate.Value.Length == 4 ? null : "expect 4 letters");
 
                 Assert.Equal("ABCD", state.Value);
@@ -4128,7 +4131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_CleanEntityStorage),
+                nameof(this.DurableEntity_CleanEntityStorage_Many),
                 enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
                 entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
                 storageProviderType: storageProvider))
@@ -4562,6 +4565,78 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"Task hub name '{taskHubName}' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
                 exception.Message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_OutOfProc_SetToFalse()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsTestNode";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "FUNCTIONS_WORKER_RUNTIME", "node" },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.False(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_CSharp_RemainsTrue()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsTestCSharp";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "FUNCTIONS_WORKER_RUNTIME", "dotnet" },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.True(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_UnknownLanguage_RemainsTrue()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsUnknownLanguage";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver();
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.True(durableTaskOptions.ExtendedSessionsEnabled);
         }
 
         [Fact]

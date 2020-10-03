@@ -231,7 +231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Throw if any of the configured options are invalid
-            this.Options.Validate();
+            this.Options.Validate(this.nameResolver, this.TraceHelper);
 
             // For 202 support
             if (this.Options.NotificationUrl == null)
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (name.StartsWith("@"))
             {
-                return new TaskEntityShim(this, name);
+                return new TaskEntityShim(this, this.defaultDurabilityProvider, name);
             }
             else
             {
@@ -698,8 +698,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                                 if (requestMessage.ScheduledTime.HasValue)
                                 {
-                                    // messages with a scheduled time are always delivered immediately
-                                    deliverNow = new RequestMessage[] { requestMessage };
+                                    if ((requestMessage.ScheduledTime.Value - DateTime.UtcNow) > TimeSpan.FromMilliseconds(100))
+                                    {
+                                        // message was delivered too early. This can happen if the durability provider imposes
+                                        // a limit on the delay. We handle this by rescheduling the message instead of processing it.
+                                        deliverNow = Array.Empty<RequestMessage>();
+                                        entityShim.AddMessageToBeRescheduled(requestMessage);
+                                    }
+                                    else
+                                    {
+                                        // the message is scheduled to be delivered immediately.
+                                        // There are no FIFO guarantees for scheduled messages, so we skip the message sorter.
+                                        deliverNow = new RequestMessage[] { requestMessage };
+                                    }
                                 }
                                 else
                                 {

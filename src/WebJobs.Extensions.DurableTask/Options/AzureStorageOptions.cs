@@ -125,9 +125,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// strategy that is more resilient to split brain problems, at the potential expense
         /// of scale out performance.
         /// </summary>
-        /// <value>A boolean indicating whether we use the legacy partition strategy. Defaults to true
-        /// but this will change to false once the new partition management strategy is fully tested. </value>
-        public bool UseLegacyPartitionManagement { get; set; } = true;
+        /// <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
+        public bool UseLegacyPartitionManagement { get; set; } = false;
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
