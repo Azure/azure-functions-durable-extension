@@ -293,6 +293,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProviderType: "azure_storage"))
             {
                 LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+                Directory.CreateDirectory(Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath));
+                File.Create(LinuxAppServiceLogger.LoggingPath).Close();
+
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
