@@ -84,8 +84,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.procID = process.Id;
             }
 
+            var tenMBinBytes = 10000000;
+
             Serilog.Log.Logger = new LoggerConfiguration()
-                .WriteTo.Async(a => { a.File(LinuxAppServiceLogger.LoggingPath, outputTemplate: "{Message}{NewLine}"); })
+                .WriteTo.Async(a =>
+                {
+                    a.File(
+                        LinuxAppServiceLogger.LoggingPath,
+                        outputTemplate: "{Message}{NewLine}",
+                        fileSizeLimitBytes: tenMBinBytes,
+                        rollOnFileSizeLimit: true,
+                        retainedFileCountLimit: 10);
+                })
                 .CreateLogger();
         }
 
