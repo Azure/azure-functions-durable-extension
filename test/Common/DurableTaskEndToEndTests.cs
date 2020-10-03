@@ -231,24 +231,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return mock;
         }
 
-        private static SimpleNameResolver GetNameResolverForLinuxDedicated()
-        {
-            var resolver = new SimpleNameResolver(new Dictionary<string, string>()
-            { {"CONTAINER_NAME", "val1" },
-              { "WEBSITE_INSTANCE_ID", "val2"},
-            });
-            return resolver;
-        }
-
-        [Theory]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true, TestHelpers.AzureStorageProviderType)]
-        [InlineData(false, TestHelpers.AzureStorageProviderType)]
-#if !FUNCTIONS_V1
-        [InlineData(true, TestHelpers.EmulatorProviderType)]
-        [InlineData(false, TestHelpers.EmulatorProviderType)]
-#endif
-        public async Task WritesToConsole(bool extendedSessions, string storageProviderType)
+        public async Task WritesToConsole()
         {
             var expectedOutput = "";
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
@@ -261,7 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
-                    { "WEBSITE_INSTANCE_ID", "val2"},
+                    { "WEBSITE_INSTANCE_ID", "val2" },
                 });
 
                 // Run trivial orchestrator
@@ -269,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.loggerProvider,
                     nameResolver: nameResolver,
                     testName: "CanWriteToConsole",
-                    enableExtendedSessions: extendedSessions,
+                    enableExtendedSessions: false,
                     storageProviderType: "azure_storage"))
                 {
                     await host.StartAsync();
