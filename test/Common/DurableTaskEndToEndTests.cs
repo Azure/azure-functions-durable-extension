@@ -267,7 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.output.WriteLine(sw.ToString());
 
                 // Ensure the console included some basic data
-                Assert.Contains(sw.ToString(), expectedOutput);
+                Assert.Contains(expectedOutput, sw.ToString());
             }
         }
 
