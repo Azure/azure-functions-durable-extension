@@ -415,7 +415,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
-            this.output.WriteLine(string.Join("\n", lines));
 
             bool foundAzureStorageLog = false;
             bool foundEtwEventSourceLog = false;
@@ -454,7 +453,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // (3) Ensure some Enums are printed correctly: as strings
                 string eventType = (string)json.GetValue("EventType");
-                Assert.True(!eventType.All(char.IsDigit));
+                if (!string.IsNullOrEmpty(eventType))
+                {
+                    Assert.True(!eventType.All(char.IsDigit));
+                }
             }
 
             // (4) That we have logs from a variety of EventSource providers.
