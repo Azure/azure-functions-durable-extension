@@ -2558,6 +2558,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates batching of entity signals.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_BatchedSignals(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_BatchedSignals),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                int numIterations = 100;
+                var entityId = new EntityId(nameof(TestEntities.BatchEntity), Guid.NewGuid().ToString());
+                var client = await host.GetEntityClientAsync(entityId, this.output);
+
+                // send a number of signals immediately after each other
+                List<Task> tasks = new List<Task>();
+                for (int i = 0; i < numIterations; i++)
+                {
+                    tasks.Add(client.SignalEntity(this.output, i.ToString()));
+                }
+
+                await Task.WhenAll(tasks);
+
+                var result = await client.WaitForEntityState<List<(int, int)>>(
+                    this.output,
+                    timeout: Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
+                    list => list.Count == numIterations ? null : $"waiting for {numIterations - list.Count} signals");
+
+                // validate the batching positions and sizes
+                int? cursize = null;
+                int curpos = 0;
+                int numBatches = 0;
+                foreach (var (position, size) in result)
+                {
+                    if (cursize == null)
+                    {
+                        cursize = size;
+                        curpos = 0;
+                        numBatches++;
+                    }
+
+                    Assert.Equal(curpos, position);
+
+                    if (++curpos == cursize)
+                    {
+                        cursize = null;
+                    }
+                }
+
+                // there should always be some batching going on
+                Assert.True(numBatches < numIterations);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates exception handling in entity operations.
         /// </summary>
         [Theory]
