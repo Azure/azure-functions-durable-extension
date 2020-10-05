@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -217,6 +219,253 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we are writing our JSON logs to the console. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, we are writing messages beginning with the expected linux-dedicated prefix.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToConsole()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "CanWriteToConsole",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                this.output.WriteLine(sw.ToString());
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, sw.ToString());
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks that we are writing our JSON logs to a file. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, the log file we are writing to now exists in the file system.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToFile()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "CanWriteToFile",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs have their newlines escaped, which otherwise
+        /// could cause problems in our logging pipeline. We do this by ensuring that
+        /// there are no more newlines than top-level JSON objects in our logs.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RemovesNewlinesFromExceptions()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "RemovesNewlinesFromExceptions",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+            int lineCount = lines.Length;
+            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
+            Assert.Equal(lineCount, countTimeStampCols);
+
+            // To ensure other tests generate the path
+            File.Delete(LinuxAppServiceLogger.LoggingPath);
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs satisfy a minimal set of requirements:
+        /// (1) Is JSON parseable
+        /// (2) Contains minimal expected fields: EventId, TimeStamp, RoleInstance,
+        ///     Tenant, SourceMoniker, Pid, Tid.
+        /// (3) Ensure some Enums are printed correctly.
+        /// (4) That we have logs from a variety of EventSource providers.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OutputsValidJSONLogs()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "OutputsValidJSONLogs",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+            bool foundAzureStorageLog = false;
+            bool foundEtwEventSourceLog = false;
+            bool foundDurableTaskCoreLog = false;
+
+            // Validating JSON outputs
+            foreach (string line in lines)
+            {
+                // (1) Ensure it can be parsed to JSON
+                JObject json = JObject.Parse(line);
+
+                // (2) Contains minimal expected fields
+                List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                Assert.Contains("EventId", keys);
+                Assert.Contains("TimeStamp", keys);
+                Assert.Contains("RoleInstance", keys);
+                Assert.Contains("Tenant", keys);
+                Assert.Contains("SourceMoniker", keys);
+                Assert.Contains("Pid", keys);
+                Assert.Contains("Tid", keys);
+
+                // recording EventSource providers seen
+                int eventId = (int)json.GetValue("EventId");
+                if (eventId == 202)
+                {
+                    foundEtwEventSourceLog = true;
+                }
+                else if (eventId == 10)
+                {
+                    foundDurableTaskCoreLog = true;
+                }
+                else if (eventId == 120)
+                {
+                    foundAzureStorageLog = true;
+                }
+
+                // (3) Ensure some Enums are printed correctly: as strings
+                string eventType = (string)json.GetValue("EventType");
+                if (!string.IsNullOrEmpty(eventType))
+                {
+                    Assert.True(!eventType.All(char.IsDigit));
+                }
+            }
+
+            // (4) That we have logs from a variety of EventSource providers.
+            Assert.True(foundAzureStorageLog);
+            Assert.True(foundEtwEventSourceLog);
+            Assert.True(foundDurableTaskCoreLog);
+
+            // To ensure other tests generate the path
+            File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
         /// <summary>
@@ -2951,7 +3200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var now = DateTime.UtcNow;
 
-                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(1), "delayed", null);
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(4), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
