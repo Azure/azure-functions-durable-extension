@@ -433,8 +433,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("Pid", keys);
                 Assert.Contains("Tid", keys);
 
+                // string eventId = (string)json.GetValue("EventId");
+
                 // (3) Ensure some Enums are printed correctly.
             }
+
+            Assert.True(false); // just to see trace
 
             // (4) That we have logs from a variety of EventSource providers.
 
