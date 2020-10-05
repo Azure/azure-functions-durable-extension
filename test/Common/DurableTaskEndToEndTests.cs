@@ -312,6 +312,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
         }
 
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs have their newlines escaped, which otherwise
+        /// could cause problems in our logging pipeline. We do this by ensuring that
+        /// there are no more newlines than top-level JSON objects in our logs.
+        /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RemovesNewlinesFromExceptions()
@@ -353,8 +359,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // which corresponds to the number of JSONs logged
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
             int lineCount = lines.Length;
-            int countTimeStampCols = Regex.Matches(string.Join("", lineCount), "\"TimeStamp\":").Count;
+            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
             Assert.Equal(lineCount, countTimeStampCols);
+
+            // To ensure other tests generate the path
+            File.Delete(LinuxAppServiceLogger.LoggingPath);
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs satisfy a minimal set of requirements:
+        /// (1) Is JSON parseable
+        /// (2) Contains minimal expected fields: EventId, TimeStamp, RoleInstance,
+        ///     Tenant, SourceMoniker, Pid, Tid. And those have the implicit right type.
+        /// (3) Ensure some Enums are printed correctly.
+        /// (4) That we have logs from a variety of EventSource providers.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OutputsValidJSONLogs()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "RemovesNewlinesFromExceptions",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // Ensure newlines are removed by checking the the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+            // TODO: Still left to implement...
 
             // To ensure other tests generate the path
             File.Delete(LinuxAppServiceLogger.LoggingPath);
