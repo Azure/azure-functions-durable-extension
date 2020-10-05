@@ -221,6 +221,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
+            // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
+            this.InitializeLinuxLogging();
+
             ConfigureLoaderHooks();
 
             // Functions V1 has it's configuration initialized at startup time (now).
@@ -295,8 +298,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
-
-            this.InitializeLinuxLogging();
 
 #if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered

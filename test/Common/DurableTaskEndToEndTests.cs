@@ -280,6 +280,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
             LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
             // Simulate linux dedicated via enviroment variables
@@ -307,6 +308,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
         }
 
         /// <summary>
@@ -3041,7 +3043,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var now = DateTime.UtcNow;
 
-                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(2), "delayed", null);
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(4), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
