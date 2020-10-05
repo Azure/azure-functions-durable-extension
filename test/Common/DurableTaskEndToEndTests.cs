@@ -355,7 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
 
-            // Ensure newlines are removed by checking the the number of lines is equal to the number of "TimeStamp" columns,
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
             int lineCount = lines.Length;
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// this test checks our JSON logs satisfy a minimal set of requirements:
         /// (1) Is JSON parseable
         /// (2) Contains minimal expected fields: EventId, TimeStamp, RoleInstance,
-        ///     Tenant, SourceMoniker, Pid, Tid. And those have the implicit right type.
+        ///     Tenant, SourceMoniker, Pid, Tid.
         /// (3) Ensure some Enums are printed correctly.
         /// (4) That we have logs from a variety of EventSource providers.
         /// </summary>
@@ -412,11 +412,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
 
-            // Ensure newlines are removed by checking the the number of lines is equal to the number of "TimeStamp" columns,
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+            this.output.WriteLine(string.Join("\n", lines));
 
-            // TODO: Still left to implement...
+            // Validating JSON outputs
+            foreach (string line in lines)
+            {
+                // (1) Ensure it can be parsed to JSON
+                JObject json = JObject.Parse(line);
+
+                // (2) Contains minimal expected fields
+                List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                Assert.Contains("EventId", keys);
+                Assert.Contains("TimeStamp", keys);
+                Assert.Contains("RoleInstance", keys);
+                Assert.Contains("Tenant", keys);
+                Assert.Contains("SourceMoniker", keys);
+                Assert.Contains("Pid", keys);
+                Assert.Contains("Tid", keys);
+
+                // (3) Ensure some Enums are printed correctly.
+
+            }
+
+            // (4) That we have logs from a variety of EventSource providers.
 
             // To ensure other tests generate the path
             File.Delete(LinuxAppServiceLogger.LoggingPath);
