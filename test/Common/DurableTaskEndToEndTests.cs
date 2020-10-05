@@ -432,7 +432,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("TimeStamp", keys);
                 Assert.Contains("RoleInstance", keys);
                 Assert.Contains("Tenant", keys);
-                Assert.Contains("SourceMoniker", keys);
                 Assert.Contains("Pid", keys);
                 Assert.Contains("Tid", keys);
 
