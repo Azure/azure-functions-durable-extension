@@ -2946,8 +2946,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
-                // Wait 5 seconds to account for time to grab ownership lease.
-                await Task.Delay(5000);
+                // Wait 8 seconds to account for time to grab ownership lease.
+                await Task.Delay(8000);
 
                 var now = DateTime.UtcNow;
 
