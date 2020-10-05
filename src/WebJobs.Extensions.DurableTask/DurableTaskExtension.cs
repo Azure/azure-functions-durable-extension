@@ -59,6 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
+        private HttpClient durableHttpClient;
+        private EventSourceListener eventSourceListener;
 
 #if FUNCTIONS_V1
         /// <summary>
@@ -144,6 +146,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
+            // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
+            this.InitializeLinuxLogging();
+
             ConfigureLoaderHooks();
 
             // Functions V1 has it's configuration initialized at startup time (now).
@@ -201,10 +206,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         }
 
+        /// <summary>
+        /// Initializes the logging service for App Service if it detects that we are running in
+        /// the linux platform.
+        /// </summary>
+        private void InitializeLinuxLogging()
+        {
+            // Read enviroment variables to determine host platform
+            string containerName = this.nameResolver.Resolve("CONTAINER_NAME");
+            string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
+            string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
+
+            // Determine host platform
+            bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
+            bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
+            bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
+
+            // Reading other enviroment variables for intializing the logger
+            string tenant = this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");
+            string stampName = this.nameResolver.Resolve("WEBSITE_HOME_STAMPNAME");
+
+            // If running in linux, initialize the EventSource listener with the appropiate logger.
+            LinuxAppServiceLogger linuxLogger = null;
+            if (inLinuxDedicated)
+            {
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
+            }
+            else if (inLinuxConsumption)
+            {
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
+            }
+
+            if (linuxLogger != null)
+            {
+                // The logging service for linux works by capturing EventSource messages,
+                // which our linux platform does not recognize, and logging them via a
+                // different strategy such as writing to console or to a file.
+                this.eventSourceListener = new EventSourceListener(linuxLogger);
+            }
+        }
+
         /// <inheritdoc />
         public void Dispose()
         {
+            // Not flushing the linux logger may lead to lost logs
+            Serilog.Log.CloseAndFlush();
             this.HttpApiHandler?.Dispose();
+            this.eventSourceListener?.Dispose();
         }
 
 #if !FUNCTIONS_V1
