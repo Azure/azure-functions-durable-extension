@@ -89,9 +89,13 @@ namespace VSSample
                 await context.CallActivityAsync<string>(""Test_ValueType_DirectInput"", new Char());
                 await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Char());
 
-                // Testing null input when function input not used from context object is valid
+                // Testing null input when function input not used
 
                 await context.CallActivityAsync<string>(""Test_UnusedInputFromContext"", null);
+
+                // Testing null input used with non value type
+
+                await context.CallActivityAsync(""Test_ValidNull"", null);
             
                 return ""Hello World!"";
 
@@ -201,10 +205,18 @@ namespace VSSample
             return $""Hello World!"";
         }
 
-        // Testing null input when function input not used from context object is valid
+        // Testing null input when function input not used
 
         [FunctionName(""Test_UnusedInputFromContext"")]
         public static string TestUnusedInputFromContext([ActivityTrigger] IDurableActivityContext context)
+        {
+            return $""Hello {name}!"";
+        }
+
+        // Testing null input used with non value type
+
+        [FunctionName(""Test_ValidNull"")]
+        public static string TestUnusedInputFromContext([ActivityTrigger] int? name)
         {
             return $""Hello {name}!"";
         }
@@ -411,6 +423,54 @@ namespace VSSample
                 Locations =
                  new[] {
                             new DiagnosticResultLocation("Test0.cs", 21, 73)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void Argument_InputNullWithValueType()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                await context.CallActivityAsync<string>(""InvalidNullInput"", null));
+            
+                return ""Hello World!"";
+            }
+
+        [FunctionName(""InvalidNullInput"")]
+        public static string InvalidNullInput([ActivityTrigger] int input)
+        {
+            return $""Hello World!"";
+        }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 77)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);

@@ -29,7 +29,7 @@ namespace VSSample
             string resourceGroup = vmInfo.ResourceGroup;
 
             // Implicitly uses the Azure AD identity of the current app to make an HTTP call to Azure Resource Manager
-            var managedIdentity = new ManagedIdentityTokenSource("https://management.core.windows.net");
+            var managedIdentity = new ManagedIdentityTokenSource("https://management.core.windows.net/.default");
 
             // List all of the VMs in my subscription and add them to a list.
             DurableHttpRequest request = new DurableHttpRequest(
