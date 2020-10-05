@@ -110,8 +110,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 json.Add(keys[i], JToken.FromObject(values[i]));
             }
 
-            // Generate string-representation of JSON
+            // Generate string-representation of JSON. Also remove newlines.
             string jsonString = json.ToString(Newtonsoft.Json.Formatting.None);
+            jsonString = jsonString.Replace("\n", "\\n").Replace("\r", "\\r");
             return jsonString;
         }
 
