@@ -58,6 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.writeToConsole = writeToConsole;
             this.roleInstance = JToken.FromObject("App-" + containerName);
             this.tenant = JToken.FromObject(tenant);
+
             this.sourceMoniker = JToken.FromObject(
                 string.IsNullOrEmpty(stampName) ? string.Empty : "L" + stampName.Replace("-", "").ToUpperInvariant());
             using (var process = Process.GetCurrentProcess())
@@ -100,7 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "TimeStamp", DateTime.UtcNow },
                 { "RoleInstance", this.roleInstance },
                 { "Tenant", this.tenant },
-                { "SourceMoniker",  this.sourceMoniker },
                 { "Pid", this.procID },
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
             };
