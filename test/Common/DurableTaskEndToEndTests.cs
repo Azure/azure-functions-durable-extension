@@ -417,6 +417,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
             this.output.WriteLine(string.Join("\n", lines));
 
+            bool foundAzureStorageLog = false;
+            bool foundEtwEventSourceLog = false;
+            bool foundDurableTaskCoreLog = false;
+
             // Validating JSON outputs
             foreach (string line in lines)
             {
@@ -433,14 +437,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("Pid", keys);
                 Assert.Contains("Tid", keys);
 
-                // string eventId = (string)json.GetValue("EventId");
+                // recording EventSource providers seen
+                int eventId = (int)json.GetValue("EventId");
+                if (eventId == 202)
+                {
+                    foundEtwEventSourceLog = true;
+                }
+                else if (eventId == 10)
+                {
+                    foundDurableTaskCoreLog = true;
+                }
+                else if (eventId == 120)
+                {
+                    foundAzureStorageLog = true;
+                }
 
-                // (3) Ensure some Enums are printed correctly.
+                // (3) Ensure some Enums are printed correctly: as strings
+                string eventType = (string)json.GetValue("EventType");
+                Assert.True(!eventType.All(char.IsDigit));
             }
 
-            Assert.True(false); // just to see trace
-
             // (4) That we have logs from a variety of EventSource providers.
+            Assert.True(foundAzureStorageLog);
+            Assert.True(foundEtwEventSourceLog);
+            Assert.True(foundDurableTaskCoreLog);
 
             // To ensure other tests generate the path
             File.Delete(LinuxAppServiceLogger.LoggingPath);
