@@ -220,22 +220,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
-        {
-            var mock = new Mock<INameResolver>();
-            foreach (var setting in settings)
-            {
-                mock.Setup(x => x.Resolve(setting.Key)).Returns(setting.Value);
-            }
-
-            return mock;
-        }
-
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we are writing our JSON logs to the console. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, we are writing messages beginning with the expected linux-dedicated prefix.
+        /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WritesToConsole()
         {
-            var expectedOutput = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
             // To capture console output in a StringWritter
@@ -243,6 +238,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -266,17 +263,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 this.output.WriteLine(sw.ToString());
 
-                // Ensure the console included some basic data
-                Assert.Contains(expectedOutput, sw.ToString());
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, sw.ToString());
             }
         }
 
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks that we are writing our JSON logs to a file. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, the log file we are writing to now exists in the file system.
+        /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WritesToFile()
         {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
             LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // Simulate linux dedicated via enviroment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -293,8 +299,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 enableExtendedSessions: false,
                 storageProviderType: "azure_storage"))
             {
-                // Directory.CreateDirectory(Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath));
-                // File.Create(LinuxAppServiceLogger.LoggingPath).Close();
 
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
@@ -302,7 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
-            // Ensure the console included some basic data
+            // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
         }
 

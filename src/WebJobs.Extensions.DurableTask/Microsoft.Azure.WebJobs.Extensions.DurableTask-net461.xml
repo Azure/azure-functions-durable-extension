@@ -2903,12 +2903,12 @@
             <summary>
             In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
             In Consumption, we log to the console and identify our log by a prefix.
-            In Dedicated, we log to a pre-defined logging path.
+            In Dedicated, we log asynchronously to a pre-defined logging path using Serilog.
             This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
             specific EventSource providers.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.#ctor(System.Boolean,System.String,System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.#ctor(System.Boolean,System.String,System.String,System.String)">
             <summary>
             Create a LinuxAppServiceLogger instance.
             </summary>
@@ -2916,8 +2916,6 @@
             <param name="containerName">The app's container name.</param>
             <param name="tenant">The app's tenant.</param>
             <param name="stampName">The app's stamp.</param>
-            <param name="countArchives">Num of current archived files. Configurable for testing.</param>
-            <param name="maxLogfileSizeInMb">Max size of logging file before archiving. Configurable for testing.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateJsonStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
             <summary>

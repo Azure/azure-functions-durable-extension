@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
     /// In Consumption, we log to the console and identify our log by a prefix.
-    /// In Dedicated, we log to a pre-defined logging path.
+    /// In Dedicated, we log asynchronously to a pre-defined logging path using Serilog.
     /// This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
     /// specific EventSource providers.
     /// </summary>
@@ -25,8 +25,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
         internal const int MaxArchives = 5;
-        private const int BytesToMb = 1024 * 1024;
-        private readonly int maxLogfileSizeInMb;
+
+        // variable below is internal static for testing purposes
+        // we need to be able to change the logging path for a windows-based CI
 #pragma warning disable SA1401 // Fields should be private
         internal static string LoggingPath = "/var/log/functionsLogs/durableevents.log";
 #pragma warning restore SA1401 // Fields should be private
@@ -40,12 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
 
-        // the paths to all allowed archived log files.
-        private readonly string[] archivedPaths = new string[MaxArchives];
-
-        // the current number of archived log files
-        private int countArchives;
-
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
         /// </summary>
@@ -53,27 +48,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="containerName">The app's container name.</param>
         /// <param name="tenant">The app's tenant.</param>
         /// <param name="stampName">The app's stamp.</param>
-        /// <param name="countArchives">Num of current archived files. Configurable for testing.</param>
-        /// <param name="maxLogfileSizeInMb">Max size of logging file before archiving. Configurable for testing.</param>
         public LinuxAppServiceLogger(
             bool writeToConsole,
             string containerName,
             string tenant,
-            string stampName,
-            int countArchives = 0,
-            int maxLogfileSizeInMb = 10)
+            string stampName)
         {
-            this.countArchives = countArchives;
-            this.maxLogfileSizeInMb = maxLogfileSizeInMb;
 
-            // If writeToConsole is False, we write to a file
-            for (int count = 1; count <= MaxArchives; count++)
-            {
-                string archivedPath = LoggingPath + count;
-                this.archivedPaths[count - 1] = archivedPath;
-            }
-
-            // initializing fixetd logging metadata
+            // Initializing fixed logging metadata
             this.writeToConsole = writeToConsole;
             this.roleInstance = JToken.FromObject("App-" + containerName);
             this.tenant = JToken.FromObject(tenant);
@@ -84,19 +66,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.procID = process.Id;
             }
 
-            var tenMBinBytes = 10000000;
-
-            Serilog.Log.Logger = new LoggerConfiguration()
-                .WriteTo.Async(a =>
-                {
-                    a.File(
-                        LinuxAppServiceLogger.LoggingPath,
-                        outputTemplate: "{Message}{NewLine}",
-                        fileSizeLimitBytes: tenMBinBytes,
-                        rollOnFileSizeLimit: true,
-                        retainedFileCountLimit: 10);
-                })
-                .CreateLogger();
+            // Initialize file logger, if in Linux Dedicated
+            if (!writeToConsole)
+            {
+                var tenMbInBytes = 10000000;
+                Serilog.Log.Logger = new LoggerConfiguration()
+                    .WriteTo.Async(a =>
+                    {
+                        a.File(
+                            LinuxAppServiceLogger.LoggingPath,
+                            outputTemplate: "{Message}{NewLine}",
+                            fileSizeLimitBytes: tenMbInBytes,
+                            rollOnFileSizeLimit: true,
+                            retainedFileCountLimit: 10);
+                    })
+                    .CreateLogger();
+            }
         }
 
         /// <summary>
@@ -145,15 +130,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // We're ignoring exceptions in the unobserved Task
                 string consoleLine = ConsolePrefix + " " + jsonString;
-                Task unused = Console.Out.WriteLineAsync(consoleLine);
+                _ = Console.Out.WriteLineAsync(consoleLine);
             }
             else
             {
                 // We write to a file in Linux Dedicated
-                // var writer = new StreamWriter(LoggingPath, append: true);
-
-                // We're ignoring exceptions in the unobserved Task
-                // Task unused = writer.WriteLineAsync(jsonString).ContinueWith(_ => writer.Dispose());
+                // Serilog handles file rolling (archiving) and deletion of old logs
+                // Log-level should also be irrelevant as no minimal level has been configured
                 Serilog.Log.Information(jsonString);
             }
         }
