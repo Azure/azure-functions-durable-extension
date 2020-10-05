@@ -4,9 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
@@ -196,6 +199,253 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
             }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we are writing our JSON logs to the console. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, we are writing messages beginning with the expected linux-dedicated prefix.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToConsole()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "CanWriteToConsole",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                this.output.WriteLine(sw.ToString());
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, sw.ToString());
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks that we are writing our JSON logs to a file. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, the log file we are writing to now exists in the file system.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToFile()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "CanWriteToFile",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs have their newlines escaped, which otherwise
+        /// could cause problems in our logging pipeline. We do this by ensuring that
+        /// there are no more newlines than top-level JSON objects in our logs.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RemovesNewlinesFromExceptions()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "RemovesNewlinesFromExceptions",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+            int lineCount = lines.Length;
+            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
+            Assert.Equal(lineCount, countTimeStampCols);
+
+            // To ensure other tests generate the path
+            File.Delete(LinuxAppServiceLogger.LoggingPath);
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs satisfy a minimal set of requirements:
+        /// (1) Is JSON parseable
+        /// (2) Contains minimal expected fields: EventId, TimeStamp, RoleInstance,
+        ///     Tenant, SourceMoniker, Pid, Tid.
+        /// (3) Ensure some Enums are printed correctly.
+        /// (4) That we have logs from a variety of EventSource providers.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OutputsValidJSONLogs()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "OutputsValidJSONLogs",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+            bool foundAzureStorageLog = false;
+            bool foundEtwEventSourceLog = false;
+            bool foundDurableTaskCoreLog = false;
+
+            // Validating JSON outputs
+            foreach (string line in lines)
+            {
+                // (1) Ensure it can be parsed to JSON
+                JObject json = JObject.Parse(line);
+
+                // (2) Contains minimal expected fields
+                List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                Assert.Contains("EventId", keys);
+                Assert.Contains("TimeStamp", keys);
+                Assert.Contains("RoleInstance", keys);
+                Assert.Contains("Tenant", keys);
+                Assert.Contains("SourceMoniker", keys);
+                Assert.Contains("Pid", keys);
+                Assert.Contains("Tid", keys);
+
+                // recording EventSource providers seen
+                int eventId = (int)json.GetValue("EventId");
+                if (eventId == 202)
+                {
+                    foundEtwEventSourceLog = true;
+                }
+                else if (eventId == 10)
+                {
+                    foundDurableTaskCoreLog = true;
+                }
+                else if (eventId == 120)
+                {
+                    foundAzureStorageLog = true;
+                }
+
+                // (3) Ensure some Enums are printed correctly: as strings
+                string eventType = (string)json.GetValue("EventType");
+                if (!string.IsNullOrEmpty(eventType))
+                {
+                    Assert.True(!eventType.All(char.IsDigit));
+                }
+            }
+
+            // (4) That we have logs from a variety of EventSource providers.
+            Assert.True(foundAzureStorageLog);
+            Assert.True(foundEtwEventSourceLog);
+            Assert.True(foundDurableTaskCoreLog);
+
+            // To ensure other tests generate the path
+            File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
         /// <summary>
@@ -2558,6 +2808,1471 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 DateTime endDateTime = DateTime.Now;
                 await Task.Delay(5000);
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates launching orchestrations from entities.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityFireAndForget(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityFireAndForget),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.LaunchOrchestrationFromEntity),
+                    null,
+                    this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                var instanceId = (string)status?.Output;
+                Assert.NotNull(instanceId);
+                var launchedStatus = await client.InnerClient.GetStatusAsync(instanceId, false, false, false);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, launchedStatus.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates a simple entity scenario where an entity's state is
+        /// larger than what fits into Azure table rows.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_LargeEntity(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LargeEntity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_LargeEntity),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId("StringStore2", Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                var response = await client.InnerClient.ReadEntityStateAsync<string>(entityId);
+                Assert.True(response.EntityExists);
+                Assert.Equal(100000, response.EntityState.Length);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates an entity scenario involving a blob-backed entity that stores text and,
+        /// when deactivated, saves its state to storage. The test concurrently runs an orchestration that
+        /// creates a load of "append" operations, and sends periodic "deactivate" operations to the entity.
+        /// At the end, it validates that all of the appends are reflected in the final state.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityToAndFromBlob(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityToAndFromBlob),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                await EnsureBlobContainerExists("test");
+
+                var entityId = new EntityId("BlobBackedTextStore", Guid.NewGuid().ToString());
+
+                // first, start the orchestration
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.EntityToAndFromBlob),
+                    entityId,
+                    this.output);
+
+                DurableOrchestrationStatus status;
+                var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 240);
+
+                while (true)
+                {
+                    await Task.Delay(5000);
+
+                    // while the orchestration is running, just for fun,
+                    // send some deactivation signals which unload the entity from memory.
+                    // this should not change the final outcome as the entities are storage-backed.
+                    await client.InnerClient.SignalEntityAsync(entityId, "deactivate");
+
+                    status = await client.GetStatusAsync();
+
+                    if (DateTime.UtcNow >= deadline ||
+                        ((status?.RuntimeStatus != OrchestrationRuntimeStatus.Pending)
+                         && (status?.RuntimeStatus != OrchestrationRuntimeStatus.Running)))
+                    {
+                        break;
+                    }
+                }
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", (string)status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Send a bunch of signals from a client to a single entity, then test that they are all being delivered.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, false, 1)]
+        [InlineData(true, false, 2)]
+        [InlineData(true, false, 20)]
+        [InlineData(true, false, 200)]
+        [InlineData(false, false, 1)]
+        [InlineData(false, false, 2)]
+        [InlineData(false, false, 20)]
+        [InlineData(false, false, 200)]
+        [InlineData(true, true, 1)]
+        [InlineData(true, true, 2)]
+        [InlineData(true, true, 20)]
+        [InlineData(true, true, 200)]
+        [InlineData(false, true, 1)]
+        [InlineData(false, true, 2)]
+        [InlineData(false, true, 20)]
+        [InlineData(false, true, 200)]
+        public async Task DurableEntity_ManyScheduledSignals(bool extendedSessions, bool delay, int numSignals)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_ManyScheduledSignals),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                var now = DateTime.UtcNow;
+
+                for (int i = 0; i < numSignals; i++)
+                {
+                    if (delay)
+                    {
+                        await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(i * (10.0 / numSignals)), i.ToString(), null);
+                    }
+                    else
+                    {
+                        await client.SignalEntity(this.output, i.ToString(), null);
+                    }
+                }
+
+                string DescribeWhatsMissing(List<string> curstate)
+                {
+                    var expected = new HashSet<string>();
+                    for (int i = 0; i < numSignals; i++)
+                    {
+                        expected.Add(i.ToString());
+                    }
+
+                    foreach (var s in curstate)
+                    {
+                        expected.Remove(s);
+                    }
+
+                    if (expected.Count == 0)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return string.Join(",", expected);
+                    }
+                }
+
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, DescribeWhatsMissing);
+
+                this.output.WriteLine(string.Join(", ", state));
+
+                // The scheduled signals are not guaranteed to be delivered in order, so we sort before comparing
+                var intlist = state.Select(s => int.Parse(s)).ToList();
+                intlist.Sort();
+
+                for (int i = 0; i < numSignals; i++)
+                {
+                    Assert.Equal(i, intlist[i]);
+                }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates calling an entity from successive incarnations of an orchestration.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_ContinueAsNewBetweenCalls(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_ContinueAsNewBetweenCalls),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+
+                var orchestratorClient = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.ThreeSuccessiveCalls),
+                    (entityId, 0),
+                    this.output);
+
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 3 ? null : "expect 3 calls");
+
+                var status = await orchestratorClient.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                Assert.Equal("ok", (string)status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Send a scheduled signal, then an immediate signal, and test delivery order.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_ScheduledSignal(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_ScheduledSignal),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                // Wait 8 seconds to account for time to grab ownership lease.
+                await Task.Delay(8000);
+
+                var now = DateTime.UtcNow;
+
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(4), "delayed", null);
+                await client.SignalEntity(this.output, "immediate", null);
+
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 2 ? null : "expect both messages");
+
+                Assert.Equal("immediate, delayed", string.Join(", ", state));
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test an entity that signals itself with a delay.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_SelfSchedulingEntity(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_SelfSchedulingEntity),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntityClasses.SelfSchedulingEntity), Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+                await client.SignalEntity(this.output, "Start", null);
+
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(15);
+                var state = await client.WaitForEntityState<TestEntityClasses.SelfSchedulingEntity>(this.output, timeout, curstate => curstate.Value.Length == 4 ? null : "expect 4 letters");
+
+                Assert.Equal("ABCD", state.Value);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates an entity scenario where three "LockedIncrement" orchestrations
+        /// concurrently increment a counter saved in blob storage, using a read-modify-write pattern, while holding
+        /// a lock on the same entity. This tests that the lock prevents the interleaving of these orchestrations.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_LockedIncrements(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LockedBlobIncrement),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_LockedIncrements),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                await EnsureBlobContainerExists("test");
+
+                var entityPlayingALock = new EntityId("Counter", Guid.NewGuid().ToString()); // does not matter what entity we use
+
+                // start three concurrent increment operations
+                // the lock should prevent incorrect interleavings
+
+                var client1 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+                var client2 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+                var client3 = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityPlayingALock, this.output);
+
+                var status1 = await client1.WaitForCompletionAsync(this.output);
+                var status2 = await client2.WaitForCompletionAsync(this.output);
+                var status3 = await client3.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status1?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status2?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status3?.RuntimeStatus);
+
+                var result = new int[] { (int)status1?.Output, (int)status2?.Output, (int)status3?.Output };
+                Array.Sort(result);
+
+                for (int i = 0; i < result.Length; i++)
+                {
+                    Assert.True(result[i] == i + 1);
+                }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates an entity scenario where a "LockedTransfer" orchestration locks
+        /// two "Counter" entities, and then in parallel increments/decrements them, respectively, using
+        /// a read-modify-write pattern.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_SingleLockedTransfer(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_SingleLockedTransfer),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter1 = new EntityId("Counter", Guid.NewGuid().ToString());
+                var counter2 = new EntityId("Counter", Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.LockedTransfer),
+                    (counter1, counter2),
+                    this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                // validate the state of the counters
+                var response1 = await client.InnerClient.ReadEntityStateAsync<int>(counter1);
+                var response2 = await client.InnerClient.ReadEntityStateAsync<int>(counter2);
+                Assert.True(response1.EntityExists);
+                Assert.True(response2.EntityExists);
+                Assert.Equal(-1, response1.EntityState);
+                Assert.Equal(1, response2.EntityState);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates an entity scenario where a a number of "LockedTransfer" orchestrations
+        /// concurrently operate on a number of entities, in a classical dining-philosophers configuration.
+        /// This showcases the deadlock prevention mechanism achieved by the sequential, ordered lock acquisition.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, 5)]
+        [InlineData(false, 5)]
+        public async Task DurableEntity_MultipleLockedTransfers(bool extendedSessions, int numberEntities)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LockedTransfer),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_MultipleLockedTransfers),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                // create specified number of entities
+                var counters = new EntityId[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
+                {
+                    counters[i] = new EntityId("Counter", Guid.NewGuid().ToString());
+                }
+
+                // in parallel, start one transfer per counter, each decrementing a counter and incrementing
+                // its successor (where the last one wraps around to the first)
+                // This is a pattern that would deadlock if we didn't order the lock acquisition.
+                var clients = new Task<TestDurableClient>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
+                {
+                    clients[i] = host.StartOrchestratorAsync(
+                        orchestratorFunctionNames[0],
+                        (counters[i], counters[(i + 1) % numberEntities]),
+                        this.output);
+                }
+
+                await Task.WhenAll(clients);
+
+                // in parallel, wait for all transfers to complete
+                var stati = new Task<DurableOrchestrationStatus>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
+                {
+                    stati[i] = clients[i].Result.WaitForCompletionAsync(this.output);
+                }
+
+                await Task.WhenAll(stati);
+
+                // check that they all completed
+                for (int i = 0; i < numberEntities; i++)
+                {
+                    Assert.Equal(OrchestrationRuntimeStatus.Completed, stati[i].Result?.RuntimeStatus);
+                }
+
+                // in parallel, read all the entity states
+                var entityStates = new Task<EntityStateResponse<int>>[numberEntities];
+                for (int i = 0; i < numberEntities; i++)
+                {
+                    entityStates[i] = clients[i].Result.InnerClient.ReadEntityStateAsync<int>(counters[i]);
+                }
+
+                await Task.WhenAll(entityStates);
+
+                // check that the counter states are all back to 0
+                // (since each participated in 2 transfers, one incrementing and one decrementing)
+                for (int i = 0; i < numberEntities; i++)
+                {
+                    Assert.True(entityStates[i].Result.EntityExists);
+                    Assert.Equal(0, entityStates[i].Result.EntityState);
+                }
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that actors can safely make async I/O calls.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableEntity_AsyncIO()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_AsyncIO),
+                enableExtendedSessions: false))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId("HttpEntity", Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
+                await client.SignalEntity(this.output, "get", "https://bing.com");
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
+                Assert.NotNull(state);
+
+                if (state.TryGetValue("error", out string error))
+                {
+                    throw new XunitException("Entity encountered an error: " + error);
+                }
+
+                Assert.True(state.ContainsKey("https://www.microsoft.com"));
+                Assert.Equal("200", state["https://www.microsoft.com"]);
+
+                Assert.True(state.ContainsKey("https://bing.com"));
+                Assert.Equal("200", state["https://bing.com"]);
+
+                Assert.Equal(2, state.Count);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test for EntityId case insensitivity.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityNameCaseInsensitivity(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.LargeEntity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityNameCaseInsensitivity),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityKey = Guid.NewGuid().ToString();
+                var entityName = "StringStore2";
+
+                var entityId = new EntityId(entityName.ToUpperInvariant(), entityKey);
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                IDurableEntityClient durableOrchestrationClient = client.InnerClient;
+
+                var response = await durableOrchestrationClient.ReadEntityStateAsync<JToken>(new EntityId(entityName.ToLowerInvariant(), entityKey));
+
+                Assert.True(response.EntityExists);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_FirstRetryIntervalLimitHit_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleActivityRetrySuccceds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                "AzureStorageFirstRetryIntervalException", // Need custom name so don't exceed 50 chars
+                false))
+            {
+                await host.StartAsync();
+
+                var firstRetryInterval = TimeSpan.FromDays(7);
+                var maxRetryInterval = TimeSpan.FromDays(1);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, (firstRetryInterval, maxRetryInterval), this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+
+                string output = status.Output.ToString();
+                Assert.Contains("FirstRetryInterval", output);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_MaxRetryIntervalLimitHit_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleActivityRetrySuccceds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                "AzureStorageMaxRetryIntervalException", // Need custom name so don't exceed 50 chars
+                false))
+            {
+                await host.StartAsync();
+
+                var firstRetryInterval = TimeSpan.FromDays(1);
+                var maxRetryInterval = TimeSpan.FromDays(7);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, (firstRetryInterval, maxRetryInterval), this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+
+                string output = status.Output.ToString();
+                Assert.Contains("MaxRetryInterval", output);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_EventTimeoutLimitHit_ThrowsException()
+        {
+            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleEventWithTimeoutSucceeds);
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.AzureStorage_EventTimeoutLimitHit_ThrowsException),
+                false))
+            {
+                await host.StartAsync();
+
+                var timeout = TimeSpan.FromDays(7);
+
+                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, timeout, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+
+                string output = status.Output.ToString();
+                Assert.Contains("timeout", output);
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// TODO: This test is flakey in Functions V1.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_BasicObjects(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.BasicObjects),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_BasicObjects),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var chatroom = new EntityId(nameof(TestEntityClasses.ChatRoom), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], chatroom, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("a,b,c", status?.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityProxy(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.CounterWithProxy), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_MultipleInterfaces(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy_MultipleInterfaces),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy_MultipleInterfaces),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.JobWithProxyMultiInterface), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_UsesBindings(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy),
+            };
+
+            string storageConnectionString = TestHelpers.GetStorageConnectionString();
+            CloudStorageAccount.TryParse(storageConnectionString, out CloudStorageAccount storageAccount);
+
+            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityClasses.BlobContainerPath);
+            await cloudBlobContainer.CreateIfNotExistsAsync();
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var counter = new EntityId(nameof(TestEntityClasses.StorageBackedCounter), Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates basic use of the object dispatch feature.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_EntityProxy_NameResolve(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityProxy_NameResolve),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_EntityProxy_NameResolve),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var entityKey = Guid.NewGuid().ToString();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityKey, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(true, status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that orchestrations can call a timer after doing a continue as new.
+        /// This is meant to catch regressions of azure/durabletask/#285.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ContinueAsNew_Repro285()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ContinueAsNew_Repro285),
+                enableExtendedSessions: true))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ContinueAsNew_Repro285), 0, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Test which validates that orchestrations can call a timer and then cancel it if receiving an event instead.
+        /// This is meant to catch regressions of azure/durabletask/#285.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true, 20)]
+        [InlineData(false, 20)]
+        public async Task ContinueAsNewMultipleTimersAndEvents(bool extendedSessions, int numSignals)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ContinueAsNewMultipleTimersAndEvents),
+                enableExtendedSessions: extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ContinueAsNewMultipleTimersAndEvents), numSignals, this.output);
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                for (int i = numSignals; i > 0; i--)
+                {
+                    await client.RaiseEventAsync($"signal{i}", this.output);
+                }
+
+                var status = await client.WaitForCompletionAsync(this.output, false, false, TimeSpan.FromSeconds(80));
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.FlakeyTestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ExternalEvents_WithTaskHubName_MultipleNamesLooping(bool extendedSessions, string storageProvider)
+        {
+            var taskHubName1 = "MultipleNamesLooping1";
+            var taskHubName2 = "MultipleNamesLooping2";
+            using (ITestHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions, storageProviderType: storageProvider))
+            using (ITestHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions, storageProviderType: storageProvider))
+            {
+                await host1.StartAsync();
+                await host2.StartAsync();
+                var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.Counter2), null, this.output);
+                var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
+                taskHubName1 = client1.TaskHubName;
+                taskHubName2 = client2.TaskHubName;
+                var instanceId = client1.InstanceId;
+
+                // Perform some operations
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null, this.output);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "incr", null, this.output);
+                await client2.RaiseEventAsync(taskHubName1, instanceId, "done", null, this.output);
+
+                // Make sure it actually completed
+                var status = await client1.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(2, (int)status.Output);
+
+                await host1.StopAsync();
+                await host2.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task Purge_Single_Instance_History(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.Purge_Single_Instance_History),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                string instanceId = Guid.NewGuid().ToString();
+                string message = GenerateMediumRandomStringPayload().ToString();
+                TestDurableClient client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, instanceId);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                DurableOrchestrationStatus orchestrationStatus = await client.GetStatusAsync(true);
+                Assert.NotNull(orchestrationStatus);
+                Assert.Equal(instanceId, orchestrationStatus.InstanceId);
+                Assert.True(orchestrationStatus.History.Count > 0);
+
+                int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.True(blobCount > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(instanceId);
+
+                orchestrationStatus = await client.GetStatusAsync(true);
+                Assert.Null(orchestrationStatus);
+
+                blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
+                Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task Purge_All_History_By_TimePeriod(bool extendedSessions, string storageProvider)
+        {
+            string testName = nameof(this.Purge_All_History_By_TimePeriod);
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                testName,
+                extendedSessions,
+                storageProviderType: storageProvider,
+                autoFetchLargeMessages: false))
+            {
+                await host.StartAsync();
+
+                DateTime startDateTime = DateTime.Now;
+
+                string firstInstanceId = Guid.NewGuid().ToString();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string secondInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string thirdInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string fourthInstanceId = Guid.NewGuid().ToString();
+                string message = GenerateMediumRandomStringPayload().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EchoWithActivity), message, this.output, fourthInstanceId);
+                await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
+
+                status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.True(status.History.Count > 0);
+                await ValidateBlobUrlAsync(client.TaskHubName, client.InstanceId, (string)status.Output);
+
+                int blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                Assert.True(blobCount > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(
+                    startDateTime,
+                    DateTime.UtcNow,
+                    new List<OrchestrationStatus>
+                    {
+                        OrchestrationStatus.Completed,
+                        OrchestrationStatus.Terminated,
+                        OrchestrationStatus.Failed,
+                    });
+
+                status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(fourthInstanceId, true);
+                Assert.Null(status);
+
+                blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", fourthInstanceId);
+                Assert.Equal(0, blobCount);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task Purge_Partially_History_By_TimePeriod(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.Purge_Partially_History_By_TimePeriod),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                DateTime startDateTime = DateTime.Now;
+
+                string firstInstanceId = Guid.NewGuid().ToString();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, firstInstanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                var status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                DateTime endDateTime = DateTime.Now;
+                await Task.Delay(5000);
+
+                string secondInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                string thirdInstanceId = Guid.NewGuid().ToString();
+                client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, thirdInstanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("Done", status.Output.Value<string>());
+                Assert.True(status.History.Count > 0);
+
+                await client.InnerClient.PurgeInstanceHistoryAsync(
+                    startDateTime,
+                    endDateTime,
+                    new List<OrchestrationStatus>
+                    {
+                        OrchestrationStatus.Completed,
+                        OrchestrationStatus.Terminated,
+                        OrchestrationStatus.Failed,
+                    });
+
+                status = await client.InnerClient.GetStatusAsync(firstInstanceId, true);
+                Assert.Null(status);
+
+                status = await client.InnerClient.GetStatusAsync(secondInstanceId, true);
+                Assert.NotNull(status);
+                Assert.Equal(secondInstanceId, status.InstanceId);
+                Assert.True(status.History.Count > 0);
+
+                status = await client.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                Assert.NotNull(status);
+                Assert.Equal(thirdInstanceId, status.InstanceId);
+                Assert.True(status.History.Count > 0);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory(Skip = "Azure Storage fails due to container deletion")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
+        {
+            var taskHubName1 = "GetStatus1";
+            var taskHubName2 = "GetStatus2";
+            await TestHelpers.DeleteTaskHubResources(taskHubName1, extendedSessions);
+            await TestHelpers.DeleteTaskHubResources(taskHubName2, extendedSessions);
+            using (ITestHost host1 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName1, extendedSessions, storageProviderType: storageProvider))
+            using (ITestHost host2 = TestHelpers.GetJobHost(this.loggerProvider, taskHubName2, extendedSessions, storageProviderType: storageProvider))
+            {
+                await host1.StartAsync();
+                await host2.StartAsync();
+                var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "bar", this.output);
+                var client3 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "baz", this.output);
+
+                taskHubName1 = client1.TaskHubName;
+                taskHubName2 = client2.TaskHubName;
+                var instanceId = client1.InstanceId;
+
+                var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+                var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+                var condition1 = new OrchestrationStatusQueryCondition
+                {
+                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
+                    CreatedTimeFrom = yesterday,
+                    CreatedTimeTo = tomorrow,
+                    TaskHubNames = new List<string>() { taskHubName1 },
+                };
+                var condition2 = new OrchestrationStatusQueryCondition
+                {
+                    RuntimeStatus = new List<OrchestrationRuntimeStatus>()
+                        { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Completed },
+                    CreatedTimeFrom = yesterday,
+                    CreatedTimeTo = tomorrow,
+                    TaskHubNames = new List<string>() { taskHubName2 },
+                };
+
+                // Make sure it actually completed
+                await client1.WaitForCompletionAsync(this.output);
+                await client2.WaitForCompletionAsync(this.output);
+                await client3.WaitForCompletionAsync(this.output);
+
+                // Perform some operations
+                var result1 = await client1.GetStatusAsync(condition1, CancellationToken.None);
+                var result2 = await client2.GetStatusAsync(condition2, CancellationToken.None);
+
+                Assert.Single(result1.DurableOrchestrationState);
+                Assert.Equal(2, result2.DurableOrchestrationState.Count());
+
+                await host1.StopAsync();
+                await host2.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntitiesAsync_FetchState(bool fetchState, string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery
+            {
+                EntityName = "StringStore",
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+                FetchState = fetchState,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore", "bar"),
+                new EntityId("StringStore", "baz"),
+                new EntityId("StringStore2", "foo"),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_FetchState), storageProvider, query, entityIds);
+
+            Assert.Equal(3, result.Entities.Count());
+
+            if (fetchState)
+            {
+                Assert.NotNull(result.Entities.First().State);
+            }
+            else
+            {
+                Assert.Null(result.Entities.First().State);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntitiesAsync_Paging(string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery
+            {
+                EntityName = "StringStore",
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+                PageSize = 2,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore", "bar"),
+                new EntityId("StringStore", "baz"),
+                new EntityId("StringStore2", "foo"),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_Paging), storageProvider, query, entityIds);
+
+            Assert.Equal(2, result.Entities.Count());
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntitiesAsync_NoResults(bool fetchState, string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery
+            {
+                EntityName = "noResult",
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+                FetchState = fetchState,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore2", "bar"),
+                new EntityId("StringStore2", "baz"),
+                new EntityId("StringStore2", "foo"),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query, entityIds);
+
+            Assert.Empty(result.Entities);
+        }
+
+        private async Task<EntityQueryResult> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query, IList<EntityId> entitiyIds)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                taskHub,
+                true,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                TestDurableClient client = null;
+
+                foreach (EntityId id in entitiyIds)
+                {
+                    client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id, this.output);
+
+                    await client.WaitForCompletionAsync(this.output);
+                }
+
+                var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+
+                await host.StopAsync();
+
+                return result;
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_CleanEntityStorage(string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CleanEntityStorage),
+                enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
+                entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                // construct unique names for this test
+                string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                var emptyEntityId = new EntityId("Counter", $"{prefix}-empty");
+                var orphanedEntityId = new EntityId(nameof(TestEntityClasses.CounterWithProxy), $"{prefix}-orphaned");
+                var orchestrationA = $"{prefix}-A";
+                var orchestrationB = $"{prefix}-B";
+
+                // create an empty entity
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), new EntityId[] { emptyEntityId }, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                // check that the empty entity record is still there in storage
+                var query = new EntityQuery
+                {
+                    EntityName = emptyEntityId.EntityName,
+                };
+                var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                Assert.Contains(result.Entities, s => s.EntityId.Equals(emptyEntityId));
+
+                // run an orchestration A that leaves an orphaned lock
+                TestDurableClient clientA = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, true), this.output, orchestrationA);
+                status = await clientA.WaitForCompletionAsync(this.output);
+
+                // run an orchestration B that queues behind A for the lock (and thus gets stuck)
+                TestDurableClient clientB = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, false), this.output, orchestrationB);
+
+                // remove empty entity and release orphaned lock
+                var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(1, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
+
+                // wait for orchestration B to complete, now that the lock has been released
+                status = await clientB.WaitForCompletionAsync(this.output);
+                Assert.True(status.RuntimeStatus == OrchestrationRuntimeStatus.Completed);
+
+                // check that the empty entity record has been removed from storage
+                result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                Assert.DoesNotContain(result.Entities, s => s.EntityId.Equals(emptyEntityId));
+
+                // clean again to remove the orphaned entity which is now empty also
+                response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_CleanEntityStorage_Many(string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CleanEntityStorage_Many),
+                enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
+                entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                int numReps = 120; // is above the default page size for queries
+
+                // construct unique names for this test
+                string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                EntityId[] entityIds = new EntityId[numReps];
+                for (int i = 0; i < entityIds.Length; i++)
+                {
+                    entityIds[i] = new EntityId("Counter", $"{prefix}-{i:D3}");
+                }
+
+                // create the empty entities
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                if (storageProvider == TestHelpers.AzureStorageProviderType)
+                {
+                    // account for delay in updating instance tables
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+                }
+
+                // remove all empty entities
+                var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(numReps, response.NumberOfEmptyEntitiesRemoved);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MaxOrchestrationAction_MaxReached_OrchestrationFails()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.AllOrchestratorActivityActions),
+            };
+
+            DurableTaskOptions options = new DurableTaskOptions();
+            var maxActions = 7;
+            options.MaxOrchestrationActions = maxActions;
+            options.LocalRpcEndpointEnabled = false;
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                options))
+            {
+                await host.StartAsync();
+
+                var counterEntityId = new EntityId("Counter", Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counterEntityId, this.output);
+                DurableOrchestrationStatus status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.NotNull(status);
+                Assert.Equal("AllAPICallsUsed", status.CustomStatus);
+                Assert.Equal(
+                    $"Orchestrator function 'AllOrchestratorActivityActions' failed: Maximum amount of orchestration actions ({maxActions}) has been reached. " +
+                    $"This value can be configured in host.json file as MaxOrchestrationActions.",
+                    status.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task Dedupe_Default_NotRunning_ThrowsException(bool extendedSessions, string storageProvider)
+        {
+           var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
+
+           using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.Dedupe_Default_NotRunning_ThrowsException),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                int initialValue = 0;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
 
                 string secondInstanceId = Guid.NewGuid().ToString();
                 client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output, secondInstanceId);
