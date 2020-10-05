@@ -397,7 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameResolver: nameResolver,
-                testName: "RemovesNewlinesFromExceptions",
+                testName: "OutputsValidJSONLogs",
                 enableExtendedSessions: false,
                 storageProviderType: "azure_storage"))
             {
@@ -434,7 +434,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("Tid", keys);
 
                 // (3) Ensure some Enums are printed correctly.
-
             }
 
             // (4) That we have logs from a variety of EventSource providers.
