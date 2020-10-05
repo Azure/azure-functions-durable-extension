@@ -295,11 +295,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameResolver: nameResolver,
-                testName: "CanWriteToConsole",
+                testName: "CanWriteToFile",
                 enableExtendedSessions: false,
                 storageProviderType: "azure_storage"))
             {
-
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);

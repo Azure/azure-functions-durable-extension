@@ -54,7 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string tenant,
             string stampName)
         {
-
             // Initializing fixed logging metadata
             this.writeToConsole = writeToConsole;
             this.roleInstance = JToken.FromObject("App-" + containerName);
