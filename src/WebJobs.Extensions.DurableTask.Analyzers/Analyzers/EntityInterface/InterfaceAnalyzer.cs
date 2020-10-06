@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool IsInterface(SyntaxNode declaration)
         {
-            var interfaceKeyword = declaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.InterfaceKeyword)).FirstOrDefault();
+            var interfaceKeyword = declaration.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.InterfaceKeyword));
             return interfaceKeyword != null && !interfaceKeyword.IsKind(SyntaxKind.None);
         }
     }
