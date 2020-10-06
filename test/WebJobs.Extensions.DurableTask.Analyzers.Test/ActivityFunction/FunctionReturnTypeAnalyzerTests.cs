@@ -55,16 +55,16 @@ namespace VSSample
             // Testing different matching return types
             // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
 
-            //await context.CallActivityAsync<string>(""Test_String"", ""Tokyo"");
-            //await context.CallActivityAsync<Object>(""Test_Object"", ""Tokyo"");
-            //await context.CallActivityAsync<string[]>(""Test_Array"", new string[] { ""Minneapolis"" });
+            await context.CallActivityAsync<string>(""Test_String"", ""Tokyo"");
+            await context.CallActivityAsync<Object>(""Test_Object"", ""Tokyo"");
+            await context.CallActivityAsync<string[]>(""Test_Array"", new string[] { ""Minneapolis"" });
 
             // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
 
             Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
-            //await context.CallActivityAsync<Tuple<string, int>>(""Test_Tuple"", tuple);
-            //await context.CallActivityAsync<(string, int)>(""Test_ValueTuple"", (""Seattle"", 4));
-            //await context.CallActivityAsync<ValueTuple<string, int>>(""Test_ValueTuple"", (""Seattle"", 4));
+            await context.CallActivityAsync<Tuple<string, int>>(""Test_Tuple"", tuple);
+            await context.CallActivityAsync<(string, int)>(""Test_ValueTuple"", (""Seattle"", 4));
+            await context.CallActivityAsync<ValueTuple<string, int>>(""Test_ValueTuple"", (""Seattle"", 4));
             await context.CallActivityAsync<ValueTuple<string, int>>(""Test_ValueTuple_AltFormat"", (""Seattle"", 4));
                 
             // Testing JsonArray compatible types (IEnumerable Typles)
@@ -83,6 +83,10 @@ namespace VSSample
             // Task return types
             await context.CallActivityAsync<string>(""Test_TaskString"", ""London"");
             await context.CallActivityAsync<string[]>(""Test_TaskList"", ""London"");
+
+            // Nullable types tests
+            await context.CallActivityAsync<int?>(""Test_NullableInt"", null);
+            await context.CallActivityAsync<int?>(""Test_GenericNullableInt"", null);
             
             // Testing no diagnostic on no specified return type
             await context.CallActivityAsync(""Test_String"", ""London"");
@@ -170,6 +174,20 @@ namespace VSSample
         {
             string name = context.GetInput<string>();
             return new List<string>();
+        }
+        
+        // Nullable types tests
+
+        [FunctionName(""Test_NullableInt"")]
+        public static int? TestTaskList([ActivityTrigger] IDurableActivityContext context)
+        {
+            return 4;
+        }
+
+        [FunctionName(""Test_GenericNullableInt"")]
+        public static Nullable<int> TestTaskList([ActivityTrigger] IDurableActivityContext context)
+        {
+            return 4;
         }
     }
 }";

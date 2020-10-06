@@ -99,5 +99,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
         /// <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
         Task<EntityQueryResult> ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Removes empty entities from storage and releases orphaned locks.
+        /// </summary>
+        /// <remarks>An entity is considered empty, and is removed, if it has no state, is not locked, and has
+        /// been idle for more than <see cref="DurableTaskOptions.EntityMessageReorderWindowInMinutes"/> minutes.
+        /// Locks are considered orphaned, and are released, if the orchestration that holds them is not in state <see cref="OrchestrationRuntimeStatus.Running"/>. This
+        /// should not happen under normal circumstances, but can occur if the orchestration instance holding the lock
+        /// exhibits replay nondeterminism failures, or if it is explicitly purged.</remarks>
+        /// <param name="removeEmptyEntities">Whether to remove empty entities.</param>
+        /// <param name="releaseOrphanedLocks">Whether to release orphaned locks.</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the operation.</param>
+        /// <returns>A task that completes when the operation is finished.</returns>
+        Task<CleanEntityStorageResult> CleanEntityStorageAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken);
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,12 +17,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MismatchMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString InputNotUsedMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerMessageFormatNotUsed), Resources.ResourceManager, typeof(Resources));
+        private static readonly LocalizableString InvalidNullMessageFormat = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.ActivityArgumentAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = SupportedCategories.Activity;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         public static readonly DiagnosticDescriptor MismatchRule = new DiagnosticDescriptor(DiagnosticId, Title, MismatchMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
         public static readonly DiagnosticDescriptor InputNotUsedRule = new DiagnosticDescriptor(DiagnosticId, Title, InputNotUsedMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor InvalidNullRule = new DiagnosticDescriptor(DiagnosticId, Title, InvalidNullMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
         public static void ReportProblems(
             CompilationAnalysisContext context,
@@ -31,23 +34,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var invocation in functionInvocations)
             {
-                var definition = functionDefinitions.Where(x => x.FunctionName == invocation.FunctionName).FirstOrDefault();
+                var definition = functionDefinitions.FirstOrDefault(x => x.FunctionName == invocation.FunctionName);
                 if (definition != null)
                 {
-                    var isInvokedWithNonNullInput = TryGetInvocationInputType(semanticModel, invocation, out ITypeSymbol invocationInputType);
-                    var functionDefinitionUsesInput = TryGetDefinitionInputType(semanticModel, definition, out ITypeSymbol definitionInputType);
-
-                    if (isInvokedWithNonNullInput && invocationInputType != null)
+                    if (InvocationInputIsNull(invocation))
                     {
-                        if (!functionDefinitionUsesInput)
+                        if (DefinitionInputIsNonNullableValueType(definition))
                         {
-                            var diagnostic = Diagnostic.Create(InputNotUsedRule, invocation.ArgumentNode.GetLocation(), invocation.FunctionName);
+                            var diagnostic = Diagnostic.Create(InvalidNullRule, invocation.InputNode.GetLocation(), invocation.FunctionName, definition.InputType.ToString());
 
                             context.ReportDiagnostic(diagnostic);
                         }
-                        else if (!IsValidArgumentForDefinition(invocationInputType, definitionInputType))
+                    }
+                    else
+                    {
+                        if (DefinitionInputIsNotUsed(definition))
                         {
-                            var diagnostic = Diagnostic.Create(MismatchRule, invocation.ArgumentNode.GetLocation(), invocation.FunctionName, definitionInputType.ToString(), invocationInputType.ToString());
+                            var diagnostic = Diagnostic.Create(InputNotUsedRule, invocation.InputNode.GetLocation(), invocation.FunctionName);
+
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        else if (!IsValidArgumentForDefinition(invocation, definition))
+                        {
+                            var diagnostic = Diagnostic.Create(MismatchRule, invocation.InputNode.GetLocation(), invocation.FunctionName, definition.InputType, invocation.InputType);
 
                             context.ReportDiagnostic(diagnostic);
                         }
@@ -56,84 +65,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private static bool TryGetInvocationInputType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationInputType)
+        private static bool InvocationInputIsNull(ActivityFunctionCall invocation)
         {
-            var activityInput = activityInvocation.ArgumentNode;
-            if (activityInput == null)
-            {
-                invocationInputType = null;
-                return false;
-            }
-
-            return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, activityInput, out invocationInputType);
+            return invocation.InputNode != null && invocation.InputNode.IsKind(SyntaxKind.NullLiteralExpression);
         }
 
-        private static bool TryGetDefinitionInputType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionInputType)
+        private static bool DefinitionInputIsNonNullableValueType(ActivityFunctionDefinition definition)
         {
-            var definitionInput = functionDefinition.ParameterNode;
-            if (definitionInput == null)
-            {
-                definitionInputType = null;
-                return false;
-            }
-
-            if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, definitionInput, out definitionInputType))
-            {
-                if (SyntaxNodeUtils.IsDurableActivityContext(definitionInputType))
-                {
-                    return TryGetInputTypeFromContext(semanticModel, definitionInput, out definitionInputType);
-                }
-
-                return true;
-            }
-
-            definitionInputType = null;
-            return false;
+            var inputType = definition.InputType;
+            return inputType != null && inputType.IsValueType && !inputType.Name.Equals("Nullable");
         }
 
-        private static bool TryGetInputTypeFromContext(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol definitionInputType)
+        private static bool DefinitionInputIsNotUsed(ActivityFunctionDefinition definition)
         {
-            if (TryGetDurableActivityContextExpression(semanticModel, node, out SyntaxNode durableContextExpression))
-            {
-                if (SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)durableContextExpression, out SyntaxNode typeArgument))
-                {
-                    return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgument, out definitionInputType);
-                }
-            }
-
-            definitionInputType = null;
-            return false;
+            return definition.InputType == null;
         }
 
-        private static bool TryGetDurableActivityContextExpression(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode durableContextExpression)
+        private static bool IsValidArgumentForDefinition(ActivityFunctionCall invocation, ActivityFunctionDefinition definition)
         {
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
-            {
-                var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
-                foreach (var memberAccessExpression in memberAccessExpressionList)
-                {
-                    var identifierName = memberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
-                    if (identifierName != null)
-                    {
-                        if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol))
-                        {
-                            if (SyntaxNodeUtils.IsDurableActivityContext(typeSymbol))
-                            {
-                                durableContextExpression = memberAccessExpression;
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            durableContextExpression = null;
-            return false;
-        }
-
-        private static bool IsValidArgumentForDefinition(ITypeSymbol invocationInputType, ITypeSymbol definitionInputType)
-        {
-            return SyntaxNodeUtils.IsMatchingDerivedOrCompatibleType(invocationInputType, definitionInputType);
+            return SyntaxNodeUtils.IsMatchingDerivedOrCompatibleType(invocation.InputType, definition.InputType);
         }
     }
 }

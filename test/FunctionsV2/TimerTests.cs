@@ -69,5 +69,39 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 await host.StopAsync();
             }
         }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task EntitySignalWithLongDelay(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.LongRunningTimer),
+                extendedSessions,
+                storageProviderType: "azure_storage",
+                durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
+            {
+                await host.StartAsync();
+
+                var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
+                TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
+
+                var now = DateTime.UtcNow;
+                var fireAt = now.AddMinutes(2);
+
+                await client.SignalEntity(this.output, fireAt, "fire", null);
+
+                var timeout = TimeSpan.FromMinutes(3);
+                var state = await client.WaitForEntityState<System.Collections.Generic.List<string>>(
+                    this.output,
+                    timeout,
+                    curstate => curstate.Count == 1 ? null : "expect message");
+
+                Assert.Equal("fire", string.Join(", ", state));
+                await host.StopAsync();
+            }
+        }
     }
 }
