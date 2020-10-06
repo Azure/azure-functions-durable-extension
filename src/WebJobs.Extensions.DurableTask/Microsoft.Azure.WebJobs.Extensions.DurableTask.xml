@@ -38,21 +38,6 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
-            <summary>
-            The result of a clean entity storage operation.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult.NumberOfOrphanedLocksRemoved">
-            <summary>
-            The number of orphaned locks that were removed.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult.NumberOfEmptyEntitiesRemoved">
-            <summary>
-            The number of entities whose metadata was removed from storage.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext">
             <summary>
             The default parameter type for activity functions.
@@ -151,9 +136,6 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#ListEntitiesAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#CleanEntityStorageAsync(System.Boolean,System.Boolean,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#StartNewAsync(System.String,System.String)">
@@ -481,20 +463,6 @@
             <param name="query">Return entity instances that match the specified query conditions.</param>
             <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
             <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient.CleanEntityStorageAsync(System.Boolean,System.Boolean,System.Threading.CancellationToken)">
-            <summary>
-            Removes empty entities from storage and releases orphaned locks.
-            </summary>
-            <remarks>An entity is considered empty, and is removed, if it has no state, is not locked, and has
-            been idle for more than <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.EntityMessageReorderWindowInMinutes"/> minutes.
-            Locks are considered orphaned, and are released, if the orchestration that holds them is not in state <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Running"/>. This
-            should not happen under normal circumstances, but can occur if the orchestration instance holding the lock
-            exhibits replay nondeterminism failures, or if it is explicitly purged.</remarks>
-            <param name="removeEmptyEntities">Whether to remove empty entities.</param>
-            <param name="releaseOrphanedLocks">Whether to release orphaned locks.</param>
-            <param name="cancellationToken">Cancellation token that can be used to cancel the operation.</param>
-            <returns>A task that completes when the operation is finished.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext">
             <summary>
@@ -2002,12 +1970,6 @@
             </summary>
             <param name="context">Extension context provided by WebJobs.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.InitializeLinuxLogging">
-            <summary>
-            Initializes the logging service for App Service if it detects that we are running in
-            the linux platform.
-            </summary>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Dispose">
             <inheritdoc />
         </member>
@@ -2557,34 +2519,6 @@
             ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener">
-            <summary>
-            An EventSource Listener. It sets up a callback for internal EventSource events
-            that we use to capture their data and log it in Linux App Service plans.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger)">
-            <summary>
-            Create an EventSourceListener to capture and log Durable EventSource
-            data in Linux.
-            </summary>
-            <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.OnEventSourceCreated(System.Diagnostics.Tracing.EventSource)">
-            <summary>
-            Gets called for every EventSource in the process, this method allows us to determine
-            if the listener will subscribe to a particular EventSource provider.
-            We only listen to DurableTask and DurableTask-Extension EventSource providers.
-            </summary>
-            <param name="eventSource">An instance of EventSource.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs)">
-            <summary>
-            Gets called after every EventSource event. We capture that event's data and log it
-            using the appropiate strategy for the current linux host.
-            </summary>
-            <param name="eventData">The EventSource event data, for logging.</param>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionFailedException">
             <summary>
             The exception that is thrown when a sub-orchestrator or activity function fails
@@ -2910,37 +2844,6 @@
             </summary>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger">
-            <summary>
-            In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
-            In Consumption, we log to the console and identify our log by a prefix.
-            In Dedicated, we log asynchronously to a pre-defined logging path using Serilog.
-            This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
-            specific EventSource providers.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.#ctor(System.Boolean,System.String,System.String,System.String)">
-            <summary>
-            Create a LinuxAppServiceLogger instance.
-            </summary>
-            <param name="writeToConsole">If true, write to console (linux consumption) else to a file (dedicated).</param>
-            <param name="containerName">The app's container name.</param>
-            <param name="tenant">The app's tenant.</param>
-            <param name="stampName">The app's stamp.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateJsonStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
-            <summary>
-            Given EventSource message data, we generate a JSON-string that we can log.
-            </summary>
-            <param name="eventData">An EventSource message, usually generated by an EventListener.</param>
-            <returns>A JSON-formatted string representing the input.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.Log(System.Diagnostics.Tracing.EventWrittenEventArgs)">
-            <summary>
-            Log EventSource message data in Linux AppService.
-            </summary>
-            <param name="eventData">An EventSource message, usually generated by an EventListener.</param>
-        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.PartitionCount">
             <summary>
             The number of partitions in the task hub.
@@ -3111,14 +3014,14 @@
             </summary>
             <param name="resource">
             The Azure Active Directory resource identifier of the web API being invoked.
-            For example, <c>https://management.core.windows.net/.default</c> or <c>https://graph.microsoft.com/.default</c>.
+            For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
             </param>
             <param name="options">Optional Azure credential options to use when authenticating.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Resource">
             <summary>
             Gets the Azure Active Directory resource identifier of the web API being invoked.
-            For example, <c>https://management.core.windows.net/.default</c> or <c>https://graph.microsoft.com/.default</c>.
+            For example, <c>https://management.core.windows.net/</c> or <c>https://graph.microsoft.com/</c>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.ManagedIdentityTokenSource.Options">
@@ -3252,7 +3155,8 @@
             strategy that is more resilient to split brain problems, at the potential expense
             of scale out performance.
             </summary>
-            <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
+            <value>A boolean indicating whether we use the legacy partition strategy. Defaults to true
+            but this will change to false once the new partition management strategy is fully tested. </value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ValidateHubName(System.String)">
             <summary>

@@ -24,16 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly MessagePayloadDataConverter errorDataConverter;
 
-        private readonly DurabilityProvider durabilityProvider;
-
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        public DurableEntityContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, EntityId entity, TaskEntityShim shim)
+        public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
             this.messageDataConverter = config.MessageDataConverter;
             this.errorDataConverter = config.ErrorDataConverter;
-            this.durabilityProvider = durabilityProvider;
             this.self = entity;
             this.shim = shim;
         }
@@ -433,8 +430,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    DateTime adjustedDeliveryTime = requestMessage.GetAdjustedDeliveryTime(this.durabilityProvider);
-                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
                 }
                 else
                 {
@@ -565,22 +561,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.outbox.Clear();
-            }
-        }
-
-        internal void RescheduleMessages(OrchestrationContext innerContext, List<RequestMessage> messages)
-        {
-            if (messages != null)
-            {
-                foreach (var message in messages)
-                {
-                    var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
-                    DateTime adjustedDeliveryTime = message.GetAdjustedDeliveryTime(this.durabilityProvider);
-                    var eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
-                    innerContext.SendEvent(instance, eventName, message);
-                }
-
-                messages.Clear();
             }
         }
 

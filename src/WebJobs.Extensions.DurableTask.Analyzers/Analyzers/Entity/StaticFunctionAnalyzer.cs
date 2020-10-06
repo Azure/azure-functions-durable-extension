@@ -22,13 +22,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static void ReportProblems(CompilationAnalysisContext context, SyntaxNode methodDeclaration)
         {
-            var staticKeyword = methodDeclaration.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StaticKeyword));
+            var staticKeyword = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.StaticKeyword)).FirstOrDefault();
             if (staticKeyword == null || staticKeyword.IsKind(SyntaxKind.None))
             {
                 SemanticModel semanticModel = context.Compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
                 if (IsInEntityClass(semanticModel, methodDeclaration))
                 {
-                    var methodName = methodDeclaration.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.IdentifierToken));
+                    var methodName = methodDeclaration.ChildTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).FirstOrDefault();
 
                     if (methodName != null)
                     {

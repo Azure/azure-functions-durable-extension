@@ -35,8 +35,8 @@ Durable Functions supports a subset of languages supported by Azure Functions:
 |------------|------------------|-|
 | C#         | Generally available - [get started](https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-create-first-csharp) | [Azure/azure-functions-durable-extension](https://github.com/Azure/azure-functions-durable-extension) |
 | JavaScript | Generally available - [get started](https://docs.microsoft.com/azure/azure-functions/durable/quickstart-js-vscode) | [Azure/azure-functions-durable-js](https://github.com/Azure/azure-functions-durable-js) |
-| Python     | Public preview - [get started](https://docs.microsoft.com/azure/azure-functions/durable/quickstart-python-vscode) | [Azure/azure-functions-durable-python](https://github.com/Azure/azure-functions-durable-python) |
-| PowerShell | Public preview - [get started](https://docs.microsoft.com/en-us/azure/azure-functions/durable/quickstart-powershell-vscode) | [Azure/azure-functions-powershell-worker](https://github.com/Azure/azure-functions-powershell-worker) |
+| Python     | Public preview - [get started](https://docs.microsoft.com/azure/azure-functions/durable/quickstart-python-vscode) | |
+| PowerShell | Public preview - [get started](https://docs.microsoft.com/en-us/azure/azure-functions/durable/quickstart-powershell-vscode) | |
 | Java       | Under consideration - [give feedback](https://github.com/Azure/azure-functions-java-worker/issues/213) | |
 
 Each language has its own language-specific SDK and programming model. Regardless of which language you use, the extension in this repo must be installed to enable the Durable Functions triggers.
