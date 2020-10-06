@@ -133,6 +133,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return output;
         }
 
+        public static async Task LockThenFailReplay([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var input = context.GetInput<(EntityId entityId, bool createNondeterminismFailure)>();
+
+            await context.LockAsync(input.entityId);
+
+            if (!(input.createNondeterminismFailure && context.IsReplaying))
+            {
+                await context.CallActivityAsync<string>(nameof(TestActivities.Hello), "Tokyo");
+            }
+        }
+
+        public static async Task CreateEmptyEntities([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var entityIds = context.GetInput<EntityId[]>();
+            var tasks = new List<Task>();
+            for (int i = 0; i < entityIds.Length; i++)
+            {
+                tasks.Add(context.CallEntityAsync(entityIds[i], "delete"));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
         public static async Task<long> Factorial([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             int n = ctx.GetInput<int>();

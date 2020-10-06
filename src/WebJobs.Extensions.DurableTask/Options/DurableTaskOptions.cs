@@ -258,7 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             traceHelper.TraceConfiguration(this.HubName, configurationJson.ToString(Formatting.None));
         }
 
-        internal void Validate()
+        internal void Validate(INameResolver environmentVariableResolver, EndToEndTraceHelper traceHelper)
         {
             if (string.IsNullOrEmpty(this.HubName))
             {
@@ -269,6 +269,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
                     "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
+            }
+
+            string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+            if (this.ExtendedSessionsEnabled &&
+                runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
+                !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
+            {
+                traceHelper.ExtensionWarningEvent(
+                    hubName: this.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Durable Functions does not work with extendedSessions = true for non-.NET languages. This value is being set to false instead. See https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
+                this.ExtendedSessionsEnabled = false;
             }
 
             this.Notifications.Validate();
