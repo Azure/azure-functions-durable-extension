@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            invocationExpression = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.InvocationExpression));
+            invocationExpression = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
             return invocationExpression != null;
         }
 
@@ -193,7 +193,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
             
             nodes = argument.ChildNodes().Where(x => x.IsKind(kind));
-            if (nodes.Any())
+            
+            if (nodes.FirstOrDefault() != null)
             {
                 return true;
             }
@@ -213,10 +214,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 foreach (SyntaxNode argument in argumentEnumerable)
                 {
-                    var numericLiteralNodeEnumerable = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.NumericLiteralExpression));
-                    if (numericLiteralNodeEnumerable != null)
+                    var numericLiteralNodeEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.NumericLiteralExpression));
+                    if (numericLiteralNodeEnumerable.Any())
                     {
-                        milliseconds = numericLiteralNodeEnumerable.ToString();
+                        milliseconds = numericLiteralNodeEnumerable.First().ToString();
                         return true;
                     }
                 }
@@ -228,10 +229,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetArgumentEnumerable(SyntaxNode expression, out IEnumerable<SyntaxNode> arguments)
         {
-            var argumentListEnumerable = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
-            if (argumentListEnumerable != null)
+            var argumentListEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList));
+            if (argumentListEnumerable.Any())
             {
-                var argumentEnumerable = argumentListEnumerable.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument));
+                var argumentEnumerable = argumentListEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument));
                 if (argumentEnumerable.Any())
                 {
                     arguments = argumentEnumerable;

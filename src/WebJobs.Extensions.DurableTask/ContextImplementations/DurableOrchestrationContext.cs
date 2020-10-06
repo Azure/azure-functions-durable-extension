@@ -1123,8 +1123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    DateTime adjustedDeliveryTime = requestMessage.GetAdjustedDeliveryTime(this.durabilityProvider);
-                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
                 }
                 else
                 {

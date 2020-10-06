@@ -27,13 +27,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (node.IsKind(SyntaxKind.MethodDeclaration))
                 {
-                    var parameterList = node.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ParameterList));
-                    if (parameterList == null)
+                    var parameterList = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList));
+                    if (!parameterList.Any())
                     {
                         return;
                     }
-
-                    var parameters = parameterList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Parameter));
+                    var parameters = parameterList.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.Parameter));
                     if (parameters.Count() > 1)
                     {
                         var diagnostic = Diagnostic.Create(Rule, node.GetLocation(), node);
