@@ -351,9 +351,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// this test checks our JSON logs satisfy a minimal set of requirements:
         /// (1) Is JSON parseable
         /// (2) Contains minimal expected fields: EventId, TimeStamp, RoleInstance,
-        ///     Tenant, SourceMoniker, Pid, Tid.
+        ///     Tenant, SourceMoniker, Pid, Tid, etc.
         /// (3) Ensure some Enums are printed correctly.
         /// (4) That we have logs from a variety of EventSource providers.
+        /// (5) Ensure ActivityId and RelatedActivityId are eventually present.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -400,6 +401,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool foundEtwEventSourceLog = false;
             bool foundDurableTaskCoreLog = false;
 
+            bool foundActivityId = false;
+            bool foundRelatedActivityId = false;
+
             // Validating JSON outputs
             foreach (string line in lines)
             {
@@ -408,11 +412,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // (2) Contains minimal expected fields
                 List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                Assert.Contains("EventStampName", keys);
+                Assert.Contains("EventPrimaryStampName", keys);
+                Assert.Contains("ProviderName", keys);
+                Assert.Contains("TaskName", keys);
                 Assert.Contains("EventId", keys);
                 Assert.Contains("TimeStamp", keys);
                 Assert.Contains("RoleInstance", keys);
                 Assert.Contains("Tenant", keys);
-                Assert.Contains("SourceMoniker", keys);
                 Assert.Contains("Pid", keys);
                 Assert.Contains("Tid", keys);
 
@@ -431,6 +438,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     foundAzureStorageLog = true;
                 }
 
+                // recording if ActivityId and RelatedActivityId are seen
+                // we expect to see them, at some point, in a trivial orchestrator
+                if (keys.Contains("ActivityId"))
+                {
+                    foundActivityId = true;
+                }
+
+                if (keys.Contains("RelatedActivityId"))
+                {
+                    foundRelatedActivityId = true;
+                }
+
                 // (3) Ensure some Enums are printed correctly: as strings
                 string eventType = (string)json.GetValue("EventType");
                 if (!string.IsNullOrEmpty(eventType))
@@ -443,6 +462,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.True(foundAzureStorageLog);
             Assert.True(foundEtwEventSourceLog);
             Assert.True(foundDurableTaskCoreLog);
+
+            // (5) Ensure ActivityId and RelatedActivityId are present in logs
+            Assert.True(foundActivityId);
+            Assert.True(foundRelatedActivityId);
 
             // To ensure other tests generate the path
             File.Delete(LinuxAppServiceLogger.LoggingPath);
