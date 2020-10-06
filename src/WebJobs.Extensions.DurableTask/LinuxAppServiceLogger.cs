@@ -4,11 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Serilog;
 
@@ -57,12 +53,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Initializing fixed logging metadata
             this.writeToConsole = writeToConsole;
-            this.roleInstance = JToken.FromObject("App-" + containerName);
-            this.tenant = JToken.FromObject(tenant);
-            this.stamp = stampName;
 
-            var finalCharIndex = stampName.Length - 1;
-            this.primaryStamp = char.IsLetter(stampName[finalCharIndex]) ? stampName.Remove(finalCharIndex) : stampName;
+            // Since the values below are obtained via a NameResolver, they might be null.
+            // Attempting to serialize a null value results in exceptions, or even worse, wrong logs,
+            // so we need to be careful.
+            if (!string.IsNullOrEmpty(containerName))
+            {
+                this.roleInstance = JToken.FromObject("App-" + containerName);
+            }
+
+            if (!string.IsNullOrEmpty(tenant))
+            {
+                this.tenant = JToken.FromObject(tenant);
+            }
+
+            if (!string.IsNullOrEmpty(stampName))
+            {
+                this.stamp = stampName;
+                var finalCharIndex = stampName.Length - 1;
+                this.primaryStamp = char.IsLetter(stampName[finalCharIndex]) ? stampName.Remove(finalCharIndex) : stampName;
+            }
 
             using (var process = Process.GetCurrentProcess())
             {
@@ -100,17 +110,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // We pack them into a JSON
             JObject json = new JObject
             {
-                { "EventStampName", this.stamp },
-                { "EventPrimaryStampName", this.primaryStamp },
                 { "ProviderName", eventData.EventSource.Name },
                 { "TaskName", eventData.EventName },
                 { "EventId", eventData.EventId },
                 { "TimeStamp", DateTime.UtcNow },
-                { "RoleInstance", this.roleInstance },
-                { "Tenant", this.tenant },
                 { "Pid", this.procID },
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
             };
+
+            if (!string.IsNullOrEmpty(this.stamp) && !string.IsNullOrEmpty(this.primaryStamp))
+            {
+                json.Add("EventStampName", this.stamp);
+                json.Add("EventPrimaryStampName", this.primaryStamp);
+            }
+
+            if (!(this.roleInstance is null))
+            {
+                json.Add("RoleInstance", this.roleInstance);
+            }
+
+            if (!(this.tenant is null))
+            {
+                json.Add("Tenant", this.tenant);
+            }
 
             // Add payload elements
             for (int i = 0; i < values.Count; i++)
