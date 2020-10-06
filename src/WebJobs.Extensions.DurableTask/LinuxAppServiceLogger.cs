@@ -36,6 +36,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly JToken roleInstance;
         private readonly JToken tenant;
         private readonly JToken procID;
+        private readonly string stamp;
+        private readonly string primaryStamp;
 
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
@@ -57,6 +59,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.writeToConsole = writeToConsole;
             this.roleInstance = JToken.FromObject("App-" + containerName);
             this.tenant = JToken.FromObject(tenant);
+            this.stamp = stampName;
+
+            var finalCharIndex = stampName.Length - 1;
+            this.primaryStamp = char.IsLetter(stampName[finalCharIndex]) ? stampName.Remove(finalCharIndex) : stampName;
 
             using (var process = Process.GetCurrentProcess())
             {
@@ -94,6 +100,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // We pack them into a JSON
             JObject json = new JObject
             {
+                { "EventStampName", this.stamp },
+                { "EventPrimaryStampName", this.primaryStamp },
+                { "ProviderName", eventData.EventSource.Name },
+                { "TaskName", eventData.EventName },
                 { "EventId", eventData.EventId },
                 { "TimeStamp", DateTime.UtcNow },
                 { "RoleInstance", this.roleInstance },
@@ -102,9 +112,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
             };
 
+            // Add payload elements
             for (int i = 0; i < values.Count; i++)
             {
                 json.Add(keys[i], JToken.FromObject(values[i]));
+            }
+
+            // Add ActivityId and RelatedActivityId, if non-null
+            if (!eventData.ActivityId.Equals(Guid.Empty))
+            {
+                json.Add("ActivityId", eventData.ActivityId);
+            }
+
+            if (!eventData.RelatedActivityId.Equals(Guid.Empty))
+            {
+                json.Add("RelatedActivityId", eventData.RelatedActivityId);
             }
 
             // Generate string-representation of JSON. Also remove newlines.
