@@ -465,7 +465,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     foundActivityId = true;
                 }
 
-                if (keys.Contains("ActivityId"))
+                if (keys.Contains("RelatedActivityId"))
                 {
                     foundRelatedActivityId = true;
                 }
