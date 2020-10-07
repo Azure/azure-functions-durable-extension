@@ -29,9 +29,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
-        private readonly JToken roleInstance;
-        private readonly JToken tenant;
-        private readonly JToken procID;
+        private readonly string roleInstance;
+        private readonly string tenant;
+        private readonly int procID;
         private readonly string stamp;
         private readonly string primaryStamp;
 
@@ -59,12 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // so we need to be careful.
             if (!string.IsNullOrEmpty(containerName))
             {
-                this.roleInstance = JToken.FromObject("App-" + containerName);
+                this.roleInstance = "App-" + containerName;
             }
 
             if (!string.IsNullOrEmpty(tenant))
             {
-                this.tenant = JToken.FromObject(tenant);
+                this.tenant = tenant;
             }
 
             if (!string.IsNullOrEmpty(stampName))
