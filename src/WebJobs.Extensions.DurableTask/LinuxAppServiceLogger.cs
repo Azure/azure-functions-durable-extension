@@ -245,13 +245,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         try
                         {
                             val = (string)json[column];
-                            val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\n", "\\\"");
+                            val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\"", "'").Replace(",", ";;");
                         }
                         catch
                         {
                         }
                     }
-
 
                     if (column == "Details" || column == "ExceptionMessage")
                     {
