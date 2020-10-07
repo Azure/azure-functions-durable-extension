@@ -370,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
         /// this test checks our JSON logs satisfy a minimal set of requirements:
         /// (1) Is JSON parseable
-        /// (2) Contains minimal expected fields: EventId, TimeStamp, RoleInstance,
+        /// (2) Contains minimal expected fields: EventId, TimeStamp,
         ///     Tenant, SourceMoniker, Pid, Tid, etc.
         /// (3) Ensure some Enums are printed correctly.
         /// (4) That we have logs from a variety of EventSource providers.
@@ -438,7 +438,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("TaskName", keys);
                 Assert.Contains("EventId", keys);
                 Assert.Contains("TimeStamp", keys);
-                Assert.Contains("RoleInstance", keys);
                 Assert.Contains("Tenant", keys);
                 Assert.Contains("Pid", keys);
                 Assert.Contains("Tid", keys);
