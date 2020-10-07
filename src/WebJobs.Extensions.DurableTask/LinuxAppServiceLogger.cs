@@ -245,13 +245,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             // We escape a few special characters to avoid parsing problems:
                             // (1) Escaping newline-like characters such as \n and \r to keep logs being 1 line
-                            // (2) Escaping double-quotes (") to be single-quotes (') because some fields in our regex string a
+                            // (2) Escaping double-quotes (") to be single-quotes (') because some fields in our regex string are
                             //     deliniated by double-quotes. Note, this was a convention copied from the Functions Host regex
                             //     which also uses double-quotes to capture columns that may contain commas inside them.
-                            // (3) Escaping commas (",") for ";;" because commas separate our columns and so they are potentially
-                            //     breaking.
-                            // Note: In retrospective, perhaps the regex-string could have been designed adapted to avoid these awkward
-                            // parsing roblems, but it wasn't because (1) it followed conventions from other regex-strings in our system
+                            // (3) Escaping commas (",") for ";;" because commas separate our columns and so they have the potential to
+                            //     disrupt parsing.
+                            // Note: In retrospective, perhaps the regex-string could have been designed to avoid these awkward
+                            // parsing problems, but it wasn't because (1) it followed conventions from other regex-strings in our system
                             // and because we asssumed we'd have a JSON-based logger that would have avoided these problems.
                             val = (string)val;
                             val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\"", "'").Replace(",", ";;");
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // Since Details and Exceptions may include commas, our regex string
                         // expects this field to be wrapped in double-quotes to avoid capturing an "inner comma",
-                        // a convention adopted by the Functions Host parsing string.
+                        // a convention adopted by the Functions Host regex string.
                         val = '"' + val + '"';
                     }
 
