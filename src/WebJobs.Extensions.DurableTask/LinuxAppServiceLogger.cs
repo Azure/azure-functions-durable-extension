@@ -102,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // variable below is internal static for testing purposes
         // we need to be able to change the logging path for a windows-based CI
 #pragma warning disable SA1401 // Fields should be private
-        internal static string LoggingPath = "/var/log/functionsLogs/durableevents.log";
+        internal static string LoggingPath = "/var/LWASFiles/FunctionsLogs/durable/durableevents.log";
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -139,10 +139,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.roleInstance = "App-" + containerName;
             }
 
-            if (!string.IsNullOrEmpty(tenant))
-            {
-                this.tenant = tenant;
-            }
+            this.tenant = tenant;
+
 
             if (!string.IsNullOrEmpty(stampName))
             {
@@ -240,20 +238,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 foreach (string column in this.orderedRegexCol)
                 {
                     string val = "";
-                    if (jsonKeys.Contains(column))
+  
+                    if (json.TryGetValue(column, out JToken val))
                     {
                         try
                         {
-                            val = (string)json[column];
+                            // We escape a few special characters to avoid parsing problems:
+                            // (1) Escaping newline-like characters such as \n and \r to keep logs being 1 line
+                            // (2) Escaping double-quotes (") to be single-quotes (') because some fields in our regex string a
+                            //     deliniated by double-quotes. Note, this was a convention copied from the Functions Host regex
+                            //     which also uses double-quotes to capture columns that may contain commas inside them.
+                            // (3) Escaping commas (",") for ";;" because commas separate our columns and so they are potentially
+                            //     breaking.
+                            // Note: In retrospective, perhaps the regex-string could have been designed adapted to avoid these awkward
+                            // parsing roblems, but it wasn't because (1) it followed conventions from other regex-strings in our system
+                            // and because we asssumed we'd have a JSON-based logger that would have avoided these problems.
+                            val = (string)val;
                             val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\"", "'").Replace(",", ";;");
                         }
-                        catch
+                        catch // Catching an invalid cast exception. Mostly here as an over-precaution measure.
                         {
                         }
                     }
 
                     if (column == "Details" || column == "ExceptionMessage")
                     {
+                        // Since Details and Exceptions may include commas, our regex string
+                        // expects this field to be wrapped in double-quotes to avoid capturing an "inner comma",
+                        // a convention adopted by the Functions Host parsing string.
                         val = '"' + val + '"';
                     }
 
