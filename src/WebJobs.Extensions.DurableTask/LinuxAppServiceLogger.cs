@@ -2,8 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Linq;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -21,6 +23,81 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
         internal const int MaxArchives = 5;
+
+        // The ordered list of regex columns in our legacy logging strategy for linux dedicated.
+        private readonly string[] orderedRegexCol = new string[]
+        {
+            "Account",
+            "ActiveActivities",
+            "ActiveOrchestrators",
+            "Age",
+            "AppName",
+            "ContinuedAsNew",
+            "CreatedTimeFrom",
+            "CreatedTimeTo",
+            "DequeueCount",
+            "Details",
+            "Duration",
+            "ETag",
+            "Episode",
+            "EventCount",
+            "EventName",
+            "EventType",
+            "Exception",
+            "ExceptionMessage",
+            "ExecutionId",
+            "ExtensionVersion",
+            "FromWorkerName",
+            "FunctionName",
+            "FunctionState",
+            "FunctionType",
+            "Input",
+            "InstanceId",
+            "IsCheckpointComplete",
+            "IsExtendedSession",
+            "IsReplay",
+            "LastCheckpointTime",
+            "LatencyMs",
+            "MessageId",
+            "MessagesRead",
+            "MessagesSent",
+            "MessagesUpdated",
+            "NewEventCount",
+            "NewEvents",
+            "NextVisibleTime",
+            "OperationId",
+            "OperationName",
+            "Output*",
+            "PartitionId",
+            "PendingOrchestratorMessages",
+            "PendingOrchestrators",
+            "Reason",
+            "RelatedActivityId",
+            "RequestCount",
+            "RequestId",
+            "RequestingExecutionId",
+            "RequestingInstance",
+            "RequestingInstanceId",
+            "Result",
+            "RuntimeStatus",
+            "SequenceNumber",
+            "SizeInBytes",
+            "SlotName",
+            "StatusCode",
+            "StorageRequests",
+            "Success",
+            "TableEntitiesRead",
+            "TableEntitiesWritten",
+            "TargetExecutionId",
+            "TargetInstanceId",
+            "TaskEventId",
+            "TaskHub",
+            "Token",
+            "TotalEventCount",
+            "Version",
+            "VisibilityTimeoutSeconds",
+            "WorkerName",
+        };
 
         // variable below is internal static for testing purposes
         // we need to be able to change the logging path for a windows-based CI
@@ -91,6 +168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             outputTemplate: "{Message}{NewLine}",
                             fileSizeLimitBytes: tenMbInBytes,
                             rollOnFileSizeLimit: true,
+                            flushToDiskInterval: TimeSpan.FromSeconds(30),
                             retainedFileCountLimit: 10);
                     })
                     .CreateLogger();
@@ -151,9 +229,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 json.Add("RelatedActivityId", eventData.RelatedActivityId);
             }
 
-            // Generate string-representation of JSON. Also remove newlines.
-            string jsonString = json.ToString(Newtonsoft.Json.Formatting.None);
-            jsonString = jsonString.Replace("\n", "\\n").Replace("\r", "\\r");
+            string jsonString = "";
+            if (!this.writeToConsole)
+            {
+                // This path supports the legacy regex-based parser in Linux Dedicated.
+                // In the future, we'll be able to remove this and use JSON logging only
+                IList<string> jsonKeys = json.Properties().Select(p => p.Name).ToList();
+                List<string> regexValues = new List<string>();
+
+                foreach (string column in this.orderedRegexCol)
+                {
+                    string val = "";
+                    if (jsonKeys.Contains(column))
+                    {
+                        try
+                        {
+                            val = (string)json[column];
+                            val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\n", "\\\"");
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+
+                    if (column == "Details" || column == "ExceptionMessage")
+                    {
+                        val = '"' + val + '"';
+                    }
+
+                    regexValues.Add(val);
+                }
+
+                jsonString = string.Join(",", regexValues);
+            }
+            else
+            {
+                // Generate string-representation of JSON. Also remove newlines.
+                jsonString = json.ToString(Newtonsoft.Json.Formatting.None);
+                jsonString = jsonString.Replace("\n", "\\n").Replace("\r", "\\r");
+            }
+
             return jsonString;
         }
 
