@@ -274,7 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     if (line.StartsWith(prefix))
                     {
-                        jsonStr = line.Replace(prefix, "");
+                        jsonStr = line.Replace(prefix, line);
                         JObject.Parse(jsonStr);
 
                         JObject json = JObject.Parse(line);
