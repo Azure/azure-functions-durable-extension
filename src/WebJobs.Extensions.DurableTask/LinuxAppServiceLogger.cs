@@ -220,15 +220,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 json.Add(keys[i], JToken.FromObject(values[i]));
             }
 
+            // These are for ease of use in our linux-dedicated regex-compensation strategy
+            string activityId = "";
+            string relatedActivityId = "";
+
             // Add ActivityId and RelatedActivityId, if non-null
             if (!eventData.ActivityId.Equals(Guid.Empty))
             {
                 json.Add("ActivityId", eventData.ActivityId);
+                activityId = eventData.ActivityId.ToString();
             }
 
             if (!eventData.RelatedActivityId.Equals(Guid.Empty))
             {
                 json.Add("RelatedActivityId", eventData.RelatedActivityId);
+                relatedActivityId = eventData.RelatedActivityId.ToString();
             }
 
             string logString;
@@ -269,6 +275,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 logString = string.Join(",", regexValues);
+
+                // To compensate for the missing columns in our regex, we write extra columns to WorkerName while separated
+                // with a special delineator: ";;DURABLEFUNCTIONS;;"
+                string delineator = ";;DURABLEFUNCTIONS;;";
+                string[] extraCols =
+                {
+                    (string)json["TaskName"],
+                    (string)json["EventId"],
+                    (string)json["ProviderName"],
+                    (string)json["Pid"],
+                    (string)json["Tid"],
+                    activityId,
+                    relatedActivityId,
+                };
+                logString += string.Join(delineator, extraCols);
             }
             else
             {
