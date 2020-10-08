@@ -238,27 +238,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 foreach (string column in this.orderedRegexCol)
                 {
                     string val = "";
-  
-                    if (json.TryGetValue(column, out JToken val))
+                    if (json.TryGetValue(column, out JToken valJToken))
                     {
-                        try
-                        {
-                            // We escape a few special characters to avoid parsing problems:
-                            // (1) Escaping newline-like characters such as \n and \r to keep logs being 1 line
-                            // (2) Escaping double-quotes (") to be single-quotes (') because some fields in our regex string are
-                            //     deliniated by double-quotes. Note, this was a convention copied from the Functions Host regex
-                            //     which also uses double-quotes to capture columns that may contain commas inside them.
-                            // (3) Escaping commas (",") for ";;" because commas separate our columns and so they have the potential to
-                            //     disrupt parsing.
-                            // Note: In retrospective, perhaps the regex-string could have been designed to avoid these awkward
-                            // parsing problems, but it wasn't because (1) it followed conventions from other regex-strings in our system
-                            // and because we asssumed we'd have a JSON-based logger that would have avoided these problems.
-                            val = (string)val;
-                            val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\"", "'").Replace(",", ";;");
-                        }
-                        catch // Catching an invalid cast exception. Mostly here as an over-precaution measure.
-                        {
-                        }
+
+                        // We escape a few special characters to avoid parsing problems:
+                        // (1) Escaping newline-like characters such as \n and \r to keep logs being 1 line
+                        // (2) Escaping double-quotes (") to be single-quotes (') because some fields in our regex string are
+                        //     deliniated by double-quotes. Note, this was a convention copied from the Functions Host regex
+                        //     which also uses double-quotes to capture columns that may contain commas inside them.
+                        // (3) Escaping commas (",") for ";;" because commas separate our columns and so they have the potential to
+                        //     disrupt parsing.
+                        // Note: In retrospective, perhaps the regex-string could have been designed to avoid these awkward
+                        // parsing problems, but it wasn't because (1) it followed conventions from other regex-strings in our system
+                        // and because we asssumed we'd have a JSON-based logger that would have avoided these problems.
+                        val = (string)valJToken;
+                        val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\"", "'").Replace(",", ";;");
                     }
 
                     if (column == "Details" || column == "ExceptionMessage")
