@@ -6,16 +6,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
+using System.Xml;
+using log4net;
 using Newtonsoft.Json.Linq;
-using Serilog;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
     /// In Consumption, we log to the console and identify our log by a prefix.
-    /// In Dedicated, we log asynchronously to a pre-defined logging path using Serilog.
+    /// In Dedicated, we log asynchronously to a pre-defined logging path using Log4Net.
     /// This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
     /// specific EventSource providers.
     /// </summary>
@@ -114,6 +116,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
 
+        private readonly ILog log; // The Log4Net Logger
+
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
         /// </summary>
@@ -157,23 +161,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Initialize file logger, if in Linux Dedicated
             if (!writeToConsole)
             {
-                // We set the `retainedFileCountLimit` to 1
-                // because Serilog does not rename old logs to a new name, say durablelog_01.log.
-                // Instead, it writes to a new name (durablelog_01.log) and preserves the old file.
-                // This ensures we're constantly writing to the right file name.
-                var tenMbInBytes = 10000000;
-                Serilog.Log.Logger = new LoggerConfiguration()
-                    .WriteTo.Async(a =>
-                    {
-                        a.File(
-                            LinuxAppServiceLogger.LoggingPath,
-                            outputTemplate: "{Message}{NewLine}",
-                            fileSizeLimitBytes: tenMbInBytes,
-                            rollOnFileSizeLimit: true,
-                            flushToDiskInterval: TimeSpan.FromSeconds(30),
-                            retainedFileCountLimit: 1);
-                    })
-                    .CreateLogger();
+                // Since it's unreliable to load xml files at runtime in a library, we hardcode the config as a string
+                var xmlStr = "" +
+                    "<?xml version=\"1.0\" encoding=\"utf - 8\" ?>" +
+                    "<log4net> " +
+                    "<appender name=\"RollingFile\" type=\"log4net.Appender.RollingFileAppender\">" +
+                    "<file value=" + LoggingPath + "/>" +
+                    "<layout type=\"log4net.Layout.PatternLayout\">" +
+                    "<conversionPattern value=\"%message%newline\" />" +
+                    "</layout>" +
+                    "<appendToFile value=\"true\" />" +
+                    "<rollingStyle value=\"Size\" />" +
+                    "<maxSizeRollBackups value=\"1\" />" +
+                    "<maximumFileSize value=\"300MB\" />" +
+                    "<staticLogFileName value=\"true\" />" +
+                    "</appender>" +
+                    "<root>" +
+                    "<level value=\"ALL\" />" +
+                    "<appender-ref ref=\"RollingFile\" />" +
+                    "</root>" +
+                    "</log4net>";
+                var xml = new XmlDocument();
+                xml.LoadXml(xmlStr);
+
+                // Log4Net initialization boilerplate
+                var loggerRepository = log4net.LogManager.CreateRepository(Assembly.GetEntryAssembly(), typeof(log4net.Repository.Hierarchy.Hierarchy));
+                log4net.Config.XmlConfigurator.Configure(loggerRepository, xml["log4net"]);
+                this.log = log4net.LogManager.GetLogger(loggerRepository.Name, "linux");
             }
         }
 
@@ -324,9 +338,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // We write to a file in Linux Dedicated
-                // Serilog handles file rolling (archiving) and deletion of old logs
+                // Log4Net handles file rolling (archiving) and deletion of old logs
                 // Log-level should also be irrelevant as no minimal level has been configured
-                Serilog.Log.Information(jsonString);
+                this.log.Info(jsonString);
             }
         }
     }
