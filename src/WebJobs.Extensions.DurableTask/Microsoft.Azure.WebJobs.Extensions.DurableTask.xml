@@ -2928,7 +2928,7 @@
             <param name="tenant">The app's tenant.</param>
             <param name="stampName">The app's stamp.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateJsonStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateLogStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
             <summary>
             Given EventSource message data, we generate a JSON-string that we can log.
             </summary>
