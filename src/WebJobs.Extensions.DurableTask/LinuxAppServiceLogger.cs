@@ -274,8 +274,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Generate string-representation of JSON.
                 // Newtonsoft should take care of removing newlines for us.
-                logString = json.ToString();
-                logString = logString.Replace("\n", "\\n");
+                // It is also important to specify no formatting to avoid
+                // pretty printing.
+                logString = json.ToString(Newtonsoft.Json.Formatting.None);
             }
 
             return logString;
