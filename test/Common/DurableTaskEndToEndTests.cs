@@ -262,10 +262,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await host.StopAsync();
                 }
 
-                this.output.WriteLine(sw.ToString());
+                string consoleOutput = sw.ToString();
 
                 // Ensure the console included prefixed logs
-                Assert.Contains(prefix, sw.ToString());
+                Assert.Contains(prefix, consoleOutput);
+
+                // Validate that the JSON has some minimal expected fields
+                string[] lines = consoleOutput.Split('\n');
+                var jsonStr = "";
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith(prefix))
+                    {
+                        jsonStr = line.Replace(prefix, "");
+                        JObject.Parse(jsonStr);
+
+                        JObject json = JObject.Parse(line);
+
+                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                        Assert.Contains("EventStampName", keys);
+                        Assert.Contains("EventPrimaryStampName", keys);
+                        Assert.Contains("ProviderName", keys);
+                        Assert.Contains("TaskName", keys);
+                        Assert.Contains("EventId", keys);
+                        Assert.Contains("TimeStamp", keys);
+                        Assert.Contains("Tenant", keys);
+                        Assert.Contains("Pid", keys);
+                        Assert.Contains("Tid", keys);
+                    }
+                }
             }
         }
 
@@ -314,9 +339,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
-        /// this test checks our JSON logs have their newlines escaped, which otherwise
-        /// could cause problems in our logging pipeline. We do this by ensuring that
-        /// there are no more newlines than top-level JSON objects in our logs.
+        /// this test checks our logs have their newlines escaped, which otherwise
+        /// could cause problems in our logging pipeline.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -358,7 +382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
             int lineCount = lines.Length;
 
-            /*
+            /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
 
@@ -377,7 +401,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
-        /*
+        /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
+
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
         /// this test checks our JSON logs satisfy a minimal set of requirements:
@@ -504,16 +529,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
-        /// this test checks our JSON logs satisfy a minimal set of requirements:
-        /// (1) Is JSON parseable
-        /// (2) Contains minimal expected fields and does not contain deliberately
-        ///     missing fields.
-        /// (3) Ensure some Enums are printed correctly.
-        /// (4) That we have logs from a variety of EventSource providers.
-        /// (5) Ensure ActivityId and RelatedActivityId are eventually present.
-        /// This test is much like `OutputsValidJSONLogs` except that we remove some
-        /// optional variables from the simulated enviroment to ensure the logger
-        /// works correctly under such conditions too.
+        /// this test ensures the logger works correctly even when some enviroment
+        /// variables are not set.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -554,7 +571,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // which corresponds to the number of JSONs logged
             string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
-            /*
+            /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
+
             bool foundAzureStorageLog = false;
             bool foundEtwEventSourceLog = false;
             bool foundDurableTaskCoreLog = false;
@@ -627,7 +645,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.True(foundRelatedActivityId);
             */
 
-            // If every line can be parsed, we know newlines were removed
+            // If every line can be parsed, then we know the logs are sensible.
             foreach (string line in lines)
             {
                 System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
