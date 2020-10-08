@@ -196,6 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "TimeStamp", DateTime.UtcNow },
                 { "Pid", this.procID },
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
+                { "Level", (int)eventData.Level },
             };
 
             if (!string.IsNullOrEmpty(this.stamp) && !string.IsNullOrEmpty(this.primaryStamp))
@@ -284,12 +285,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     (string)json["TaskName"],
                     (string)json["EventId"],
                     (string)json["ProviderName"],
+                    (string)json["Level"],
                     (string)json["Pid"],
                     (string)json["Tid"],
                     activityId,
                     relatedActivityId,
                 };
-                logString += string.Join(delineator, extraCols);
+                logString += delineator + string.Join(delineator, extraCols);
             }
             else
             {
