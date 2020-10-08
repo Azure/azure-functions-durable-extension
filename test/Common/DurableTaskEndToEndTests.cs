@@ -274,10 +274,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     if (line.StartsWith(prefix))
                     {
-                        jsonStr = line.Replace(prefix, line);
-                        JObject.Parse(jsonStr);
+                        jsonStr = line.Replace(prefix, "");
 
-                        JObject json = JObject.Parse(line);
+                        JObject json = JObject.Parse(jsonStr);
 
                         List<string> keys = json.Properties().Select(p => p.Name).ToList();
                         Assert.Contains("EventStampName", keys);
