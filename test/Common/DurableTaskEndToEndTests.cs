@@ -275,7 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     if (line.StartsWith(prefix))
                     {
                         jsonStr = line.Replace(prefix, "");
-
+                        output.WriteLine(jsonStr);
                         JObject json = JObject.Parse(jsonStr);
 
                         List<string> keys = json.Properties().Select(p => p.Name).ToList();
