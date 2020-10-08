@@ -143,6 +143,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!string.IsNullOrEmpty(stampName))
             {
                 this.stamp = stampName;
+
+                // TODO: The logic below does not apply to ASEs. We'll need to revisit this in the near future.
                 var finalCharIndex = stampName.Length - 1;
                 this.primaryStamp = char.IsLetter(stampName[finalCharIndex]) ? stampName.Remove(finalCharIndex) : stampName;
             }
