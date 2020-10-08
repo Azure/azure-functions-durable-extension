@@ -166,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     "<?xml version=\"1.0\" encoding=\"utf - 8\" ?>" +
                     "<log4net> " +
                     "<appender name=\"RollingFile\" type=\"log4net.Appender.RollingFileAppender\">" +
-                    "<file value=" + LoggingPath + "/>" +
+                    "<file value=\"" + LoggingPath + "\" />" +
                     "<layout type=\"log4net.Layout.PatternLayout\">" +
                     "<conversionPattern value=\"%message%newline\" />" +
                     "</layout>" +

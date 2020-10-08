@@ -2914,7 +2914,7 @@
             <summary>
             In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
             In Consumption, we log to the console and identify our log by a prefix.
-            In Dedicated, we log asynchronously to a pre-defined logging path using Serilog.
+            In Dedicated, we log asynchronously to a pre-defined logging path using Log4Net.
             This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
             specific EventSource providers.
             </summary>
