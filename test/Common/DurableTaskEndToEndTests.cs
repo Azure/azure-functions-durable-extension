@@ -266,6 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Ensure the console included prefixed logs
                 Assert.Contains(prefix, consoleOutput);
+                this.output.WriteLine(consoleOutput);
 
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
