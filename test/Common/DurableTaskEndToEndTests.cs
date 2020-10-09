@@ -411,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // To ensure other tests generate the path
-            File.Delete(LinuxAppServiceLogger.LoggingPath);
+            // File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
         /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
