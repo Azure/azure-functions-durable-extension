@@ -335,6 +335,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
             // File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
         }
 
