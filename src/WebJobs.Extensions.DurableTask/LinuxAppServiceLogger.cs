@@ -305,6 +305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     activityId,
                     relatedActivityId,
                 };
+
                 logString += delineator + string.Join(delineator, extraCols);
             }
             else

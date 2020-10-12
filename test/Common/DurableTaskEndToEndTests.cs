@@ -306,7 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task WritesToFile()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile2.log");
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
@@ -335,7 +335,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
-            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
+
+            // File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
         }
 
         /// <summary>
@@ -348,7 +349,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task RemovesNewlinesFromExceptions()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile3.log");
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
@@ -380,8 +381,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
 
-            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
-            int lineCount = lines.Length;
+            // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
             /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
@@ -392,14 +392,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             */
 
             // If every line can be parsed, we know newlines were removed
-            foreach (string line in lines)
+            /* foreach (string line in lines)
             {
                 System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
                 Assert.True(match.Success);
+            }*/
+            using (var fs = new FileStream(LinuxAppServiceLogger.LoggingPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                using (var sr = new StreamReader(fs, Encoding.Default))
+                {
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
+                        Assert.True(match.Success);
+                    }
+                }
             }
 
             // To ensure other tests generate the path
-            File.Delete(LinuxAppServiceLogger.LoggingPath);
+            // File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
         /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
@@ -538,7 +550,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task NoExceptionsWhenEnvVarsAreMissing()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile1.log");
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
@@ -570,7 +582,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
-            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+            // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
             /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
 
@@ -647,14 +659,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             */
 
             // If every line can be parsed, then we know the logs are sensible.
-            foreach (string line in lines)
+
+            using (var fs = new FileStream(LinuxAppServiceLogger.LoggingPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                using (var sr = new StreamReader(fs, Encoding.Default))
+                {
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
+                        Assert.True(match.Success);
+                    }
+                }
+            }
+
+            /*foreach (string line in lines)
             {
                 System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
                 Assert.True(match.Success);
-            }
+            }*/
 
             // To ensure other tests generate the path
-            File.Delete(LinuxAppServiceLogger.LoggingPath);
+            // File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
         /// <summary>
