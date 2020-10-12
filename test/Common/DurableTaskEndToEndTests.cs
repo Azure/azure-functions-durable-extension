@@ -267,7 +267,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Ensure the console included prefixed logs
                 Assert.Contains(prefix, consoleOutput);
-                this.output.WriteLine(consoleOutput);
 
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
@@ -277,8 +276,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     if (line.StartsWith(prefix))
                     {
                         jsonStr = line.Replace(prefix, "");
-                        this.output.WriteLine(jsonStr);
-                        this.output.WriteLine(line);
                         JObject json = JObject.Parse(jsonStr);
 
                         List<string> keys = json.Properties().Select(p => p.Name).ToList();
@@ -379,7 +376,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Ensure the console included prefixed logs
                 Assert.Contains(prefix, consoleOutput);
-                this.output.WriteLine(consoleOutput);
 
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
@@ -389,8 +385,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     if (line.StartsWith(prefix))
                     {
                         jsonStr = line.Replace(prefix, "");
-                        this.output.WriteLine(jsonStr);
-                        this.output.WriteLine(line);
                         JObject json = JObject.Parse(jsonStr);
 
                         List<string> keys = json.Properties().Select(p => p.Name).ToList();
@@ -458,7 +452,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Ensure the console included prefixed logs
                 Assert.Contains(prefix, consoleOutput);
-                this.output.WriteLine(consoleOutput);
 
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
@@ -469,8 +462,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     if (line.StartsWith(prefix))
                     {
                         jsonStr = line.Replace(prefix, "");
-                        this.output.WriteLine(jsonStr);
-                        this.output.WriteLine(line);
                         JObject json = JObject.Parse(jsonStr);
 
                         List<string> keys = json.Properties().Select(p => p.Name).ToList();
@@ -484,9 +475,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         Assert.Contains("Pid", keys);
                         Assert.Contains("Tid", keys);
 
+                        if (line.Contains("DurableTask-Core"))
+                        {
+                            // for debugging only
+                            this.output.WriteLine("found!");
+                            this.output.WriteLine(line);
+                        }
+
                         // Ensuring no DurableTask-Core Verbose logs are found
                         if (((int)json["Level"] == (int)EventLevel.Verbose) && json["ProviderName"].Equals("DurableTask-Core"))
                         {
+                            this.output.WriteLine("Setting as true!");
                             foundVerboseLog = true;
                         }
                     }
