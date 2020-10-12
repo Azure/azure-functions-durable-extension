@@ -286,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         Assert.Contains("ProviderName", keys);
                         Assert.Contains("TaskName", keys);
                         Assert.Contains("EventId", keys);
-                        Assert.Contains("TimeStamp", keys);
+                        Assert.Contains("EventTime", keys);
                         Assert.Contains("Tenant", keys);
                         Assert.Contains("Pid", keys);
                         Assert.Contains("Tid", keys);

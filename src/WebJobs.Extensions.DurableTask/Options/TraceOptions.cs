@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool TraceInputsAndOutputs { get; set; }
 
         /// <summary>
-        /// Gets or sets if Azure linux telemetry should include verbose logs
+        /// Gets or sets if Azure linux telemetry should include verbose logs.
         /// </summary>
         /// <remarks>
         /// The default behaviour is false, which disables verbose logs. When set

@@ -346,8 +346,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // Since our logging payload can be quite large, linux telemetry by default
                 // disables verbose-level telemetry to avoid a performance hit.
-                bool filterVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
-                this.eventSourceListener = new EventSourceListener(linuxLogger, filterVerbose);
+                bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
+                this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose);
             }
         }
 
