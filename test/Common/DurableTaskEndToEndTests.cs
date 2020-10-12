@@ -475,7 +475,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         Assert.Contains("Pid", keys);
                         Assert.Contains("Tid", keys);
 
-                        // Ensuring no DurableTask-Core Verbose logs are found
+                        // Ensuring DurableTask-Core Verbose logs are found
                         if (((int)json["Level"] == (int)EventLevel.Verbose)
                             && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
                         {
