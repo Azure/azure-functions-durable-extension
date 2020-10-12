@@ -14,15 +14,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class EventSourceListener : EventListener
     {
         private readonly LinuxAppServiceLogger logger;
+        private readonly bool filterVerbose;
 
         /// <summary>
         /// Create an EventSourceListener to capture and log Durable EventSource
         /// data in Linux.
         /// </summary>
         /// <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
-        public EventSourceListener(LinuxAppServiceLogger logger)
+        public EventSourceListener(LinuxAppServiceLogger logger, bool filterVerbose)
         {
             this.logger = logger;
+            this.filterVerbose = filterVerbose;
         }
 
         /// <summary>
@@ -52,7 +54,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="eventData">The EventSource event data, for logging.</param>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            this.logger.Log(eventData);
+            // We filter out verbose events from DurableTask-Core
+            if (!(this.filterVerbose
+               && eventData.EventSource.Name == "DurableTask-Core"
+               && eventData.Level == EventLevel.Verbose))
+            {
+                this.logger.Log(eventData);
+            }
         }
     }
 }

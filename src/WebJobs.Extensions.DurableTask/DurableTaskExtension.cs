@@ -343,7 +343,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // The logging service for linux works by capturing EventSource messages,
                 // which our linux platform does not recognize, and logging them via a
                 // different strategy such as writing to console or to a file.
-                this.eventSourceListener = new EventSourceListener(linuxLogger);
+
+                // Since our logging payload can be quite large, linux telemetry by default
+                // disables verbose-level telemetry to avoid a performance hit.
+                bool filterVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
+                this.eventSourceListener = new EventSourceListener(linuxLogger, filterVerbose);
             }
         }
 

@@ -2563,7 +2563,7 @@
             that we use to capture their data and log it in Linux App Service plans.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean)">
             <summary>
             Create an EventSourceListener to capture and log Durable EventSource
             data in Linux.
@@ -3536,6 +3536,19 @@
             <value>
             <c>true</c> to trace the raw values of inputs and outputs; otherwise <c>false</c>.
             </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.AllowVerboseLinuxTelemetry">
+            <summary>
+            Gets or sets if Azure linux telemetry should include verbose logs
+            </summary>
+            <remarks>
+            The default behaviour is false, which disables verbose logs. When set
+            to true, performance may be affected due to the amount of verbose logs.
+            We recommend setting this to true primarily for debugging purposes.
+            <value>
+            <c>true</c> to enable verbose telemetry; <c>false</c> otherwise.
+            </value>
+            </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.TraceReplayEvents">
             <summary>
