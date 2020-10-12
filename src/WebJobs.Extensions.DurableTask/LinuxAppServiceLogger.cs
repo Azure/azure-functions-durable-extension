@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     (string)json["Level"],
                     (string)json["Pid"],
                     (string)json["Tid"],
-                    (string)json["EventTime"],
+                    (string)json["EventTimestamp"],
                     activityId,
                     relatedActivityId,
                 };
