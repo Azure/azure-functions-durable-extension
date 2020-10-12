@@ -284,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         Assert.Contains("ProviderName", keys);
                         Assert.Contains("TaskName", keys);
                         Assert.Contains("EventId", keys);
-                        Assert.Contains("EventTime", keys);
+                        Assert.Contains("EventTimestamp", keys);
                         Assert.Contains("Tenant", keys);
                         Assert.Contains("Pid", keys);
                         Assert.Contains("Tid", keys);
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         Assert.Contains("ProviderName", keys);
                         Assert.Contains("TaskName", keys);
                         Assert.Contains("EventId", keys);
-                        Assert.Contains("EventTime", keys);
+                        Assert.Contains("EventTimestamp", keys);
                         Assert.Contains("Tenant", keys);
                         Assert.Contains("Pid", keys);
                         Assert.Contains("Tid", keys);
@@ -470,22 +470,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         Assert.Contains("ProviderName", keys);
                         Assert.Contains("TaskName", keys);
                         Assert.Contains("EventId", keys);
-                        Assert.Contains("EventTime", keys);
+                        Assert.Contains("EventTimestamp", keys);
                         Assert.Contains("Tenant", keys);
                         Assert.Contains("Pid", keys);
                         Assert.Contains("Tid", keys);
 
-                        if (line.Contains("DurableTask-Core"))
-                        {
-                            // for debugging only
-                            this.output.WriteLine("found!");
-                            this.output.WriteLine(line);
-                        }
-
                         // Ensuring no DurableTask-Core Verbose logs are found
-                        if (((int)json["Level"] == (int)EventLevel.Verbose) && json["ProviderName"].Equals("DurableTask-Core"))
+                        if (((int)json["Level"] == (int)EventLevel.Verbose)
+                            && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
                         {
-                            this.output.WriteLine("Setting as true!");
                             foundVerboseLog = true;
                         }
                     }

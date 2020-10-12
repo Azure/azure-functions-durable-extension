@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "ProviderName", eventData.EventSource.Name },
                 { "TaskName", eventData.EventName },
                 { "EventId", eventData.EventId },
-                { "EventTime", DateTime.UtcNow },
+                { "EventTimestamp", DateTime.UtcNow },
                 { "Pid", this.procID },
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
                 { "Level", (int)eventData.Level },
