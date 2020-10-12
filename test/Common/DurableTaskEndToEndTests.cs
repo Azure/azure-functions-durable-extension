@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -306,7 +307,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task WritesToFile()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile2.log");
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_WritesToFile.log");
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
@@ -333,8 +334,166 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+        }
 
-            // File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure other tests generate the path
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we are filtering verbose logs from DurableTask.Core by default in Linux.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task FiltersVerboseLogsByDefault()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "FiltersVerboseLogsByDefault",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, consoleOutput);
+                this.output.WriteLine(consoleOutput);
+
+                // Validate that the JSON has some minimal expected fields
+                string[] lines = consoleOutput.Split('\n');
+                var jsonStr = "";
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith(prefix))
+                    {
+                        jsonStr = line.Replace(prefix, "");
+                        this.output.WriteLine(jsonStr);
+                        this.output.WriteLine(line);
+                        JObject json = JObject.Parse(jsonStr);
+
+                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                        Assert.Contains("EventStampName", keys);
+                        Assert.Contains("EventPrimaryStampName", keys);
+                        Assert.Contains("ProviderName", keys);
+                        Assert.Contains("TaskName", keys);
+                        Assert.Contains("EventId", keys);
+                        Assert.Contains("EventTime", keys);
+                        Assert.Contains("Tenant", keys);
+                        Assert.Contains("Pid", keys);
+                        Assert.Contains("Tid", keys);
+
+                        // Ensuring no DurableTask-Core Verbose logs are found
+                        if ((int)json["Level"] == (int)EventLevel.Verbose)
+                        {
+                            Assert.False(json["ProviderName"].Equals("DurableTask-Core"));
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we can enable verbose logs from DurableTask.Core in Linux.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CanEnableVerboseLogsInLinux()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "CanEnableVerboseLogsInLinux",
+                    enableExtendedSessions: false,
+                    allowVerboseLinuxTelemetry: true, // enabling verbose telemetry
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, consoleOutput);
+                this.output.WriteLine(consoleOutput);
+
+                // Validate that the JSON has some minimal expected fields
+                string[] lines = consoleOutput.Split('\n');
+                var jsonStr = "";
+                var foundVerboseLog = false;
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith(prefix))
+                    {
+                        jsonStr = line.Replace(prefix, "");
+                        this.output.WriteLine(jsonStr);
+                        this.output.WriteLine(line);
+                        JObject json = JObject.Parse(jsonStr);
+
+                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                        Assert.Contains("EventStampName", keys);
+                        Assert.Contains("EventPrimaryStampName", keys);
+                        Assert.Contains("ProviderName", keys);
+                        Assert.Contains("TaskName", keys);
+                        Assert.Contains("EventId", keys);
+                        Assert.Contains("EventTime", keys);
+                        Assert.Contains("Tenant", keys);
+                        Assert.Contains("Pid", keys);
+                        Assert.Contains("Tid", keys);
+
+                        // Ensuring no DurableTask-Core Verbose logs are found
+                        if (((int)json["Level"] == (int)EventLevel.Verbose) && json["ProviderName"].Equals("DurableTask-Core"))
+                        {
+                            foundVerboseLog = true;
+                        }
+                    }
+                }
+
+                Assert.True(foundVerboseLog);
+            }
         }
 
         /// <summary>
@@ -347,7 +506,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task RemovesNewlinesFromExceptions()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile3.log");
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_RemovesNewlinesFromExceptions.log");
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
@@ -405,9 +564,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                 }
             }
-
-            // To ensure other tests generate the path
-            // File.Delete(LinuxAppServiceLogger.LoggingPath);
         }
 
         /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
