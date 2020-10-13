@@ -16,7 +16,7 @@ using Mono.Unix.Native;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// TBD>.
+    /// The File logger for linux consumption. Manages file rolling and is concurrency-safe.
     /// </summary>
     public class LinuxAppServiceFileLogger
     {
@@ -30,16 +30,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private Task outputTask;
 
         /// <summary>
-        /// TBD.
+        /// The File logger for linux consumption. Manages file rolling and is concurrency-safe.
         /// </summary>
-        /// <param name="logFileName">TBD1.</param>
-        /// <param name="logFileDirectory">TBD2.</param>
-        /// <param name="startOnCreate">TBD3.</param>
+        /// <param name="logFileName">Name of target logfile.</param>
+        /// <param name="logFileDirectory">Directory of target logfile.</param>
+        /// <param name="startOnCreate">Whether or not to initialize the logger at initialization time.</param>
         public LinuxAppServiceFileLogger(string logFileName, string logFileDirectory, bool startOnCreate = true)
         {
             this.logFileName = logFileName;
             this.logFileDirectory = logFileDirectory;
-            this.logFilePath = Path.Combine(this.logFileDirectory, this.logFileName + ".log");
+            this.logFilePath = Path.Combine(this.logFileDirectory, this.logFileName);
             this.archiveFilePath = this.logFilePath + "1";
             this.buffer = new BlockingCollection<string>(new ConcurrentQueue<string>());
             this.currentBatch = new List<string>();
@@ -58,9 +58,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private int FlushFrequencySeconds { get; set; } = 30;
 
         /// <summary>
-        /// TBD.
+        /// Log a string.
         /// </summary>
-        /// <param name="message">TBD 1.</param>
+        /// <param name="message">Message to log.</param>
         public virtual void Log(string message)
         {
             try
@@ -82,9 +82,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// TBD.
+        /// Flushes the write buffer, stops writing to logfile afterwards.
         /// </summary>
-        /// <param name="timeSpan">TBD 1.</param>
+        /// <param name="timeSpan">Timeout in milliseconds for flushing task.</param>
         public void Stop(TimeSpan timeSpan)
         {
             this.cancellationTokenSource.Cancel();
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // ReSharper disable once FunctionNeverReturns
         }
 
-        // internal for unittests
+        // internal for unittests (in func host)
         internal async Task InternalProcessLogQueue()
         {
             string currentMessage;
@@ -136,6 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task WriteLogs(IEnumerable<string> currentBatch)
         {
+            // If the directory already exists, this does nothing
             Directory.CreateDirectory(this.logFileDirectory);
 
             var fileInfo = new FileInfo(this.logFilePath);

@@ -38,28 +38,6 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.BasicLogWriter">
-            <summary>
-            BasicLogWriter:
-            Simple file writer (which doesn't hold the handle open, with basic rollover).
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.BasicLogWriter.#ctor(System.String,System.String,System.Int32)">
-            <summary>
-            Simple log writer:
-            Rolls over at specified size (bytes)
-            Maximum of 2 files retained.
-            </summary>
-            <param name="logFolder">Directory where the logfile will be created.</param>
-            <param name="fileName">Log file name.</param>
-            <param name="rollOverSize">Maximum size of file (in bytes) before archiving it.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.BasicLogWriter.WriteLog(System.String)">
-            <summary>
-            Writes string argument to the log file.
-            </summary>
-            <param name="input">string to log.</param>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
             <summary>
             The result of a clean entity storage operation.
@@ -2935,34 +2913,34 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger">
             <summary>
-            TBD>.
+            The File logger for linux consumption. Manages file rolling and is concurrency-safe.
             </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.#ctor(System.String,System.String,System.Boolean)">
             <summary>
-            TBD.
+            The File logger for linux consumption. Manages file rolling and is concurrency-safe.
             </summary>
-            <param name="logFileName">TBD1.</param>
-            <param name="logFileDirectory">TBD2.</param>
-            <param name="startOnCreate">TBD3.</param>
+            <param name="logFileName">Name of target logfile.</param>
+            <param name="logFileDirectory">Directory of target logfile.</param>
+            <param name="startOnCreate">Whether or not to initialize the logger at initialization time.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.Log(System.String)">
             <summary>
-            TBD.
+            Log a string.
             </summary>
-            <param name="message">TBD 1.</param>
+            <param name="message">Message to log.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.Stop(System.TimeSpan)">
             <summary>
-            TBD.
+            Flushes the write buffer, stops writing to logfile afterwards.
             </summary>
-            <param name="timeSpan">TBD 1.</param>
+            <param name="timeSpan">Timeout in milliseconds for flushing task.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger">
             <summary>
             In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
             In Consumption, we log to the console and identify our log by a prefix.
-            In Dedicated, we log asynchronously to a pre-defined logging path using Log4Net.
+            In Dedicated, we log asynchronously to a pre-defined logging path.
             This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
             specific EventSource providers.
             </summary>

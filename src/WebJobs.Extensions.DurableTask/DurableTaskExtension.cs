@@ -17,7 +17,6 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
-using log4net;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
@@ -359,9 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Not flushing the linux logger may lead to lost logs
             int timeoutMilliseconds = 3000;
-
-            // LogManager.Flush(timeoutMilliseconds);
-            LinuxAppServiceLogger.log?.Stop(new TimeSpan(timeoutMilliseconds));
+            LinuxAppServiceLogger.Logger?.Stop(new TimeSpan(timeoutMilliseconds));
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
         }
