@@ -17,6 +17,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
+    /// This is copied over from the azure-funtions-host codebase here:
+    /// https://github.com/Azure/azure-functions-host/blob/35cf323fa3464a08b410a518bcab006e801301fe/src/WebJobs.Script.WebHost/Diagnostics/LinuxAppServiceFileLogger.cs
+    /// We have modified their implementation to utilize syscall.rename instead of File.Move during file rolling.
+    /// This change is necessary for older versions of fluent-bit, our logging infrastructure in linux dedicated, to properly deal with logfile archiving.
     /// </summary>
     public class LinuxAppServiceFileLogger
     {

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <c>true</c> to enable verbose telemetry; <c>false</c> otherwise.
         /// </value>
         /// </remarks>
-        public bool AllowVerboseLinuxTelemetry { get; set; }
+        public bool AllowVerboseLinuxTelemetry { get; set; } = false;
 
         /// <summary>
         /// Gets or sets if logs for replay events need to be recorded.
