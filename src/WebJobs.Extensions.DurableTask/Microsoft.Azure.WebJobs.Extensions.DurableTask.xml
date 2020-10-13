@@ -2910,6 +2910,31 @@
             </summary>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger">
+            <summary>
+            TBD>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.#ctor(System.String,System.String,System.Boolean)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="logFileName">TBD1.</param>
+            <param name="logFileDirectory">TBD2.</param>
+            <param name="startOnCreate">TBD3.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.Log(System.String)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="message">TBD 1.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.Stop(System.TimeSpan)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="timeSpan">TBD 1.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger">
             <summary>
             In charge of logging services for our linux App Service offerings: Consumption and Dedicated.

@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // variable below is internal static for testing purposes
         // we need to be able to change the logging path for a windows-based CI
 #pragma warning disable SA1401 // Fields should be private
-        internal static string LoggingPath = "/var/log/functionsLogs/durableevents.log";
+        internal static string LoggingPath = "/var/log/functionsLogs/durableeventsJSON.log";
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -306,6 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     relatedActivityId,
                 };
                 logString += delineator + string.Join(delineator, extraCols);
+                logString = json.ToString(Newtonsoft.Json.Formatting.None);
             }
             else
             {
