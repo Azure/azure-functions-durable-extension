@@ -111,6 +111,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await Task.Delay(TimeSpan.FromSeconds(this.FlushFrequencySeconds), this.cancellationTokenSource.Token).ContinueWith(task => { });
             }
 
+            await this.InternalProcessLogQueue();
+
             // ReSharper disable once FunctionNeverReturns
         }
 
