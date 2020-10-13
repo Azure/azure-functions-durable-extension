@@ -23,6 +23,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
 
+        // The regex pattern that parses our Linux Dedicated logs
+        public static readonly string RegexPattern = "(?<Account>[^,]*),(?<ActiveActivities>[^,]*),(?<ActiveOrchestrators>[^,]*),(?<Age>[^,]*),(?<AppName>[^,]*),(?<ContinuedAsNew>[^,]*),(?<CreatedTimeFrom>[^,]*),(?<CreatedTimeTo>[^,]*),(?<DequeueCount>[^,]*),\"(?<Details>[^\"]*)\",(?<Duration>[^,]*),(?<ETag>[^,]*),(?<Episode>[^,]*),(?<EventCount>[^,]*),(?<EventName>[^,]*),(?<EventType>[^,]*),(?<Exception>[^,]*),\"(?<ExceptionMessage>[^\"]*)\",(?<ExecutionId>[^,]*),(?<ExtensionVersion>[^,]*),(?<FromWorkerName>[^,]*),(?<FunctionName>[^,]*),(?<FunctionState>[^,]*),(?<FunctionType>[^,]*),(?<Input>[^,]*),(?<InstanceId>[^,]*),(?<IsCheckpointComplete>[^,]*),(?<IsExtendedSession>[^,]*),(?<IsReplay>[^,]*),(?<LastCheckpointTime>[^,]*),(?<LatencyMs>[^,]*),(?<MessageId>[^,]*),(?<MessagesRead>[^,]*),(?<MessagesSent>[^,]*),(?<MessagesUpdated>[^,]*),(?<NewEventCount>[^,]*),(?<NewEvents>[^,]*),(?<NextVisibleTime>[^,]*),(?<OperationId>[^,]*),(?<OperationName>[^,]*),(?<Output>[^,]*),(?<PartitionId>[^,]*),(?<PendingOrchestratorMessages>[^,]*),(?<PendingOrchestrators>[^,]*),(?<Reason>[^,]*),(?<RelatedActivityId>[^,]*),(?<RequestCount>[^,]*),(?<RequestId>[^,]*),(?<RequestingExecutionId>[^,]*),(?<RequestingInstance>[^,]*),(?<RequestingInstanceId>[^,]*),(?<Result>[^,]*),(?<RuntimeStatus>[^,]*),(?<SequenceNumber>[^,]*),(?<SizeInBytes>[^,]*),(?<SlotName>[^,]*),(?<StatusCode>[^,]*),(?<StorageRequests>[^,]*),(?<Success>[^,]*),(?<TableEntitiesRead>[^,]*),(?<TableEntitiesWritten>[^,]*),(?<TargetExecutionId>[^,]*),(?<TargetInstanceId>[^,]*),(?<TaskEventId>[^,]*),(?<TaskHub>[^,]*),(?<Token>[^,]*),(?<TotalEventCount>[^,]*),(?<Version>[^,]*),(?<VisibilityTimeoutSeconds>[^,]*),(?<WorkerName>[^,]*)";
+
         public static ITestHost GetJobHost(
             ILoggerProvider loggerProvider,
             string testName,
@@ -34,6 +37,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
             bool logReplayEvents = true,
+            bool traceReplayEvents = true,
+            bool allowVerboseLinuxTelemetry = false,
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
@@ -58,6 +63,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
                 FetchLargeMessagesAutomatically = autoFetchLargeMessages,
                 LocalRpcEndpointEnabled = localRpcEndpointEnabled,
+                TraceReplayEvents = traceReplayEvents,
+                AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry,
+            };
+            options.Notifications = new NotificationOptions()
+            {
+                EventGrid = new EventGridNotificationOptions()
+                {
+                    KeySettingName = eventGridKeySettingName,
+                    TopicEndpoint = eventGridTopicEndpoint,
+                    PublishEventTypes = eventGridPublishEventTypes,
+                },
             };
 
             if (eventGridRetryCount.HasValue)
