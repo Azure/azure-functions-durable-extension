@@ -117,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
 
-        private readonly BasicLogWriter log; // The File Logger
+        internal static LinuxAppServiceFileLogger log; // The File Logger
 
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
@@ -191,10 +191,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.log = log4net.LogManager.GetLogger(loggerRepository.Name, "linux");
                 */
 
-                int tenMbInBytes = 10000000;
+                // int tenMbInBytes = 10000000;
                 string fname = Path.GetFileName(LinuxAppServiceLogger.LoggingPath);
                 string dir = Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath);
-                this.log = new BasicLogWriter(dir, fname, tenMbInBytes);
+                log = new LinuxAppServiceFileLogger(fname, dir); // new BasicLogWriter(dir, fname, tenMbInBytes);
             }
         }
 
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // We write to a file in Linux Dedicated
                 // Log4Net handles file rolling (archiving) and deletion of old logs
                 // Log-level should also be irrelevant as no minimal level has been configured
-                this.log.WriteLog(jsonString);
+                log.Log(jsonString);
             }
         }
     }

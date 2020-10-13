@@ -8,7 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+#if !FUNCTIONS_V1
 using Mono.Unix.Native;
+#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -20,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string logFileName;
         private readonly string logFileDirectory;
         private readonly string logFilePath;
+        private readonly string archiveFilePath;
         private readonly BlockingCollection<string> buffer;
         private readonly List<string> currentBatch;
         private readonly CancellationTokenSource cancellationTokenSource;
@@ -36,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logFileName = logFileName;
             this.logFileDirectory = logFileDirectory;
             this.logFilePath = Path.Combine(this.logFileDirectory, this.logFileName + ".log");
+            this.archiveFilePath = this.logFilePath + "1";
             this.buffer = new BlockingCollection<string>(new ConcurrentQueue<string>());
             this.currentBatch = new List<string>();
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -45,9 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Start();
             }
         }
-
-        // Maximum number of files
-        private int MaxFileCount { get; set; } = 3;
 
         // Maximum size of individual log file in MB
         private int MaxFileSizeMb { get; set; } = 10;
@@ -162,29 +164,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void RollFiles()
         {
             // Rename current file to older file.
-            // Empty current file.
-            // Delete oldest file if exceeded configured max no. of files.
 
-            Syscall.rename(this.logFilePath, this.GetCurrentFileName(DateTime.UtcNow));
+#if !FUNCTIONS_V1
+            Syscall.rename(this.logFilePath, this.archiveFilePath);
+#endif
 
-            var fileInfoBases = this.ListFiles(this.logFileDirectory, this.logFileName + "*", SearchOption.TopDirectoryOnly);
-
-            if (fileInfoBases.Length >= this.MaxFileCount)
-            {
-                var oldestFile = fileInfoBases.OrderByDescending(f => f.Name).Last();
-                oldestFile.Delete();
-            }
-        }
-
-        private FileInfo[] ListFiles(string directoryPath, string pattern, SearchOption searchOption)
-        {
-            DirectoryInfo dirInfo = new DirectoryInfo(directoryPath);
-            return dirInfo.GetFiles(pattern, searchOption);
-        }
-
-        private string GetCurrentFileName(DateTime dateTime)
-        {
-            return Path.Combine(this.logFileDirectory, $"{this.logFileName}{dateTime:yyyyMMddHHmmss}.log");
         }
     }
 }

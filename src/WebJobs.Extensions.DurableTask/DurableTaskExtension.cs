@@ -359,7 +359,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Not flushing the linux logger may lead to lost logs
             int timeoutMilliseconds = 3000;
-            LogManager.Flush(timeoutMilliseconds);
+
+            // LogManager.Flush(timeoutMilliseconds);
+            LinuxAppServiceLogger.log?.Stop(new TimeSpan(timeoutMilliseconds));
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
         }
