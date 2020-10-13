@@ -16,7 +16,7 @@ using Mono.Unix.Native;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// The File logger for linux consumption. Manages file rolling and is concurrency-safe.
+    /// The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
     /// </summary>
     public class LinuxAppServiceFileLogger
     {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private Task outputTask;
 
         /// <summary>
-        /// The File logger for linux consumption. Manages file rolling and is concurrency-safe.
+        /// The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
         /// </summary>
         /// <param name="logFileName">Name of target logfile.</param>
         /// <param name="logFileDirectory">Directory of target logfile.</param>
