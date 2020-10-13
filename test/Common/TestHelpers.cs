@@ -41,6 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
             bool traceReplayEvents = true,
+            bool allowVerboseLinuxTelemetry = false,
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 TraceInputsAndOutputs = true,
                 TraceReplayEvents = traceReplayEvents,
+                AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry,
             };
             options.Notifications = new NotificationOptions()
             {
