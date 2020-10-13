@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="logFileName">Name of target logfile.</param>
         /// <param name="logFileDirectory">Directory of target logfile.</param>
-        /// <param name="startOnCreate">Whether or not to initialize the logger at initialization time.</param>
+        /// <param name="startOnCreate">Whether or not to start monitoring the write buffer at initialization time.</param>
         public LinuxAppServiceFileLogger(string logFileName, string logFileDirectory, bool startOnCreate = true)
         {
             this.logFileName = logFileName;
