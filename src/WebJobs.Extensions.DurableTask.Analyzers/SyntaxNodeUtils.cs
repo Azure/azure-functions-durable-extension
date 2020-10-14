@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
             {
-                symbol = semanticModel.GetSymbolInfo(node).Symbol;
+                symbol = newModel.GetSymbolInfo(node).Symbol;
                 return symbol != null;
             }
 
