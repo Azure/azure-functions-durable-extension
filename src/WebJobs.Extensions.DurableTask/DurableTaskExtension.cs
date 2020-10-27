@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
-        private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
+        internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that DurableClientAttribute defines a custom equality comparer.
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
 
-            this.MessageDataConverter = this.CreateMessageDataConverter(messageSerializerSettingsFactory);
+            this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
 
-        private MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
+        internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
             bool isDefault;
             if (messageSerializerSettingsFactory == null)

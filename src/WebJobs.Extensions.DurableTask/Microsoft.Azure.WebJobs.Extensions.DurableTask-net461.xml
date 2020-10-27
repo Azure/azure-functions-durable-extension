@@ -174,6 +174,55 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.Action{``0})">
             <inheritdoc/>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory">
+            <summary>
+                Factory class to create Durable Client to start works outside an azure function context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions},Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory)">
+            <summary>
+                Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory"/> class.
+            </summary>
+            <param name="defaultDurableClientOptions">Default Options to Build Durable Clients.</param>
+            <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
+            <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
+            <param name="durableTaskOptions">The configuration options for this extension.</param>
+            <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory.CreateClient(Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions)">
+            <summary>
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> instance.
+            </summary>
+            <param name="durableClientOptions">options containing the client configuration parameters.</param>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory.CreateClient">
+            <summary>
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> instance.
+            </summary>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.IDurableClientFactory">
+            <summary>
+                Factory class to create Durable Client to start works outside an azure function context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.IDurableClientFactory.CreateClient(Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions)">
+            <summary>
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> instance.
+            </summary>
+            <param name="durableClientOptions">options containing the client configuration parameters.</param>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.IDurableClientFactory.CreateClient">
+            <summary>
+            Gets a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> using configuration from a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> instance.
+            </summary>
+            <returns>Returns a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext">
             <summary>
             Common functionality used by both <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext"/>
@@ -1723,6 +1772,17 @@
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> class.
+            </summary>
+            <param name="durableClientOptions">durable client options</param>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.TaskHub">
             <summary>
             Optional. Gets or sets the name of the task hub in which the orchestration data lives.
@@ -1743,6 +1803,11 @@
             For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/>.
             If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
             </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.ExternalClient">
+            <summary>
+                Indicate if the client is External from the azure function where orchestrator functions are hosted.
+            </summary>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.GetHashCode">
             <summary>
@@ -3254,6 +3319,40 @@
             Throws an exception if any of the settings of the storage provider are invalid.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
+            <summary>
+            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
+            <summary>
+            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
+            to instances of the storage provider other than the default one this application communicates with.
+            </summary>
+            <value>The name of an app setting containing connection details.</value>
+            <remarks>
+            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/>.
+            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
+            <summary>
+             Gets or sets the name of the task hub in which the orchestration data lives.
+            </summary>
+            <value>The task hub used by this binding.</value>
+            <remarks>
+            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
+            If no value exists there, then a default value will be used.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
+            <summary>
+                Indicate if the client is External from the azure function where orchestrator functions are hosted.
+            </summary>
+            <remarks>
+                Default is true.
+            </remarks>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
             Configuration options for the Durable Task extension.
@@ -3766,6 +3865,24 @@
             <value>
             The delegate to handle exception to determie if retries should proceed.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">
+            <summary>
+            Connection string provider which resolves connection strings from the an standard application (Non WebJob).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider"/> class.
+            </summary>
+            <param name="configuration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the application host.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider.Resolve(System.String)">
+            <summary>
+            Looks up a connection string value given a name.
+            </summary>
+            <param name="connectionStringName">The name of the connection string.</param>
+            <returns>Returns the resolved connection string value.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StartOrchestrationArgs">
             <summary>
