@@ -1136,9 +1136,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Wait to shut down the task hub worker until all function listeners have been shut down.
                 if (this.isTaskHubWorkerStarted &&
-                    !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownActivities.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownEntities.Values.Any(info => info.HasActiveListener))
+                    !this.knownOrchestrators.Values.Any(info => info?.HasActiveListener ?? false) &&
+                    !this.knownActivities.Values.Any(info => info?.HasActiveListener ?? false) &&
+                    !this.knownEntities.Values.Any(info => info?.HasActiveListener ?? false))
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 
