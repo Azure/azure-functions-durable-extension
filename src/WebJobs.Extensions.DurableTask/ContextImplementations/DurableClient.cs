@@ -875,7 +875,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return ((IDurableOrchestrationClient)this).StartNewAsync<T>(orchestratorFunctionName, string.Empty, input);
         }
 
-        async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool startWithNewInstanceId)
+        async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)
         {
             DurableOrchestrationStatus status = await ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory: false, showHistoryOutput: false, showInput: true);
 
@@ -884,7 +884,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
             }
 
-            return startWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
+            return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
                 : await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, instanceId: status.InstanceId, status.Input);
         }
 

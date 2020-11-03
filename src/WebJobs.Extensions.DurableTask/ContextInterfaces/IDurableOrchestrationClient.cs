@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="CreateCheckStatusResponse(HttpRequestMessage, string, bool)"/> API.
+        /// <see cref="CreateCheckStatusResponse(HttpRequestMessage, string, bool, bool)"/> API.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If the orchestration instance completes within the specified timeout, then the HTTP response payload will
         /// contain the output of the orchestration instance formatted as JSON. However, if the orchestration does not
         /// complete within the specified timeout, then the HTTP response will be identical to that of the
-        /// <see cref="CreateCheckStatusResponse(HttpRequest, string, bool)"/> API.
+        /// <see cref="CreateCheckStatusResponse(HttpRequest, string, bool, bool)"/> API.
         /// </remarks>
         /// <param name="request">The HTTP request that triggered the current function.</param>
         /// <param name="instanceId">The unique ID of the instance to check.</param>
@@ -285,6 +285,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
 
-        Task<string> RestartAsync(string instanceId, bool startWithNewInstanceId = true);
+        /// <summary>
+        ///  Restarts an existing orchestrator with the original input.
+        /// </summary>
+        /// <param name="instanceId">InstanceId of a previously run orchestrator to restart.</param>
+        /// <param name="restartWithNewInstanceId">Optional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+        /// reuse the old instanceId. Defauls to <c>true</c>.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
     }
 }

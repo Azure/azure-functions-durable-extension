@@ -744,7 +744,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
-            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&startWithNewInstanceId={restartWithNewInstanceId}";
+            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&restartWithNewInstanceId={restartWithNewInstanceId}";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -803,7 +803,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
-            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&startWithNewInstanceId={restartWithNewInstanceId}";
+            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&restartWithNewInstanceId={restartWithNewInstanceId}";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new

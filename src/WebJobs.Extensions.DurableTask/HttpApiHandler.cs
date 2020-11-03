@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ReturnInternalServerErrorOnFailure = "returnInternalServerErrorOnFailure";
         private const string LastOperationTimeFrom = "lastOperationTimeFrom";
         private const string LastOperationTimeTo = "lastOperationTimeTo";
-        private const string StartWithNewInstanceId = "startWithNewInstanceId";
+        private const string RestartWithNewInstanceId = "restartWithNewInstanceId";
         private const string TimeoutParameter = "timeout";
         private const string PollingInterval = "pollingInterval";
 
@@ -753,9 +753,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var queryNameValuePairs = request.GetQueryNameValuePairs();
 
                 string newInstanceId;
-                if (TryGetBooleanQueryParameterValue(queryNameValuePairs, StartWithNewInstanceId, out bool startWithNewInstanceId))
+                if (TryGetBooleanQueryParameterValue(queryNameValuePairs, RestartWithNewInstanceId, out bool restartWithNewInstanceId))
                 {
-                    newInstanceId = await client.RestartAsync(instanceId, startWithNewInstanceId);
+                    newInstanceId = await client.RestartAsync(instanceId, restartWithNewInstanceId);
                 }
                 else
                 {
