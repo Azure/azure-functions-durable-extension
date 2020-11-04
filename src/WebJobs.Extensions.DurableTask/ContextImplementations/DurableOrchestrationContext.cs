@@ -243,7 +243,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
         {
-            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
+            // calculate timeout expiration if DurableHttpRequest.Timeout is set
+            if (req.Timeout != null)
+            {
+                req.TimeoutExpirationDateTime = this.InnerContext.CurrentUtcDateTime + req.Timeout.Value;
+            }
+
+            DurableHttpResponse durableHttpResponse;
+            try
+            {
+                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
+            }
+            catch (TimeoutException)
+            {
+                throw;
+            }
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
@@ -266,7 +280,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.IncrementActionsOrThrowException();
-                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+
+                if (req.Timeout == null)
+                {
+                    await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+                }
+                else
+                {
+                    TimeSpan timeLeft = req.TimeoutExpirationDateTime - this.InnerContext.CurrentUtcDateTime;
+                    CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                    cancellationTokenSource.CancelAfter(timeLeft);
+                    await this.InnerContext.CreateTimer(fireAt, cancellationTokenSource.Token);
+                }
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
@@ -281,16 +306,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req)
         {
             DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
-                functionName: HttpOptions.HttpTaskActivityReservedName,
-                functionType: FunctionType.Activity,
-                oneWay: false,
-                instanceId: null,
-                operation: null,
-                retryOptions: null,
-                input: req,
-                scheduledTimeUtc: null);
+            functionName: HttpOptions.HttpTaskActivityReservedName,
+            functionType: FunctionType.Activity,
+            oneWay: false,
+            instanceId: null,
+            operation: null,
+            retryOptions: null,
+            input: req,
+            scheduledTimeUtc: null);
 
-            return durableHttpResponse;
+            return durableHttpResponse; 
         }
 
         private DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)

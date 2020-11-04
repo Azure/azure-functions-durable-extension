@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -305,6 +306,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var output = status?.Output;
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_Timeout(string storageProvider)
+        {
+            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeout(testHttpResponseMessage, TimeSpan.FromMilliseconds(10000));
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_Timeout),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    timeout: TimeSpan.FromMilliseconds(5000));
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_TimeoutException(string storageProvider)
+        {
+            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeoutException();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_TimeoutException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    timeout: TimeSpan.FromMilliseconds(5000));
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                Assert.Contains("System.TimeoutException: The operation was canceled.Reached user specified timeout", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                 await host.StopAsync();
             }
@@ -1423,6 +1502,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return handlerMock.Object;
         }
 
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithTimeout(HttpResponseMessage httpResponseMessage, TimeSpan timeoutTimespan)
+        {
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .Returns(async () =>
+               {
+                   await Task.Delay(timeoutTimespan);
+                   return httpResponseMessage;
+               });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithTimeoutException()
+        {
+            HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            httpResponseMessage.Content = new ExceptionThrowingContent(new OperationCanceledException());
+
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(httpResponseMessage);
+
+            return handlerMock.Object;
+        }
+
         private static HttpMessageHandler MockHttpMessageHandlerCheckUserAgent()
         {
             HttpResponseMessage okHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
@@ -1610,6 +1720,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public ManagedIdentityOptions GetOptions()
             {
                 return this.options;
+            }
+        }
+
+        private class ExceptionThrowingContent : HttpContent
+        {
+            private readonly Exception exception;
+
+            public ExceptionThrowingContent(Exception exception)
+            {
+                this.exception = exception;
+            }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                return Task.FromException(this.exception);
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = 0L;
+                return false;
             }
         }
     }

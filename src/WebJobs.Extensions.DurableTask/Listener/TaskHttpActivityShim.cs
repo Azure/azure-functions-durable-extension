@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Extensions.Primitives;
@@ -35,20 +36,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<string> RunAsync(TaskContext context, string rawInput)
         {
-            HttpRequestMessage requestMessage = await this.ReconstructHttpRequestMessage(rawInput);
-            HttpResponseMessage response = await this.httpClient.SendAsync(requestMessage);
-            DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
+            DurableHttpRequest durableHttpRequest = ReconstructDurableHttpRequest(rawInput);
+            HttpRequestMessage requestMessage = await this.ReconstructHttpRequestMessage(durableHttpRequest);
 
-            return JsonConvert.SerializeObject(durableHttpResponse);
+            CancellationTokenSource cts = new CancellationTokenSource();
+            if (durableHttpRequest.Timeout != null)
+            {
+                try
+                {
+                    TimeSpan timeout = durableHttpRequest.TimeoutExpirationDateTime - DateTime.UtcNow;
+                    this.httpClient.Timeout = timeout;
+                    cts.CancelAfter(timeout);
+                }
+                catch (Exception)
+                {
+                    TimeSpan timeout = durableHttpRequest.Timeout.Value;
+                    this.httpClient.Timeout = timeout;
+                    cts.CancelAfter(timeout);
+                }
+            }
+
+            try
+            {
+                HttpResponseMessage response;
+                if (durableHttpRequest.Timeout == null)
+                {
+                    response = await this.httpClient.SendAsync(requestMessage);
+                }
+                else
+                {
+                    response = await this.httpClient.SendAsync(requestMessage, cts.Token);
+                }
+
+                DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
+
+                return JsonConvert.SerializeObject(durableHttpResponse);
+            }
+            catch (OperationCanceledException ex) // when (cts.Token.IsCancellationRequested)
+            {
+                throw new TimeoutException(ex.Message + $"Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+            }
         }
 
-        private async Task<HttpRequestMessage> ReconstructHttpRequestMessage(string serializedRequest)
+        private static DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)
         {
             // DeserializeObject deserializes into a List and then the first element
             // of that list is the DurableHttpRequest
             IList<DurableHttpRequest> input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(serializedRequest);
             DurableHttpRequest durableHttpRequest = input.First();
+            return durableHttpRequest;
+        }
 
+        private async Task<HttpRequestMessage> ReconstructHttpRequestMessage(DurableHttpRequest durableHttpRequest)
+        {
             string contentType = "";
             HttpRequestMessage requestMessage = new HttpRequestMessage(durableHttpRequest.Method, durableHttpRequest.Uri);
             if (durableHttpRequest.Headers != null)
