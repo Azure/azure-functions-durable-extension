@@ -312,7 +312,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
+        /// when a DurableHttpRequest timeout value is set.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -351,7 +352,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator fails  when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]

@@ -306,16 +306,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req)
         {
             DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
-            functionName: HttpOptions.HttpTaskActivityReservedName,
-            functionType: FunctionType.Activity,
-            oneWay: false,
-            instanceId: null,
-            operation: null,
-            retryOptions: null,
-            input: req,
-            scheduledTimeUtc: null);
+                functionName: HttpOptions.HttpTaskActivityReservedName,
+                functionType: FunctionType.Activity,
+                oneWay: false,
+                instanceId: null,
+                operation: null,
+                retryOptions: null,
+                input: req,
+                scheduledTimeUtc: null);
 
-            return durableHttpResponse; 
+            return durableHttpResponse;
         }
 
         private DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)

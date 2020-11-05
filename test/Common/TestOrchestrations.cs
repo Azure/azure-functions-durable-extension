@@ -503,7 +503,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest);
                 return response;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }

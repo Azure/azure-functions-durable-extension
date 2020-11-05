@@ -1781,7 +1781,7 @@
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> class.
             </summary>
-            <param name="durableClientOptions">durable client options.</param>
+            <param name="durableClientOptions">durable client options</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.TaskHub">
             <summary>
@@ -1873,7 +1873,7 @@
             <param name="content">Content added to the body of the HTTP request.</param>
             <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
             <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
-            <param name="timeout">TimeSpan used for HTTP request.</param>
+            <param name="timeout">TimeSpan used for HTTP request timeout.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.Method">
             <summary>
