@@ -115,6 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             foreach (AsyncAction[] actionSet in actions)
             {
                 var tasks = new List<Task>(actions.Length);
+                DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
 
                 // An actionSet represents all actions that were scheduled within that execution.
                 foreach (AsyncAction action in actionSet)
@@ -127,16 +128,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CreateTimer:
                             using (var cts = new CancellationTokenSource())
                             {
-                                DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
-
                                 if (ctx != null)
                                 {
-                                    tasks.Add(ctx.OutOfProcCreateTimer(ctx, action.FireAt, cts.Token));
+                                    ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
                                 }
-                                else
-                                {
-                                    tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
-                                }
+
+                                tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
 
                                 if (action.IsCanceled)
                                 {

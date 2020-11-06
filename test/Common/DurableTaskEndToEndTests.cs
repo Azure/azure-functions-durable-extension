@@ -1555,34 +1555,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates correct exceptions for invalid timeout values.
-        /// </summary>
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task WaitForExternalEventWithTooLargeTimeout()
-        {
-            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithTimeout) };
-            var extendedSessions = false;
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.WaitForExternalEventWithTooLargeTimeout),
-                extendedSessions))
-            {
-                await host.StartAsync();
-
-                var timeout = TimeSpan.FromDays(7);
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, "throw"), this.output);
-                await client.WaitForStartupAsync(this.output);
-
-                var status = await client.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ArgumentException", status?.Output.ToString());
-
-                await host.StopAsync();
-            }
-        }
-
-        /// <summary>
         /// End-to-end test which validates a CancellationToken-providing overload of WaitForExternalEvent.
         /// </summary>
         [Fact]
@@ -3768,32 +3740,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string output = status.Output.ToString();
                 Assert.Contains("MaxRetryInterval", output);
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task AzureStorage_EventTimeoutLimitHit_ThrowsException()
-        {
-            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleEventWithTimeoutSucceeds);
-
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.AzureStorage_EventTimeoutLimitHit_ThrowsException),
-                false))
-            {
-                await host.StartAsync();
-
-                var timeout = TimeSpan.FromDays(7);
-
-                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, timeout, this.output);
-
-                var status = await client.WaitForCompletionAsync(this.output);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-
-                string output = status.Output.ToString();
-                Assert.Contains("timeout", output);
             }
         }
 
