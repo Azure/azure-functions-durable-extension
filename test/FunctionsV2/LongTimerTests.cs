@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
@@ -55,7 +54,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.LongRunningTimer),
+                nameof(this.TimerLengthLessThanMaxTime),
                 extendedSessions,
                 storageProviderType: "azure_storage",
                 durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
@@ -79,7 +78,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.LongRunningTimer),
+                nameof(this.EntitySignalWithLongDelay),
                 extendedSessions,
                 storageProviderType: "azure_storage",
                 durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
@@ -107,11 +106,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task WaitForExternalEventAboveMaxTime()
+        public async Task WaitForExternalEventAboveMaximumTimerLength()
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.WaitForExternalEventAboveMaxTime),
+                nameof(this.WaitForExternalEventAboveMaximumTimerLength),
                 enableExtendedSessions: false,
                 storageProviderType: "azure_storage",
                 durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))

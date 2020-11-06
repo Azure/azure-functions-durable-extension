@@ -383,7 +383,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        internal void ValidateOutOfProcTimer(DateTime fireAt)
+        // We now have built in long-timer support for C#, but in some scenarios, such as out-of-proc,
+        // we may still need to enforce this limitations until the solution works there as well.
+        internal void ThrowIfInvalidTimerLengthForStorageProvider(DateTime fireAt)
         {
             this.ThrowIfInvalidAccess();
 

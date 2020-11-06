@@ -130,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             {
                                 if (ctx != null)
                                 {
-                                    ctx.ValidateOutOfProcTimer(action.FireAt);
+                                    ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
                                 }
 
                                 tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
