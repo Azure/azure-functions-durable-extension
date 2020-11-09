@@ -4901,7 +4901,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(argumentException);
             Assert.Equal(
-                $"Task hub name '{taskHubName}' should contain only alphanumeric characters, start with a letter, and have a length between 3 and 45 characters.",
+                $"Task hub name '{taskHubName}' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
                 argumentException.Message);
         }
 
