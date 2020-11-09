@@ -97,12 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public void Dispose()
             {
                 this.innerHost.Dispose();
-#if !DEBUG
-                string connectionString = this.connectionResolver.Resolve(this.options.AzureStorageConnectionStringName ?? "AzureWebJobsStorage");
-                int partitionCount = this.options.PartitionCount;
-                string taskHub = this.options.HubName.ToLowerInvariant();
-                Task.Run(() => TestHelpers.DeleteAllElementsInStorageTaskHubAsync(connectionString, taskHub, partitionCount)).GetAwaiter().GetResult();
-#endif
             }
 
             public Task StartAsync() => this.innerHost.StartAsync();
