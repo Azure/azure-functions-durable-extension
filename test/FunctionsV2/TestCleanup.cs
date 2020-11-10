@@ -1,14 +1,16 @@
-﻿using DurableTask.AzureStorage;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using FluentAssertions.Common;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,6 +34,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public async Task CleanupOldAzureStorageTaskHubs()
         {
             TimeSpan oldTaskHubDeletionThreshold = TimeSpan.FromMinutes(5);
+
             // An approximate limit to the number of taskhubs to delete to prevent test from taking to long.
             // Future test runs will clean up more.
             const int maxDeletedTaskHubs = 2000;
@@ -67,7 +70,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                         }
                     }
                 }
-            } while (continuationToken != null && taskHubsToDelete.Count < maxDeletedTaskHubs);
+            }
+            while (continuationToken != null && taskHubsToDelete.Count < maxDeletedTaskHubs);
 
             await Task.WhenAll(taskHubsToDelete.Select(taskHub => this.DeleteTaskHub(taskHub, connectionString)));
         }
