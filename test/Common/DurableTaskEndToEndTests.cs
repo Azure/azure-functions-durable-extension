@@ -4710,7 +4710,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.loggerProvider,
                         taskHubName,
                         false,
-                        exactTaskHubName: taskHubName))
+                        exactTaskHubName: taskHubName + PlatformSpecificHelpers.VersionSuffix))
                     {
                         await host.StartAsync();
                         await host.StopAsync();

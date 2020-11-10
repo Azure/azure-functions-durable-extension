@@ -79,6 +79,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options = new DurableTaskOptions();
             }
 
+            // Some tests require knowing the task hub that the provider uses. Because of that, they will instantiate the exact
+            // task hub name and require the usage of that task hub. Otherwise, generate a partially random task hub from the
+            // test name and properties of the test.
             options.HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             options.Tracing = new TraceOptions()
             {
