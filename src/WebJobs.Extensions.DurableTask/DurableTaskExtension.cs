@@ -1134,11 +1134,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
+                bool hasActiveListeners(RegisteredFunctionInfo info) 
+                    => info?.HasActiveListener ?? false; // info can be null if function is disabled via attribute
+
                 // Wait to shut down the task hub worker until all function listeners have been shut down.
                 if (this.isTaskHubWorkerStarted &&
-                    !this.knownOrchestrators.Values.Any(info => info?.HasActiveListener ?? false) &&
-                    !this.knownActivities.Values.Any(info => info?.HasActiveListener ?? false) &&
-                    !this.knownEntities.Values.Any(info => info?.HasActiveListener ?? false))
+                    !this.knownOrchestrators.Values.Any(hasActiveListeners) &&
+                    !this.knownActivities.Values.Any(hasActiveListeners) &&
+                    !this.knownEntities.Values.Any(hasActiveListeners))
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 
