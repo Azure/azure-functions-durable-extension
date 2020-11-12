@@ -433,51 +433,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
         }
-
-        /// <summary>
-        /// Returns the instance id of the entity scheduler for a given entity id.
-        /// </summary>
-        /// <param name="entityId">The entity id.</param>
-        /// <returns>The instance id of the scheduler.</returns>
-        protected string GetSchedulerIdFromEntityId(EntityId entityId)
-        {
-            return EntityId.GetSchedulerIdFromEntityId(entityId);
-        }
-
-        /// <summary>
-        /// Reads the state of an entity from the serialized entity scheduler state.
-        /// </summary>
-        /// <param name="state">The orchestration state of the scheduler.</param>
-        /// <param name="serializerSettings">The serializer settings.</param>
-        /// <param name="result">The serialized state of the entity.</param>
-        /// <returns>true if the entity exists, false otherwise.</returns>
-        protected bool TryGetEntityStateFromSerializedSchedulerState(OrchestrationState state, JsonSerializerSettings serializerSettings, out string result)
-        {
-            if (state != null
-                && state.OrchestrationInstance != null
-                && state.Input != null)
-            {
-                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(state.Input, serializerSettings);
-
-                if (schedulerState.EntityExists)
-                {
-                    result = schedulerState.EntityState;
-                    return true;
-                }
-            }
-
-            result = null;
-            return false;
-        }
-
-        /// <summary>
-        /// Converts the DTFx representation of the orchestration state into the DF representation.
-        /// </summary>
-        /// <param name="orchestrationState">The orchestration state.</param>
-        /// <returns>The orchestration status.</returns>
-        protected DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState)
-        {
-            return DurableClient.ConvertOrchestrationStateToStatus(orchestrationState);
-        }
     }
 }
