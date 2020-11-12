@@ -58,6 +58,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual bool SupportsEntities => false;
 
         /// <summary>
+        /// Specifies whether the backend's WaitForOrchestration is implemented without polling.
+        /// </summary>
+        public virtual bool SupportsPollFreeWait => false;
+
+        /// <summary>
+        /// Specifies whether this backend delivers messages in order.
+        /// </summary>
+        public virtual bool GuaranteesOrderedDelivery => false;
+
+        /// <summary>
         /// JSON representation of configuration to emit in telemetry.
         /// </summary>
         public virtual JObject ConfigurationJson => EmptyConfig;
@@ -86,6 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         public int MaxConcurrentTaskActivityWorkItems => this.GetOrchestrationService().MaxConcurrentTaskActivityWorkItems;
+
+        internal string GetBackendInfo()
+        {
+            return this.GetOrchestrationService().ToString();
+        }
 
         private IOrchestrationService GetOrchestrationService()
         {
@@ -278,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns a task which completes when the state has been fetched.</returns>
         public virtual Task<IList<OrchestrationState>> GetOrchestrationStateWithInputsAsync(string instanceId, bool showInput = true)
         {
-            throw this.GetNotImplementedException(nameof(this.GetOrchestrationStateAsync));
+            throw this.GetNotImplementedException(nameof(this.GetOrchestrationStateWithInputsAsync));
         }
 
         /// <summary>
@@ -417,6 +432,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal virtual bool ConnectionNameMatches(DurabilityProvider durabilityProvider)
         {
             return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
+        }
+
+        /// <summary>
+        /// Returns the instance id of the entity scheduler for a given entity id.
+        /// </summary>
+        /// <param name="entityId">The entity id.</param>
+        /// <returns>The instance id of the scheduler.</returns>
+        protected string GetSchedulerIdFromEntityId(EntityId entityId)
+        {
+            return EntityId.GetSchedulerIdFromEntityId(entityId);
+        }
+
+        /// <summary>
+        /// Reads the state of an entity from the serialized entity scheduler state.
+        /// </summary>
+        /// <param name="state">The orchestration state of the scheduler.</param>
+        /// <param name="serializerSettings">The serializer settings.</param>
+        /// <param name="result">The serialized state of the entity.</param>
+        /// <returns>true if the entity exists, false otherwise.</returns>
+        protected bool TryGetEntityStateFromSerializedSchedulerState(OrchestrationState state, JsonSerializerSettings serializerSettings, out string result)
+        {
+            if (state != null
+                && state.OrchestrationInstance != null
+                && state.Input != null)
+            {
+                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(state.Input, serializerSettings);
+
+                if (schedulerState.EntityExists)
+                {
+                    result = schedulerState.EntityState;
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Converts the DTFx representation of the orchestration state into the DF representation.
+        /// </summary>
+        /// <param name="orchestrationState">The orchestration state.</param>
+        /// <returns>The orchestration status.</returns>
+        protected DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState)
+        {
+            return DurableClient.ConvertOrchestrationStateToStatus(orchestrationState);
         }
     }
 }

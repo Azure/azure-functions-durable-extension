@@ -1117,7 +1117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         requestMessage,
                         target.InstanceId,
                         this.InnerContext.CurrentUtcDateTime,
-                        TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
+                        this.Config.MessageReorderWindow);
 
                     eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
