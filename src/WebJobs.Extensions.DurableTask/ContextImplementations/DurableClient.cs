@@ -651,6 +651,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHubName,
             string connectionName)
         {
+            if (this.httpApiHandler == null)
+            {
+                throw new InvalidOperationException("CreateHttpManagementPayload not supported.");
+            }
+
             return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
         }
 
@@ -807,6 +812,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableClientAttribute attribute,
             bool returnInternalServerErrorOnFailure = false)
         {
+            if (this.httpApiHandler == null)
+            {
+                throw new InvalidOperationException("CreateCheckStatusResponse not supported.");
+            }
+
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
