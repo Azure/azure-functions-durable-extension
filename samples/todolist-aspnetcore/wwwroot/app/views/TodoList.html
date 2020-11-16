@@ -1,0 +1,31 @@
+﻿<div ng-init="populate()">
+    <p class="error">{{error}}</p>
+    <p>{{loadingMessage}}</p>
+    <div class="panel">
+        <div class="input-group">
+            <input ng-model="newToDoName" class="form-control" />
+            <span class="input-group-btn">
+                <button ng-click="add();" class="btn btn-default">Add</button>
+            </span>
+        </div>
+        <table class="table table-striped">
+            <tbody>
+                <tr data-ng-repeat="item in todoList">
+                    <td>
+                        <input type="checkbox" ng-model="item.isComplete" ng-disabled="!item.edit">
+                        <span>{{item.name}}</span>
+                        <input data-ng-show="item.edit" type="text" data-ng-model="editInProgressTodo.name" class="form-control" />                        
+                    </td>
+                    <td>
+                        <p data-ng-hide="item.edit || editingInProgress">
+                            <a data-ng-click="editSwitch(item)" href="javascript:;">Edit</a> | 
+                            <a data-ng-click="delete(item.id)" href="javascript:;">Delete</a></p>
+                            <p data-ng-show="item.edit"><a data-ng-click="update(item)" href="javascript:;">Save</a> | 
+                            <a data-ng-click="editSwitch(item)" href="javascript:;">Cancel</a></p>                       
+                    </td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
