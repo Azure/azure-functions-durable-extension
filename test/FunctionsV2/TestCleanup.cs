@@ -31,6 +31,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         // This test should never fail. The sole purpose is to cleanup old taskhubs in the CI
         // storage account to prevent clutter now that TaskHub names are non-deterministic.
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CleanupOldAzureStorageTaskHubs()
         {
             TimeSpan oldTaskHubDeletionThreshold = TimeSpan.FromMinutes(5);

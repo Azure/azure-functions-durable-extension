@@ -207,9 +207,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string strippedTestName = testName.Replace("_", "");
             string truncatedTestName = strippedTestName.Substring(0, Math.Min(35, strippedTestName.Length));
-            string deterministicSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            string testPropertiesSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
             string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
-            return truncatedTestName + deterministicSuffix + randomSuffix;
+            return truncatedTestName + testPropertiesSuffix + randomSuffix;
         }
 
         internal static async Task DeleteAllElementsInStorageTaskHubAsync(string connectionString, string taskHub, int partitionCount)
