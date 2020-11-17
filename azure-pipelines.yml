@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@1  
-      inputs:  
+      inputs:
         #versionSpec: # Optional  
         #checkLatest: false # Optional
 
