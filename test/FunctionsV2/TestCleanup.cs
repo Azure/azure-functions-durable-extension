@@ -88,7 +88,15 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var service = new AzureStorageOrchestrationService(settings);
             await service.StartAsync();
             this.output.WriteLine($"Deleting task hub : {taskHub}");
-            await service.DeleteAsync();
+            try
+            {
+                await service.DeleteAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log error, but don't fail the test, as it can be cleaned up later.
+                this.output.WriteLine($"Encountered exception deleting task hub: : {ex.ToString()}");
+            }
         }
     }
 }
