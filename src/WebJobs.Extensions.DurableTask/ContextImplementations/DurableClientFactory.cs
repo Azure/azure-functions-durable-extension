@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -76,15 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             }
 
             DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);
-
-            /*
-            HttpApiHandler httpApiHandler = this.cachedHttpListeners.GetOrAdd(
-                attribute,
-                attr =>
-                {
-                    return new HttpApiHandler(this.TraceHelper, this.MessageDataConverter, this.durableTaskOptions, this.logger);
-                });
-            */
 
             DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
