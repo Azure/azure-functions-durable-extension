@@ -12,8 +12,7 @@ jobs:
     steps:
     - task: NuGetToolInstaller@1  
       inputs:
-        #versionSpec: # Optional  
-        #checkLatest: false # Optional
+        checkLatest: false
 
     - task: DotNetCoreCLI@2
       inputs:
