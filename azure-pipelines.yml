@@ -10,8 +10,10 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@1
-      inputs:
+    - task: NuGetToolInstaller@1  
+      inputs:  
+        #versionSpec: # Optional  
+        #checkLatest: false # Optional
 
     - task: DotNetCoreCLI@2
       inputs:
