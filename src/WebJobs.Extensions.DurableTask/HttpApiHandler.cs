@@ -187,12 +187,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
                 if (status != null)
                 {
-                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
-                    {
-                        return request.CreateResponse(HttpStatusCode.OK, status.Output);
-                    }
-
-                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
+                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                     {
