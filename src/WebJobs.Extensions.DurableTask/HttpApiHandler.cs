@@ -170,14 +170,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             DurableClientAttribute attribute,
             TimeSpan timeout,
-            TimeSpan retryInterval)
+            TimeSpan retryInterval,
+            bool returnInternalServerErrorOnFailure = false)
         {
             if (retryInterval > timeout)
             {
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
 
             IDurableOrchestrationClient client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();

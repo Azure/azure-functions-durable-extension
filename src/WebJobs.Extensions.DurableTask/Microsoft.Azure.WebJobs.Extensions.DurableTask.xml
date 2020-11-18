@@ -108,10 +108,10 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#CreateHttpManagementPayload(System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan},System.Boolean)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan},System.Boolean)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#StartNewAsync``1(System.String,System.String,``0)">
@@ -749,7 +749,7 @@
             <param name="instanceId">The ID of the orchestration instance to check.</param>
             <returns>Instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload"/> class.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(System.Net.Http.HttpRequestMessage,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan},System.Boolean)">
             <summary>
             Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
             or contains the payload containing the output of the completed orchestration.
@@ -764,9 +764,12 @@
             <param name="instanceId">The unique ID of the instance to check.</param>
             <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
             <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+            <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+            If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+            return 200.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(Microsoft.AspNetCore.Http.HttpRequest,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.TimeSpan},System.Boolean)">
             <summary>
             Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
             or contains the payload containing the output of the completed orchestration.
@@ -781,6 +784,9 @@
             <param name="instanceId">The unique ID of the instance to check.</param>
             <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
             <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+            <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+            If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+            return 200.</param>
             <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.StartNewAsync(System.String,System.String)">
@@ -1786,7 +1792,7 @@
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute"/> class.
             </summary>
-            <param name="durableClientOptions">durable client options</param>
+            <param name="durableClientOptions">Options to configure the IDurableClient created.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute.TaskHub">
             <summary>
